@@ -1,0 +1,8 @@
+- full / analysis modes
+- YAML + Pydantic
+- Energy и ESM-2 только config fields
+- allosteric_paths вне MVP
+- Rg только global Rg(t)
+- window_stability_score переименован в window_cv
+- single-condition режим поддерживается
+- deletions/insertions вне v0.1
