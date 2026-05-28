@@ -1,0 +1,32 @@
+project:
+  name: "NaPi2b_NORM_TUMOR"
+  run_id: "run_001"
+
+systems:
+  normal:
+    topology: "data/normal/system.tpr"
+    trajectory: "data/normal/traj.xtc"
+    condition: "normal"
+    label: 0
+  tumor:
+    topology: "data/tumor/system.tpr"
+    trajectory: "data/tumor/traj.xtc"
+    condition: "tumor"
+    label: 1
+
+runtime:
+  output_dir: "mania_output"
+  cache_dir: "mania_output/cache"
+  temp_dir: "mania_output/tmp"
+  log_level: "INFO"
+  run_mode: "full"
+  resume: true
+  overwrite: false
+  strict_validation: true
+  n_jobs: 1
+
+features:
+  rg: true
+  energy_rerun: false
+  energy_groups: ["Protein", "MEMB"]
+  esm2: false

@@ -3,8 +3,16 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
+from typing import NoReturn
 
 from mania import __version__
+from mania.config import load_config
+
+
+def _exit_with_error(message: str) -> NoReturn:
+    """Print a readable CLI error and exit with status 1."""
+    raise SystemExit(message)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -21,14 +29,24 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers = parser.add_subparsers(dest="command")
 
-    subparsers.add_parser(
+    validate_parser = subparsers.add_parser(
         "validate-config",
-        help="Validate a MANIA YAML configuration file. Placeholder for v0.1 skeleton.",
+        help="Validate a MANIA YAML configuration file.",
+    )
+    validate_parser.add_argument(
+        "config",
+        type=Path,
+        help="Path to a MANIA YAML configuration file.",
     )
 
-    subparsers.add_parser(
+    run_parser = subparsers.add_parser(
         "run",
         help="Run MANIA pipeline. Placeholder for v0.1 skeleton.",
+    )
+    run_parser.add_argument(
+        "--config",
+        type=Path,
+        help="Path to a MANIA YAML configuration file.",
     )
 
     return parser
@@ -40,7 +58,11 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "validate-config":
-        print("Config validation is not implemented yet. Next step: add Pydantic config models.")
+        try:
+            load_config(args.config)
+        except Exception as exc:
+            _exit_with_error(f"Config is invalid: {args.config}\n{exc}")
+        print(f"Config is valid: {args.config}")
         return
 
     if args.command == "run":
