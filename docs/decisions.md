@@ -1,8 +1,94 @@
-- full / analysis modes
-- YAML + Pydantic
-- Energy и ESM-2 только config fields
-- allosteric_paths вне MVP
-- Rg только global Rg(t)
-- window_stability_score переименован в window_cv
-- single-condition режим поддерживается
-- deletions/insertions вне v0.1
+# MANIA/WANIA Accepted Decisions for v0.1
+
+This document records accepted project decisions for MANIA v0.1. These are
+scope and contract decisions, not a list of implemented features.
+
+## Project Scope
+
+- MANIA is a Python package for preparing molecular dynamics analysis artifacts.
+- WANIA is a web interface that consumes MANIA outputs.
+- The current focus is repository skeleton, config, CLI, docs, and tests.
+- FastAPI is postponed until the Python package and data contract are stable.
+
+## Repository and Package
+
+- The repository uses `src-layout`.
+- Installable project name: `mania-wania`.
+- Python import package: `mania`.
+- CLI command: `mania`.
+- Supported Python version: `>=3.11`.
+- Pydantic v2 is used for config models.
+- YAML is the main user-facing config format.
+
+## Pipeline Modes
+
+- `full` mode is the future full run from trajectories to final artifacts.
+- `analysis` mode is the future analysis-only run using prepared preprocessing
+  artifacts.
+- Preprocessing and analysis must remain architecturally separated.
+
+## Current Skeleton Architecture
+
+- `analysis/` is temporarily an aggregated skeleton layer.
+- Later, it may be decomposed into `graph/`, `metrics/`, `temporal/`,
+  `comparison/`, and `edge_dynamics/`.
+- `edge_dynamics` is not implemented yet, but its fields are part of the data
+  contract.
+
+## Config
+
+- `runtime.run_mode` supports only `full` and `analysis`.
+- `runtime.log_level` supports `DEBUG`, `INFO`, `WARNING`, `ERROR`, and
+  `CRITICAL`.
+- One-condition and two-condition configs are supported.
+- Topology and trajectory path existence is not checked in config validation;
+  this belongs to future QC/input checks.
+- Energy analysis and ESM-2 are config fields only, not implemented features.
+
+## Residue Registry
+
+- `src/mania/residues.py` is the future single source of truth for lipid,
+  glycan, and glycolipid residue names.
+- Do not invent final residue lists yet.
+- The final residue registries will be prepared by the domain expert.
+- Glycolipids should not be duplicated in RIN; they will use
+  `edge_type = "protein_glycolipid"`.
+
+## Data Contract
+
+- Mandatory per-condition artifacts:
+  - `nodes.csv`
+  - `edges.csv`
+  - `graph.json`
+  - `centrality.csv`
+  - `communities.csv`
+  - `temporal_rin.csv`
+  - `conformational_states.csv`
+  - `contacts_perframe.parquet`
+- Cross-condition artifacts:
+  - `comparison.csv`
+  - `stats.csv`
+- `comparison.csv` and `stats.csv` are not per-condition files.
+- `allosteric_paths.json` is optional and outside MVP v0.1.
+
+## Scientific Scope Limits
+
+- No deletions/insertions support in v0.1.
+- Normal/tumor currently means WT vs T330M.
+- Residue count and residue IDs must match between conditions.
+- Resname differences, for example `THR -> MET`, are informational facts for QC.
+- Rg is global protein `Rg(t)`, not residue-level Rg in `nodes.csv`.
+- `window_stability_score` is renamed to `window_cv`.
+- `window_cv = std(contact_freq_per_window) / mean(contact_freq_per_window)`,
+  with `mean = 0` handled explicitly later.
+
+## Current Non-Goals
+
+- No FastAPI yet.
+- No MDAnalysis yet.
+- No GROMACS execution yet.
+- No DSSP/SASA/RMSF implementation yet.
+- No energy rerun implementation yet.
+- No ESM-2 implementation yet.
+- No Yandex Disk integration yet.
+- No final biological interpretation in the report module yet.
