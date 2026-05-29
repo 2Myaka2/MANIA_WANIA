@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mania-wania"
+version = "0.1.0"
+description = "MANIA/WANIA toolkit skeleton for molecular dynamics trajectory analysis artifacts."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Andrey" }
+]
+dependencies = [
+    "pydantic>=2.7,<3.0",
+    "PyYAML>=6.0,<7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<9.0",
+    "ruff>=0.5.0,<1.0",
+    "mypy>=1.10,<2.0",
+    "types-PyYAML>=6.0.12",
+]
+
+[project.scripts]
+mania = "mania.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+    "B",
+]
+ignore = []
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+mypy_path = "src"
+packages = ["mania"]
