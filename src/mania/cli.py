@@ -8,6 +8,7 @@ from typing import NoReturn
 
 from mania import __version__
 from mania.config import load_config
+from mania.pipeline import build_pipeline_plan, format_pipeline_plan
 
 
 def _exit_with_error(message: str) -> NoReturn:
@@ -46,6 +47,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--config",
         type=Path,
+        required=True,
         help="Path to a MANIA YAML configuration file.",
     )
 
@@ -66,7 +68,12 @@ def main() -> None:
         return
 
     if args.command == "run":
-        print("Pipeline execution is not implemented yet. This is a skeleton CLI.")
+        try:
+            config = load_config(args.config)
+        except Exception as exc:
+            _exit_with_error(f"Config is invalid: {args.config}\n{exc}")
+        plan = build_pipeline_plan(config)
+        print(format_pipeline_plan(plan))
         return
 
     parser.print_help()
