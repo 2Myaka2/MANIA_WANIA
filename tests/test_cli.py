@@ -1,8 +1,54 @@
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 import mania.cli as cli
+from mania import __version__
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def run_python_module(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, "-m", "mania", *args],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_python_module_version_prints_package_version() -> None:
+    result = run_python_module("--version")
+
+    assert result.returncode == 0
+    assert __version__ in result.stdout
+
+
+def test_python_module_validate_config_accepts_example_config() -> None:
+    result = run_python_module(
+        "validate-config",
+        "configs/mania.example.yaml",
+    )
+
+    assert result.returncode == 0
+    assert "Config is valid" in result.stdout
+
+
+def test_python_module_run_prints_pipeline_plan() -> None:
+    result = run_python_module(
+        "run",
+        "--config",
+        "configs/mania.example.yaml",
+    )
+
+    assert result.returncode == 0
+    assert "MANIA pipeline execution is not implemented yet." in result.stdout
+    assert "Project: NaPi2b_NORM_TUMOR" in result.stdout
+    assert "Run mode: full" in result.stdout
+    assert "Conditions: normal, tumor" in result.stdout
 
 
 def test_run_command_prints_pipeline_plan(monkeypatch, capsys) -> None:
