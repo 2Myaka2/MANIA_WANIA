@@ -29,7 +29,7 @@ def build_report_summary(
 ) -> ReportSummary:
     """Build a report summary skeleton without filesystem I/O."""
     artifact_count = (
-        len(manifest.per_condition_artifacts) * len(manifest.conditions)
+        len(manifest.per_condition_artifacts) * len(plan.conditions)
         + len(manifest.cross_condition_artifacts)
     )
     return ReportSummary(
