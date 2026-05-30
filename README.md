@@ -14,8 +14,14 @@ The current skeleton supports:
 - Editable install with `pip install -e ".[dev]"`.
 - Importing the package as `mania`.
 - Checking the package version with `mania --version`.
+- Running the CLI module with `python -m mania`.
 - Validating the example YAML config with
   `mania validate-config configs/mania.example.yaml`.
+- Building a placeholder pipeline plan with
+  `mania run --config configs/mania.example.yaml`.
+- Preparing skeleton manifest and run metadata summaries without writing files.
+- Preparing skeleton QC and report summaries without running scientific checks or
+  generating HTML.
 - Running the test suite with `pytest`.
 - Running lint checks with `ruff check .`.
 - Running type checks with `mypy src`.
@@ -50,6 +56,12 @@ python -m pip install -e ".[dev]"
 
 mania --version
 mania validate-config configs/mania.example.yaml
+mania run --config configs/mania.example.yaml
+
+python -m mania --version
+python -m mania validate-config configs/mania.example.yaml
+python -m mania run --config configs/mania.example.yaml
+
 pytest
 ruff check .
 mypy src
@@ -74,8 +86,9 @@ does not check whether trajectory or topology files exist yet.
 
 - `docs/decisions.md`: accepted MANIA/WANIA v0.1 project decisions.
 - `docs/data_contract.md`: MANIA v0.1 output artifact contract for WANIA.
-- `docs/architecture.md`: planned architecture notes placeholder.
-- `docs/git_workflow.md`: planned git workflow notes placeholder.
+- `docs/architecture.md`: current skeleton and intended module
+  responsibilities.
+- `docs/git_workflow.md`: Git workflow for small reviewable tasks.
 - `AGENTS.md`: working rules for Codex, coding agents, and assistants.
 
 ## Development Workflow
