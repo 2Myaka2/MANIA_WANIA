@@ -1,62 +1,74 @@
-cat > .gitignore <<'EOF'
-# Python
+# Python bytecode and caches
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-*.egg-info/
-.eggs/
-build/
-dist/
+*$py.class
 
 # Virtual environments
 .venv/
 venv/
 env/
+ENV/
 
-# Test / coverage
+# Packaging and build artifacts
+*.egg-info/
+.eggs/
+build/
+dist/
+site/
+*.whl
+
+# Test, lint, type-check, and coverage artifacts
 .pytest_cache/
-.coverage
-htmlcov/
-.mypy_cache/
 .ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
 
-# IDE
+# IDE and editor files
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
 
-# Project runtime outputs
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# MANIA local outputs and runtime artifacts
 outputs/
 mania_output/
 cache/
 temp/
 logs/
+*.log
 
-# Large scientific data
+# Local scientific data directories
+data/
+
+# Molecular dynamics trajectory, topology, and large scientific files
 *.xtc
 *.trr
-*.tpr
-*.gro
-*.pdb
-*.cpt
-*.edr
-*.xvg
-*.parquet
-EOF
-
-data/
-outputs/
-mania_output/
-*.xtc
 *.tpr
 *.dcd
 *.psf
-*.trr
 *.edr
 *.gro
 *.pdb
+*.xvg
+*.cpt
+
+# Large tabular/binary analysis outputs
 *.parquet
+
+# Small test fixtures may be allowed later by explicit exception.
+# Example:
+# !tests/fixtures/**/*.parquet
