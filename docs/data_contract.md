@@ -18,6 +18,7 @@ mania_output/
 │   ├── centrality.csv
 │   ├── communities.csv
 │   ├── temporal_rin.csv
+│   ├── rg_timeseries.csv
 │   ├── conformational_states.csv
 │   └── contacts_perframe.parquet
 ├── tumor/
@@ -135,6 +136,26 @@ n_nodes_active
 density
 window_cv
 ```
+
+### rg_timeseries.csv
+
+Per-frame radius of gyration time series for one condition.
+
+Required columns:
+
+```text
+frame
+time_ps
+rg_A
+condition
+```
+
+Notebook v1.1 reference files are named
+`rg_timeseries_{condition}.csv`. The backend contract stores the same
+information as `{condition}/rg_timeseries.csv`. The backend contract requires
+`time_ps` for consistency with other time-series artifacts. Adapter logic will
+handle filename/layout conversion later. Deriving or calculating `time_ps` is
+outside this task.
 
 ### conformational_states.csv
 

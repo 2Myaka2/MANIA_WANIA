@@ -144,7 +144,7 @@ def test_format_report_summary_contains_expected_fields() -> None:
     assert "Run mode: full" in summary
     assert "Conditions: normal, tumor" in summary
     assert "QC passed: true" in summary
-    assert "Expected artifacts: 18" in summary
+    assert "Expected artifacts: 20" in summary
 
 
 def test_format_report_summary_uses_stable_line_order() -> None:
@@ -159,7 +159,7 @@ def test_format_report_summary_uses_stable_line_order() -> None:
         "Run mode: full",
         "Conditions: normal, tumor",
         "QC passed: true",
-        "Expected artifacts: 18",
+        "Expected artifacts: 20",
     ]
 
 
@@ -177,7 +177,7 @@ def test_module_does_not_inspect_or_write_to_filesystem(monkeypatch) -> None:
     formatted = format_report_summary(summary)
 
     assert isinstance(summary, ReportSummary)
-    assert summary_dict["artifact_count"] == 18
+    assert summary_dict["artifact_count"] == 20
     assert formatted.startswith("MANIA analysis report skeleton")
 
 

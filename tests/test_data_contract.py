@@ -10,6 +10,7 @@ from mania.constants import (
     GRAPH_REQUIRED_KEYS,
     NODE_COLUMNS,
     PER_CONDITION_ARTIFACTS,
+    RG_TIMESERIES_COLUMNS,
     SCHEMA_VERSION,
     STATS_COLUMNS,
     TEMPORAL_RIN_COLUMNS,
@@ -22,6 +23,7 @@ EXPECTED_PER_CONDITION_ARTIFACTS = (
     "centrality.csv",
     "communities.csv",
     "temporal_rin.csv",
+    "rg_timeseries.csv",
     "conformational_states.csv",
     "contacts_perframe.parquet",
 )
@@ -100,6 +102,12 @@ EXPECTED_COLUMN_SCHEMAS = {
         "density",
         "window_cv",
     ),
+    "RG_TIMESERIES_COLUMNS": (
+        "frame",
+        "time_ps",
+        "rg_A",
+        "condition",
+    ),
     "CONFORMATIONAL_STATES_COLUMNS": (
         "frame",
         "time_ps",
@@ -148,6 +156,7 @@ COLUMN_SCHEMAS = {
     "CENTRALITY_COLUMNS": CENTRALITY_COLUMNS,
     "COMMUNITIES_COLUMNS": COMMUNITIES_COLUMNS,
     "TEMPORAL_RIN_COLUMNS": TEMPORAL_RIN_COLUMNS,
+    "RG_TIMESERIES_COLUMNS": RG_TIMESERIES_COLUMNS,
     "CONFORMATIONAL_STATES_COLUMNS": CONFORMATIONAL_STATES_COLUMNS,
     "CONTACTS_PERFRAME_COLUMNS": CONTACTS_PERFRAME_COLUMNS,
     "COMPARISON_COLUMNS": COMPARISON_COLUMNS,

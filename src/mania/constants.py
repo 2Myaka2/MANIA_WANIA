@@ -9,6 +9,7 @@ PER_CONDITION_ARTIFACTS = (
     "centrality.csv",
     "communities.csv",
     "temporal_rin.csv",
+    "rg_timeseries.csv",
     "conformational_states.csv",
     "contacts_perframe.parquet",
 )
@@ -101,6 +102,13 @@ TEMPORAL_RIN_COLUMNS = (
     "window_cv",
 )
 
+RG_TIMESERIES_COLUMNS = (
+    "frame",
+    "time_ps",
+    "rg_A",
+    "condition",
+)
+
 CONFORMATIONAL_STATES_COLUMNS = (
     "frame",
     "time_ps",
@@ -151,6 +159,7 @@ ARTIFACT_COLUMNS = {
     "centrality.csv": CENTRALITY_COLUMNS,
     "communities.csv": COMMUNITIES_COLUMNS,
     "temporal_rin.csv": TEMPORAL_RIN_COLUMNS,
+    "rg_timeseries.csv": RG_TIMESERIES_COLUMNS,
     "conformational_states.csv": CONFORMATIONAL_STATES_COLUMNS,
     "contacts_perframe.parquet": CONTACTS_PERFRAME_COLUMNS,
     "comparison.csv": COMPARISON_COLUMNS,
