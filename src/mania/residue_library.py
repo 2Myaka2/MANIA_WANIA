@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import csv
 import json
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from json import JSONDecodeError
 from pathlib import Path
 
 EXPECTED_RESIDUE_LIBRARY_FORMAT = "MANIA_residue_library"
 SUPPORTED_RESIDUE_LIBRARY_FORMAT_VERSION = "0.1"
+QC_STATUS_OK = "ok"
+QC_STATUS_SKIP = "skip"
+QC_STATUS_NOT_FOUND = "not_found"
+DEFAULT_SKIPPED_RESNAMES = frozenset({"CLA", "SOD", "TIP3"})
 
 REQUIRED_TOP_LEVEL_KEYS = (
     "format",
@@ -49,6 +54,10 @@ class ResidueLibraryFormatError(ResidueLibraryError):
 
 class ResidueLibraryValidationError(ResidueLibraryError):
     """Raised when a residue library has malformed content."""
+
+
+class ResidueLibraryQCError(ResidueLibraryError):
+    """Raised when residue library QC finds blocking errors."""
 
 
 @dataclass(frozen=True)
@@ -108,6 +117,46 @@ class ResidueLibrary:
         return residue.category
 
 
+@dataclass(frozen=True)
+class ResidueQCRow:
+    """Single residue-library QC result row."""
+
+    resname: str
+    status: str
+    coverage: str
+    block_type: str
+    source_file: str
+    conditions: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ResidueQCReport:
+    """Residue-library QC report."""
+
+    rows: tuple[ResidueQCRow, ...]
+
+    def has_errors(self) -> bool:
+        """Return whether the report contains unknown residues."""
+        return any(row.status == QC_STATUS_NOT_FOUND for row in self.rows)
+
+    def unknown_resnames(self) -> tuple[str, ...]:
+        """Return sorted normalized residue names that were not found."""
+        return tuple(
+            sorted(
+                row.resname
+                for row in self.rows
+                if row.status == QC_STATUS_NOT_FOUND
+            )
+        )
+
+    def status_counts(self) -> Mapping[str, int]:
+        """Return row counts by QC status."""
+        counts: dict[str, int] = {}
+        for row in self.rows:
+            counts[row.status] = counts.get(row.status, 0) + 1
+        return counts
+
+
 def normalize_resname(resname: str) -> str:
     """Normalize a residue name for library lookups."""
     return resname.strip().upper()
@@ -151,6 +200,98 @@ def load_residue_library(path: str | Path) -> ResidueLibrary:
         residues=_parse_residues(residues),
         patches=_parse_patches(patches),
     )
+
+
+def run_residue_library_qc(
+    resnames_by_condition: Mapping[str, Iterable[str]],
+    library: ResidueLibrary,
+    *,
+    skip_resnames: Iterable[str] = DEFAULT_SKIPPED_RESNAMES,
+    fail_on_error: bool = True,
+) -> ResidueQCReport:
+    """Run residue-library coverage QC against the passed library."""
+    skipped_resnames = {normalize_resname(resname) for resname in skip_resnames}
+    conditions_by_resname: dict[str, set[str]] = {}
+
+    for condition, resnames in resnames_by_condition.items():
+        for resname in resnames:
+            normalized_resname = normalize_resname(resname)
+            conditions_by_resname.setdefault(normalized_resname, set()).add(condition)
+
+    rows: list[ResidueQCRow] = []
+    for resname in sorted(conditions_by_resname):
+        conditions = tuple(sorted(conditions_by_resname[resname]))
+        residue = library.get_residue(resname)
+        if resname in skipped_resnames:
+            rows.append(
+                ResidueQCRow(
+                    resname=resname,
+                    status=QC_STATUS_SKIP,
+                    coverage="skipped",
+                    block_type="",
+                    source_file="",
+                    conditions=conditions,
+                )
+            )
+        elif residue is not None:
+            rows.append(
+                ResidueQCRow(
+                    resname=resname,
+                    status=QC_STATUS_OK,
+                    coverage="full",
+                    block_type=residue.block_type,
+                    source_file=residue.source_file,
+                    conditions=conditions,
+                )
+            )
+        else:
+            rows.append(
+                ResidueQCRow(
+                    resname=resname,
+                    status=QC_STATUS_NOT_FOUND,
+                    coverage="missing",
+                    block_type="",
+                    source_file="",
+                    conditions=conditions,
+                )
+            )
+
+    report = ResidueQCReport(rows=tuple(rows))
+    if fail_on_error and report.has_errors():
+        unknown = ", ".join(report.unknown_resnames())
+        raise ResidueLibraryQCError(f"Unknown residue names: {unknown}")
+    return report
+
+
+def write_residue_qc_report(
+    report: ResidueQCReport,
+    path: str | Path,
+) -> None:
+    """Write a residue-library QC report as CSV."""
+    report_path = Path(path)
+    with report_path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(
+            (
+                "resname",
+                "status",
+                "coverage",
+                "block_type",
+                "source_file",
+                "conditions",
+            )
+        )
+        for row in report.rows:
+            writer.writerow(
+                (
+                    row.resname,
+                    row.status,
+                    row.coverage,
+                    row.block_type,
+                    row.source_file,
+                    ",".join(row.conditions),
+                )
+            )
 
 
 def _validate_format(payload: Mapping[str, object]) -> None:
@@ -254,7 +395,11 @@ def _parse_patches(patches: Mapping[str, object]) -> dict[str, PatchEntry]:
 
 
 __all__ = [
+    "DEFAULT_SKIPPED_RESNAMES",
     "EXPECTED_RESIDUE_LIBRARY_FORMAT",
+    "QC_STATUS_NOT_FOUND",
+    "QC_STATUS_OK",
+    "QC_STATUS_SKIP",
     "SUPPORTED_RESIDUE_LIBRARY_FORMAT_VERSION",
     "PatchEntry",
     "ResidueAtom",
@@ -262,7 +407,12 @@ __all__ = [
     "ResidueLibrary",
     "ResidueLibraryError",
     "ResidueLibraryFormatError",
+    "ResidueLibraryQCError",
     "ResidueLibraryValidationError",
+    "ResidueQCReport",
+    "ResidueQCRow",
     "load_residue_library",
     "normalize_resname",
+    "run_residue_library_qc",
+    "write_residue_qc_report",
 ]
