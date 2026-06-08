@@ -202,6 +202,67 @@ def load_residue_library(path: str | Path) -> ResidueLibrary:
     )
 
 
+def extend_residue_library(
+    library: ResidueLibrary,
+    custom_residues: Mapping[str, ResidueEntry],
+    *,
+    allow_override_existing: bool = False,
+) -> ResidueLibrary:
+    """Return an effective residue library with in-memory custom residues."""
+    effective_residues = dict(library.residues)
+    effective_stats = dict(library.stats)
+    normalized_custom_resnames: set[str] = set()
+    custom_residues_added = 0
+
+    for custom_key, custom_entry in custom_residues.items():
+        if not isinstance(custom_key, str):
+            raise ResidueLibraryValidationError("custom residue keys must be strings")
+        if not isinstance(custom_entry, ResidueEntry):
+            raise ResidueLibraryValidationError(
+                "custom residue values must be ResidueEntry instances"
+            )
+
+        normalized_key = normalize_resname(custom_key)
+        normalized_entry_resname = normalize_resname(custom_entry.resname)
+        if normalized_key != normalized_entry_resname:
+            raise ResidueLibraryValidationError(
+                "custom residue key and resname must match after normalization"
+            )
+        if normalized_key in normalized_custom_resnames:
+            raise ResidueLibraryValidationError(
+                "custom residue keys must be unique after normalization"
+            )
+
+        exists_in_base_library = normalized_key in library.residues
+        if exists_in_base_library and not allow_override_existing:
+            raise ResidueLibraryValidationError(
+                f"custom residue would override existing residue: {normalized_key}"
+            )
+        if not exists_in_base_library:
+            custom_residues_added += 1
+
+        normalized_custom_resnames.add(normalized_key)
+        effective_residues[normalized_key] = ResidueEntry(
+            resname=normalized_entry_resname,
+            block_type=custom_entry.block_type,
+            category=custom_entry.category,
+            source_file=custom_entry.source_file,
+            atoms=custom_entry.atoms,
+        )
+
+    effective_stats["custom_residues_added"] = custom_residues_added
+    effective_stats["effective_residues_total"] = len(effective_residues)
+
+    return ResidueLibrary(
+        format=library.format,
+        format_version=library.format_version,
+        topology_files=library.topology_files,
+        stats=effective_stats,
+        residues=effective_residues,
+        patches=dict(library.patches),
+    )
+
+
 def run_residue_library_qc(
     resnames_by_condition: Mapping[str, Iterable[str]],
     library: ResidueLibrary,
@@ -411,6 +472,7 @@ __all__ = [
     "ResidueLibraryValidationError",
     "ResidueQCReport",
     "ResidueQCRow",
+    "extend_residue_library",
     "load_residue_library",
     "normalize_resname",
     "run_residue_library_qc",

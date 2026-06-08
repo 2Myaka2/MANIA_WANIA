@@ -19,6 +19,7 @@ from mania.residue_library import (
     ResidueLibraryValidationError,
     ResidueQCReport,
     ResidueQCRow,
+    extend_residue_library,
     load_residue_library,
     run_residue_library_qc,
     write_residue_qc_report,
@@ -49,6 +50,26 @@ def assert_load_raises(
 
 def rows_by_resname(report: ResidueQCReport) -> dict[str, ResidueQCRow]:
     return {row.resname: row for row in report.rows}
+
+
+def make_custom_residue_entry(
+    resname: str,
+    *,
+    category: str = "custom",
+) -> ResidueEntry:
+    return ResidueEntry(
+        resname=resname,
+        block_type="residue",
+        category=category,
+        source_file="user_config",
+        atoms=(
+            ResidueAtom(
+                name="C1",
+                type="CT1",
+                charge=0.0,
+            ),
+        ),
+    )
 
 
 def test_load_valid_tiny_fixture() -> None:
@@ -323,3 +344,131 @@ def test_residue_qc_uses_passed_library_object() -> None:
     assert row.status == QC_STATUS_OK
     assert row.block_type == "residue"
     assert row.source_file == "custom.rtf"
+
+
+def test_extend_residue_library_adds_custom_residue() -> None:
+    library = load_residue_library(FIXTURE_PATH)
+    custom_entry = make_custom_residue_entry("USER1", category="ligand")
+
+    effective = extend_residue_library(library, {"USER1": custom_entry})
+
+    assert effective is not library
+    assert not library.has_residue("USER1")
+    assert effective.has_residue("USER1")
+    assert effective.classify_residue("USER1") == "ligand"
+    assert effective.get_residue(" user1 ") == effective.get_residue("USER1")
+    user1 = effective.get_residue("USER1")
+    assert user1 is not None
+    assert user1.source_file == "user_config"
+    assert user1.resname == "USER1"
+
+
+def test_residue_qc_treats_custom_residue_as_ok() -> None:
+    library = load_residue_library(FIXTURE_PATH)
+    effective = extend_residue_library(
+        library,
+        {"USER1": make_custom_residue_entry("USER1")},
+    )
+
+    report = run_residue_library_qc({"normal": ("ALA", "USER1")}, effective)
+    user1 = rows_by_resname(report)["USER1"]
+
+    assert user1.status == QC_STATUS_OK
+    assert not report.has_errors()
+
+
+def test_extend_residue_library_rejects_override_by_default() -> None:
+    library = load_residue_library(FIXTURE_PATH)
+
+    try:
+        extend_residue_library(library, {"ALA": make_custom_residue_entry("ALA")})
+    except ResidueLibraryValidationError:
+        return
+    raise AssertionError("Expected ResidueLibraryValidationError")
+
+
+def test_extend_residue_library_allows_explicit_override() -> None:
+    library = load_residue_library(FIXTURE_PATH)
+    custom_entry = make_custom_residue_entry("ALA", category="custom")
+    base_ala = library.get_residue("ALA")
+
+    effective = extend_residue_library(
+        library,
+        {"ALA": custom_entry},
+        allow_override_existing=True,
+    )
+    effective_ala = effective.get_residue("ALA")
+
+    assert effective is not library
+    assert effective_ala is not None
+    assert effective_ala.source_file == "user_config"
+    assert effective.classify_residue("ALA") == "custom"
+    assert base_ala is not None
+    assert base_ala.source_file == "tiny_fixture_topology.rtf"
+    assert library.get_residue("ALA") == base_ala
+
+
+def test_extend_residue_library_normalizes_custom_residue_names() -> None:
+    library = load_residue_library(FIXTURE_PATH)
+    custom_entry = make_custom_residue_entry("user2")
+
+    effective = extend_residue_library(library, {" user2 ": custom_entry})
+    user2 = effective.get_residue("USER2")
+
+    assert effective.has_residue("USER2")
+    assert "user2" not in effective.residues
+    assert " user2 " not in effective.residues
+    assert effective.has_residue("user2")
+    assert user2 is not None
+    assert user2.resname == "USER2"
+
+
+def test_extend_residue_library_updates_stats_for_added_custom_residue() -> None:
+    library = load_residue_library(FIXTURE_PATH)
+
+    effective = extend_residue_library(
+        library,
+        {"USER1": make_custom_residue_entry("USER1")},
+    )
+
+    assert effective.stats["custom_residues_added"] == 1
+    assert effective.stats["effective_residues_total"] == 5
+
+
+def test_extend_residue_library_updates_stats_for_override() -> None:
+    library = load_residue_library(FIXTURE_PATH)
+
+    effective = extend_residue_library(
+        library,
+        {"ALA": make_custom_residue_entry("ALA")},
+        allow_override_existing=True,
+    )
+
+    assert effective.stats["custom_residues_added"] == 0
+    assert effective.stats["effective_residues_total"] == 4
+
+
+def test_extend_residue_library_rejects_key_resname_mismatch() -> None:
+    library = load_residue_library(FIXTURE_PATH)
+
+    try:
+        extend_residue_library(library, {"USER3": make_custom_residue_entry("OTHER")})
+    except ResidueLibraryValidationError:
+        return
+    raise AssertionError("Expected ResidueLibraryValidationError")
+
+
+def test_extend_residue_library_rejects_normalized_duplicate_custom_residues() -> None:
+    library = load_residue_library(FIXTURE_PATH)
+
+    try:
+        extend_residue_library(
+            library,
+            {
+                "USER4": make_custom_residue_entry("USER4"),
+                " user4 ": make_custom_residue_entry(" user4 "),
+            },
+        )
+    except ResidueLibraryValidationError:
+        return
+    raise AssertionError("Expected ResidueLibraryValidationError")
