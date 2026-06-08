@@ -1,0 +1,77 @@
+{
+  "format": "MANIA_residue_library",
+  "format_version": "0.1",
+  "topology_files": [
+    "tiny_fixture_topology.rtf"
+  ],
+  "stats": {
+    "residues_total": 4,
+    "patches_total": 1,
+    "protein_residues": 1,
+    "lipid_residues": 1,
+    "glycan_residues": 1,
+    "glycolipid_residues": 1
+  },
+  "residues": {
+    "ALA": {
+      "resname": "ALA",
+      "block_type": "residue",
+      "category": "protein",
+      "source_file": "tiny_fixture_topology.rtf",
+      "atoms": [
+        {
+          "name": "CA",
+          "type": "CT1",
+          "charge": 0.07
+        }
+      ]
+    },
+    "POPC": {
+      "resname": "POPC",
+      "block_type": "residue",
+      "category": "lipid",
+      "source_file": "tiny_fixture_topology.rtf",
+      "atoms": [
+        {
+          "name": "P",
+          "type": "PL",
+          "charge": 1.10
+        }
+      ]
+    },
+    "NAG": {
+      "resname": "NAG",
+      "block_type": "residue",
+      "category": "glycan",
+      "source_file": "tiny_fixture_topology.rtf",
+      "atoms": [
+        {
+          "name": "C1",
+          "type": "CC3161",
+          "charge": 0.20
+        }
+      ]
+    },
+    "GLP1": {
+      "resname": "GLP1",
+      "block_type": "residue",
+      "category": "glycolipid",
+      "source_file": "tiny_fixture_topology.rtf",
+      "atoms": [
+        {
+          "name": "C2",
+          "type": "CG2R61",
+          "charge": -0.12
+        }
+      ]
+    }
+  },
+  "patches": {
+    "TINY_PATCH": {
+      "name": "TINY_PATCH",
+      "block_type": "patch",
+      "category": "patch",
+      "source_file": "tiny_fixture_topology.rtf"
+    }
+  }
+}
