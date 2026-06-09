@@ -77,6 +77,50 @@ class MultiConditionExportResult:
         return tuple(paths)
 
 
+@dataclass(frozen=True)
+class NotebookContractSubsetExportResult:
+    """Paths produced by exporting the supported notebook contract subset."""
+
+    run_meta_path: Path
+    conditions_result: MultiConditionExportResult
+
+    @property
+    def paths(self) -> tuple[Path, ...]:
+        """Return generated paths with run metadata first."""
+        return (self.run_meta_path, *self.conditions_result.paths)
+
+
+def export_notebook_contract_subset(
+    source_dir: str | Path,
+    output_dir: str | Path,
+    conditions: Iterable[str] | None = None,
+    *,
+    frame_time_ps: float,
+) -> NotebookContractSubsetExportResult:
+    """Export the currently supported notebook-to-backend contract subset."""
+    selected_conditions = tuple(conditions) if conditions is not None else None
+    run_meta_path = export_run_meta(
+        source_dir=source_dir,
+        output_dir=output_dir,
+        conditions=selected_conditions,
+    )
+    export_conditions_arg = (
+        _read_run_meta_conditions(run_meta_path)
+        if selected_conditions is None
+        else selected_conditions
+    )
+    conditions_result = export_conditions(
+        source_dir=source_dir,
+        output_dir=output_dir,
+        conditions=export_conditions_arg,
+        frame_time_ps=frame_time_ps,
+    )
+    return NotebookContractSubsetExportResult(
+        run_meta_path=run_meta_path,
+        conditions_result=conditions_result,
+    )
+
+
 def export_conditions(
     source_dir: str | Path,
     output_dir: str | Path,
@@ -387,6 +431,29 @@ def _export_contract_csv_table(
     _write_contract_rows(output_path, output_columns, rows)
     _validate_output_csv(output_path, output_name, condition)
     return output_path
+
+
+def _read_run_meta_conditions(run_meta_path: Path) -> tuple[str, ...]:
+    try:
+        with run_meta_path.open(encoding="utf-8") as run_meta_file:
+            payload = json.load(run_meta_file)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise NotebookExportAdapterError(
+            f"Failed to read exported run metadata: {run_meta_path}"
+        ) from exc
+
+    if not isinstance(payload, dict):
+        raise NotebookExportAdapterError(
+            f"Exported run metadata must be a JSON object: {run_meta_path}"
+        )
+    conditions = payload.get("conditions")
+    if not isinstance(conditions, list) or not all(
+        isinstance(condition, str) for condition in conditions
+    ):
+        raise NotebookExportAdapterError(
+            f"Exported run metadata contains invalid conditions: {run_meta_path}"
+        )
+    return tuple(conditions)
 
 
 def _normalize_conditions(conditions: Iterable[str]) -> tuple[str, ...]:
@@ -823,6 +890,7 @@ def _is_empty_data_row(row: dict[str, str | None]) -> bool:
 __all__ = [
     "ConditionExportResult",
     "MultiConditionExportResult",
+    "NotebookContractSubsetExportResult",
     "NotebookExportAdapterError",
     "export_centrality",
     "export_condition",
@@ -831,6 +899,7 @@ __all__ = [
     "export_edges",
     "export_graph",
     "export_nodes",
+    "export_notebook_contract_subset",
     "export_rg_timeseries",
     "export_run_meta",
 ]

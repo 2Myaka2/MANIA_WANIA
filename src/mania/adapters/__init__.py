@@ -3,6 +3,7 @@
 from mania.adapters.notebook_export import (
     ConditionExportResult,
     MultiConditionExportResult,
+    NotebookContractSubsetExportResult,
     NotebookExportAdapterError,
     export_centrality,
     export_communities,
@@ -11,6 +12,7 @@ from mania.adapters.notebook_export import (
     export_edges,
     export_graph,
     export_nodes,
+    export_notebook_contract_subset,
     export_rg_timeseries,
     export_run_meta,
 )
@@ -18,6 +20,7 @@ from mania.adapters.notebook_export import (
 __all__ = [
     "ConditionExportResult",
     "MultiConditionExportResult",
+    "NotebookContractSubsetExportResult",
     "NotebookExportAdapterError",
     "export_centrality",
     "export_condition",
@@ -26,6 +29,7 @@ __all__ = [
     "export_edges",
     "export_graph",
     "export_nodes",
+    "export_notebook_contract_subset",
     "export_rg_timeseries",
     "export_run_meta",
 ]

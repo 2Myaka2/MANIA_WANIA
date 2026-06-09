@@ -8,6 +8,7 @@ import pytest
 from mania.adapters import (
     ConditionExportResult,
     MultiConditionExportResult,
+    NotebookContractSubsetExportResult,
     NotebookExportAdapterError,
     export_centrality,
     export_communities,
@@ -16,6 +17,7 @@ from mania.adapters import (
     export_edges,
     export_graph,
     export_nodes,
+    export_notebook_contract_subset,
     export_rg_timeseries,
     export_run_meta,
 )
@@ -291,6 +293,24 @@ def validate_condition_export_result(
     validate_csv_artifact_schema(result.edges_path, "edges.csv")
     validate_condition_column(result.edges_path, condition)
     validate_graph_json(result.graph_path, expected_condition=condition)
+
+
+def unsupported_artifact_paths(output_dir: Path) -> tuple[Path, ...]:
+    unsupported_per_condition = (
+        "temporal_rin.csv",
+        "conformational_states.csv",
+        "contacts_perframe.parquet",
+    )
+    condition_artifacts = tuple(
+        output_dir / condition / name
+        for condition in ("normal", "tumor")
+        for name in unsupported_per_condition
+    )
+    return (
+        *condition_artifacts,
+        output_dir / "comparison.csv",
+        output_dir / "stats.csv",
+    )
 
 
 def test_exports_normal_rg_timeseries(tmp_path: Path) -> None:
@@ -1767,3 +1787,119 @@ def test_export_conditions_does_not_create_run_meta(tmp_path: Path) -> None:
     )
 
     assert not (output_dir / "run_meta.json").exists()
+
+
+def test_export_notebook_contract_subset_exports_supported_outputs(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "mania_output"
+
+    result = export_notebook_contract_subset(
+        source_dir=FIXTURE_DIR,
+        output_dir=output_dir,
+        conditions=("normal", "tumor"),
+        frame_time_ps=100.0,
+    )
+
+    assert isinstance(result, NotebookContractSubsetExportResult)
+    assert result.run_meta_path == output_dir / "run_meta.json"
+    assert result.conditions_result.conditions == ("normal", "tumor")
+    assert result.paths == (
+        output_dir / "run_meta.json",
+        output_dir / "normal" / "rg_timeseries.csv",
+        output_dir / "normal" / "centrality.csv",
+        output_dir / "normal" / "communities.csv",
+        output_dir / "normal" / "nodes.csv",
+        output_dir / "normal" / "edges.csv",
+        output_dir / "normal" / "graph.json",
+        output_dir / "tumor" / "rg_timeseries.csv",
+        output_dir / "tumor" / "centrality.csv",
+        output_dir / "tumor" / "communities.csv",
+        output_dir / "tumor" / "nodes.csv",
+        output_dir / "tumor" / "edges.csv",
+        output_dir / "tumor" / "graph.json",
+    )
+    assert all(path.exists() for path in result.paths)
+
+    payload = read_json(result.run_meta_path)
+    assert payload["conditions"] == ["normal", "tumor"]
+    for condition in result.conditions_result.conditions:
+        validate_condition_export_result(
+            result.conditions_result.condition_results[condition],
+            condition,
+        )
+    assert all(not path.exists() for path in unsupported_artifact_paths(output_dir))
+
+
+def test_export_notebook_contract_subset_infers_conditions_from_run_meta(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "mania_output"
+
+    result = export_notebook_contract_subset(
+        source_dir=FIXTURE_DIR,
+        output_dir=output_dir,
+        frame_time_ps=100.0,
+    )
+
+    assert result.conditions_result.conditions == ("normal", "tumor")
+    assert result.paths[0] == output_dir / "run_meta.json"
+    assert result.paths[1:7] == result.conditions_result.condition_results[
+        "normal"
+    ].paths
+    assert result.paths[7:] == result.conditions_result.condition_results[
+        "tumor"
+    ].paths
+
+
+def test_export_notebook_contract_subset_uses_explicit_conditions_for_both_steps(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "mania_output"
+
+    result = export_notebook_contract_subset(
+        source_dir=FIXTURE_DIR,
+        output_dir=output_dir,
+        conditions=iter(("tumor", "normal")),
+        frame_time_ps=100.0,
+    )
+
+    payload = read_json(result.run_meta_path)
+    assert payload["conditions"] == ["tumor", "normal"]
+    assert result.conditions_result.conditions == ("tumor", "normal")
+    assert result.paths[1] == output_dir / "tumor" / "rg_timeseries.csv"
+    assert result.paths[7] == output_dir / "normal" / "rg_timeseries.csv"
+
+
+def test_export_notebook_contract_subset_fails_before_conditions_for_bad_manifest(
+    tmp_path: Path,
+) -> None:
+    source_dir = tmp_path / "source"
+    write_json(source_dir / "mania_manifest.json", {"conditions": ["normal"]})
+    output_dir = tmp_path / "mania_output"
+
+    with pytest.raises(NotebookExportAdapterError):
+        export_notebook_contract_subset(
+            source_dir=source_dir,
+            output_dir=output_dir,
+            frame_time_ps=100.0,
+        )
+
+    assert not (output_dir / "run_meta.json").exists()
+    assert not (output_dir / "normal").exists()
+
+
+def test_export_notebook_contract_subset_propagates_condition_step_failure(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "mania_output"
+
+    with pytest.raises(NotebookExportAdapterError):
+        export_notebook_contract_subset(
+            source_dir=FIXTURE_DIR,
+            output_dir=output_dir,
+            conditions=("normal", "tumor"),
+            frame_time_ps=0,
+        )
+
+    assert (output_dir / "run_meta.json").is_file()
