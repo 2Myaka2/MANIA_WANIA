@@ -8,6 +8,7 @@ from pathlib import Path
 from mania.constants import (
     CENTRALITY_COLUMNS,
     COMMUNITIES_COLUMNS,
+    NODE_COLUMNS,
     RG_TIMESERIES_COLUMNS,
 )
 from mania.validation.artifacts import (
@@ -17,6 +18,7 @@ from mania.validation.artifacts import (
 )
 
 NOTEBOOK_RG_COLUMNS = ("frame", "rg_A", "condition")
+RESIDUE_TABLE_COLUMNS = NODE_COLUMNS[:11]
 
 
 class NotebookExportAdapterError(Exception):
@@ -88,6 +90,58 @@ def export_communities(
     )
 
 
+def export_nodes(
+    source_dir: str | Path,
+    output_dir: str | Path,
+    condition: str,
+) -> Path:
+    """Export backend nodes from notebook-like residue and metric tables."""
+    source_path = Path(source_dir)
+    residue_path = source_path / f"residue_table_{condition}.csv"
+    centrality_path = source_path / f"centrality_{condition}.csv"
+    communities_path = source_path / f"communities_{condition}.csv"
+
+    residue_rows = _read_required_rows(
+        residue_path,
+        condition,
+        RESIDUE_TABLE_COLUMNS,
+    )
+    centrality_rows = _read_required_rows(
+        centrality_path,
+        condition,
+        CENTRALITY_COLUMNS,
+    )
+    communities_rows = _read_required_rows(
+        communities_path,
+        condition,
+        COMMUNITIES_COLUMNS,
+    )
+
+    centrality_by_resid = _index_rows_by_resid(centrality_rows, centrality_path)
+    communities_by_resid = _index_rows_by_resid(communities_rows, communities_path)
+    residue_by_resid = _index_rows_by_resid(residue_rows, residue_path)
+    residue_ids = set(residue_by_resid)
+
+    _validate_join_coverage(
+        residue_ids,
+        set(centrality_by_resid),
+        "centrality",
+        centrality_path,
+    )
+    _validate_join_coverage(
+        residue_ids,
+        set(communities_by_resid),
+        "communities",
+        communities_path,
+    )
+
+    rows = _build_node_rows(residue_rows, centrality_by_resid, communities_by_resid)
+    output_path = Path(output_dir) / condition / "nodes.csv"
+    _write_contract_rows(output_path, NODE_COLUMNS, rows)
+    _validate_output_csv(output_path, "nodes.csv", condition)
+    return output_path
+
+
 def _export_contract_csv_table(
     source_dir: str | Path,
     output_dir: str | Path,
@@ -139,6 +193,122 @@ def _read_contract_like_rows(
 
     if not rows:
         raise NotebookExportAdapterError(f"No data rows found: {input_path}")
+    return rows
+
+
+def _read_required_rows(
+    input_path: Path,
+    condition: str,
+    required_columns: Sequence[str],
+) -> list[dict[str, str]]:
+    if not input_path.is_file():
+        raise NotebookExportAdapterError(f"Missing notebook export input: {input_path}")
+
+    with input_path.open(encoding="utf-8", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+        _validate_required_header(reader.fieldnames, required_columns, input_path)
+
+        rows: list[dict[str, str]] = []
+        for row_number, row in enumerate(reader, start=2):
+            if _is_empty_data_row(row):
+                continue
+
+            _validate_row_condition(row, condition, input_path, row_number)
+            _validate_required_values(row, required_columns, input_path, row_number)
+            rows.append(
+                {
+                    column: value if value is not None else ""
+                    for column, value in row.items()
+                }
+            )
+
+    if not rows:
+        raise NotebookExportAdapterError(f"No data rows found: {input_path}")
+    return rows
+
+
+def _validate_required_values(
+    row: dict[str, str | None],
+    required_columns: Sequence[str],
+    input_path: Path,
+    row_number: int,
+) -> None:
+    for column in required_columns:
+        value = row.get(column)
+        if value is None or value.strip() == "":
+            raise NotebookExportAdapterError(
+                f"Missing required value {column!r} at row {row_number}: {input_path}"
+            )
+
+
+def _index_rows_by_resid(
+    rows: Sequence[dict[str, str]],
+    input_path: Path,
+) -> dict[str, dict[str, str]]:
+    indexed: dict[str, dict[str, str]] = {}
+    for row in rows:
+        resid = row["resid"]
+        if resid in indexed:
+            raise NotebookExportAdapterError(
+                f"Duplicate resid {resid!r} in {input_path}"
+            )
+        indexed[resid] = row
+    return indexed
+
+
+def _validate_join_coverage(
+    residue_ids: set[str],
+    joined_ids: set[str],
+    table_name: str,
+    input_path: Path,
+) -> None:
+    missing_ids = sorted(residue_ids - joined_ids)
+    if missing_ids:
+        raise NotebookExportAdapterError(
+            f"Missing {table_name} rows for resid values in {input_path}: "
+            f"{', '.join(missing_ids)}"
+        )
+
+    extra_ids = sorted(joined_ids - residue_ids)
+    if extra_ids:
+        raise NotebookExportAdapterError(
+            f"Unmatched {table_name} rows in {input_path}: {', '.join(extra_ids)}"
+        )
+
+
+def _build_node_rows(
+    residue_rows: Sequence[dict[str, str]],
+    centrality_by_resid: dict[str, dict[str, str]],
+    communities_by_resid: dict[str, dict[str, str]],
+) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for residue_row in residue_rows:
+        resid = residue_row["resid"]
+        centrality_row = centrality_by_resid[resid]
+        community_row = communities_by_resid[resid]
+        rows.append(
+            {
+                "resid": residue_row["resid"],
+                "resname": residue_row["resname"],
+                "region": residue_row["region"],
+                "condition": residue_row["condition"],
+                "x_ca": residue_row["x_ca"],
+                "y_ca": residue_row["y_ca"],
+                "z_ca": residue_row["z_ca"],
+                "tm_relative_z": residue_row["tm_relative_z"],
+                "rmsf_A": residue_row["rmsf_A"],
+                "sasa_A2": residue_row["sasa_A2"],
+                "ss": residue_row["ss"],
+                "degree": centrality_row["degree"],
+                "strength": centrality_row["strength"],
+                "betweenness": centrality_row["betweenness"],
+                "closeness": centrality_row["closeness"],
+                "eigenvector": centrality_row["eigenvector"],
+                "pagerank": centrality_row["pagerank"],
+                "kcore": centrality_row["kcore"],
+                "community_id": community_row["community_id"],
+            }
+        )
     return rows
 
 
@@ -312,5 +482,6 @@ __all__ = [
     "NotebookExportAdapterError",
     "export_centrality",
     "export_communities",
+    "export_nodes",
     "export_rg_timeseries",
 ]
