@@ -1,6 +1,7 @@
 """Minimal notebook export adapters."""
 
 import csv
+import json
 import math
 from collections.abc import Sequence
 from pathlib import Path
@@ -9,14 +10,17 @@ from mania.constants import (
     CENTRALITY_COLUMNS,
     COMMUNITIES_COLUMNS,
     EDGE_COLUMNS,
+    GRAPH_REQUIRED_KEYS,
     NODE_COLUMNS,
     RG_TIMESERIES_COLUMNS,
+    SCHEMA_VERSION,
 )
 from mania.validation.artifacts import (
     ArtifactValidationError,
     validate_condition_column,
     validate_csv_artifact_schema,
 )
+from mania.validation.graph import GraphValidationError, validate_graph_json
 
 NOTEBOOK_RG_COLUMNS = ("frame", "rg_A", "condition")
 RESIDUE_TABLE_COLUMNS = NODE_COLUMNS[:11]
@@ -160,6 +164,44 @@ def export_edges(
     return output_path
 
 
+def export_graph(output_dir: str | Path, condition: str) -> Path:
+    """Export a per-condition backend graph from contract nodes and edges CSVs."""
+    condition_dir = Path(output_dir) / condition
+    nodes_path = condition_dir / "nodes.csv"
+    edges_path = condition_dir / "edges.csv"
+
+    _validate_contract_csv_for_graph(nodes_path, "nodes.csv", condition)
+    _validate_contract_csv_for_graph(edges_path, "edges.csv", condition)
+
+    nodes = _load_graph_nodes(nodes_path)
+    edges = _load_graph_edges(edges_path, {node["id"] for node in nodes})
+
+    graph = {
+        "condition": condition,
+        "n_nodes": len(nodes),
+        "n_edges": len(edges),
+        "directed": False,
+        "schema_version": SCHEMA_VERSION,
+        "nodes": nodes,
+        "edges": edges,
+    }
+    missing_keys = [key for key in GRAPH_REQUIRED_KEYS if key not in graph]
+    if missing_keys:
+        raise NotebookExportAdapterError(
+            f"Graph payload is missing keys: {', '.join(missing_keys)}"
+        )
+
+    graph_path = condition_dir / "graph.json"
+    _write_graph_json(graph_path, graph)
+    try:
+        validate_graph_json(graph_path, expected_condition=condition)
+    except GraphValidationError as exc:
+        raise NotebookExportAdapterError(
+            f"Output graph failed validation: {graph_path}"
+        ) from exc
+    return graph_path
+
+
 def _export_contract_csv_table(
     source_dir: str | Path,
     output_dir: str | Path,
@@ -212,6 +254,83 @@ def _read_contract_like_rows(
     if not rows:
         raise NotebookExportAdapterError(f"No data rows found: {input_path}")
     return rows
+
+
+def _read_contract_csv_rows(path: Path) -> list[dict[str, str]]:
+    with path.open(encoding="utf-8", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+        return [
+            {
+                column: value if value is not None else ""
+                for column, value in row.items()
+            }
+            for row in reader
+            if not _is_empty_data_row(row)
+        ]
+
+
+def _validate_contract_csv_for_graph(
+    path: Path,
+    artifact_name: str,
+    condition: str,
+) -> None:
+    if not path.is_file():
+        raise NotebookExportAdapterError(f"Missing graph input CSV: {path}")
+    try:
+        validate_csv_artifact_schema(path, artifact_name)
+        validate_condition_column(path, condition)
+    except ArtifactValidationError as exc:
+        raise NotebookExportAdapterError(f"Invalid graph input CSV: {path}") from exc
+
+
+def _load_graph_nodes(nodes_path: Path) -> list[dict[str, str]]:
+    nodes: list[dict[str, str]] = []
+    node_ids: set[str] = set()
+    for row in _read_contract_csv_rows(nodes_path):
+        resid = row.get("resid", "")
+        if resid.strip() == "":
+            raise NotebookExportAdapterError(f"Missing node resid in {nodes_path}")
+        if resid in node_ids:
+            raise NotebookExportAdapterError(
+                f"Duplicate graph node id {resid!r} in {nodes_path}"
+            )
+        node_ids.add(resid)
+        nodes.append({"id": resid, **row})
+
+    if not nodes:
+        raise NotebookExportAdapterError(f"No graph nodes found: {nodes_path}")
+    return nodes
+
+
+def _load_graph_edges(
+    edges_path: Path,
+    node_ids: set[str],
+) -> list[dict[str, str]]:
+    edges: list[dict[str, str]] = []
+    for row in _read_contract_csv_rows(edges_path):
+        resid_i = row.get("resid_i", "")
+        resid_j = row.get("resid_j", "")
+        if resid_i.strip() == "":
+            raise NotebookExportAdapterError(f"Missing edge resid_i in {edges_path}")
+        if resid_j.strip() == "":
+            raise NotebookExportAdapterError(f"Missing edge resid_j in {edges_path}")
+        if resid_i not in node_ids:
+            raise NotebookExportAdapterError(
+                f"Edge source {resid_i!r} is missing from nodes: {edges_path}"
+            )
+        if resid_j not in node_ids:
+            raise NotebookExportAdapterError(
+                f"Edge target {resid_j!r} is missing from nodes: {edges_path}"
+            )
+        edges.append({"source": resid_i, "target": resid_j, **row})
+    return edges
+
+
+def _write_graph_json(path: Path, graph: dict[str, object]) -> None:
+    path.write_text(
+        json.dumps(graph, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def _read_required_rows(
@@ -520,6 +639,7 @@ __all__ = [
     "export_centrality",
     "export_communities",
     "export_edges",
+    "export_graph",
     "export_nodes",
     "export_rg_timeseries",
 ]

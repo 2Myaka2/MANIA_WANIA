@@ -1,4 +1,5 @@
 import csv
+import json
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from mania.adapters import (
     export_centrality,
     export_communities,
     export_edges,
+    export_graph,
     export_nodes,
     export_rg_timeseries,
 )
@@ -18,11 +20,13 @@ from mania.constants import (
     EDGE_COLUMNS,
     NODE_COLUMNS,
     RG_TIMESERIES_COLUMNS,
+    SCHEMA_VERSION,
 )
 from mania.validation.artifacts import (
     validate_condition_column,
     validate_csv_artifact_schema,
 )
+from mania.validation.graph import validate_graph_json
 
 FIXTURE_DIR = Path("tests/fixtures/notebook_export_v1_1_tiny")
 RESIDUE_TABLE_COLUMNS = NODE_COLUMNS[:11]
@@ -36,6 +40,13 @@ def read_rows(path: Path) -> list[dict[str, str]]:
 def read_header(path: Path) -> list[str]:
     with path.open(encoding="utf-8", newline="") as csv_file:
         return next(csv.reader(csv_file))
+
+
+def read_json(path: Path) -> dict[str, object]:
+    with path.open(encoding="utf-8") as json_file:
+        payload = json.load(json_file)
+    assert isinstance(payload, dict)
+    return payload
 
 
 def write_csv(
@@ -82,6 +93,30 @@ def centrality_row(resid: str = "1", *, condition: str = "normal") -> tuple[str,
 
 def community_row(resid: str = "1", *, condition: str = "normal") -> tuple[str, ...]:
     return (resid, condition, "1", "2", "fixture_louvain")
+
+
+def node_row(resid: str = "1", *, condition: str = "normal") -> tuple[str, ...]:
+    return (
+        resid,
+        "ALA",
+        "TM1",
+        condition,
+        "1.0",
+        "2.0",
+        "3.0",
+        "-0.5",
+        "0.8",
+        "120.0",
+        "H",
+        "1",
+        "0.7",
+        "0.0",
+        "0.5",
+        "0.6",
+        "0.55",
+        "1",
+        "1",
+    )
 
 
 DEFAULT_RESIDUE_ROWS = (residue_row(),)
@@ -161,6 +196,22 @@ def write_edges_table(
     )
 
 
+def write_nodes_csv(
+    path: Path,
+    rows: Sequence[Sequence[str]],
+    header: Sequence[str] = NODE_COLUMNS,
+) -> Path:
+    return write_csv(path, header, rows)
+
+
+def write_edges_csv(
+    path: Path,
+    rows: Sequence[Sequence[str]],
+    header: Sequence[str] = EDGE_COLUMNS,
+) -> Path:
+    return write_csv(path, header, rows)
+
+
 def write_minimal_node_sources(
     source_dir: Path,
     *,
@@ -189,6 +240,11 @@ def assert_export_edges_fails(source_dir: Path, tmp_path: Path) -> None:
             output_dir=tmp_path / "out",
             condition="normal",
         )
+
+
+def assert_export_graph_fails(output_dir: Path, condition: str = "normal") -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_graph(output_dir, condition)
 
 
 def test_exports_normal_rg_timeseries(tmp_path: Path) -> None:
@@ -1084,3 +1140,177 @@ def test_edge_output_directory_is_created(tmp_path: Path) -> None:
 
     assert path.exists()
     assert path.parent.is_dir()
+
+
+def test_exports_normal_graph(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    export_nodes(FIXTURE_DIR, output_dir, "normal")
+    export_edges(FIXTURE_DIR, output_dir, "normal")
+
+    path = export_graph(output_dir, "normal")
+
+    assert path == output_dir / "normal" / "graph.json"
+    assert path.is_file()
+
+    graph = read_json(path)
+    assert graph["condition"] == "normal"
+    assert graph["schema_version"] == SCHEMA_VERSION
+    assert graph["directed"] is False
+    assert graph["n_nodes"] == 2
+    assert graph["n_edges"] == 1
+
+    nodes = graph["nodes"]
+    edges = graph["edges"]
+    assert isinstance(nodes, list)
+    assert isinstance(edges, list)
+    assert len(nodes) == 2
+    assert len(edges) == 1
+    assert {node["id"] for node in nodes if isinstance(node, dict)} == {"1", "2"}
+
+    edge = edges[0]
+    assert isinstance(edge, dict)
+    assert edge["source"] == "1"
+    assert edge["target"] == "2"
+    validate_graph_json(path, expected_condition="normal")
+
+
+def test_exports_tumor_graph(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    export_nodes(FIXTURE_DIR, output_dir, "tumor")
+    export_edges(FIXTURE_DIR, output_dir, "tumor")
+
+    path = export_graph(output_dir, "tumor")
+
+    graph = read_json(path)
+    assert graph["condition"] == "tumor"
+    assert graph["n_nodes"] == 2
+    assert graph["n_edges"] == 1
+
+    nodes = graph["nodes"]
+    assert isinstance(nodes, list)
+    assert {node["id"] for node in nodes if isinstance(node, dict)} == {"1", "2"}
+
+
+def test_graph_missing_nodes_csv_fails(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    export_edges(FIXTURE_DIR, output_dir, "normal")
+
+    assert_export_graph_fails(output_dir)
+
+
+def test_graph_missing_edges_csv_fails(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    export_nodes(FIXTURE_DIR, output_dir, "normal")
+
+    assert_export_graph_fails(output_dir)
+
+
+def test_graph_invalid_nodes_schema_fails(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    condition_dir = output_dir / "normal"
+    header = tuple(column for column in NODE_COLUMNS if column != "resname")
+    row = tuple(value for index, value in enumerate(residue_row()) if index != 1)
+    write_nodes_csv(condition_dir / "nodes.csv", (row,), header=header)
+    write_edges_csv(condition_dir / "edges.csv", (edge_row(),))
+
+    assert_export_graph_fails(output_dir)
+
+
+def test_graph_invalid_edges_schema_fails(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    condition_dir = output_dir / "normal"
+    write_nodes_csv(condition_dir / "nodes.csv", (node_row(),))
+    header = tuple(column for column in EDGE_COLUMNS if column != "contact_freq")
+    row = tuple(value for index, value in enumerate(edge_row()) if index != 4)
+    write_edges_csv(condition_dir / "edges.csv", (row,), header=header)
+
+    assert_export_graph_fails(output_dir)
+
+
+def test_graph_nodes_condition_mismatch_fails(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    condition_dir = output_dir / "normal"
+    write_nodes_csv(condition_dir / "nodes.csv", (node_row(condition="tumor"),))
+    write_edges_csv(condition_dir / "edges.csv", (edge_row(),))
+
+    assert_export_graph_fails(output_dir)
+
+
+def test_graph_edges_condition_mismatch_fails(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    condition_dir = output_dir / "normal"
+    write_nodes_csv(condition_dir / "nodes.csv", (node_row(),))
+    write_edges_csv(condition_dir / "edges.csv", (edge_row(condition="tumor"),))
+
+    assert_export_graph_fails(output_dir)
+
+
+def test_graph_duplicate_node_ids_fail(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    condition_dir = output_dir / "normal"
+    write_nodes_csv(condition_dir / "nodes.csv", (node_row("1"), node_row("1")))
+    write_edges_csv(condition_dir / "edges.csv", (edge_row(),))
+
+    assert_export_graph_fails(output_dir)
+
+
+def test_graph_empty_node_resid_fails(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    condition_dir = output_dir / "normal"
+    write_nodes_csv(condition_dir / "nodes.csv", (node_row(""),))
+    write_edges_csv(condition_dir / "edges.csv", (edge_row(),))
+
+    assert_export_graph_fails(output_dir)
+
+
+def test_graph_edge_missing_source_node_fails(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    condition_dir = output_dir / "normal"
+    write_nodes_csv(condition_dir / "nodes.csv", (node_row("1"),))
+    write_edges_csv(condition_dir / "edges.csv", (edge_row("3", "1"),))
+
+    assert_export_graph_fails(output_dir)
+
+
+def test_graph_edge_missing_target_node_fails(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    condition_dir = output_dir / "normal"
+    write_nodes_csv(condition_dir / "nodes.csv", (node_row("1"),))
+    write_edges_csv(condition_dir / "edges.csv", (edge_row("1", "3"),))
+
+    assert_export_graph_fails(output_dir)
+
+
+def test_graph_empty_edge_resid_i_fails(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    condition_dir = output_dir / "normal"
+    write_nodes_csv(condition_dir / "nodes.csv", (node_row("1"),))
+    write_edges_csv(condition_dir / "edges.csv", (edge_row("", "1"),))
+
+    assert_export_graph_fails(output_dir)
+
+
+def test_graph_empty_edge_resid_j_fails(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+    condition_dir = output_dir / "normal"
+    write_nodes_csv(condition_dir / "nodes.csv", (node_row("1"),))
+    write_edges_csv(condition_dir / "edges.csv", (edge_row("1", ""),))
+
+    assert_export_graph_fails(output_dir)
+
+
+def test_per_condition_graph_does_not_condition_scope_node_ids(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "mania_output"
+    export_nodes(FIXTURE_DIR, output_dir, "normal")
+    export_edges(FIXTURE_DIR, output_dir, "normal")
+
+    path = export_graph(output_dir, "normal")
+
+    graph = read_json(path)
+    nodes = graph["nodes"]
+    assert isinstance(nodes, list)
+    node_ids = [node["id"] for node in nodes if isinstance(node, dict)]
+    assert node_ids == ["1", "2"]
+    assert all(":" not in node_id for node_id in node_ids)
