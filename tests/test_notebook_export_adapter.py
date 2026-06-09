@@ -6,9 +6,11 @@ from pathlib import Path
 import pytest
 
 from mania.adapters import (
+    ConditionExportResult,
     NotebookExportAdapterError,
     export_centrality,
     export_communities,
+    export_condition,
     export_edges,
     export_graph,
     export_nodes,
@@ -245,6 +247,23 @@ def assert_export_edges_fails(source_dir: Path, tmp_path: Path) -> None:
 def assert_export_graph_fails(output_dir: Path, condition: str = "normal") -> None:
     with pytest.raises(NotebookExportAdapterError):
         export_graph(output_dir, condition)
+
+
+def validate_condition_export_result(
+    result: ConditionExportResult,
+    condition: str,
+) -> None:
+    validate_csv_artifact_schema(result.rg_timeseries_path, "rg_timeseries.csv")
+    validate_condition_column(result.rg_timeseries_path, condition)
+    validate_csv_artifact_schema(result.centrality_path, "centrality.csv")
+    validate_condition_column(result.centrality_path, condition)
+    validate_csv_artifact_schema(result.communities_path, "communities.csv")
+    validate_condition_column(result.communities_path, condition)
+    validate_csv_artifact_schema(result.nodes_path, "nodes.csv")
+    validate_condition_column(result.nodes_path, condition)
+    validate_csv_artifact_schema(result.edges_path, "edges.csv")
+    validate_condition_column(result.edges_path, condition)
+    validate_graph_json(result.graph_path, expected_condition=condition)
 
 
 def test_exports_normal_rg_timeseries(tmp_path: Path) -> None:
@@ -1314,3 +1333,110 @@ def test_per_condition_graph_does_not_condition_scope_node_ids(
     node_ids = [node["id"] for node in nodes if isinstance(node, dict)]
     assert node_ids == ["1", "2"]
     assert all(":" not in node_id for node_id in node_ids)
+
+
+def test_export_condition_exports_all_normal_artifacts(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+
+    result = export_condition(
+        source_dir=FIXTURE_DIR,
+        output_dir=output_dir,
+        condition="normal",
+        frame_time_ps=100.0,
+    )
+
+    assert isinstance(result, ConditionExportResult)
+    assert result.condition == "normal"
+    assert all(path.exists() for path in result.paths)
+    assert (output_dir / "normal").is_dir()
+    assert result.paths == (
+        output_dir / "normal" / "rg_timeseries.csv",
+        output_dir / "normal" / "centrality.csv",
+        output_dir / "normal" / "communities.csv",
+        output_dir / "normal" / "nodes.csv",
+        output_dir / "normal" / "edges.csv",
+        output_dir / "normal" / "graph.json",
+    )
+    validate_condition_export_result(result, "normal")
+
+
+def test_export_condition_exports_all_tumor_artifacts(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+
+    result = export_condition(
+        source_dir=FIXTURE_DIR,
+        output_dir=output_dir,
+        condition="tumor",
+        frame_time_ps=100.0,
+    )
+
+    assert isinstance(result, ConditionExportResult)
+    assert result.condition == "tumor"
+    assert all(path.exists() for path in result.paths)
+
+    validate_condition_export_result(result, "tumor")
+    graph = read_json(result.graph_path)
+    assert graph["condition"] == "tumor"
+
+
+def test_condition_export_result_paths_property_works(tmp_path: Path) -> None:
+    result = export_condition(
+        source_dir=FIXTURE_DIR,
+        output_dir=tmp_path / "mania_output",
+        condition="normal",
+        frame_time_ps=100.0,
+    )
+
+    assert len(result.paths) == 6
+    assert result.paths == (
+        result.rg_timeseries_path,
+        result.centrality_path,
+        result.communities_path,
+        result.nodes_path,
+        result.edges_path,
+        result.graph_path,
+    )
+    assert all(path.exists() for path in result.paths)
+
+
+def test_export_condition_failure_propagates_for_missing_source(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_condition(
+            source_dir=tmp_path / "empty_source",
+            output_dir=tmp_path / "mania_output",
+            condition="normal",
+            frame_time_ps=100.0,
+        )
+
+
+def test_export_condition_invalid_frame_time_ps_propagates(tmp_path: Path) -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_condition(
+            source_dir=FIXTURE_DIR,
+            output_dir=tmp_path / "mania_output",
+            condition="normal",
+            frame_time_ps=0,
+        )
+
+
+def test_export_condition_creates_graph_after_nodes_and_edges(
+    tmp_path: Path,
+) -> None:
+    result = export_condition(
+        source_dir=FIXTURE_DIR,
+        output_dir=tmp_path / "mania_output",
+        condition="normal",
+        frame_time_ps=100.0,
+    )
+
+    graph = read_json(result.graph_path)
+    nodes_rows = read_rows(result.nodes_path)
+    edges_rows = read_rows(result.edges_path)
+
+    assert result.nodes_path.exists()
+    assert result.edges_path.exists()
+    assert result.graph_path.exists()
+    assert graph["n_nodes"] == len(nodes_rows)
+    assert graph["n_edges"] == len(edges_rows)

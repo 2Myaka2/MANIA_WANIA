@@ -4,6 +4,7 @@ import csv
 import json
 import math
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from mania.constants import (
@@ -28,6 +29,62 @@ RESIDUE_TABLE_COLUMNS = NODE_COLUMNS[:11]
 
 class NotebookExportAdapterError(Exception):
     """Raised when notebook export adaptation fails."""
+
+
+@dataclass(frozen=True)
+class ConditionExportResult:
+    """Paths produced by exporting one condition from notebook-like artifacts."""
+
+    condition: str
+    rg_timeseries_path: Path
+    centrality_path: Path
+    communities_path: Path
+    nodes_path: Path
+    edges_path: Path
+    graph_path: Path
+
+    @property
+    def paths(self) -> tuple[Path, ...]:
+        """Return generated artifact paths in deterministic export order."""
+        return (
+            self.rg_timeseries_path,
+            self.centrality_path,
+            self.communities_path,
+            self.nodes_path,
+            self.edges_path,
+            self.graph_path,
+        )
+
+
+def export_condition(
+    source_dir: str | Path,
+    output_dir: str | Path,
+    condition: str,
+    *,
+    frame_time_ps: float,
+) -> ConditionExportResult:
+    """Export all currently supported artifacts for one condition."""
+    rg_timeseries_path = export_rg_timeseries(
+        source_dir,
+        output_dir,
+        condition,
+        frame_time_ps=frame_time_ps,
+    )
+    centrality_path = export_centrality(source_dir, output_dir, condition)
+    communities_path = export_communities(source_dir, output_dir, condition)
+    nodes_path = export_nodes(source_dir, output_dir, condition)
+    edges_path = export_edges(source_dir, output_dir, condition)
+    graph_path = export_graph(output_dir, condition)
+
+    return ConditionExportResult(
+        condition=condition,
+        rg_timeseries_path=rg_timeseries_path,
+        centrality_path=centrality_path,
+        communities_path=communities_path,
+        nodes_path=nodes_path,
+        edges_path=edges_path,
+        graph_path=graph_path,
+    )
 
 
 def export_rg_timeseries(
@@ -635,8 +692,10 @@ def _is_empty_data_row(row: dict[str, str | None]) -> bool:
 
 
 __all__ = [
+    "ConditionExportResult",
     "NotebookExportAdapterError",
     "export_centrality",
+    "export_condition",
     "export_communities",
     "export_edges",
     "export_graph",
