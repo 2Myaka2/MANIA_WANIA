@@ -8,12 +8,14 @@ from mania.adapters import (
     NotebookExportAdapterError,
     export_centrality,
     export_communities,
+    export_edges,
     export_nodes,
     export_rg_timeseries,
 )
 from mania.constants import (
     CENTRALITY_COLUMNS,
     COMMUNITIES_COLUMNS,
+    EDGE_COLUMNS,
     NODE_COLUMNS,
     RG_TIMESERIES_COLUMNS,
 )
@@ -87,6 +89,38 @@ DEFAULT_CENTRALITY_ROWS = (centrality_row(),)
 DEFAULT_COMMUNITY_ROWS = (community_row(),)
 
 
+def edge_row(
+    resid_i: str = "1",
+    resid_j: str = "2",
+    *,
+    edge_type: str = "contact",
+    condition: str = "normal",
+    contact_freq: str = "0.75",
+) -> tuple[str, ...]:
+    return (
+        resid_i,
+        resid_j,
+        edge_type,
+        condition,
+        contact_freq,
+        "4.2",
+        "0.3",
+        "2",
+        "3.0",
+        "4",
+        "0.30",
+        "0.40",
+        "2",
+        "1",
+        "0",
+        "1",
+        "0.10",
+    )
+
+
+DEFAULT_EDGE_ROWS = (edge_row(),)
+
+
 def write_residue_table(
     source_dir: Path,
     condition: str = "normal",
@@ -114,6 +148,19 @@ def write_communities_table(
     return write_csv(source_dir / f"communities_{condition}.csv", header, rows)
 
 
+def write_edges_table(
+    source_dir: Path,
+    condition: str = "normal",
+    rows: Sequence[Sequence[str]] = DEFAULT_EDGE_ROWS,
+    header: Sequence[str] = EDGE_COLUMNS,
+) -> Path:
+    return write_csv(
+        source_dir / f"protein_contact_edges_undirected_{condition}.csv",
+        header,
+        rows,
+    )
+
+
 def write_minimal_node_sources(
     source_dir: Path,
     *,
@@ -129,6 +176,15 @@ def write_minimal_node_sources(
 def assert_export_nodes_fails(source_dir: Path, tmp_path: Path) -> None:
     with pytest.raises(NotebookExportAdapterError):
         export_nodes(
+            source_dir=source_dir,
+            output_dir=tmp_path / "out",
+            condition="normal",
+        )
+
+
+def assert_export_edges_fails(source_dir: Path, tmp_path: Path) -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_edges(
             source_dir=source_dir,
             output_dir=tmp_path / "out",
             condition="normal",
@@ -859,3 +915,172 @@ def test_empty_residue_data_file_for_nodes_fails(tmp_path: Path) -> None:
     write_communities_table(source_dir)
 
     assert_export_nodes_fails(source_dir, tmp_path)
+
+
+def test_exports_normal_edges(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+
+    path = export_edges(
+        source_dir=FIXTURE_DIR,
+        output_dir=output_dir,
+        condition="normal",
+    )
+
+    assert path == output_dir / "normal" / "edges.csv"
+    assert path.is_file()
+    assert read_header(path) == list(EDGE_COLUMNS)
+
+    rows = read_rows(path)
+    assert len(rows) == 1
+    assert_conditions(rows, "normal")
+    assert [(row["resid_i"], row["resid_j"]) for row in rows] == [("1", "2")]
+    validate_csv_artifact_schema(path, "edges.csv")
+    validate_condition_column(path, "normal")
+
+
+def test_exports_tumor_edges(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+
+    path = export_edges(
+        source_dir=FIXTURE_DIR,
+        output_dir=output_dir,
+        condition="tumor",
+    )
+
+    assert path == output_dir / "tumor" / "edges.csv"
+    rows = read_rows(path)
+    assert len(rows) == 1
+    assert_conditions(rows, "tumor")
+
+
+def test_missing_edge_source_file_fails(tmp_path: Path) -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_edges(
+            source_dir=FIXTURE_DIR,
+            output_dir=tmp_path / "out",
+            condition="missing",
+        )
+
+
+def test_edge_file_missing_required_column_fails(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    header = tuple(column for column in EDGE_COLUMNS if column != "contact_freq")
+    row = tuple(value for index, value in enumerate(edge_row()) if index != 4)
+    write_edges_table(source_dir, header=header, rows=(row,))
+
+    assert_export_edges_fails(source_dir, tmp_path)
+
+
+def test_edge_condition_mismatch_fails(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    write_edges_table(source_dir, rows=(edge_row(condition="tumor"),))
+
+    assert_export_edges_fails(source_dir, tmp_path)
+
+
+def test_edge_empty_condition_fails(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    write_edges_table(source_dir, rows=(edge_row(condition=""),))
+
+    assert_export_edges_fails(source_dir, tmp_path)
+
+
+def test_edge_empty_resid_i_fails(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    write_edges_table(source_dir, rows=(edge_row(resid_i=""),))
+
+    assert_export_edges_fails(source_dir, tmp_path)
+
+
+def test_edge_empty_resid_j_fails(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    write_edges_table(source_dir, rows=(edge_row(resid_j=""),))
+
+    assert_export_edges_fails(source_dir, tmp_path)
+
+
+def test_edge_empty_edge_type_fails(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    write_edges_table(source_dir, rows=(edge_row(edge_type=""),))
+
+    assert_export_edges_fails(source_dir, tmp_path)
+
+
+def test_edge_empty_required_metric_value_fails(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    write_edges_table(source_dir, rows=(edge_row(contact_freq=""),))
+
+    assert_export_edges_fails(source_dir, tmp_path)
+
+
+def test_duplicate_undirected_edge_fails(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    write_edges_table(
+        source_dir,
+        rows=(
+            edge_row("1", "2", edge_type="contact"),
+            edge_row("2", "1", edge_type="contact"),
+        ),
+    )
+
+    assert_export_edges_fails(source_dir, tmp_path)
+
+
+def test_same_pair_with_different_edge_type_is_allowed(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    write_edges_table(
+        source_dir,
+        rows=(
+            edge_row("1", "2", edge_type="contact"),
+            edge_row("2", "1", edge_type="hydrogen_bond"),
+        ),
+    )
+
+    path = export_edges(
+        source_dir=source_dir,
+        output_dir=tmp_path / "out",
+        condition="normal",
+    )
+
+    rows = read_rows(path)
+    assert len(rows) == 2
+    assert [row["edge_type"] for row in rows] == ["contact", "hydrogen_bond"]
+
+
+def test_edge_extra_input_columns_are_dropped(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    write_edges_table(
+        source_dir,
+        header=(*EDGE_COLUMNS, "extra_debug"),
+        rows=((*edge_row(), "x"),),
+    )
+
+    path = export_edges(
+        source_dir=source_dir,
+        output_dir=tmp_path / "out",
+        condition="normal",
+    )
+
+    header = read_header(path)
+    assert header == list(EDGE_COLUMNS)
+    assert "extra_debug" not in header
+
+
+def test_empty_edge_data_file_fails(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    write_edges_table(source_dir, rows=())
+
+    assert_export_edges_fails(source_dir, tmp_path)
+
+
+def test_edge_output_directory_is_created(tmp_path: Path) -> None:
+    output_dir = tmp_path / "nested" / "mania_output"
+
+    path = export_edges(
+        source_dir=FIXTURE_DIR,
+        output_dir=output_dir,
+        condition="normal",
+    )
+
+    assert path.exists()
+    assert path.parent.is_dir()

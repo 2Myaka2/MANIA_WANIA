@@ -8,6 +8,7 @@ from pathlib import Path
 from mania.constants import (
     CENTRALITY_COLUMNS,
     COMMUNITIES_COLUMNS,
+    EDGE_COLUMNS,
     NODE_COLUMNS,
     RG_TIMESERIES_COLUMNS,
 )
@@ -139,6 +140,23 @@ def export_nodes(
     output_path = Path(output_dir) / condition / "nodes.csv"
     _write_contract_rows(output_path, NODE_COLUMNS, rows)
     _validate_output_csv(output_path, "nodes.csv", condition)
+    return output_path
+
+
+def export_edges(
+    source_dir: str | Path,
+    output_dir: str | Path,
+    condition: str,
+) -> Path:
+    """Export backend edges from notebook-like contact edge rows."""
+    input_path = Path(source_dir) / f"protein_contact_edges_undirected_{condition}.csv"
+    rows = _read_required_rows(input_path, condition, EDGE_COLUMNS)
+    _validate_unique_undirected_edges(rows, input_path)
+
+    output_rows = [{column: row[column] for column in EDGE_COLUMNS} for row in rows]
+    output_path = Path(output_dir) / condition / "edges.csv"
+    _write_contract_rows(output_path, EDGE_COLUMNS, output_rows)
+    _validate_output_csv(output_path, "edges.csv", condition)
     return output_path
 
 
@@ -312,6 +330,25 @@ def _build_node_rows(
     return rows
 
 
+def _validate_unique_undirected_edges(
+    rows: Sequence[dict[str, str]],
+    input_path: Path,
+) -> None:
+    seen: set[tuple[str, str, str, str]] = set()
+    for row in rows:
+        key = _edge_key(row)
+        if key in seen:
+            raise NotebookExportAdapterError(
+                f"Duplicate undirected edge in {input_path}: {key!r}"
+            )
+        seen.add(key)
+
+
+def _edge_key(row: dict[str, str]) -> tuple[str, str, str, str]:
+    resid_a, resid_b = sorted((row["resid_i"], row["resid_j"]))
+    return resid_a, resid_b, row["edge_type"], row["condition"]
+
+
 def _read_notebook_rg_rows(
     input_path: Path,
     condition: str,
@@ -482,6 +519,7 @@ __all__ = [
     "NotebookExportAdapterError",
     "export_centrality",
     "export_communities",
+    "export_edges",
     "export_nodes",
     "export_rg_timeseries",
 ]
