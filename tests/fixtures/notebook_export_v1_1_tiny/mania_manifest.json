@@ -1,0 +1,15 @@
+{
+  "conditions": ["normal", "tumor"],
+  "global_features": {
+    "normal": {
+      "rg_mean_A": 36.0,
+      "rg_std_A": 1.0,
+      "n_rg_frames": 2
+    },
+    "tumor": {
+      "rg_mean_A": 35.5,
+      "rg_std_A": 0.5,
+      "n_rg_frames": 2
+    }
+  }
+}

@@ -1,0 +1,2 @@
+resid_i,resid_j,edge_type,condition,contact_freq,mean_dist_A,std_dist_A,n_episodes,mean_lifetime_frames,max_lifetime_frames,mean_lifetime_ns,max_lifetime_ns,formation_count,breakage_count,first_seen_frame,last_seen_frame,window_cv
+1,2,protein_glycan,tumor,0.60,4.5,0.4,2,2.0,3,0.20,0.30,2,1,0,1,0.12
