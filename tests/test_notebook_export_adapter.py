@@ -17,6 +17,7 @@ from mania.adapters import (
     export_graph,
     export_nodes,
     export_rg_timeseries,
+    export_run_meta,
 )
 from mania.constants import (
     CENTRALITY_COLUMNS,
@@ -51,6 +52,30 @@ def read_json(path: Path) -> dict[str, object]:
         payload = json.load(json_file)
     assert isinstance(payload, dict)
     return payload
+
+
+def write_json(path: Path, payload: object) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
+
+
+def manifest_payload(
+    *,
+    rg_mean_A: object = 36.0,
+    rg_std_A: object = 1.0,
+    n_rg_frames: object = 2,
+) -> dict[str, object]:
+    return {
+        "conditions": ["normal"],
+        "global_features": {
+            "normal": {
+                "rg_mean_A": rg_mean_A,
+                "rg_std_A": rg_std_A,
+                "n_rg_frames": n_rg_frames,
+            }
+        },
+    }
 
 
 def write_csv(
@@ -1590,3 +1615,155 @@ def test_multi_condition_export_result_paths_property_works(tmp_path: Path) -> N
     assert all(path.exists() for path in result.paths)
     assert result.paths[:6] == result.condition_results["normal"].paths
     assert result.paths[6:] == result.condition_results["tumor"].paths
+
+
+def test_exports_run_meta_for_all_manifest_conditions(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+
+    path = export_run_meta(source_dir=FIXTURE_DIR, output_dir=output_dir)
+
+    assert path == output_dir / "run_meta.json"
+    assert path.is_file()
+
+    payload = read_json(path)
+    assert payload["schema_version"] == SCHEMA_VERSION
+    assert payload["conditions"] == ["normal", "tumor"]
+    assert payload["source_manifest"] == "mania_manifest.json"
+
+    global_features = payload["global_features"]
+    assert isinstance(global_features, dict)
+    assert list(global_features) == ["normal", "tumor"]
+    for condition in ("normal", "tumor"):
+        features = global_features[condition]
+        assert isinstance(features, dict)
+        assert "rg_mean_A" in features
+        assert "rg_std_A" in features
+        assert "n_rg_frames" in features
+
+
+def test_exports_run_meta_for_explicit_conditions(tmp_path: Path) -> None:
+    path = export_run_meta(
+        source_dir=FIXTURE_DIR,
+        output_dir=tmp_path / "mania_output",
+        conditions=("normal",),
+    )
+
+    payload = read_json(path)
+    assert payload["conditions"] == ["normal"]
+
+    global_features = payload["global_features"]
+    assert isinstance(global_features, dict)
+    assert set(global_features) == {"normal"}
+    assert "tumor" not in global_features
+
+
+def test_run_meta_explicit_condition_order_is_preserved(tmp_path: Path) -> None:
+    path = export_run_meta(
+        source_dir=FIXTURE_DIR,
+        output_dir=tmp_path / "mania_output",
+        conditions=("tumor", "normal"),
+    )
+
+    payload = read_json(path)
+    assert payload["conditions"] == ["tumor", "normal"]
+
+    global_features = payload["global_features"]
+    assert isinstance(global_features, dict)
+    assert list(global_features) == ["tumor", "normal"]
+
+
+def test_run_meta_condition_whitespace_is_stripped(tmp_path: Path) -> None:
+    path = export_run_meta(
+        source_dir=FIXTURE_DIR,
+        output_dir=tmp_path / "mania_output",
+        conditions=(" normal ", " tumor "),
+    )
+
+    payload = read_json(path)
+    assert payload["conditions"] == ["normal", "tumor"]
+
+
+@pytest.mark.parametrize("conditions", [("normal", ""), ("normal", "   ")])
+def test_run_meta_empty_condition_fails(
+    tmp_path: Path,
+    conditions: tuple[str, str],
+) -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_run_meta(
+            source_dir=FIXTURE_DIR,
+            output_dir=tmp_path / "mania_output",
+            conditions=conditions,
+        )
+
+
+def test_run_meta_duplicate_condition_fails(tmp_path: Path) -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_run_meta(
+            source_dir=FIXTURE_DIR,
+            output_dir=tmp_path / "mania_output",
+            conditions=("normal", " normal "),
+        )
+
+
+def test_run_meta_missing_requested_condition_fails(tmp_path: Path) -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_run_meta(
+            source_dir=FIXTURE_DIR,
+            output_dir=tmp_path / "mania_output",
+            conditions=("normal", "missing"),
+        )
+
+
+def test_run_meta_missing_source_manifest_fails(tmp_path: Path) -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_run_meta(
+            source_dir=tmp_path / "source",
+            output_dir=tmp_path / "mania_output",
+        )
+
+
+def test_run_meta_invalid_manifest_json_fails(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    (source_dir / "mania_manifest.json").write_text("{", encoding="utf-8")
+
+    with pytest.raises(NotebookExportAdapterError):
+        export_run_meta(source_dir=source_dir, output_dir=tmp_path / "mania_output")
+
+
+def test_run_meta_missing_global_features_fails(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    write_json(source_dir / "mania_manifest.json", {"conditions": ["normal"]})
+
+    with pytest.raises(NotebookExportAdapterError):
+        export_run_meta(source_dir=source_dir, output_dir=tmp_path / "mania_output")
+
+
+def test_run_meta_invalid_global_feature_value_fails(tmp_path: Path) -> None:
+    source_dir = tmp_path / "source"
+    write_json(source_dir / "mania_manifest.json", manifest_payload(rg_mean_A=-1.0))
+
+    with pytest.raises(NotebookExportAdapterError):
+        export_run_meta(source_dir=source_dir, output_dir=tmp_path / "mania_output")
+
+
+def test_run_meta_output_directory_is_created(tmp_path: Path) -> None:
+    output_dir = tmp_path / "nested" / "mania_output"
+
+    path = export_run_meta(source_dir=FIXTURE_DIR, output_dir=output_dir)
+
+    assert output_dir.is_dir()
+    assert path.is_file()
+
+
+def test_export_conditions_does_not_create_run_meta(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+
+    export_conditions(
+        source_dir=FIXTURE_DIR,
+        output_dir=output_dir,
+        conditions=("normal", "tumor"),
+        frame_time_ps=100.0,
+    )
+
+    assert not (output_dir / "run_meta.json").exists()

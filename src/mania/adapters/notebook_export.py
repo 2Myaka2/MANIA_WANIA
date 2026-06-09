@@ -22,6 +22,11 @@ from mania.validation.artifacts import (
     validate_csv_artifact_schema,
 )
 from mania.validation.graph import GraphValidationError, validate_graph_json
+from mania.validation.manifest import (
+    ManifestValidationError,
+    load_manifest_json,
+    validate_global_features,
+)
 
 NOTEBOOK_RG_COLUMNS = ("frame", "rg_A", "condition")
 RESIDUE_TABLE_COLUMNS = NODE_COLUMNS[:11]
@@ -94,6 +99,70 @@ def export_conditions(
         conditions=normalized_conditions,
         condition_results=condition_results,
     )
+
+
+def export_run_meta(
+    source_dir: str | Path,
+    output_dir: str | Path,
+    conditions: Iterable[str] | None = None,
+) -> Path:
+    """Export minimal backend run metadata from a notebook manifest."""
+    manifest_path = Path(source_dir) / "mania_manifest.json"
+    if not manifest_path.is_file():
+        raise NotebookExportAdapterError(f"Missing notebook manifest: {manifest_path}")
+
+    selected_conditions = (
+        _normalize_conditions(conditions) if conditions is not None else None
+    )
+    try:
+        validation = validate_global_features(
+            manifest_path,
+            expected_conditions=selected_conditions,
+        )
+        manifest = load_manifest_json(manifest_path)
+    except ManifestValidationError as exc:
+        raise NotebookExportAdapterError(
+            f"Invalid notebook manifest: {manifest_path}"
+        ) from exc
+
+    output_conditions = (
+        selected_conditions
+        if selected_conditions is not None
+        else validation.conditions
+    )
+    global_features = manifest.get("global_features")
+    if not isinstance(global_features, dict):
+        raise NotebookExportAdapterError(
+            f"Notebook manifest must contain global_features: {manifest_path}"
+        )
+
+    selected_features: dict[str, object] = {}
+    for condition in output_conditions:
+        if condition not in global_features:
+            raise NotebookExportAdapterError(
+                f"Missing global features for condition {condition!r}"
+            )
+        selected_features[condition] = global_features[condition]
+
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "conditions": list(output_conditions),
+        "global_features": selected_features,
+        "source_manifest": "mania_manifest.json",
+    }
+
+    output_path = Path(output_dir) / "run_meta.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        output_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        raise NotebookExportAdapterError(
+            f"Failed to write run metadata: {output_path}"
+        ) from exc
+    return output_path
 
 
 def export_condition(
@@ -763,4 +832,5 @@ __all__ = [
     "export_graph",
     "export_nodes",
     "export_rg_timeseries",
+    "export_run_meta",
 ]

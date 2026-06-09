@@ -12,6 +12,7 @@ from mania.adapters.notebook_export import (
     export_graph,
     export_nodes,
     export_rg_timeseries,
+    export_run_meta,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "export_graph",
     "export_nodes",
     "export_rg_timeseries",
+    "export_run_meta",
 ]
