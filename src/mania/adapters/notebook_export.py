@@ -3,7 +3,7 @@
 import csv
 import json
 import math
-from collections.abc import Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -54,6 +54,46 @@ class ConditionExportResult:
             self.edges_path,
             self.graph_path,
         )
+
+
+@dataclass(frozen=True)
+class MultiConditionExportResult:
+    """Results produced by exporting multiple conditions."""
+
+    conditions: tuple[str, ...]
+    condition_results: Mapping[str, ConditionExportResult]
+
+    @property
+    def paths(self) -> tuple[Path, ...]:
+        """Return generated artifact paths by condition and artifact order."""
+        paths: list[Path] = []
+        for condition in self.conditions:
+            paths.extend(self.condition_results[condition].paths)
+        return tuple(paths)
+
+
+def export_conditions(
+    source_dir: str | Path,
+    output_dir: str | Path,
+    conditions: Iterable[str],
+    *,
+    frame_time_ps: float,
+) -> MultiConditionExportResult:
+    """Export all currently supported artifacts for multiple conditions."""
+    normalized_conditions = _normalize_conditions(conditions)
+    condition_results = {
+        condition: export_condition(
+            source_dir=source_dir,
+            output_dir=output_dir,
+            condition=condition,
+            frame_time_ps=frame_time_ps,
+        )
+        for condition in normalized_conditions
+    }
+    return MultiConditionExportResult(
+        conditions=normalized_conditions,
+        condition_results=condition_results,
+    )
 
 
 def export_condition(
@@ -278,6 +318,26 @@ def _export_contract_csv_table(
     _write_contract_rows(output_path, output_columns, rows)
     _validate_output_csv(output_path, output_name, condition)
     return output_path
+
+
+def _normalize_conditions(conditions: Iterable[str]) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for raw_condition in conditions:
+        if not isinstance(raw_condition, str):
+            raise NotebookExportAdapterError(
+                f"Condition names must be strings: {raw_condition!r}"
+            )
+        condition = raw_condition.strip()
+        if condition == "":
+            raise NotebookExportAdapterError("Condition name must not be empty")
+        if condition in seen:
+            raise NotebookExportAdapterError(
+                f"Duplicate condition name after normalization: {condition!r}"
+            )
+        seen.add(condition)
+        normalized.append(condition)
+    return tuple(normalized)
 
 
 def _read_contract_like_rows(
@@ -693,9 +753,11 @@ def _is_empty_data_row(row: dict[str, str | None]) -> bool:
 
 __all__ = [
     "ConditionExportResult",
+    "MultiConditionExportResult",
     "NotebookExportAdapterError",
     "export_centrality",
     "export_condition",
+    "export_conditions",
     "export_communities",
     "export_edges",
     "export_graph",

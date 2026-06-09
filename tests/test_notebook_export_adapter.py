@@ -7,10 +7,12 @@ import pytest
 
 from mania.adapters import (
     ConditionExportResult,
+    MultiConditionExportResult,
     NotebookExportAdapterError,
     export_centrality,
     export_communities,
     export_condition,
+    export_conditions,
     export_edges,
     export_graph,
     export_nodes,
@@ -1440,3 +1442,151 @@ def test_export_condition_creates_graph_after_nodes_and_edges(
     assert result.graph_path.exists()
     assert graph["n_nodes"] == len(nodes_rows)
     assert graph["n_edges"] == len(edges_rows)
+
+
+def test_export_conditions_exports_normal_and_tumor(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+
+    result = export_conditions(
+        source_dir=FIXTURE_DIR,
+        output_dir=output_dir,
+        conditions=("normal", "tumor"),
+        frame_time_ps=100.0,
+    )
+
+    assert isinstance(result, MultiConditionExportResult)
+    assert result.conditions == ("normal", "tumor")
+    assert set(result.condition_results) == {"normal", "tumor"}
+    assert result.condition_results["normal"].condition == "normal"
+    assert result.condition_results["tumor"].condition == "tumor"
+    assert all(path.exists() for path in result.paths)
+    assert (output_dir / "normal").is_dir()
+    assert (output_dir / "tumor").is_dir()
+
+    for condition in result.conditions:
+        condition_dir = output_dir / condition
+        assert (condition_dir / "rg_timeseries.csv").is_file()
+        assert (condition_dir / "centrality.csv").is_file()
+        assert (condition_dir / "communities.csv").is_file()
+        assert (condition_dir / "nodes.csv").is_file()
+        assert (condition_dir / "edges.csv").is_file()
+        assert (condition_dir / "graph.json").is_file()
+
+
+def test_export_conditions_outputs_pass_validators(tmp_path: Path) -> None:
+    result = export_conditions(
+        source_dir=FIXTURE_DIR,
+        output_dir=tmp_path / "mania_output",
+        conditions=("normal", "tumor"),
+        frame_time_ps=100.0,
+    )
+
+    for condition in result.conditions:
+        validate_condition_export_result(
+            result.condition_results[condition],
+            condition,
+        )
+
+
+def test_export_conditions_preserves_condition_order(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+
+    result = export_conditions(
+        source_dir=FIXTURE_DIR,
+        output_dir=output_dir,
+        conditions=("tumor", "normal"),
+        frame_time_ps=100.0,
+    )
+
+    assert result.conditions == ("tumor", "normal")
+    assert result.paths[:6] == result.condition_results["tumor"].paths
+    assert result.paths[6:] == result.condition_results["normal"].paths
+    assert result.paths[0] == output_dir / "tumor" / "rg_timeseries.csv"
+    assert result.paths[6] == output_dir / "normal" / "rg_timeseries.csv"
+
+
+def test_export_conditions_strips_condition_whitespace(tmp_path: Path) -> None:
+    output_dir = tmp_path / "mania_output"
+
+    result = export_conditions(
+        source_dir=FIXTURE_DIR,
+        output_dir=output_dir,
+        conditions=(" normal ", " tumor "),
+        frame_time_ps=100.0,
+    )
+
+    assert result.conditions == ("normal", "tumor")
+    assert (output_dir / "normal").is_dir()
+    assert (output_dir / "tumor").is_dir()
+    assert not (output_dir / " normal ").exists()
+    assert not (output_dir / " tumor ").exists()
+
+
+@pytest.mark.parametrize("conditions", [("normal", ""), ("normal", "   ")])
+def test_export_conditions_empty_condition_fails(
+    tmp_path: Path,
+    conditions: tuple[str, str],
+) -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_conditions(
+            source_dir=FIXTURE_DIR,
+            output_dir=tmp_path / "mania_output",
+            conditions=conditions,
+            frame_time_ps=100.0,
+        )
+
+
+def test_export_conditions_duplicate_condition_fails(tmp_path: Path) -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_conditions(
+            source_dir=FIXTURE_DIR,
+            output_dir=tmp_path / "mania_output",
+            conditions=("normal", "normal"),
+            frame_time_ps=100.0,
+        )
+
+
+def test_export_conditions_duplicate_after_stripping_fails(tmp_path: Path) -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_conditions(
+            source_dir=FIXTURE_DIR,
+            output_dir=tmp_path / "mania_output",
+            conditions=("normal", " normal "),
+            frame_time_ps=100.0,
+        )
+
+
+def test_export_conditions_missing_source_for_one_condition_fails(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_conditions(
+            source_dir=FIXTURE_DIR,
+            output_dir=tmp_path / "mania_output",
+            conditions=("normal", "missing"),
+            frame_time_ps=100.0,
+        )
+
+
+def test_export_conditions_invalid_frame_time_ps_propagates(tmp_path: Path) -> None:
+    with pytest.raises(NotebookExportAdapterError):
+        export_conditions(
+            source_dir=FIXTURE_DIR,
+            output_dir=tmp_path / "mania_output",
+            conditions=("normal", "tumor"),
+            frame_time_ps=0,
+        )
+
+
+def test_multi_condition_export_result_paths_property_works(tmp_path: Path) -> None:
+    result = export_conditions(
+        source_dir=FIXTURE_DIR,
+        output_dir=tmp_path / "mania_output",
+        conditions=("normal", "tumor"),
+        frame_time_ps=100.0,
+    )
+
+    assert len(result.paths) == 12
+    assert all(path.exists() for path in result.paths)
+    assert result.paths[:6] == result.condition_results["normal"].paths
+    assert result.paths[6:] == result.condition_results["tumor"].paths
