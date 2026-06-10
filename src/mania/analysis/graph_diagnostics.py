@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 
 from mania.analysis.contract_graph import (
     ContractGraph,
@@ -75,6 +77,53 @@ class ConditionGraphDiagnostics:
         }
 
 
+@dataclass(frozen=True)
+class MultiConditionGraphDiagnostics:
+    """Multi-condition graph diagnostics result."""
+
+    conditions: tuple[str, ...]
+    condition_diagnostics: Mapping[str, ConditionGraphDiagnostics]
+
+    @property
+    def passed(self) -> bool:
+        """Return whether all condition diagnostics passed."""
+        return all(
+            self.condition_diagnostics[condition].passed
+            for condition in self.conditions
+        )
+
+    @property
+    def passed_conditions(self) -> tuple[str, ...]:
+        """Return condition names with passing diagnostics in input order."""
+        return tuple(
+            condition
+            for condition in self.conditions
+            if self.condition_diagnostics[condition].passed
+        )
+
+    @property
+    def failed_conditions(self) -> tuple[str, ...]:
+        """Return condition names with failing diagnostics in input order."""
+        return tuple(
+            condition
+            for condition in self.conditions
+            if not self.condition_diagnostics[condition].passed
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable diagnostics dictionary."""
+        return {
+            "conditions": list(self.conditions),
+            "passed": self.passed,
+            "passed_conditions": list(self.passed_conditions),
+            "failed_conditions": list(self.failed_conditions),
+            "condition_diagnostics": {
+                condition: self.condition_diagnostics[condition].to_dict()
+                for condition in self.conditions
+            },
+        }
+
+
 def run_condition_graph_diagnostics(
     condition_dir: str | Path,
     *,
@@ -108,6 +157,36 @@ def run_condition_graph_diagnostics(
     )
 
 
+def run_multi_condition_graph_diagnostics(
+    output_root: str | Path,
+    conditions: Iterable[str],
+    *,
+    abs_tol: float = 1e-6,
+    weight_column: str = "contact_freq",
+    degree_column: str = "degree",
+    strength_column: str = "strength",
+) -> MultiConditionGraphDiagnostics:
+    """Run graph diagnostics for multiple condition artifact directories."""
+    root = _validate_output_root(output_root)
+    normalized_conditions = _normalize_conditions(conditions)
+    condition_diagnostics: dict[str, ConditionGraphDiagnostics] = {}
+
+    for condition in normalized_conditions:
+        condition_diagnostics[condition] = run_condition_graph_diagnostics(
+            root / condition,
+            condition=condition,
+            abs_tol=abs_tol,
+            weight_column=weight_column,
+            degree_column=degree_column,
+            strength_column=strength_column,
+        )
+
+    return MultiConditionGraphDiagnostics(
+        conditions=normalized_conditions,
+        condition_diagnostics=MappingProxyType(condition_diagnostics),
+    )
+
+
 def write_condition_graph_diagnostics(
     diagnostics: ConditionGraphDiagnostics,
     output_dir: str | Path,
@@ -116,6 +195,21 @@ def write_condition_graph_diagnostics(
     output_root = Path(output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
     output_path = output_root / "graph_diagnostics.json"
+    output_path.write_text(
+        json.dumps(diagnostics.to_dict(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return output_path
+
+
+def write_multi_condition_graph_diagnostics(
+    diagnostics: MultiConditionGraphDiagnostics,
+    output_dir: str | Path,
+) -> Path:
+    """Write combined multi-condition graph diagnostics JSON."""
+    output_root = Path(output_dir)
+    output_root.mkdir(parents=True, exist_ok=True)
+    output_path = output_root / "multi_condition_graph_diagnostics.json"
     output_path.write_text(
         json.dumps(diagnostics.to_dict(), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -144,11 +238,55 @@ def write_condition_graph_diagnostics_bundle(
     )
 
 
+def write_multi_condition_graph_diagnostics_bundle(
+    diagnostics: MultiConditionGraphDiagnostics,
+    output_dir: str | Path,
+) -> tuple[Path, ...]:
+    """Write multi-condition and per-condition graph diagnostics reports."""
+    output_root = Path(output_dir)
+    output_root.mkdir(parents=True, exist_ok=True)
+    paths: list[Path] = [
+        write_multi_condition_graph_diagnostics(diagnostics, output_root)
+    ]
+    for condition in diagnostics.conditions:
+        paths.extend(
+            write_condition_graph_diagnostics_bundle(
+                diagnostics.condition_diagnostics[condition],
+                output_root / condition,
+            )
+        )
+    return tuple(paths)
+
+
 def _normalize_condition(condition: str) -> str:
     normalized = condition.strip()
     if normalized == "":
         raise GraphDiagnosticsError("Condition must be non-empty")
     return normalized
+
+
+def _normalize_conditions(conditions: Iterable[str]) -> tuple[str, ...]:
+    if isinstance(conditions, str):
+        raise GraphDiagnosticsError("Conditions must be an iterable of names")
+
+    normalized_conditions: list[str] = []
+    seen_conditions: set[str] = set()
+    for condition in conditions:
+        normalized = _normalize_condition(condition)
+        if normalized in seen_conditions:
+            raise GraphDiagnosticsError(f"Duplicate condition: {normalized!r}")
+        normalized_conditions.append(normalized)
+        seen_conditions.add(normalized)
+    return tuple(normalized_conditions)
+
+
+def _validate_output_root(output_root: str | Path) -> Path:
+    root = Path(output_root)
+    if not root.exists():
+        raise GraphDiagnosticsError(f"Missing output root: {root}")
+    if not root.is_dir():
+        raise GraphDiagnosticsError(f"Output root is not a directory: {root}")
+    return root
 
 
 def _validate_condition_dir(condition_dir: str | Path) -> Path:
@@ -216,7 +354,11 @@ def _check_topology_consistency(
 __all__ = [
     "ConditionGraphDiagnostics",
     "GraphDiagnosticsError",
+    "MultiConditionGraphDiagnostics",
     "run_condition_graph_diagnostics",
+    "run_multi_condition_graph_diagnostics",
     "write_condition_graph_diagnostics",
     "write_condition_graph_diagnostics_bundle",
+    "write_multi_condition_graph_diagnostics",
+    "write_multi_condition_graph_diagnostics_bundle",
 ]
