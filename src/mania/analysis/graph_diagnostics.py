@@ -187,6 +187,32 @@ def run_multi_condition_graph_diagnostics(
     )
 
 
+def run_output_graph_diagnostics(
+    output_root: str | Path,
+    *,
+    conditions: Iterable[str] | None = None,
+    abs_tol: float = 1e-6,
+    weight_column: str = "contact_freq",
+    degree_column: str = "degree",
+    strength_column: str = "strength",
+) -> MultiConditionGraphDiagnostics:
+    """Run graph diagnostics, reading conditions from run_meta.json by default."""
+    root = Path(output_root)
+    selected_conditions = (
+        _read_conditions_from_run_meta(_validate_output_root(root))
+        if conditions is None
+        else conditions
+    )
+    return run_multi_condition_graph_diagnostics(
+        root,
+        selected_conditions,
+        abs_tol=abs_tol,
+        weight_column=weight_column,
+        degree_column=degree_column,
+        strength_column=strength_column,
+    )
+
+
 def write_condition_graph_diagnostics(
     diagnostics: ConditionGraphDiagnostics,
     output_dir: str | Path,
@@ -272,6 +298,10 @@ def _normalize_conditions(conditions: Iterable[str]) -> tuple[str, ...]:
     normalized_conditions: list[str] = []
     seen_conditions: set[str] = set()
     for condition in conditions:
+        if not isinstance(condition, str):
+            raise GraphDiagnosticsError(
+                f"Condition names must be strings: {condition!r}"
+            )
         normalized = _normalize_condition(condition)
         if normalized in seen_conditions:
             raise GraphDiagnosticsError(f"Duplicate condition: {normalized!r}")
@@ -287,6 +317,28 @@ def _validate_output_root(output_root: str | Path) -> Path:
     if not root.is_dir():
         raise GraphDiagnosticsError(f"Output root is not a directory: {root}")
     return root
+
+
+def _read_conditions_from_run_meta(output_root: Path) -> tuple[str, ...]:
+    run_meta_path = output_root / "run_meta.json"
+    if not run_meta_path.is_file():
+        raise GraphDiagnosticsError(f"Missing run metadata: {run_meta_path}")
+    try:
+        payload = json.loads(run_meta_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise GraphDiagnosticsError(
+            f"Invalid run metadata JSON: {run_meta_path}"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise GraphDiagnosticsError(f"Run metadata must be an object: {run_meta_path}")
+    if "conditions" not in payload:
+        raise GraphDiagnosticsError(
+            f"Run metadata is missing conditions: {run_meta_path}"
+        )
+    conditions = payload["conditions"]
+    if not isinstance(conditions, list):
+        raise GraphDiagnosticsError("Run metadata conditions must be a list")
+    return _normalize_conditions(conditions)
 
 
 def _validate_condition_dir(condition_dir: str | Path) -> Path:
@@ -357,6 +409,7 @@ __all__ = [
     "MultiConditionGraphDiagnostics",
     "run_condition_graph_diagnostics",
     "run_multi_condition_graph_diagnostics",
+    "run_output_graph_diagnostics",
     "write_condition_graph_diagnostics",
     "write_condition_graph_diagnostics_bundle",
     "write_multi_condition_graph_diagnostics",
