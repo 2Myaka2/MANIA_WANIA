@@ -10,11 +10,13 @@ from mania.comparison.contract_subset import (
 )
 from mania.comparison.reference import (
     COMPARISON_MODE_CSV_EXACT,
+    COMPARISON_MODE_CSV_NUMERIC_TOLERANCE,
     COMPARISON_MODE_FILE_EXISTS,
     COMPARISON_MODE_JSON_EXACT,
     COMPARISON_STATUS_FAIL,
     COMPARISON_STATUS_PASS,
     ArtifactComparisonSpec,
+    CSVNumericToleranceComparisonConfig,
     ReferenceComparisonError,
     ReferenceComparisonReport,
     ReferenceComparisonResult,
@@ -31,10 +33,12 @@ from mania.comparison.reference import (
 __all__ = [
     "ArtifactComparisonSpec",
     "COMPARISON_MODE_CSV_EXACT",
+    "COMPARISON_MODE_CSV_NUMERIC_TOLERANCE",
     "COMPARISON_MODE_FILE_EXISTS",
     "COMPARISON_MODE_JSON_EXACT",
     "COMPARISON_STATUS_FAIL",
     "COMPARISON_STATUS_PASS",
+    "CSVNumericToleranceComparisonConfig",
     "CONTRACT_SUBSET_PER_CONDITION_CSV_ARTIFACTS",
     "CONTRACT_SUBSET_PER_CONDITION_JSON_ARTIFACTS",
     "CONTRACT_SUBSET_ROOT_ARTIFACTS",

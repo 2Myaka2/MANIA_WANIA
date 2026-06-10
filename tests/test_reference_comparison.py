@@ -5,16 +5,16 @@ from pathlib import Path
 
 import pytest
 
-from mania.comparison import (
-    compare_csv_numeric_tolerance as exported_compare_csv_numeric_tolerance,
-)
+import mania.comparison as comparison_exports
 from mania.comparison.reference import (
     COMPARISON_MODE_CSV_EXACT,
+    COMPARISON_MODE_CSV_NUMERIC_TOLERANCE,
     COMPARISON_MODE_FILE_EXISTS,
     COMPARISON_MODE_JSON_EXACT,
     COMPARISON_STATUS_FAIL,
     COMPARISON_STATUS_PASS,
     ArtifactComparisonSpec,
+    CSVNumericToleranceComparisonConfig,
     ReferenceComparisonError,
     ReferenceComparisonReport,
     ReferenceComparisonResult,
@@ -75,6 +75,18 @@ def failing_result(artifact: str = "artifact.csv") -> ReferenceComparisonResult:
                 message="missing file",
             ),
         ),
+    )
+
+
+def numeric_tolerance_config(
+    abs_tol: float = 0.01,
+    text_columns: tuple[str, ...] = (),
+) -> CSVNumericToleranceComparisonConfig:
+    return CSVNumericToleranceComparisonConfig(
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        abs_tol=abs_tol,
+        text_columns=text_columns,
     )
 
 
@@ -162,7 +174,18 @@ def test_compare_csv_exact_detects_row_content_difference(tmp_path: Path) -> Non
 
 
 def test_compare_csv_numeric_tolerance_is_re_exported() -> None:
-    assert exported_compare_csv_numeric_tolerance is compare_csv_numeric_tolerance
+    assert (
+        comparison_exports.compare_csv_numeric_tolerance
+        is compare_csv_numeric_tolerance
+    )
+    assert (
+        comparison_exports.COMPARISON_MODE_CSV_NUMERIC_TOLERANCE
+        == COMPARISON_MODE_CSV_NUMERIC_TOLERANCE
+    )
+    assert (
+        comparison_exports.CSVNumericToleranceComparisonConfig
+        is CSVNumericToleranceComparisonConfig
+    )
 
 
 def test_compare_csv_numeric_tolerance_passes_within_tolerance(
@@ -779,6 +802,202 @@ def test_compare_artifact_sets_file_exists_mode_checks_actual_root_only(
     assert fail_report.failed_results()[0].differences[0].check == "file_exists"
 
 
+def test_compare_artifact_sets_numeric_tolerance_mode_passes(
+    tmp_path: Path,
+) -> None:
+    expected_root = tmp_path / "expected"
+    actual_root = tmp_path / "actual"
+    write_csv(
+        expected_root / "metrics.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+    write_csv(
+        actual_root / "metrics.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.001"),),
+    )
+
+    report = compare_artifact_sets(
+        expected_root,
+        actual_root,
+        (
+            ArtifactComparisonSpec(
+                "metrics.csv",
+                COMPARISON_MODE_CSV_NUMERIC_TOLERANCE,
+                numeric_tolerance=numeric_tolerance_config(),
+            ),
+        ),
+    )
+
+    assert report.passed is True
+
+
+def test_compare_artifact_sets_numeric_tolerance_mode_fails_outside_tolerance(
+    tmp_path: Path,
+) -> None:
+    expected_root = tmp_path / "expected"
+    actual_root = tmp_path / "actual"
+    write_csv(
+        expected_root / "metrics.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+    write_csv(
+        actual_root / "metrics.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.1"),),
+    )
+
+    report = compare_artifact_sets(
+        expected_root,
+        actual_root,
+        (
+            ArtifactComparisonSpec(
+                "metrics.csv",
+                COMPARISON_MODE_CSV_NUMERIC_TOLERANCE,
+                numeric_tolerance=numeric_tolerance_config(),
+            ),
+        ),
+    )
+
+    assert report.passed is False
+    assert any(
+        difference.check == "csv_numeric_tolerance"
+        for difference in report.failed_results()[0].differences
+    )
+
+
+def test_compare_artifact_sets_numeric_tolerance_mode_text_columns_pass(
+    tmp_path: Path,
+) -> None:
+    expected_root = tmp_path / "expected"
+    actual_root = tmp_path / "actual"
+    write_csv(
+        expected_root / "metrics.csv",
+        ("condition", "resid", "region", "value"),
+        (("normal", "1", "TM1", "1.000"),),
+    )
+    write_csv(
+        actual_root / "metrics.csv",
+        ("condition", "resid", "region", "value"),
+        (("normal", "1", "TM1", "1.001"),),
+    )
+
+    report = compare_artifact_sets(
+        expected_root,
+        actual_root,
+        (
+            ArtifactComparisonSpec(
+                "metrics.csv",
+                COMPARISON_MODE_CSV_NUMERIC_TOLERANCE,
+                numeric_tolerance=numeric_tolerance_config(
+                    text_columns=("region",)
+                ),
+            ),
+        ),
+    )
+
+    assert report.passed is True
+
+
+def test_compare_artifact_sets_numeric_tolerance_mode_text_columns_fail(
+    tmp_path: Path,
+) -> None:
+    expected_root = tmp_path / "expected"
+    actual_root = tmp_path / "actual"
+    write_csv(
+        expected_root / "metrics.csv",
+        ("condition", "resid", "region", "value"),
+        (("normal", "1", "TM1", "1.000"),),
+    )
+    write_csv(
+        actual_root / "metrics.csv",
+        ("condition", "resid", "region", "value"),
+        (("normal", "1", "TM2", "1.000"),),
+    )
+
+    report = compare_artifact_sets(
+        expected_root,
+        actual_root,
+        (
+            ArtifactComparisonSpec(
+                "metrics.csv",
+                COMPARISON_MODE_CSV_NUMERIC_TOLERANCE,
+                numeric_tolerance=numeric_tolerance_config(
+                    text_columns=("region",)
+                ),
+            ),
+        ),
+    )
+
+    assert report.passed is False
+    assert any(
+        difference.check == "csv_text_exact"
+        for difference in report.failed_results()[0].differences
+    )
+
+
+def test_compare_artifact_sets_numeric_tolerance_missing_actual_file_fails(
+    tmp_path: Path,
+) -> None:
+    expected_root = tmp_path / "expected"
+    actual_root = tmp_path / "actual"
+    write_csv(
+        expected_root / "metrics.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+
+    report = compare_artifact_sets(
+        expected_root,
+        actual_root,
+        (
+            ArtifactComparisonSpec(
+                "metrics.csv",
+                COMPARISON_MODE_CSV_NUMERIC_TOLERANCE,
+                numeric_tolerance=numeric_tolerance_config(),
+            ),
+        ),
+    )
+
+    assert report.passed is False
+    assert any(
+        difference.check == "actual_file_exists"
+        for difference in report.failed_results()[0].differences
+    )
+
+
+def test_compare_artifact_sets_numeric_tolerance_missing_expected_file_fails(
+    tmp_path: Path,
+) -> None:
+    expected_root = tmp_path / "expected"
+    actual_root = tmp_path / "actual"
+    write_csv(
+        actual_root / "metrics.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+
+    report = compare_artifact_sets(
+        expected_root,
+        actual_root,
+        (
+            ArtifactComparisonSpec(
+                "metrics.csv",
+                COMPARISON_MODE_CSV_NUMERIC_TOLERANCE,
+                numeric_tolerance=numeric_tolerance_config(),
+            ),
+        ),
+    )
+
+    assert report.passed is False
+    assert any(
+        difference.check == "expected_file_exists"
+        for difference in report.failed_results()[0].differences
+    )
+
+
 def test_compare_artifact_sets_unknown_mode_raises(tmp_path: Path) -> None:
     with pytest.raises(ReferenceComparisonError):
         compare_artifact_sets(
@@ -786,6 +1005,161 @@ def test_compare_artifact_sets_unknown_mode_raises(tmp_path: Path) -> None:
             tmp_path / "actual",
             (ArtifactComparisonSpec("a.csv", "unknown"),),
         )
+
+
+def test_compare_artifact_sets_numeric_tolerance_mode_without_config_raises(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ReferenceComparisonError):
+        compare_artifact_sets(
+            tmp_path / "expected",
+            tmp_path / "actual",
+            (
+                ArtifactComparisonSpec(
+                    "metrics.csv",
+                    COMPARISON_MODE_CSV_NUMERIC_TOLERANCE,
+                ),
+            ),
+        )
+
+
+@pytest.mark.parametrize(
+    "mode",
+    (
+        COMPARISON_MODE_CSV_EXACT,
+        COMPARISON_MODE_JSON_EXACT,
+        COMPARISON_MODE_FILE_EXISTS,
+    ),
+)
+def test_compare_artifact_sets_numeric_tolerance_config_on_other_modes_raises(
+    tmp_path: Path,
+    mode: str,
+) -> None:
+    with pytest.raises(ReferenceComparisonError):
+        compare_artifact_sets(
+            tmp_path / "expected",
+            tmp_path / "actual",
+            (
+                ArtifactComparisonSpec(
+                    "metrics.csv",
+                    mode,
+                    numeric_tolerance=numeric_tolerance_config(),
+                ),
+            ),
+        )
+
+
+def test_compare_artifact_sets_numeric_tolerance_invalid_config_raises(
+    tmp_path: Path,
+) -> None:
+    expected_root = tmp_path / "expected"
+    actual_root = tmp_path / "actual"
+    write_csv(
+        expected_root / "metrics.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+    write_csv(
+        actual_root / "metrics.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+
+    with pytest.raises(ReferenceComparisonError):
+        compare_artifact_sets(
+            expected_root,
+            actual_root,
+            (
+                ArtifactComparisonSpec(
+                    "metrics.csv",
+                    COMPARISON_MODE_CSV_NUMERIC_TOLERANCE,
+                    numeric_tolerance=CSVNumericToleranceComparisonConfig(
+                        key_columns=(),
+                        numeric_columns=("value",),
+                        abs_tol=0.01,
+                    ),
+                ),
+            ),
+        )
+
+    with pytest.raises(ReferenceComparisonError):
+        compare_artifact_sets(
+            expected_root,
+            actual_root,
+            (
+                ArtifactComparisonSpec(
+                    "metrics.csv",
+                    COMPARISON_MODE_CSV_NUMERIC_TOLERANCE,
+                    numeric_tolerance=numeric_tolerance_config(abs_tol=-0.01),
+                ),
+            ),
+        )
+
+
+def test_compare_artifact_sets_mixed_exact_and_numeric_specs_preserve_order(
+    tmp_path: Path,
+) -> None:
+    expected_root = tmp_path / "expected"
+    actual_root = tmp_path / "actual"
+    write_json(expected_root / "meta.json", {"schema": "0.1"})
+    write_json(actual_root / "meta.json", {"schema": "0.1"})
+    write_csv(
+        expected_root / "metrics.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+    write_csv(
+        actual_root / "metrics.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.001"),),
+    )
+    write_csv(expected_root / "exact.csv", ("id", "label"), (("1", "a"),))
+    write_csv(actual_root / "exact.csv", ("id", "label"), (("1", "a"),))
+
+    report = compare_artifact_sets(
+        expected_root,
+        actual_root,
+        (
+            ArtifactComparisonSpec("meta.json", COMPARISON_MODE_JSON_EXACT),
+            ArtifactComparisonSpec(
+                "metrics.csv",
+                COMPARISON_MODE_CSV_NUMERIC_TOLERANCE,
+                numeric_tolerance=numeric_tolerance_config(),
+            ),
+            ArtifactComparisonSpec("exact.csv", COMPARISON_MODE_CSV_EXACT),
+        ),
+    )
+
+    assert report.passed is True
+    assert tuple(result.artifact for result in report.results) == (
+        "meta.json",
+        "metrics.csv",
+        "exact.csv",
+    )
+
+
+def test_artifact_comparison_spec_backward_compatible_construction(
+    tmp_path: Path,
+) -> None:
+    expected_root = tmp_path / "expected"
+    actual_root = tmp_path / "actual"
+    write_csv(expected_root / "a.csv", ("id",), (("1",),))
+    write_csv(actual_root / "a.csv", ("id",), (("1",),))
+
+    default_spec = ArtifactComparisonSpec("a.csv", COMPARISON_MODE_CSV_EXACT)
+    custom_artifact_spec = ArtifactComparisonSpec(
+        "a.csv",
+        COMPARISON_MODE_CSV_EXACT,
+        artifact="custom",
+    )
+    report = compare_artifact_sets(
+        expected_root,
+        actual_root,
+        (default_spec, custom_artifact_spec),
+    )
+
+    assert report.passed is True
+    assert tuple(result.artifact for result in report.results) == ("a.csv", "custom")
 
 
 def test_compare_artifact_sets_empty_relative_path_raises(tmp_path: Path) -> None:

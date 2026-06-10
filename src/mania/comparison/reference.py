@@ -15,6 +15,7 @@ COMPARISON_STATUS_FAIL = "fail"
 
 COMPARISON_MODE_FILE_EXISTS = "file_exists"
 COMPARISON_MODE_CSV_EXACT = "csv_exact"
+COMPARISON_MODE_CSV_NUMERIC_TOLERANCE = "csv_numeric_tolerance"
 COMPARISON_MODE_JSON_EXACT = "json_exact"
 
 _MAX_CSV_ROW_DIFFERENCES = 10
@@ -91,12 +92,23 @@ class ReferenceComparisonReport:
 
 
 @dataclass(frozen=True)
+class CSVNumericToleranceComparisonConfig:
+    """Configuration for numeric-tolerance CSV artifact comparison."""
+
+    key_columns: tuple[str, ...]
+    numeric_columns: tuple[str, ...]
+    abs_tol: float
+    text_columns: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class ArtifactComparisonSpec:
     """Specification for comparing one artifact relative to two roots."""
 
     relative_path: str
     mode: str
     artifact: str | None = None
+    numeric_tolerance: CSVNumericToleranceComparisonConfig | None = None
 
 
 def compare_file_exists(
@@ -363,6 +375,17 @@ def compare_artifact_sets(
         )
         expected_path = expected_root_path / relative_path
         actual_path = actual_root_path / relative_path
+        numeric_tolerance = spec.numeric_tolerance
+
+        if spec.mode == COMPARISON_MODE_CSV_NUMERIC_TOLERANCE:
+            if numeric_tolerance is None:
+                raise ReferenceComparisonError(
+                    "Numeric-tolerance CSV comparison requires numeric_tolerance"
+                )
+        elif numeric_tolerance is not None:
+            raise ReferenceComparisonError(
+                "numeric_tolerance is only valid for csv_numeric_tolerance mode"
+            )
 
         if spec.mode == COMPARISON_MODE_FILE_EXISTS:
             results.append(compare_file_exists(actual_path, artifact=artifact_name))
@@ -397,6 +420,34 @@ def compare_artifact_sets(
                 continue
             results.append(
                 compare_json_exact(expected_path, actual_path, artifact=artifact_name)
+            )
+            continue
+
+        if spec.mode == COMPARISON_MODE_CSV_NUMERIC_TOLERANCE:
+            missing_differences = _expected_actual_file_differences(
+                artifact_name,
+                expected_path,
+                actual_path,
+            )
+            if missing_differences:
+                results.append(
+                    _result_from_differences(artifact_name, missing_differences)
+                )
+                continue
+            if numeric_tolerance is None:
+                raise ReferenceComparisonError(
+                    "Numeric-tolerance CSV comparison requires numeric_tolerance"
+                )
+            results.append(
+                compare_csv_numeric_tolerance(
+                    expected_path,
+                    actual_path,
+                    key_columns=numeric_tolerance.key_columns,
+                    numeric_columns=numeric_tolerance.numeric_columns,
+                    abs_tol=numeric_tolerance.abs_tol,
+                    text_columns=numeric_tolerance.text_columns,
+                    artifact=artifact_name,
+                )
             )
             continue
 
@@ -885,10 +936,12 @@ def _json_string(value: object) -> str:
 __all__ = [
     "ArtifactComparisonSpec",
     "COMPARISON_MODE_CSV_EXACT",
+    "COMPARISON_MODE_CSV_NUMERIC_TOLERANCE",
     "COMPARISON_MODE_FILE_EXISTS",
     "COMPARISON_MODE_JSON_EXACT",
     "COMPARISON_STATUS_FAIL",
     "COMPARISON_STATUS_PASS",
+    "CSVNumericToleranceComparisonConfig",
     "ReferenceComparisonError",
     "ReferenceComparisonReport",
     "ReferenceComparisonResult",
