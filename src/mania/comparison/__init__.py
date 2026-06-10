@@ -1,5 +1,13 @@
 """Reference artifact comparison helpers."""
 
+from mania.comparison.contract_subset import (
+    CONTRACT_SUBSET_PER_CONDITION_CSV_ARTIFACTS,
+    CONTRACT_SUBSET_PER_CONDITION_JSON_ARTIFACTS,
+    CONTRACT_SUBSET_ROOT_ARTIFACTS,
+    ContractSubsetComparisonError,
+    build_contract_subset_comparison_specs,
+    compare_contract_subset,
+)
 from mania.comparison.reference import (
     COMPARISON_MODE_CSV_EXACT,
     COMPARISON_MODE_FILE_EXISTS,
@@ -26,12 +34,18 @@ __all__ = [
     "COMPARISON_MODE_JSON_EXACT",
     "COMPARISON_STATUS_FAIL",
     "COMPARISON_STATUS_PASS",
+    "CONTRACT_SUBSET_PER_CONDITION_CSV_ARTIFACTS",
+    "CONTRACT_SUBSET_PER_CONDITION_JSON_ARTIFACTS",
+    "CONTRACT_SUBSET_ROOT_ARTIFACTS",
+    "ContractSubsetComparisonError",
     "ReferenceComparisonError",
     "ReferenceComparisonReport",
     "ReferenceComparisonResult",
     "ReferenceDifference",
     "build_comparison_report",
+    "build_contract_subset_comparison_specs",
     "compare_artifact_sets",
+    "compare_contract_subset",
     "compare_csv_exact",
     "compare_file_exists",
     "compare_json_exact",
