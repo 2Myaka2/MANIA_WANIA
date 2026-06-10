@@ -3,10 +3,11 @@ from pathlib import Path
 
 from mania.adapters import export_notebook_contract_subset
 from mania.comparison import (
+    COMPARISON_MODE_CSV_EXACT,
+    COMPARISON_MODE_JSON_EXACT,
+    ArtifactComparisonSpec,
     ReferenceComparisonReport,
-    build_comparison_report,
-    compare_csv_exact,
-    compare_json_exact,
+    compare_artifact_sets,
     write_comparison_report,
 )
 from mania.validation.artifacts import (
@@ -36,6 +37,17 @@ SUPPORTED_RELATIVE_PATHS = (
         for artifact in (*CONDITION_CSV_ARTIFACTS, *CONDITION_JSON_ARTIFACTS)
     ),
 )
+ARTIFACT_COMPARISON_SPECS = tuple(
+    ArtifactComparisonSpec(
+        relative_path.as_posix(),
+        (
+            COMPARISON_MODE_JSON_EXACT
+            if relative_path.suffix == ".json"
+            else COMPARISON_MODE_CSV_EXACT
+        ),
+    )
+    for relative_path in SUPPORTED_RELATIVE_PATHS
+)
 UNSUPPORTED_ROOT_ARTIFACTS = ("comparison.csv", "stats.csv")
 UNSUPPORTED_CONDITION_ARTIFACTS = (
     "temporal_rin.csv",
@@ -55,16 +67,11 @@ def export_subset(output_dir: Path) -> Path:
 
 
 def build_subset_comparison_report(output_dir: Path) -> ReferenceComparisonReport:
-    results = []
-    for relative_path in SUPPORTED_RELATIVE_PATHS:
-        expected_path = EXPECTED_FIXTURE_DIR / relative_path
-        actual_path = output_dir / relative_path
-        artifact = relative_path.as_posix()
-        if relative_path.suffix == ".json":
-            results.append(compare_json_exact(expected_path, actual_path, artifact))
-        else:
-            results.append(compare_csv_exact(expected_path, actual_path, artifact))
-    return build_comparison_report(results)
+    return compare_artifact_sets(
+        EXPECTED_FIXTURE_DIR,
+        output_dir,
+        ARTIFACT_COMPARISON_SPECS,
+    )
 
 
 def validate_generated_output_subset(output_dir: Path) -> None:
