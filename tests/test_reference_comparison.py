@@ -5,6 +5,9 @@ from pathlib import Path
 
 import pytest
 
+from mania.comparison import (
+    compare_csv_numeric_tolerance as exported_compare_csv_numeric_tolerance,
+)
 from mania.comparison.reference import (
     COMPARISON_MODE_CSV_EXACT,
     COMPARISON_MODE_FILE_EXISTS,
@@ -19,6 +22,7 @@ from mania.comparison.reference import (
     build_comparison_report,
     compare_artifact_sets,
     compare_csv_exact,
+    compare_csv_numeric_tolerance,
     compare_file_exists,
     compare_json_exact,
     write_comparison_report,
@@ -155,6 +159,418 @@ def test_compare_csv_exact_detects_row_content_difference(tmp_path: Path) -> Non
     result = compare_csv_exact(expected, actual)
 
     assert any(difference.check == "csv_row" for difference in result.differences)
+
+
+def test_compare_csv_numeric_tolerance_is_re_exported() -> None:
+    assert exported_compare_csv_numeric_tolerance is compare_csv_numeric_tolerance
+
+
+def test_compare_csv_numeric_tolerance_passes_within_tolerance(
+    tmp_path: Path,
+) -> None:
+    expected = write_csv(
+        tmp_path / "expected.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+    actual = write_csv(
+        tmp_path / "actual.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.001"),),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        expected,
+        actual,
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        abs_tol=0.01,
+    )
+
+    assert result.passed is True
+
+
+def test_compare_csv_numeric_tolerance_fails_outside_tolerance(
+    tmp_path: Path,
+) -> None:
+    expected = write_csv(
+        tmp_path / "expected.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+    actual = write_csv(
+        tmp_path / "actual.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.1"),),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        expected,
+        actual,
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        abs_tol=0.01,
+    )
+
+    assert result.passed is False
+    assert any(
+        difference.check == "csv_numeric_tolerance"
+        for difference in result.differences
+    )
+
+
+def test_compare_csv_numeric_tolerance_text_columns_pass(
+    tmp_path: Path,
+) -> None:
+    expected = write_csv(
+        tmp_path / "expected.csv",
+        ("condition", "resid", "value", "region"),
+        (("normal", "1", "1.000", "TM1"),),
+    )
+    actual = write_csv(
+        tmp_path / "actual.csv",
+        ("condition", "resid", "value", "region"),
+        (("normal", "1", "1.001", "TM1"),),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        expected,
+        actual,
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        text_columns=("region",),
+        abs_tol=0.01,
+    )
+
+    assert result.passed is True
+
+
+def test_compare_csv_numeric_tolerance_text_columns_fail(
+    tmp_path: Path,
+) -> None:
+    expected = write_csv(
+        tmp_path / "expected.csv",
+        ("condition", "resid", "value", "region"),
+        (("normal", "1", "1.000", "TM1"),),
+    )
+    actual = write_csv(
+        tmp_path / "actual.csv",
+        ("condition", "resid", "value", "region"),
+        (("normal", "1", "1.000", "TM2"),),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        expected,
+        actual,
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        text_columns=("region",),
+        abs_tol=0.01,
+    )
+
+    assert result.passed is False
+    assert any(
+        difference.check == "csv_text_exact" for difference in result.differences
+    )
+
+
+def test_compare_csv_numeric_tolerance_missing_required_column_fails(
+    tmp_path: Path,
+) -> None:
+    expected = write_csv(
+        tmp_path / "expected.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+    actual = write_csv(
+        tmp_path / "actual.csv",
+        ("condition", "resid"),
+        (("normal", "1"),),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        expected,
+        actual,
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        abs_tol=0.01,
+    )
+
+    assert result.passed is False
+    assert any(
+        difference.check == "csv_required_columns"
+        for difference in result.differences
+    )
+
+
+def test_compare_csv_numeric_tolerance_missing_actual_key_fails(
+    tmp_path: Path,
+) -> None:
+    expected = write_csv(
+        tmp_path / "expected.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"), ("normal", "2", "2.000")),
+    )
+    actual = write_csv(
+        tmp_path / "actual.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        expected,
+        actual,
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        abs_tol=0.01,
+    )
+
+    assert any(
+        difference.check == "csv_missing_key" for difference in result.differences
+    )
+
+
+def test_compare_csv_numeric_tolerance_extra_actual_key_fails(
+    tmp_path: Path,
+) -> None:
+    expected = write_csv(
+        tmp_path / "expected.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+    actual = write_csv(
+        tmp_path / "actual.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"), ("normal", "2", "2.000")),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        expected,
+        actual,
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        abs_tol=0.01,
+    )
+
+    assert any(difference.check == "csv_extra_key" for difference in result.differences)
+
+
+def test_compare_csv_numeric_tolerance_duplicate_expected_key_fails(
+    tmp_path: Path,
+) -> None:
+    expected = write_csv(
+        tmp_path / "expected.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"), ("normal", "1", "1.001")),
+    )
+    actual = write_csv(
+        tmp_path / "actual.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        expected,
+        actual,
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        abs_tol=0.01,
+    )
+
+    assert any(
+        difference.check == "csv_duplicate_key" for difference in result.differences
+    )
+
+
+def test_compare_csv_numeric_tolerance_duplicate_actual_key_fails(
+    tmp_path: Path,
+) -> None:
+    expected = write_csv(
+        tmp_path / "expected.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+    actual = write_csv(
+        tmp_path / "actual.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"), ("normal", "1", "1.001")),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        expected,
+        actual,
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        abs_tol=0.01,
+    )
+
+    assert any(
+        difference.check == "csv_duplicate_key" for difference in result.differences
+    )
+
+
+def test_compare_csv_numeric_tolerance_non_numeric_value_fails(
+    tmp_path: Path,
+) -> None:
+    expected = write_csv(
+        tmp_path / "expected.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+    actual = write_csv(
+        tmp_path / "actual.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "abc"),),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        expected,
+        actual,
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        abs_tol=0.01,
+    )
+
+    assert any(
+        difference.check == "csv_numeric_parse" for difference in result.differences
+    )
+
+
+def test_compare_csv_numeric_tolerance_non_finite_value_fails(
+    tmp_path: Path,
+) -> None:
+    expected = write_csv(
+        tmp_path / "expected.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "nan"),),
+    )
+    actual = write_csv(
+        tmp_path / "actual.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        expected,
+        actual,
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        abs_tol=0.01,
+    )
+
+    assert any(
+        difference.check == "csv_numeric_non_finite"
+        for difference in result.differences
+    )
+
+
+def test_compare_csv_numeric_tolerance_missing_expected_file_fails(
+    tmp_path: Path,
+) -> None:
+    actual = write_csv(
+        tmp_path / "actual.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        tmp_path / "missing.csv",
+        actual,
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        abs_tol=0.01,
+    )
+
+    assert result.passed is False
+    assert any(
+        difference.check == "expected_file_exists"
+        for difference in result.differences
+    )
+
+
+def test_compare_csv_numeric_tolerance_missing_actual_file_fails(
+    tmp_path: Path,
+) -> None:
+    expected = write_csv(
+        tmp_path / "expected.csv",
+        ("condition", "resid", "value"),
+        (("normal", "1", "1.000"),),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        expected,
+        tmp_path / "missing.csv",
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        abs_tol=0.01,
+    )
+
+    assert result.passed is False
+    assert any(
+        difference.check == "actual_file_exists" for difference in result.differences
+    )
+
+
+@pytest.mark.parametrize(
+    "key_columns,numeric_columns,text_columns,abs_tol",
+    (
+        ((), ("value",), (), 0.01),
+        (("condition",), (), (), 0.01),
+        (("condition",), ("value",), (), -0.01),
+        (("condition",), ("condition",), (), 0.01),
+        (("condition",), ("value",), ("value",), 0.01),
+        (("condition", "condition"), ("value",), (), 0.01),
+    ),
+)
+def test_compare_csv_numeric_tolerance_invalid_inputs_raise(
+    tmp_path: Path,
+    key_columns: tuple[str, ...],
+    numeric_columns: tuple[str, ...],
+    text_columns: tuple[str, ...],
+    abs_tol: float,
+) -> None:
+    expected = write_csv(tmp_path / "expected.csv", ("condition", "value"))
+    actual = write_csv(tmp_path / "actual.csv", ("condition", "value"))
+
+    with pytest.raises(ReferenceComparisonError):
+        compare_csv_numeric_tolerance(
+            expected,
+            actual,
+            key_columns=key_columns,
+            numeric_columns=numeric_columns,
+            text_columns=text_columns,
+            abs_tol=abs_tol,
+        )
+
+
+def test_compare_csv_numeric_tolerance_difference_output_is_capped(
+    tmp_path: Path,
+) -> None:
+    expected = write_csv(
+        tmp_path / "expected.csv",
+        ("condition", "resid", "value"),
+        tuple(("normal", str(index), "1.000") for index in range(25)),
+    )
+    actual = write_csv(
+        tmp_path / "actual.csv",
+        ("condition", "resid", "value"),
+        tuple(("normal", str(index), "2.000") for index in range(25)),
+    )
+
+    result = compare_csv_numeric_tolerance(
+        expected,
+        actual,
+        key_columns=("condition", "resid"),
+        numeric_columns=("value",),
+        abs_tol=0.01,
+    )
+
+    assert result.passed is False
+    assert len(result.differences) <= 21
+    assert any(
+        difference.check == "comparison_truncated"
+        for difference in result.differences
+    )
 
 
 def test_compare_json_exact_passes_for_equal_objects_with_different_key_order(
