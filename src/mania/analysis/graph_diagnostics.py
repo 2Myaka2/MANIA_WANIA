@@ -125,6 +125,90 @@ class MultiConditionGraphDiagnostics:
 
 
 @dataclass(frozen=True)
+class ConditionGraphDiagnosticsSummary:
+    """Compact condition-level graph diagnostics summary."""
+
+    condition: str
+    n_nodes: int
+    n_edges: int
+    n_components: int
+    largest_component_size: int
+    n_isolated_nodes: int
+    n_self_loops: int
+    n_duplicate_undirected_edge_keys: int
+    n_topology_mismatches: int
+    passed_basic_qc: bool
+    passed_topology_consistency: bool
+    passed: bool
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable summary dictionary."""
+        return {
+            "condition": self.condition,
+            "n_nodes": self.n_nodes,
+            "n_edges": self.n_edges,
+            "n_components": self.n_components,
+            "largest_component_size": self.largest_component_size,
+            "n_isolated_nodes": self.n_isolated_nodes,
+            "n_self_loops": self.n_self_loops,
+            "n_duplicate_undirected_edge_keys": (
+                self.n_duplicate_undirected_edge_keys
+            ),
+            "n_topology_mismatches": self.n_topology_mismatches,
+            "passed_basic_qc": self.passed_basic_qc,
+            "passed_topology_consistency": self.passed_topology_consistency,
+            "passed": self.passed,
+        }
+
+
+@dataclass(frozen=True)
+class MultiConditionGraphDiagnosticsSummary:
+    """Compact multi-condition graph diagnostics summary."""
+
+    conditions: tuple[str, ...]
+    condition_summaries: Mapping[str, ConditionGraphDiagnosticsSummary]
+
+    @property
+    def passed(self) -> bool:
+        """Return whether all condition summaries passed."""
+        return all(
+            self.condition_summaries[condition].passed
+            for condition in self.conditions
+        )
+
+    @property
+    def passed_conditions(self) -> tuple[str, ...]:
+        """Return condition names with passing summaries in input order."""
+        return tuple(
+            condition
+            for condition in self.conditions
+            if self.condition_summaries[condition].passed
+        )
+
+    @property
+    def failed_conditions(self) -> tuple[str, ...]:
+        """Return condition names with failing summaries in input order."""
+        return tuple(
+            condition
+            for condition in self.conditions
+            if not self.condition_summaries[condition].passed
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable summary dictionary."""
+        return {
+            "conditions": list(self.conditions),
+            "passed": self.passed,
+            "passed_conditions": list(self.passed_conditions),
+            "failed_conditions": list(self.failed_conditions),
+            "condition_summaries": {
+                condition: self.condition_summaries[condition].to_dict()
+                for condition in self.conditions
+            },
+        }
+
+
+@dataclass(frozen=True)
 class OutputGraphDiagnosticsRun:
     """Run-and-write output graph diagnostics result."""
 
@@ -267,6 +351,70 @@ def run_and_write_output_graph_diagnostics(
         diagnostics=diagnostics,
         written_paths=written_paths,
     )
+
+
+def summarize_condition_graph_diagnostics(
+    diagnostics: ConditionGraphDiagnostics,
+) -> ConditionGraphDiagnosticsSummary:
+    """Summarize existing condition graph diagnostics."""
+    return ConditionGraphDiagnosticsSummary(
+        condition=diagnostics.condition,
+        n_nodes=diagnostics.graph.n_nodes,
+        n_edges=diagnostics.graph.n_edges,
+        n_components=diagnostics.qc_report.n_components,
+        largest_component_size=diagnostics.qc_report.largest_component_size,
+        n_isolated_nodes=diagnostics.qc_report.n_isolated_nodes,
+        n_self_loops=len(diagnostics.qc_report.self_loop_edges),
+        n_duplicate_undirected_edge_keys=len(
+            diagnostics.qc_report.duplicate_undirected_edge_keys
+        ),
+        n_topology_mismatches=diagnostics.topology_consistency.n_mismatches,
+        passed_basic_qc=diagnostics.passed_basic_qc,
+        passed_topology_consistency=diagnostics.passed_topology_consistency,
+        passed=diagnostics.passed,
+    )
+
+
+def summarize_multi_condition_graph_diagnostics(
+    diagnostics: MultiConditionGraphDiagnostics,
+) -> MultiConditionGraphDiagnosticsSummary:
+    """Summarize existing multi-condition graph diagnostics."""
+    condition_summaries: dict[str, ConditionGraphDiagnosticsSummary] = {}
+    for condition in diagnostics.conditions:
+        try:
+            condition_diagnostics = diagnostics.condition_diagnostics[condition]
+        except KeyError as exc:
+            raise GraphDiagnosticsError(
+                f"Missing condition diagnostics for condition: {condition!r}"
+            ) from exc
+        condition_summaries[condition] = summarize_condition_graph_diagnostics(
+            condition_diagnostics
+        )
+
+    return MultiConditionGraphDiagnosticsSummary(
+        conditions=diagnostics.conditions,
+        condition_summaries=MappingProxyType(condition_summaries),
+    )
+
+
+def write_multi_condition_graph_diagnostics_summary(
+    summary: MultiConditionGraphDiagnosticsSummary,
+    output_dir: str | Path,
+) -> Path:
+    """Write a compact multi-condition graph diagnostics summary JSON."""
+    output_root = Path(output_dir)
+    output_path = output_root / "multi_condition_graph_diagnostics_summary.json"
+    try:
+        output_root.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(
+            json.dumps(summary.to_dict(), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        raise GraphDiagnosticsError(
+            f"Could not write graph diagnostics summary: {exc}"
+        ) from exc
+    return output_path
 
 
 def write_condition_graph_diagnostics(
@@ -461,15 +609,20 @@ def _check_topology_consistency(
 
 __all__ = [
     "ConditionGraphDiagnostics",
+    "ConditionGraphDiagnosticsSummary",
     "GraphDiagnosticsError",
     "MultiConditionGraphDiagnostics",
+    "MultiConditionGraphDiagnosticsSummary",
     "OutputGraphDiagnosticsRun",
     "run_condition_graph_diagnostics",
     "run_and_write_output_graph_diagnostics",
     "run_multi_condition_graph_diagnostics",
     "run_output_graph_diagnostics",
+    "summarize_condition_graph_diagnostics",
+    "summarize_multi_condition_graph_diagnostics",
     "write_condition_graph_diagnostics",
     "write_condition_graph_diagnostics_bundle",
     "write_multi_condition_graph_diagnostics",
     "write_multi_condition_graph_diagnostics_bundle",
+    "write_multi_condition_graph_diagnostics_summary",
 ]

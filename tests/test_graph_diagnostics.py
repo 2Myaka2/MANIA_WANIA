@@ -6,17 +6,22 @@ import pytest
 
 from mania.analysis.graph_diagnostics import (
     ConditionGraphDiagnostics,
+    ConditionGraphDiagnosticsSummary,
     GraphDiagnosticsError,
     MultiConditionGraphDiagnostics,
+    MultiConditionGraphDiagnosticsSummary,
     OutputGraphDiagnosticsRun,
     run_and_write_output_graph_diagnostics,
     run_condition_graph_diagnostics,
     run_multi_condition_graph_diagnostics,
     run_output_graph_diagnostics,
+    summarize_condition_graph_diagnostics,
+    summarize_multi_condition_graph_diagnostics,
     write_condition_graph_diagnostics,
     write_condition_graph_diagnostics_bundle,
     write_multi_condition_graph_diagnostics,
     write_multi_condition_graph_diagnostics_bundle,
+    write_multi_condition_graph_diagnostics_summary,
 )
 from mania.constants import EDGE_COLUMNS, NODE_COLUMNS
 
@@ -725,6 +730,241 @@ def test_write_multi_condition_graph_diagnostics_bundle_creates_json_files(
     assert all(path.exists() for path in paths)
     for path in paths:
         json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_summarize_condition_graph_diagnostics_for_normal_fixture() -> None:
+    diagnostics = run_condition_graph_diagnostics(
+        FIXTURE_ROOT / "normal",
+        condition="normal",
+    )
+
+    summary = summarize_condition_graph_diagnostics(diagnostics)
+
+    assert isinstance(summary, ConditionGraphDiagnosticsSummary)
+    assert summary.condition == "normal"
+    assert summary.n_nodes == 2
+    assert summary.n_edges == 1
+    assert summary.n_components == 1
+    assert summary.largest_component_size == 2
+    assert summary.n_isolated_nodes == 0
+    assert summary.n_self_loops == 0
+    assert summary.n_duplicate_undirected_edge_keys == 0
+    assert summary.passed_basic_qc is True
+    assert summary.n_topology_mismatches > 0
+    assert summary.passed_topology_consistency is False
+    assert summary.passed is False
+
+
+def test_summarize_condition_graph_diagnostics_for_passing_condition(
+    tmp_path: Path,
+) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2", contact_freq="0.5")],
+    )
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+    )
+
+    summary = summarize_condition_graph_diagnostics(diagnostics)
+
+    assert summary.passed is True
+    assert summary.n_topology_mismatches == 0
+
+
+def test_summarize_condition_graph_diagnostics_counts_isolated_node(
+    tmp_path: Path,
+) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[
+            node_row("1"),
+            node_row("2"),
+            node_row("3", degree="0", strength="0.0"),
+        ],
+        edges=[edge_row("1", "2", contact_freq="0.5")],
+    )
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+    )
+
+    summary = summarize_condition_graph_diagnostics(diagnostics)
+
+    assert summary.n_isolated_nodes == 1
+    assert summary.passed_basic_qc is False
+    assert summary.passed is False
+
+
+def test_summarize_condition_graph_diagnostics_counts_self_loop_and_duplicate(
+    tmp_path: Path,
+) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[
+            node_row("1", degree="2", strength="1.4"),
+            node_row("2", degree="1", strength="1.2"),
+        ],
+        edges=[
+            edge_row("1", "1", contact_freq="0.2"),
+            edge_row("1", "2", contact_freq="0.5"),
+            edge_row("2", "1", contact_freq="0.7"),
+        ],
+    )
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+    )
+
+    summary = summarize_condition_graph_diagnostics(diagnostics)
+
+    assert summary.n_self_loops > 0
+    assert summary.n_duplicate_undirected_edge_keys > 0
+    assert summary.passed_basic_qc is False
+
+
+def test_summarize_multi_condition_graph_diagnostics_preserves_order() -> None:
+    diagnostics = run_multi_condition_graph_diagnostics(
+        FIXTURE_ROOT,
+        conditions=("tumor", "normal"),
+    )
+
+    summary = summarize_multi_condition_graph_diagnostics(diagnostics)
+
+    assert isinstance(summary, MultiConditionGraphDiagnosticsSummary)
+    assert summary.conditions == ("tumor", "normal")
+    assert tuple(summary.condition_summaries) == ("tumor", "normal")
+    assert summary.failed_conditions == ("tumor", "normal")
+
+
+def test_summarize_multi_condition_graph_diagnostics_pass_fail_sets(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[
+            node_row("1", condition="normal"),
+            node_row("2", condition="normal"),
+        ],
+        edges=[edge_row("1", "2", condition="normal")],
+    )
+    write_condition_dir(
+        tmp_path,
+        condition="tumor",
+        nodes=[
+            node_row("1", condition="tumor", degree="0"),
+            node_row("2", condition="tumor"),
+        ],
+        edges=[edge_row("1", "2", condition="tumor")],
+    )
+    diagnostics = run_multi_condition_graph_diagnostics(
+        tmp_path,
+        conditions=("normal", "tumor"),
+    )
+
+    summary = summarize_multi_condition_graph_diagnostics(diagnostics)
+
+    assert summary.passed is False
+    assert summary.passed_conditions == ("normal",)
+    assert summary.failed_conditions == ("tumor",)
+
+
+def test_multi_condition_graph_diagnostics_summary_to_dict_is_json_serializable(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+    diagnostics = run_multi_condition_graph_diagnostics(
+        tmp_path,
+        conditions=("normal",),
+    )
+    summary = summarize_multi_condition_graph_diagnostics(diagnostics)
+
+    payload = summary.to_dict()
+    json.dumps(payload)
+
+    assert {
+        "conditions",
+        "passed",
+        "passed_conditions",
+        "failed_conditions",
+        "condition_summaries",
+    }.issubset(payload)
+
+
+def test_write_multi_condition_graph_diagnostics_summary_creates_json_file(
+    tmp_path: Path,
+) -> None:
+    diagnostics = run_multi_condition_graph_diagnostics(
+        FIXTURE_ROOT,
+        conditions=("normal", "tumor"),
+    )
+    summary = summarize_multi_condition_graph_diagnostics(diagnostics)
+
+    path = write_multi_condition_graph_diagnostics_summary(
+        summary,
+        tmp_path / "diagnostics",
+    )
+
+    assert path == (
+        tmp_path
+        / "diagnostics"
+        / "multi_condition_graph_diagnostics_summary.json"
+    )
+    assert path.exists()
+    loaded = json.loads(path.read_text(encoding="utf-8"))
+    assert loaded["conditions"] == list(summary.conditions)
+    assert path.read_text(encoding="utf-8").endswith("\n")
+
+
+def test_run_and_write_output_graph_diagnostics_does_not_write_summary(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    run_and_write_output_graph_diagnostics(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+    )
+
+    assert (
+        diagnostics_output_dir / "multi_condition_graph_diagnostics.json"
+    ).exists()
+    assert not (
+        diagnostics_output_dir / "multi_condition_graph_diagnostics_summary.json"
+    ).exists()
+
+
+def test_write_multi_condition_graph_diagnostics_summary_invalid_path_raises(
+    tmp_path: Path,
+) -> None:
+    diagnostics = run_multi_condition_graph_diagnostics(
+        FIXTURE_ROOT,
+        conditions=("normal", "tumor"),
+    )
+    summary = summarize_multi_condition_graph_diagnostics(diagnostics)
+    output_dir = tmp_path / "diagnostics"
+    output_dir.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(GraphDiagnosticsError, match="Could not write"):
+        write_multi_condition_graph_diagnostics_summary(summary, output_dir)
+
+
+def test_summarize_multi_condition_graph_diagnostics_missing_condition_raises() -> None:
+    diagnostics = MultiConditionGraphDiagnostics(
+        conditions=("normal",),
+        condition_diagnostics={},
+    )
+
+    with pytest.raises(GraphDiagnosticsError, match="Missing condition diagnostics"):
+        summarize_multi_condition_graph_diagnostics(diagnostics)
 
 
 def test_run_and_write_output_graph_diagnostics_works_for_expected_fixture(
