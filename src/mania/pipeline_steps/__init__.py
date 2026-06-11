@@ -13,6 +13,9 @@ from mania.pipeline_steps.notebook_export_diagnostics import (
     NotebookExportGraphDiagnosticsPipelineResult,
     run_notebook_export_graph_diagnostics_pipeline,
 )
+from mania.pipeline_steps.workflow_runner import (
+    run_notebook_export_graph_diagnostics_pipeline_from_config,
+)
 
 __all__ = [
     "GraphDiagnosticsPipelineStepResult",
@@ -22,4 +25,5 @@ __all__ = [
     "run_graph_diagnostics_pipeline_step",
     "run_notebook_contract_export_pipeline_step",
     "run_notebook_export_graph_diagnostics_pipeline",
+    "run_notebook_export_graph_diagnostics_pipeline_from_config",
 ]
