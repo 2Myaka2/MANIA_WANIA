@@ -71,6 +71,11 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Path to a workflow JSON or YAML configuration file.",
     )
+    workflow_run_parser.add_argument(
+        "--fail-on-diagnostics-failure",
+        action="store_true",
+        help="Exit non-zero when graph diagnostics complete but report passed=false.",
+    )
 
     return parser
 
@@ -129,6 +134,8 @@ def main() -> None:
         except Exception as exc:
             _exit_with_error(f"Workflow failed: {args.config}\n{exc}")
         print(json.dumps(_build_workflow_summary(result), sort_keys=True))
+        if args.fail_on_diagnostics_failure and not result.passed:
+            raise SystemExit(2)
         return
 
     parser.print_help()
