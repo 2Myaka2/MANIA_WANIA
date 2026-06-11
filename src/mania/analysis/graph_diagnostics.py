@@ -124,6 +124,27 @@ class MultiConditionGraphDiagnostics:
         }
 
 
+@dataclass(frozen=True)
+class OutputGraphDiagnosticsRun:
+    """Run-and-write output graph diagnostics result."""
+
+    diagnostics: MultiConditionGraphDiagnostics
+    written_paths: tuple[Path, ...]
+
+    @property
+    def passed(self) -> bool:
+        """Return whether output graph diagnostics passed."""
+        return self.diagnostics.passed
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable run dictionary."""
+        return {
+            "passed": self.passed,
+            "diagnostics": self.diagnostics.to_dict(),
+            "written_paths": [str(path) for path in self.written_paths],
+        }
+
+
 def run_condition_graph_diagnostics(
     condition_dir: str | Path,
     *,
@@ -210,6 +231,41 @@ def run_output_graph_diagnostics(
         weight_column=weight_column,
         degree_column=degree_column,
         strength_column=strength_column,
+    )
+
+
+def run_and_write_output_graph_diagnostics(
+    output_root: str | Path,
+    diagnostics_output_dir: str | Path,
+    *,
+    conditions: Iterable[str] | None = None,
+    abs_tol: float = 1e-6,
+    weight_column: str = "contact_freq",
+    degree_column: str = "degree",
+    strength_column: str = "strength",
+) -> OutputGraphDiagnosticsRun:
+    """Run output graph diagnostics and write the diagnostics bundle."""
+    diagnostics = run_output_graph_diagnostics(
+        output_root,
+        conditions=conditions,
+        abs_tol=abs_tol,
+        weight_column=weight_column,
+        degree_column=degree_column,
+        strength_column=strength_column,
+    )
+    try:
+        written_paths = write_multi_condition_graph_diagnostics_bundle(
+            diagnostics,
+            diagnostics_output_dir,
+        )
+    except OSError as exc:
+        raise GraphDiagnosticsError(
+            f"Could not write graph diagnostics bundle: {exc}"
+        ) from exc
+
+    return OutputGraphDiagnosticsRun(
+        diagnostics=diagnostics,
+        written_paths=written_paths,
     )
 
 
@@ -407,7 +463,9 @@ __all__ = [
     "ConditionGraphDiagnostics",
     "GraphDiagnosticsError",
     "MultiConditionGraphDiagnostics",
+    "OutputGraphDiagnosticsRun",
     "run_condition_graph_diagnostics",
+    "run_and_write_output_graph_diagnostics",
     "run_multi_condition_graph_diagnostics",
     "run_output_graph_diagnostics",
     "write_condition_graph_diagnostics",

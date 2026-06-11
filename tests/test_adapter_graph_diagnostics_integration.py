@@ -6,6 +6,7 @@ import pytest
 from mania.adapters.notebook_export import export_notebook_contract_subset
 from mania.analysis.graph_diagnostics import (
     GraphDiagnosticsError,
+    run_and_write_output_graph_diagnostics,
     run_multi_condition_graph_diagnostics,
     run_output_graph_diagnostics,
     write_multi_condition_graph_diagnostics_bundle,
@@ -86,6 +87,29 @@ def test_adapter_output_diagnostics_bundle_can_be_written(tmp_path: Path) -> Non
         assert path.exists()
     for path in paths:
         json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_adapter_output_can_run_and_write_output_graph_diagnostics(
+    tmp_path: Path,
+) -> None:
+    output_root = tmp_path / "mania_output"
+    _export_tiny_contract_subset(output_root)
+
+    result = run_and_write_output_graph_diagnostics(
+        output_root,
+        tmp_path / "diagnostics",
+    )
+
+    assert result.diagnostics.conditions == CONDITIONS
+    assert result.passed is False
+    assert result.diagnostics.failed_conditions == CONDITIONS
+    assert all(path.exists() for path in result.written_paths)
+    assert result.diagnostics.condition_diagnostics[
+        "normal"
+    ].topology_consistency.mismatches
+    assert result.diagnostics.condition_diagnostics[
+        "tumor"
+    ].topology_consistency.mismatches
 
 
 def test_adapter_output_diagnostics_to_dict_is_json_serializable(

@@ -8,6 +8,8 @@ from mania.analysis.graph_diagnostics import (
     ConditionGraphDiagnostics,
     GraphDiagnosticsError,
     MultiConditionGraphDiagnostics,
+    OutputGraphDiagnosticsRun,
+    run_and_write_output_graph_diagnostics,
     run_condition_graph_diagnostics,
     run_multi_condition_graph_diagnostics,
     run_output_graph_diagnostics,
@@ -99,6 +101,20 @@ def write_run_meta(output_root: Path, payload: object) -> None:
     (output_root / "run_meta.json").write_text(
         json.dumps(payload),
         encoding="utf-8",
+    )
+
+
+def expected_bundle_paths(output_dir: Path) -> tuple[Path, ...]:
+    return (
+        output_dir / "multi_condition_graph_diagnostics.json",
+        output_dir / "normal" / "graph_diagnostics.json",
+        output_dir / "normal" / "graph_qc.json",
+        output_dir / "normal" / "graph_topology_metrics.json",
+        output_dir / "normal" / "graph_topology_consistency.json",
+        output_dir / "tumor" / "graph_diagnostics.json",
+        output_dir / "tumor" / "graph_qc.json",
+        output_dir / "tumor" / "graph_topology_metrics.json",
+        output_dir / "tumor" / "graph_topology_consistency.json",
     )
 
 
@@ -709,6 +725,128 @@ def test_write_multi_condition_graph_diagnostics_bundle_creates_json_files(
     assert all(path.exists() for path in paths)
     for path in paths:
         json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_run_and_write_output_graph_diagnostics_works_for_expected_fixture(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    result = run_and_write_output_graph_diagnostics(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+    )
+
+    assert isinstance(result, OutputGraphDiagnosticsRun)
+    assert result.diagnostics.conditions == ("normal", "tumor")
+    assert result.passed is False
+    assert result.written_paths
+    assert all(path.exists() for path in result.written_paths)
+    for path in expected_bundle_paths(diagnostics_output_dir):
+        assert path.exists()
+
+
+def test_run_and_write_output_graph_diagnostics_supports_explicit_conditions(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    result = run_and_write_output_graph_diagnostics(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+        conditions=("normal",),
+    )
+
+    assert result.diagnostics.conditions == ("normal",)
+    assert (
+        diagnostics_output_dir / "normal" / "graph_diagnostics.json"
+    ).exists()
+    assert not (diagnostics_output_dir / "tumor").exists()
+    assert not any("tumor" in path.parts for path in result.written_paths)
+
+
+def test_run_and_write_output_graph_diagnostics_missing_run_meta_fails_before_writing(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    with pytest.raises(GraphDiagnosticsError, match="Missing run metadata"):
+        run_and_write_output_graph_diagnostics(tmp_path, diagnostics_output_dir)
+
+    assert not diagnostics_output_dir.exists()
+
+
+def test_run_and_write_output_graph_diagnostics_explicit_conditions_need_no_run_meta(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+
+    result = run_and_write_output_graph_diagnostics(
+        tmp_path,
+        tmp_path / "diagnostics",
+        conditions=("normal",),
+    )
+
+    assert result.diagnostics.conditions == ("normal",)
+    assert (tmp_path / "diagnostics" / "normal" / "graph_diagnostics.json").exists()
+
+
+def test_run_and_write_output_graph_diagnostics_write_failure_is_translated(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output = tmp_path / "diagnostics"
+    diagnostics_output.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(
+        GraphDiagnosticsError,
+        match="Could not write graph diagnostics bundle",
+    ):
+        run_and_write_output_graph_diagnostics(FIXTURE_ROOT, diagnostics_output)
+
+
+def test_output_graph_diagnostics_run_to_dict_is_json_serializable(
+    tmp_path: Path,
+) -> None:
+    result = run_and_write_output_graph_diagnostics(
+        FIXTURE_ROOT,
+        tmp_path / "diagnostics",
+    )
+
+    payload = result.to_dict()
+    json.dumps(payload)
+
+    assert {"passed", "diagnostics", "written_paths"}.issubset(payload)
+    assert all(isinstance(path, str) for path in payload["written_paths"])
+
+
+def test_run_and_write_output_graph_diagnostics_path_order_is_deterministic(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    result = run_and_write_output_graph_diagnostics(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+    )
+
+    assert result.written_paths == expected_bundle_paths(diagnostics_output_dir)
+    assert result.written_paths[0].name == "multi_condition_graph_diagnostics.json"
+    assert result.written_paths.index(
+        diagnostics_output_dir / "normal" / "graph_diagnostics.json"
+    ) < result.written_paths.index(
+        diagnostics_output_dir / "tumor" / "graph_diagnostics.json"
+    )
 
 
 def test_output_graph_diagnostics_infers_conditions_from_run_meta() -> None:
