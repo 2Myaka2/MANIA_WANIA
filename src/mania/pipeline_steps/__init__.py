@@ -1,5 +1,6 @@
 """Pipeline step wrappers for MANIA."""
 
+from mania.pipeline_steps.config import NotebookExportGraphDiagnosticsWorkflowConfig
 from mania.pipeline_steps.graph_diagnostics import (
     GraphDiagnosticsPipelineStepResult,
     run_graph_diagnostics_pipeline_step,
@@ -17,6 +18,7 @@ __all__ = [
     "GraphDiagnosticsPipelineStepResult",
     "NotebookContractExportPipelineStepResult",
     "NotebookExportGraphDiagnosticsPipelineResult",
+    "NotebookExportGraphDiagnosticsWorkflowConfig",
     "run_graph_diagnostics_pipeline_step",
     "run_notebook_contract_export_pipeline_step",
     "run_notebook_export_graph_diagnostics_pipeline",
