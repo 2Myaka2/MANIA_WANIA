@@ -10,8 +10,10 @@ from mania.analysis.graph_diagnostics import (
     GraphDiagnosticsError,
     MultiConditionGraphDiagnostics,
     MultiConditionGraphDiagnosticsSummary,
+    OutputGraphDiagnosticsReportBundle,
     OutputGraphDiagnosticsRun,
     run_and_write_output_graph_diagnostics,
+    run_and_write_output_graph_diagnostics_report_bundle,
     run_condition_graph_diagnostics,
     run_multi_condition_graph_diagnostics,
     run_output_graph_diagnostics,
@@ -120,6 +122,13 @@ def expected_bundle_paths(output_dir: Path) -> tuple[Path, ...]:
         output_dir / "tumor" / "graph_qc.json",
         output_dir / "tumor" / "graph_topology_metrics.json",
         output_dir / "tumor" / "graph_topology_consistency.json",
+    )
+
+
+def expected_report_bundle_paths(output_dir: Path) -> tuple[Path, ...]:
+    return (
+        *expected_bundle_paths(output_dir),
+        output_dir / "multi_condition_graph_diagnostics_summary.json",
     )
 
 
@@ -965,6 +974,154 @@ def test_summarize_multi_condition_graph_diagnostics_missing_condition_raises() 
 
     with pytest.raises(GraphDiagnosticsError, match="Missing condition diagnostics"):
         summarize_multi_condition_graph_diagnostics(diagnostics)
+
+
+def test_run_and_write_output_graph_diagnostics_report_bundle_works_for_fixture(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    result = run_and_write_output_graph_diagnostics_report_bundle(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+    )
+
+    assert isinstance(result, OutputGraphDiagnosticsReportBundle)
+    assert result.diagnostics.conditions == ("normal", "tumor")
+    assert result.summary.conditions == ("normal", "tumor")
+    assert result.passed is False
+    assert result.summary.passed is False
+    assert result.written_paths
+    assert all(path.exists() for path in result.written_paths)
+    for path in expected_report_bundle_paths(diagnostics_output_dir):
+        assert path.exists()
+
+
+def test_output_graph_diagnostics_report_bundle_summary_matches_diagnostics(
+    tmp_path: Path,
+) -> None:
+    result = run_and_write_output_graph_diagnostics_report_bundle(
+        FIXTURE_ROOT,
+        tmp_path / "diagnostics",
+    )
+
+    assert result.summary.passed == result.diagnostics.passed
+    assert result.summary.failed_conditions == result.diagnostics.failed_conditions
+    assert result.summary.passed_conditions == result.diagnostics.passed_conditions
+    assert result.summary.failed_conditions == ("normal", "tumor")
+
+
+def test_output_graph_diagnostics_report_bundle_supports_explicit_conditions(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    result = run_and_write_output_graph_diagnostics_report_bundle(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+        conditions=("normal",),
+    )
+
+    assert result.diagnostics.conditions == ("normal",)
+    assert result.summary.conditions == ("normal",)
+    assert (
+        diagnostics_output_dir / "normal" / "graph_diagnostics.json"
+    ).exists()
+    assert (
+        diagnostics_output_dir / "multi_condition_graph_diagnostics_summary.json"
+    ).exists()
+    assert not (diagnostics_output_dir / "tumor").exists()
+
+
+def test_output_graph_diagnostics_report_bundle_to_dict_is_json_serializable(
+    tmp_path: Path,
+) -> None:
+    result = run_and_write_output_graph_diagnostics_report_bundle(
+        FIXTURE_ROOT,
+        tmp_path / "diagnostics",
+    )
+
+    payload = result.to_dict()
+    json.dumps(payload)
+
+    assert {"passed", "diagnostics", "summary", "written_paths"}.issubset(payload)
+    assert all(isinstance(path, str) for path in payload["written_paths"])
+
+
+def test_output_graph_diagnostics_report_bundle_path_order_is_deterministic(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    result = run_and_write_output_graph_diagnostics_report_bundle(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+    )
+
+    assert result.written_paths == expected_report_bundle_paths(diagnostics_output_dir)
+    assert result.written_paths[0].name == "multi_condition_graph_diagnostics.json"
+    assert (
+        result.written_paths[-1].name
+        == "multi_condition_graph_diagnostics_summary.json"
+    )
+
+
+def test_output_graph_diagnostics_report_bundle_missing_run_meta_fails_before_writing(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    with pytest.raises(GraphDiagnosticsError, match="Missing run metadata"):
+        run_and_write_output_graph_diagnostics_report_bundle(
+            tmp_path,
+            diagnostics_output_dir,
+        )
+
+    assert not diagnostics_output_dir.exists()
+
+
+def test_output_graph_diagnostics_report_bundle_explicit_conditions_need_no_run_meta(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+
+    result = run_and_write_output_graph_diagnostics_report_bundle(
+        tmp_path,
+        tmp_path / "diagnostics",
+        conditions=("normal",),
+    )
+
+    assert result.diagnostics.conditions == ("normal",)
+    assert (
+        tmp_path / "diagnostics" / "normal" / "graph_diagnostics.json"
+    ).exists()
+    assert (
+        tmp_path / "diagnostics" / "multi_condition_graph_diagnostics_summary.json"
+    ).exists()
+
+
+def test_output_graph_diagnostics_report_bundle_write_failure_is_translated(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output = tmp_path / "diagnostics"
+    diagnostics_output.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(GraphDiagnosticsError):
+        run_and_write_output_graph_diagnostics_report_bundle(
+            FIXTURE_ROOT,
+            diagnostics_output,
+        )
 
 
 def test_run_and_write_output_graph_diagnostics_works_for_expected_fixture(

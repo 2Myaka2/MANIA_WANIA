@@ -229,6 +229,29 @@ class OutputGraphDiagnosticsRun:
         }
 
 
+@dataclass(frozen=True)
+class OutputGraphDiagnosticsReportBundle:
+    """Run-and-write output graph diagnostics report bundle."""
+
+    diagnostics: MultiConditionGraphDiagnostics
+    summary: MultiConditionGraphDiagnosticsSummary
+    written_paths: tuple[Path, ...]
+
+    @property
+    def passed(self) -> bool:
+        """Return whether output graph diagnostics passed."""
+        return self.diagnostics.passed
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable report bundle dictionary."""
+        return {
+            "passed": self.passed,
+            "diagnostics": self.diagnostics.to_dict(),
+            "summary": self.summary.to_dict(),
+            "written_paths": [str(path) for path in self.written_paths],
+        }
+
+
 def run_condition_graph_diagnostics(
     condition_dir: str | Path,
     *,
@@ -350,6 +373,48 @@ def run_and_write_output_graph_diagnostics(
     return OutputGraphDiagnosticsRun(
         diagnostics=diagnostics,
         written_paths=written_paths,
+    )
+
+
+def run_and_write_output_graph_diagnostics_report_bundle(
+    output_root: str | Path,
+    diagnostics_output_dir: str | Path,
+    *,
+    conditions: Iterable[str] | None = None,
+    abs_tol: float = 1e-6,
+    weight_column: str = "contact_freq",
+    degree_column: str = "degree",
+    strength_column: str = "strength",
+) -> OutputGraphDiagnosticsReportBundle:
+    """Run output graph diagnostics and write detailed and summary reports."""
+    diagnostics = run_output_graph_diagnostics(
+        output_root,
+        conditions=conditions,
+        abs_tol=abs_tol,
+        weight_column=weight_column,
+        degree_column=degree_column,
+        strength_column=strength_column,
+    )
+    try:
+        diagnostics_paths = write_multi_condition_graph_diagnostics_bundle(
+            diagnostics,
+            diagnostics_output_dir,
+        )
+    except OSError as exc:
+        raise GraphDiagnosticsError(
+            f"Could not write graph diagnostics bundle: {exc}"
+        ) from exc
+
+    summary = summarize_multi_condition_graph_diagnostics(diagnostics)
+    summary_path = write_multi_condition_graph_diagnostics_summary(
+        summary,
+        diagnostics_output_dir,
+    )
+
+    return OutputGraphDiagnosticsReportBundle(
+        diagnostics=diagnostics,
+        summary=summary,
+        written_paths=(*diagnostics_paths, summary_path),
     )
 
 
@@ -613,8 +678,10 @@ __all__ = [
     "GraphDiagnosticsError",
     "MultiConditionGraphDiagnostics",
     "MultiConditionGraphDiagnosticsSummary",
+    "OutputGraphDiagnosticsReportBundle",
     "OutputGraphDiagnosticsRun",
     "run_condition_graph_diagnostics",
+    "run_and_write_output_graph_diagnostics_report_bundle",
     "run_and_write_output_graph_diagnostics",
     "run_multi_condition_graph_diagnostics",
     "run_output_graph_diagnostics",
