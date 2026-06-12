@@ -2,192 +2,99 @@
 
 ## Purpose
 
-This document defines how future scientific integration tests should be
-organized. These tests will be local, explicit opt-in checks rather than part
+The local scientific harness supports explicit, developer-run scientific tests
+without making optional dependencies or real molecular dynamics (MD) data part
 of the default test suite or default CI.
 
-## Current status
+## Implemented harness
 
-Stage 9.3 is documentation and test-strategy work only. Stage 9.2 defined the
-optional `md` and `science` extras, but Stage 9.3 does not add scientific
-integration tests or real molecular dynamics (MD) data.
+Stage 11.3 registers these pytest markers:
 
-Default tests still do not require optional scientific dependencies. Stage 9.3
-does not modify CI or runtime source.
+- `local_scientific`: local-only tests skipped unless explicitly enabled;
+- `requires_mdanalysis`: tests requiring the optional MDAnalysis runtime;
+- `requires_real_md_data`: tests requiring a local real MD reference package.
 
-## Test categories
+Tests under `tests/local_scientific` are collected by plain `pytest` but skipped
+by default. The harness does not alter tests outside that directory.
 
-### Default unit/contract tests
+## Default behavior
 
-Default unit/contract tests:
+The default command remains:
 
-- run in the default test suite;
-- do not require optional scientific dependencies;
-- do not require real MD data;
-- may use tiny committed synthetic or text fixtures;
-- may validate contracts, manifests, reports, config parsing, documentation,
-  and lightweight behavior.
+```bash
+pytest
+```
 
-### Documentation/config tests
+With `MANIA_RUN_LOCAL_SCIENTIFIC` unset, empty, or set to any value other than
+`1`, `true`, `yes`, or `on` (case-insensitive), all tests under
+`tests/local_scientific` are skipped.
 
-Documentation/config tests validate documentation, examples, ADRs, and
-`pyproject.toml` optional extras. They do not import scientific dependencies
-and run by default.
+Default/core tests do not require optional extras, MDAnalysis, local real data,
+or a local reference package.
 
-### Local scientific integration tests
+Default/core tests must not require these extras.
 
-Local scientific integration tests are future opt-in tests only. They may:
+## Enabling local tests
 
-- require optional extras such as `.[md]` or `.[science]`;
-- require local uncommitted MD data;
-- use a local reference package;
-- run outside default CI;
-- be skipped unless explicitly enabled.
+Enable the local scientific directory explicitly:
 
-They must not become part of default CI, require real data in the repository,
-or make optional scientific dependencies necessary for the default test suite.
-Default CI remains separate from these future tests, as documented in
-`docs/default_ci_scientific_boundary.md`.
+```bash
+MANIA_RUN_LOCAL_SCIENTIFIC=1 pytest tests/local_scientific
+```
 
-## Proposed future markers
-
-The project currently has no registered custom pytest markers. A future
-implementation may propose:
-
-- `local_scientific`: requires local user/reference setup and is not part of
-  default CI;
-- `requires_mdanalysis`: requires the optional `MDAnalysis` dependency;
-- `requires_real_md_data`: requires local uncommitted trajectory or topology
-  data.
-
-Stage 9.3 does not register pytest markers, add marked scientific tests, or
-create `tests/local_scientific`.
-
-## Local data policy
-
-- Real topology files must not be committed.
-- Real trajectory files must not be committed.
-- Real reference-structure files must not be committed.
-- Full real residue libraries must remain local/reference inputs.
-- Notebooks, parquet files, figures, and full exports must not be committed.
-- `data/reference/...` must remain local and uncommitted unless a later
-  explicit task changes that policy.
-- Future local scientific tests should use user-provided local paths or a local
-  reference package.
-
-## Optional dependency policy
-
-Future local scientific integration tests may require one of the optional
-extras:
+Tests marked `requires_mdanalysis` run only when the Stage 11.1 availability
+helper reports MDAnalysis is installed. Otherwise they skip with a clear
+reason. Install an optional extra locally when needed:
 
 ```bash
 pip install ".[md]"
 pip install ".[science]"
 ```
 
-Default/core tests must not require these extras. Documentation/config tests
-must not import optional scientific dependencies.
+## Local reference package
 
-Future tests should skip with a clear message when an optional dependency is
-missing. Missing local data may cause a clear skip or a local preflight failure,
-depending on the later test design. Stage 9.3 does not implement skip helpers.
-
-## Suggested local package layout
-
-The Stage 8.5 local reference package convention can support future local
-scientific tests:
-
-```text
-local_reference_package/
-  preprocessing_manifest.yaml
-  data/
-    normal/
-      topology.tpr
-      trajectory.xtc
-    tumor/
-      topology.tpr
-      trajectory.xtc
-  residue_library/
-    mania_residue_library.json
-```
-
-This layout is local-only. The directory and its files are not committed and
-are not part of default tests.
-
-## How future local tests should run
-
-The following is a future example only:
+`MANIA_LOCAL_REFERENCE_PACKAGE` may point to a local-only reference package:
 
 ```bash
-pip install ".[md]"
-
-MANIA_LOCAL_REFERENCE_PACKAGE=/path/to/local_reference_package \
-  pytest tests/local_scientific -m local_scientific
+MANIA_RUN_LOCAL_SCIENTIFIC=1 \
+MANIA_LOCAL_REFERENCE_PACKAGE=/path/to/local/package \
+pytest tests/local_scientific
 ```
 
-This command is not enabled by Stage 9.3. The `tests/local_scientific`
-directory is not created, and the marker is not registered in Stage 9.3. The
-exact command may be refined in Stage 9.4 or Stage 11.
+Tests marked `requires_real_md_data` run only when that path exists and is a
+directory. The harness does not create the path or scan it for scientific
+files.
 
-Future local tests must be explicitly enabled and must not be selected by the
-plain `pytest` command used in default CI.
+Real topology files must not be committed.
+Real trajectory files must not be committed.
+Real structures and full reference-package data must also remain local.
+`data/reference` remains local and uncommitted unless a future explicit
+decision changes that policy.
 
-## What default tests must not require
+## Test categories
 
-Default tests must not require:
+### Default unit/contract tests
 
-- `MDAnalysis`;
-- an explicit `numpy` dependency;
-- `pandas`;
-- `networkx`;
-- `pyarrow`;
-- GROMACS;
-- real topology files;
-- real trajectory files;
-- local reference packages;
-- internet access or downloads;
-- notebook, parquet, or figure artifacts.
+Default tests remain lightweight and require neither optional scientific
+dependencies nor real MD data.
 
-## Non-goals for Stage 9.3
+### Documentation/config tests
 
-Stage 9.3 does not:
+Documentation and configuration tests verify markers, environment behavior,
+dependency boundaries, and the absence of committed real data.
 
-- add local scientific integration tests;
-- add real MD data;
-- add topology fixtures;
-- add trajectory fixtures;
-- modify CI;
-- register pytest markers;
-- create `tests/local_scientific`;
-- import MDAnalysis;
-- import numpy, pandas, networkx, or pyarrow;
-- implement trajectory loading;
-- implement topology loading;
-- compute Rg;
-- compute contacts;
-- run residue QC from topology or trajectory data;
-- add CLI integration;
-- add workflow integration;
-- modify runtime source.
+### Local scientific integration tests
 
-## Future stages
+The local directory is now available as opt-in harness space. Stage 11.3 adds
+only marker smoke tests; it does not add actual topology or trajectory loading
+tests.
 
-```text
-Stage 9.3:
-  local-only scientific integration test strategy.
+## Stage 9.3 history
 
-Stage 9.4:
-  document/enforce that default CI does not depend on real MD data.
+Stage 9.3 documented the original strategy only.
+Stage 9.3 does not register pytest markers.
+It does not create `tests/local_scientific`, import MDAnalysis, implement
+trajectory loading, compute Rg or contacts, or modify CI. Stage 11.3 implements
+the harness while preserving those scientific and CI boundaries.
 
-Stage 10:
-  residue-library bridge work.
-
-Stage 11:
-  minimal trajectory loading prototype and first local-only scientific
-  integration tests, after dependency/runtime decisions.
-
-Stage 12+:
-  Rg/contact/graph scientific integration tests.
-```
-
-These later stages are planning notes and are not implemented by Stage 9.3.
+See `docs/default_ci_scientific_boundary.md` for default CI requirements.

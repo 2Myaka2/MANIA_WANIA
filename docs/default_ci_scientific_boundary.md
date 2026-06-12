@@ -9,18 +9,18 @@ scientific runtime work.
 
 ## Current CI status
 
-At Stage 9.4, `.github/workflows/ci.yml`:
+At Stage 11.3, `.github/workflows/ci.yml`:
 
 - installs the project and development tooling with `.[dev]`;
 - runs the default test suite with plain `pytest`;
 - does not install `.[md]`;
 - does not install `.[science]`;
+- does not set `MANIA_RUN_LOCAL_SCIENTIFIC`;
 - does not provide `MANIA_LOCAL_REFERENCE_PACKAGE`;
 - does not reference `data/reference`;
 - does not select local scientific tests by marker or path.
 
-This section records the workflow observed during Stage 9.4. Stage 9.4 does not
-modify that workflow.
+Stage 11.3 adds the test harness without modifying that workflow.
 
 ## Default CI guarantees
 
@@ -67,10 +67,14 @@ explicit and separate from default CI.
 
 ## Relationship to local scientific integration tests
 
-Local scientific integration tests are future opt-in tests and must not run in
-default CI. The proposed Stage 9.3 markers are future conventions only.
-Stage 9.4 does not register pytest markers and does not create
-`tests/local_scientific`.
+The local scientific harness exists under `tests/local_scientific`. Its
+registered markers are `local_scientific`, `requires_mdanalysis`, and
+`requires_real_md_data`. These tests remain opt-in and are skipped unless
+`MANIA_RUN_LOCAL_SCIENTIFIC` is enabled.
+
+Default CI must not enable `MANIA_RUN_LOCAL_SCIENTIFIC`, set
+`MANIA_LOCAL_REFERENCE_PACKAGE`, select `tests/local_scientific` explicitly,
+or install `.[md]` or `.[science]`.
 
 See `docs/local_scientific_integration_tests.md` for the local test strategy.
 
@@ -128,3 +132,6 @@ Stage 12+:
 ```
 
 These later stages are planning notes and are not implemented by Stage 9.4.
+
+Stage 11.3 implements only the local scientific test harness. It does not add
+scientific CI behavior, real MD data, or topology/trajectory loading tests.

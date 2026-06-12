@@ -39,6 +39,11 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "local_scientific: local-only scientific tests that are skipped by default unless explicitly enabled",
+    "requires_mdanalysis: tests that require MDAnalysis to be installed",
+    "requires_real_md_data: tests that require a local real MD reference package or dataset",
+]
 
 [tool.ruff]
 line-length = 88

@@ -84,6 +84,21 @@ runtime wrapper and are excluded from `to_dict()` output.
 Actual single-condition loading remains future Stage 11.4 work. Runtime
 metadata and provenance collection remains future Stage 11.6 work.
 
+## Stage 11.3 local scientific test harness
+
+Stage 11.3 provides opt-in test infrastructure under `tests/local_scientific`.
+The registered markers are `local_scientific`, `requires_mdanalysis`, and
+`requires_real_md_data`.
+
+Local tests are skipped by default. Set `MANIA_RUN_LOCAL_SCIENTIFIC=1` to
+enable them. Tests requiring local real data also use
+`MANIA_LOCAL_REFERENCE_PACKAGE`; tests requiring MDAnalysis skip when the
+optional runtime is unavailable.
+
+The harness contains marker smoke tests only. It does not load topology or
+trajectory files, and actual single-condition loading remains future Stage
+11.4 work.
+
 ## Explicit residue-name boundary
 
 Stage 10.3 can run residue QC only for explicit residue names supplied directly
@@ -231,8 +246,9 @@ Stage 11.8:
   Document the boundary before Rg.
 ```
 
-The Stage 11.1 optional dependency boundary and Stage 11.2 runtime result
-models are implemented. The remaining entries describe future work.
+The Stage 11.1 optional dependency boundary, Stage 11.2 runtime result models,
+and Stage 11.3 local scientific test harness are implemented. The remaining
+entries describe future work.
 
 ## Non-goals for Stage 10.4
 

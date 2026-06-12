@@ -181,8 +181,25 @@ def test_runtime_source_does_not_import_scientific_packages() -> None:
             assert import_pattern.match(line) is None
 
 
-def test_local_scientific_test_directory_does_not_exist() -> None:
-    assert not LOCAL_SCIENTIFIC_TEST_DIR.exists()
+def test_local_scientific_test_directory_contains_no_real_md_data() -> None:
+    real_md_suffixes = {
+        ".xtc",
+        ".trr",
+        ".tpr",
+        ".gro",
+        ".pdb",
+        ".pqr",
+        ".dcd",
+        ".nc",
+        ".h5",
+        ".hdf5",
+    }
+
+    assert LOCAL_SCIENTIFIC_TEST_DIR.is_dir()
+    assert not any(
+        path.is_file() and path.suffix.lower() in real_md_suffixes
+        for path in LOCAL_SCIENTIFIC_TEST_DIR.rglob("*")
+    )
 
 
 def test_boundary_doc_does_not_claim_scientific_ci_implementation() -> None:

@@ -159,6 +159,15 @@ Stage 11.2 implements runtime input and result dataclasses without scientific
 dependencies. MDAnalysis remains optional, and actual topology or trajectory
 loading remains future work.
 
+## Stage 11.3 local scientific test harness
+
+Stage 11.3 implements an opt-in `local_scientific` harness with
+`requires_mdanalysis` and `requires_real_md_data` markers.
+`MANIA_RUN_LOCAL_SCIENTIFIC` enables local execution, while
+`MANIA_LOCAL_REFERENCE_PACKAGE` identifies optional local data. MDAnalysis
+remains optional, and default CI remains independent from scientific extras
+and real data.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
