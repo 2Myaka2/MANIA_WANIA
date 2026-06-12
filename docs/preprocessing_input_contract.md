@@ -13,6 +13,23 @@ This is only a contract and typed model layer. It does not parse trajectories,
 parse topology, run MDAnalysis, run GROMACS, compute contacts, compute Rg,
 export backend artifacts, or modify the current workflow CLI.
 
+Stage 8.2 is documentation and example hardening only. It does not check whether
+declared scientific files exist, validate full residue-library content, connect
+manifest residue-library options to residue QC, parse topology or trajectory
+files, compute Rg or contacts, export backend scientific outputs, or run through
+the CLI.
+
+## Example files
+
+Two tiny committed placeholder manifests demonstrate the contract:
+
+- `examples/preprocessing/minimal_manifest.yaml`
+- `examples/preprocessing/full_manifest.yaml`
+
+Both examples are tested against the public
+`load_preprocessing_input_manifest(...)` loader. Their declared scientific
+paths are illustrative and are not expected to exist.
+
 ## Manifest shape
 
 ```yaml
@@ -75,12 +92,22 @@ or residue-library data should be committed to this repository.
 - `frame_time_ps`, when provided, must be finite and positive.
 - Skip residue names are stripped, uppercased, and deduplicated in input order.
 
+## Canonical terminology
+
+`custom_residues_path` is the canonical field for the optional custom residue
+definition path. Competing names are not supported aliases.
+
 ## Future use
 
 Later stages may use this manifest to drive local file existence validation,
 residue library QC, trajectory loading, Rg computation, contacts extraction,
 and backend contract export. None of those capabilities is implemented by this
 contract task.
+
+Stage 8.3 may add local declared-file existence validation for preprocessing
+manifests. Stage 8.4 may add a residue-library validation bridge. Optional
+scientific runtime dependencies may be introduced only in later stages after an
+explicit architectural decision.
 
 ## Non-goals
 

@@ -1,0 +1,7 @@
+output_root: tmp/mania_preprocessing_output
+
+conditions:
+  - condition: normal
+    topology_path: data/example/normal/topology.tpr
+    trajectory_paths:
+      - data/example/normal/trajectory.xtc

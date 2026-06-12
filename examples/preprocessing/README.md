@@ -1,0 +1,26 @@
+# Preprocessing manifest examples
+
+These files are committed placeholder manifests for the Stage 8 preprocessing
+input contract. They are documentation examples, not real scientific datasets.
+
+The declared topology, trajectory, reference-structure, and residue-library
+paths are placeholders and are not expected to exist. Stage 8.2 does not check
+whether declared scientific input paths exist, parse trajectory or topology
+files, or validate full residue-library content.
+
+Real or local reference data must not be committed to this repository. The
+canonical field for a custom residue definition file is
+`custom_residues_path`.
+
+Load an example through the public Python API:
+
+```python
+from mania.preprocessing import load_preprocessing_input_manifest
+
+manifest = load_preprocessing_input_manifest(
+    "examples/preprocessing/minimal_manifest.yaml"
+)
+print(manifest.condition_names())
+```
+
+There is currently no preprocessing-manifest CLI command.
