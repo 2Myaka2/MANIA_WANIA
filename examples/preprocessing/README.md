@@ -27,4 +27,9 @@ Loading an example and validating its declared file paths are separate
 operations. The examples intentionally use placeholder paths, so explicit local
 path validation is expected to fail unless matching local files are created.
 
+Residue-library paths in these examples are placeholder contract fields.
+Stage 8.4 documents future bridge behavior only: the examples do not load,
+parse, or validate residue-library content, and the placeholder
+residue-library files are not expected to exist.
+
 There is currently no preprocessing-manifest CLI command.

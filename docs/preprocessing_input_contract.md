@@ -132,6 +132,14 @@ print(report.passed)
 print(report.to_dict())
 ```
 
+## Residue library bridge planning
+
+The preprocessing manifest defines `residue_library` options, but Stage 8.4
+does not connect them to the existing residue-library loader or QC layer. The
+future bridge plan is documented in
+`docs/preprocessing_residue_library_bridge.md`; implementation belongs to
+Stage 10.1 and later stages.
+
 ## Future use
 
 Later stages may use this manifest to drive local file existence validation,
@@ -139,9 +147,8 @@ residue library QC, trajectory loading, Rg computation, contacts extraction,
 and backend contract export. None of those capabilities is implemented by this
 contract task.
 
-Stage 8.4 may add a residue-library validation bridge. Optional scientific
-runtime dependencies may be introduced only in later stages after an explicit
-architectural decision.
+Optional scientific runtime dependencies may be introduced only in later stages
+after an explicit architectural decision.
 
 ## Non-goals
 
