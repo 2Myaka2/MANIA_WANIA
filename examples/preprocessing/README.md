@@ -32,4 +32,9 @@ Stage 8.4 documents future bridge behavior only: the examples do not load,
 parse, or validate residue-library content, and the placeholder
 residue-library files are not expected to exist.
 
+These examples are standalone placeholder manifests, not local reference
+packages. Reference package sanity checks are intended for user-local
+directories containing matching files; no local reference package is committed
+to this repository.
+
 There is currently no preprocessing-manifest CLI command.

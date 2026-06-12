@@ -140,6 +140,13 @@ future bridge plan is documented in
 `docs/preprocessing_residue_library_bridge.md`; implementation belongs to
 Stage 10.1 and later stages.
 
+## Local reference package preflight
+
+Manifest loading validates shape and types, Stage 8.3 optionally validates
+declared paths, and Stage 8.5 checks a user-local directory package around a
+manifest. See `docs/preprocessing_local_reference_package.md` for the
+directory-only convention and checker boundaries.
+
 ## Future use
 
 Later stages may use this manifest to drive local file existence validation,
