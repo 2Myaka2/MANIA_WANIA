@@ -153,6 +153,12 @@ helpers while keeping MDAnalysis optional. Default CI and default tests must
 continue to work without it. Actual topology and trajectory loading remains
 future Stage 11.4 work.
 
+## Stage 11.2 runtime result models
+
+Stage 11.2 implements runtime input and result dataclasses without scientific
+dependencies. MDAnalysis remains optional, and actual topology or trajectory
+loading remains future work.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

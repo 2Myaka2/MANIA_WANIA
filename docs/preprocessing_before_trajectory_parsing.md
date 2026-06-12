@@ -8,7 +8,9 @@ topology and trajectory parsing begins.
 Stages 8 through 10 provide lightweight contracts, local path checks,
 residue-library loading and validation, and residue QC for explicit residue
 names. Stage 11.1 adds an optional scientific dependency boundary. These
-stages do not add scientific file parsing or a trajectory runtime object.
+stages do not add scientific file parsing. Stage 11.2 adds value models for
+future condition runtime inputs and loading results, but does not create a
+trajectory runtime object.
 
 ## Current implemented capabilities
 
@@ -21,8 +23,10 @@ The current preprocessing layer supports:
 - a bridge from manifest residue-library options to the existing loader and
   custom-residue extension behavior;
 - report-based local residue-library format validation;
-- residue QC for residue names provided explicitly by the caller.
-- safe MDAnalysis availability, status, and lazy-require helpers.
+- residue QC for residue names provided explicitly by the caller;
+- safe MDAnalysis availability, status, and lazy-require helpers;
+- file-agnostic runtime input, runtime wrapper, load issue, and load result
+  dataclasses.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -60,6 +64,25 @@ remain valid without `MDAnalysis`. Future Stage 11 loading code should call
 
 This boundary does not load topology or trajectory files, create an MDAnalysis
 Universe/session object, or implement Stage 11.4 loading.
+
+## Stage 11.2 runtime result models
+
+Stage 11.2 defines safe value and report models for future condition loading:
+
+- `PreprocessingConditionRuntimeInput` stores condition paths and can resolve
+  relative manifest paths against an explicitly supplied `base_dir`;
+- `PreprocessingConditionRuntime` can wrap a future scientific runtime object;
+- `PreprocessingTrajectoryLoadIssue` defines deterministic future issue kinds;
+- `PreprocessingConditionLoadResult` summarizes future load status, issues,
+  inputs, and runtime metadata.
+
+These dataclasses do not check or read files, call
+`require_mdanalysis(...)`, load topology or trajectory data, or create an
+MDAnalysis Universe/session object. Runtime objects are retained only on the
+runtime wrapper and are excluded from `to_dict()` output.
+
+Actual single-condition loading remains future Stage 11.4 work. Runtime
+metadata and provenance collection remains future Stage 11.6 work.
 
 ## Explicit residue-name boundary
 
@@ -208,8 +231,8 @@ Stage 11.8:
   Document the boundary before Rg.
 ```
 
-Only the Stage 11.1 optional dependency boundary is implemented. The remaining
-entries describe future work.
+The Stage 11.1 optional dependency boundary and Stage 11.2 runtime result
+models are implemented. The remaining entries describe future work.
 
 ## Non-goals for Stage 10.4
 

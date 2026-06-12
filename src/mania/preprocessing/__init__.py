@@ -40,10 +40,19 @@ from mania.preprocessing.scientific_runtime import (
     is_mdanalysis_available,
     require_mdanalysis,
 )
+from mania.preprocessing.trajectory_runtime import (
+    PreprocessingConditionLoadResult,
+    PreprocessingConditionRuntime,
+    PreprocessingConditionRuntimeInput,
+    PreprocessingTrajectoryLoadIssue,
+)
 
 __all__ = [
     "OptionalScientificDependencyStatus",
     "PreprocessingCheckedPath",
+    "PreprocessingConditionLoadResult",
+    "PreprocessingConditionRuntime",
+    "PreprocessingConditionRuntimeInput",
     "PreprocessingInputManifest",
     "PreprocessingOptionalDependencyError",
     "PreprocessingPathValidationIssue",
@@ -55,6 +64,7 @@ __all__ = [
     "PreprocessingResidueLibraryValidationReport",
     "PreprocessingResidueQCIssue",
     "PreprocessingResidueQCReport",
+    "PreprocessingTrajectoryLoadIssue",
     "ResolvedResidueLibraryManifestOptions",
     "ResidueLibraryInputConfig",
     "TrajectoryInputConfig",
