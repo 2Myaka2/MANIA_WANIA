@@ -157,6 +157,10 @@ contract task.
 Optional scientific runtime dependencies may be introduced only in later stages
 after an explicit architectural decision.
 
+The preprocessing manifest remains dependency-light, and scientific runtime
+dependencies remain optional. The boundary is documented in
+`docs/adr/0001-optional-scientific-dependencies.md`.
+
 ## Non-goals
 
 - No MDAnalysis.

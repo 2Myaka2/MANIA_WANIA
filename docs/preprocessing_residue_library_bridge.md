@@ -129,6 +129,11 @@ Stage 11:
 
 These are planning notes, not implemented capabilities.
 
+Residue-library bridge planning remains independent from MDAnalysis.
+Topology- or trajectory-derived residue names are future Stage 11 and later
+work. Optional scientific dependencies are discussed in
+`docs/adr/0001-optional-scientific-dependencies.md`.
+
 ## Proposed future API shape
 
 The following is **proposed future pseudocode**. The function is **not

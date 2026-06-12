@@ -98,3 +98,7 @@ Stage 9 may decide optional scientific dependencies and a local-only integration
 test strategy. Stage 10 may connect residue-library options to the existing
 loader and QC layer. Stage 11 and later may begin topology or trajectory loading
 after explicit dependency decisions.
+
+The Stage 8.5 checker does not require scientific dependencies. Future
+scientific loading follows the optional dependency decision in
+`docs/adr/0001-optional-scientific-dependencies.md`.
