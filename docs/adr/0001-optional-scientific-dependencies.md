@@ -86,17 +86,45 @@ dependencies:
 
 ## Candidate dependency families
 
-These packages are candidates for future optional dependencies only. They are
-not declared here as installed or required:
+Stage 9.1 identified these candidate families for future optional dependencies:
 
 - MD trajectory and topology runtime: `MDAnalysis`;
 - numerical arrays and mathematics: `numpy`;
 - tabular or local data handling, if needed: `pandas` and `pyarrow`;
 - graph or scientific graph analysis, if needed: `networkx`.
 
-Stage 9.2 will decide whether extras such as `[science]`, `[md]`, or more
-granular groups should exist. Stage 9.1 does not choose final extra names and
-does not modify dependency configuration.
+Stage 9.1 did not choose final extra names or modify dependency configuration.
+
+## Stage 9.2 extras decision
+
+Stage 9.2 defines two PEP 621 optional dependency extras:
+
+- `md` is the minimal future molecular-dynamics runtime extra. It directly
+  installs `MDAnalysis` for future topology loading, trajectory loading, frame
+  iteration, and atom or residue selection.
+- `science` is the aggregate convenience extra for future scientific
+  preprocessing. It currently repeats the same direct dependency set as `md`,
+  so it also directly installs `MDAnalysis`.
+
+Install either extra from a local checkout with:
+
+```bash
+pip install ".[md]"
+pip install ".[science]"
+```
+
+The dependencies remain optional so the core runtime, preprocessing manifest
+loading, filesystem checks, current CLI workflow, and default tests remain
+lightweight. Stage 9.2 does not add `numpy`, `pandas`, `networkx`, or `pyarrow`
+explicitly. `numpy` may be installed transitively by a scientific package, but
+immediate trajectory/topology boundary work does not require a separate direct
+declaration. `pandas` and `pyarrow` are not needed for that immediate boundary
+work. `networkx` is excluded because the current graph diagnostics layer
+remains lightweight and does not require it.
+
+Stage 9.2 does not implement scientific runtime code, topology or trajectory
+loading, or scientific calculations. It also does not make real MD data part
+of default CI or the default test suite.
 
 ## Non-goals for Stage 9.1
 
@@ -127,8 +155,8 @@ Stage 9.1:
   ADR only; define the dependency boundary.
 
 Stage 9.2:
-  decide exact dependency extras/groups, for example [science] / [md],
-  without necessarily implementing scientific preprocessing.
+  define the [md] and [science] optional extras without implementing
+  scientific preprocessing.
 
 Stage 9.3:
   define a local-only scientific integration test strategy.
@@ -144,14 +172,15 @@ Stage 11:
   decisions.
 ```
 
-These are planning notes only and do not describe implemented capabilities.
+Stages 9.1 and 9.2 record dependency-boundary decisions only. The later-stage
+entries are planning notes and do not describe implemented capabilities.
 
 ## Open questions
 
-- Should optional dependencies be grouped as `[science]`, `[md]`, or more
-  granular extras?
 - Should MDAnalysis be the first supported trajectory backend?
-- Should `numpy` be explicit or only transitive through MD-related packages?
+- Should a later stage add more granular extras?
+- Should `numpy` remain transitive or become an explicit dependency when
+  scientific runtime code is designed?
 - Should local-only scientific tests use pytest markers?
 - How should missing optional dependencies be reported?
 - How should documentation distinguish placeholder examples from local real
