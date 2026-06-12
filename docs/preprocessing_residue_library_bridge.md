@@ -110,6 +110,45 @@ options, but Stage 10.2 does not use them to run residue QC or classification.
 The validator checks only the declared residue-library JSON files. It does not
 inspect topology, trajectory, or reference-structure paths.
 
+## Stage 10.3 residue QC for explicit residue names
+
+`run_residue_qc_from_manifest_options(options, residue_names, base_dir=None)`
+runs the existing residue-library QC against residue names supplied directly by
+the caller. It is publicly exported from `mania.preprocessing`.
+
+The wrapper:
+
+1. validates residue-library options through
+   `validate_residue_library_from_manifest_options(...)`;
+2. strips each explicit residue name and rejects non-string or empty entries;
+3. filters names matching the manifest's normalized `skip_resnames`, using the
+   existing residue-name normalization convention;
+4. loads the effective library through
+   `load_residue_library_from_manifest_options(...)` only after validation and
+   input checks pass;
+5. calls the existing `run_residue_library_qc(...)` for the remaining explicit
+   names.
+
+The preprocessing report preserves the stripped input names, the names checked
+by QC, and the names removed by skip filtering. If all names are skipped, QC is
+not run. The wrapper passes an empty skip set to the existing QC function
+because preprocessing has already applied the manifest's explicit skip policy.
+
+The existing QC function normalizes residue-name case for lookup. Stage 10.3
+uses `fail_on_error=False` so unknown residues remain available as the existing
+`not_found` rows and make the preprocessing report fail without discarding QC
+details. Expected `ResidueLibraryQCError` failures are represented as a
+preprocessing `qc_error` issue.
+
+`PreprocessingResidueQCReport.to_dict()` is JSON-serializable. It includes the
+Stage 10.2 validation report and lightweight existing QC fields: rows, status
+counts, unknown residue names, and error status. It does not contain a runtime
+`ResidueLibrary` object.
+
+Residue names are explicit caller inputs only. Stage 10.3 does not extract or
+infer names from topology, trajectory, reference-structure, or reference
+package files.
+
 ## Stage 10.1 boundaries
 
 Stage 10.1 itself does not:
@@ -139,6 +178,20 @@ Stage 10.2 does not:
 - compute contacts;
 - integrate residue-library validation with the CLI or workflow;
 - commit real residue libraries.
+
+## Stage 10.3 boundaries
+
+Stage 10.3 does not:
+
+- parse topology files;
+- parse trajectory files;
+- use MDAnalysis;
+- use GROMACS;
+- compute Rg;
+- compute contacts;
+- generate graphs;
+- integrate residue QC with the CLI or workflow;
+- add real data.
 
 Full real residue libraries remain external or local reference inputs.
 `data/reference/...` is not populated by this bridge.
