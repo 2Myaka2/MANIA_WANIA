@@ -52,12 +52,13 @@ def test_examples_readme_describes_placeholder_residue_library_paths() -> None:
     assert "not expected to exist" in readme_text
 
 
-def test_proposed_bridge_api_is_documentation_only() -> None:
+def test_stage_10_1_bridge_api_is_implemented() -> None:
     bridge_text = BRIDGE_DOC_PATH.read_text(encoding="utf-8")
     runtime_source = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted(RUNTIME_SOURCE_DIR.rglob("*.py"))
     )
 
+    assert "Stage 10.1" in bridge_text
     assert PROPOSED_FUNCTION_NAME in bridge_text
-    assert PROPOSED_FUNCTION_NAME not in runtime_source
+    assert PROPOSED_FUNCTION_NAME in runtime_source

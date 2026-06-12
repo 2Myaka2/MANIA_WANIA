@@ -17,6 +17,12 @@ from mania.preprocessing.reference_package import (
     PreprocessingReferencePackageReport,
     check_preprocessing_reference_package,
 )
+from mania.preprocessing.residue_library_bridge import (
+    PreprocessingResidueLibraryBridgeError,
+    ResolvedResidueLibraryManifestOptions,
+    load_residue_library_from_manifest_options,
+    resolve_residue_library_manifest_paths,
+)
 
 __all__ = [
     "PreprocessingCheckedPath",
@@ -25,9 +31,13 @@ __all__ = [
     "PreprocessingPathValidationReport",
     "PreprocessingReferencePackageIssue",
     "PreprocessingReferencePackageReport",
+    "PreprocessingResidueLibraryBridgeError",
+    "ResolvedResidueLibraryManifestOptions",
     "ResidueLibraryInputConfig",
     "TrajectoryInputConfig",
     "check_preprocessing_reference_package",
     "load_preprocessing_input_manifest",
+    "load_residue_library_from_manifest_options",
+    "resolve_residue_library_manifest_paths",
     "validate_preprocessing_manifest_paths",
 ]

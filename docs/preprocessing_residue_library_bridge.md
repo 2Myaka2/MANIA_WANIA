@@ -2,178 +2,96 @@
 
 ## Purpose
 
-This document plans a future bridge between preprocessing manifest
-residue-library options and the existing MANIA residue-library loader,
-extension, classification, and QC components.
+Stage 10.1 connects preprocessing manifest residue-library options to the
+existing MANIA residue-library loader and extension layer.
 
-## Current status
+The bridge is implemented in
+`src/mania/preprocessing/residue_library_bridge.py` and is publicly exported
+from `mania.preprocessing`.
 
-Stage 8.4 is documentation and planning only. The preprocessing manifest already
-defines residue-library options, and the existing residue-library layer already
-loads a source library and supports in-memory custom residues and QC. These two
-parts are not connected yet.
+## Public API
 
-No manifest-to-residue-loader bridge is implemented in Stage 8.4.
+`resolve_residue_library_manifest_paths(options, base_dir=None)` returns
+`ResolvedResidueLibraryManifestOptions`. It:
 
-## Existing residue-library layer
+- requires `residue_library.library_path`;
+- resolves relative `library_path` and `custom_residues_path` values against an
+  explicitly supplied `base_dir`;
+- keeps absolute paths unchanged;
+- leaves paths as provided when `base_dir` is `None`;
+- does not check file existence or open files;
+- preserves the manifest model's normalized `skip_resnames` tuple;
+- preserves `allow_user_overrides`.
 
-The current residue-library implementation is in
-`src/mania/residue_library.py`:
+Missing `library_path` raises
+`PreprocessingResidueLibraryBridgeError`, a bridge-level `ValueError`.
+`ResolvedResidueLibraryManifestOptions.to_dict()` converts paths to strings and
+returns JSON-serializable data.
 
-- `load_residue_library(path)` reads and validates a MANIA residue library JSON
-  file and returns a `ResidueLibrary`.
-- `ResidueLibrary` contains normalized residue and patch mappings plus lookup
-  helpers. `classify_residue(resname)` returns the stored category or `None`.
-- `extend_residue_library(...)` creates a new effective library from a loaded
-  library and an in-memory mapping of custom residue names to `ResidueEntry`
-  objects.
-- Custom residue names are normalized. Replacing a source entry is rejected
-  unless `allow_override_existing=True`.
-- `run_residue_library_qc(...)` accepts residue names grouped by condition, a
-  loaded library, skip residue names, and a `fail_on_error` policy.
-- QC rows use `ok`, `skip`, and `not_found` statuses. `ResidueQCReport` exposes
-  error, unknown-name, and status-count helpers.
-- `write_residue_qc_report(...)` can write an existing QC report as CSV.
+`load_residue_library_from_manifest_options(options, base_dir=None)`:
 
-The current layer does not load custom residue definitions from a separate
-manifest-declared file. Its custom-residue extension API accepts already parsed
-`ResidueEntry` objects.
+1. resolves the manifest options with the helper above;
+2. loads `library_path` with the existing `load_residue_library(...)`;
+3. when configured, loads `custom_residues_path` through the same existing
+   residue-library format and loader;
+4. passes the custom library's parsed residue mapping to the existing
+   `extend_residue_library(...)`;
+5. maps `allow_user_overrides` to
+   `extend_residue_library(..., allow_override_existing=...)`;
+6. returns the existing `ResidueLibrary` type.
 
-The archive inventory identifies `mania_residue_library.json` as the source of
-truth for residue classification and QC, while also stating that the full
-library should not be committed to the backend repository.
+The custom file therefore uses the existing `MANIA_residue_library` JSON
+format. Stage 10.1 does not introduce another custom-residue format or parser.
+Only its residue entries are applied because the existing extension API accepts
+a mapping of residue names to `ResidueEntry` objects.
 
-## Manifest residue-library options
+## Override policy
 
-The preprocessing manifest currently supports:
+The bridge preserves existing extension behavior:
 
-```yaml
-residue_library:
-  library_path: residue_library/mania_residue_library.json
-  custom_residues_path: residue_library/custom_residues.json
-  skip_resnames:
-    - CLA
-    - SOD
-    - TIP3
-  allow_user_overrides: false
-```
+- with `allow_user_overrides: false`, a custom residue that would replace a
+  source residue raises the existing `ResidueLibraryValidationError`;
+- with `allow_user_overrides: true`, the custom residue replaces that entry in
+  the returned effective library;
+- custom residue names continue to use the existing normalization and
+  validation rules.
 
-- `library_path` is the path to the full/source residue library JSON. It is an
-  external or reference input. A real full library must not be committed unless
-  a later task explicitly permits a tiny deterministic fixture.
-- `custom_residues_path` is the canonical preprocessing manifest field for an
-  optional file containing custom residue definitions. A future bridge should
-  map it to the existing custom-residue mechanism.
-- `skip_resnames` lists residue names to ignore during later classification or
-  QC. The manifest model already strips, uppercases, and deduplicates them.
-- `allow_user_overrides` records whether custom definitions may replace source
-  definitions. Enforcement should remain with the existing residue-library
-  layer or the future bridge that calls it.
+Loader and extension errors are not hidden or converted into generic bridge
+errors.
 
-## Planned bridge responsibilities
+## Skipped residue names
 
-A future bridge, likely in Stage 10.1, should:
+`skip_resnames` is already stripped, uppercased, and deduplicated by
+`ResidueLibraryInputConfig`. The resolved-options object retains that tuple for
+future Stage 10.3 and later QC or classification work.
 
-- accept `ResidueLibraryInputConfig`;
-- optionally accept an explicit `base_dir`;
-- resolve relative residue-library paths without changing manifest parsing;
-- call `load_residue_library()` for the configured source library;
-- parse custom definitions into the existing `ResidueEntry` representation;
-- pass those entries to `extend_residue_library()`;
-- map `allow_user_overrides` to the existing `allow_override_existing` policy;
-- preserve normalized `skip_resnames` for a later QC call;
-- reuse `ResidueLibrary`, `ResidueQCReport`, and existing exception types where
-  appropriate;
-- produce deterministic errors or reports.
+Stage 10.1 does not pass skipped names to the loader, run
+`run_residue_library_qc(...)`, or classify any topology or trajectory
+residues.
 
-Path existence checks may use the explicit Stage 8.3 path validator, but
-manifest loading itself must remain shape-and-type validation only.
+## Explicit path base
 
-## Non-goals for Stage 8.4
+Relative paths are joined to `base_dir` only when callers provide it. The
+bridge does not infer a base directory from a manifest path and does not use
+strict path resolution. File existence and content errors remain the
+responsibility of the existing loader or explicit preprocessing path checks.
 
-Stage 8.4 does not:
+## Stage 10.1 boundaries
 
-- implement a manifest-to-residue-loader bridge;
-- load residue-library files from preprocessing manifests;
-- validate residue-library JSON content;
+Stage 10.1 does not:
+
+- add a separate full-library validation task;
 - run residue QC;
 - classify residues from topology or trajectory data;
 - parse topology files;
 - parse trajectory files;
 - require MDAnalysis;
 - require GROMACS;
-- add scientific dependencies;
 - compute Rg;
 - compute contacts;
-- add CLI behavior;
-- add workflow behavior.
+- integrate residue-library loading with the CLI or workflow.
 
-## Future stage ownership
-
-```text
-Stage 8.4:
-  bridge planning only
-
-Stage 10.1:
-  connect manifest residue_library options to the existing loader
-
-Stage 10.2:
-  validate full library format locally
-
-Stage 10.3:
-  run residue QC against explicit/local residue-name inputs when available
-
-Stage 11:
-  obtain residue names from topology/trajectory loading if feasible
-```
-
-These are planning notes, not implemented capabilities.
-
-Residue-library bridge planning remains independent from MDAnalysis.
-Topology- or trajectory-derived residue names are future Stage 11 and later
-work. Optional scientific dependencies are discussed in
+Full real residue libraries remain external or local reference inputs.
+`data/reference/...` is not populated by this bridge.
+Optional scientific dependencies remain governed by
 `docs/adr/0001-optional-scientific-dependencies.md`.
-
-## Proposed future API shape
-
-The following is **proposed future pseudocode**. The function is **not
-implemented in Stage 8.4**.
-
-```python
-def load_residue_library_from_manifest_options(
-    options: ResidueLibraryInputConfig,
-    *,
-    base_dir: str | Path | None = None,
-) -> object:
-    ...
-```
-
-The future implementation should return the existing `ResidueLibrary` type
-where possible. A richer result should be introduced only if the bridge needs
-to carry deterministic loading or validation details that the existing type
-cannot represent.
-
-## Local/reference data policy
-
-Full real residue libraries are external/reference inputs. Real local reference
-data must not be committed. Tiny fixtures or examples are allowed only when
-they are deterministic, intentionally small, and introduced by an explicit
-task.
-
-`data/reference/...` must remain local and uncommitted unless an explicit later
-task changes that policy.
-
-## Open questions
-
-- Should the future bridge return a loaded `ResidueLibrary` directly or a
-  report alongside the loaded object?
-- Should relative paths always require an explicit `base_dir`, matching the
-  Stage 8.3 path validator?
-- Which existing residue-loader exceptions should be preserved, and which, if
-  any, should be wrapped with manifest field context?
-- What file format should `custom_residues_path` use, and how should it be
-  converted into `ResidueEntry` objects?
-- Where should local-only full-library validation reports be written, if
-  anywhere?
-- Should Stage 10.3 reuse `ResidueQCReport` directly or add a bridge-level
-  result containing both the effective library and QC report?
