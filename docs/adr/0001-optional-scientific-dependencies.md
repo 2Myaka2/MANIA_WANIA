@@ -139,6 +139,13 @@ Default CI must not require optional scientific extras or real MD data, and
 local scientific tests remain opt-in. Stage 9.4 adds boundary documentation
 and tests only; see `docs/default_ci_scientific_boundary.md`.
 
+## Stage 10.4 preprocessing boundary
+
+Stage 10 completed residue-library bridge, validation, and explicit
+residue-name QC work without scientific dependencies. Topology and trajectory
+loading remain future optional scientific runtime work. See
+`docs/preprocessing_before_trajectory_parsing.md`.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

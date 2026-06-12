@@ -193,6 +193,16 @@ Stage 10.3 does not:
 - integrate residue QC with the CLI or workflow;
 - add real data.
 
+## Stage 10.4 boundary summary
+
+Stage 10 residue-library work is complete for local residue-library files and
+explicit residue-name inputs. Topology/trajectory-derived residue names remain
+future Stage 11 and later work.
+
+Stage 10.4 adds no runtime behavior. See
+`docs/preprocessing_before_trajectory_parsing.md` for the complete boundary
+before scientific file loading begins.
+
 Full real residue libraries remain external or local reference inputs.
 `data/reference/...` is not populated by this bridge.
 Optional scientific dependencies remain governed by
