@@ -23,6 +23,11 @@ from mania.preprocessing.residue_library_bridge import (
     load_residue_library_from_manifest_options,
     resolve_residue_library_manifest_paths,
 )
+from mania.preprocessing.residue_library_validation import (
+    PreprocessingResidueLibraryValidationIssue,
+    PreprocessingResidueLibraryValidationReport,
+    validate_residue_library_from_manifest_options,
+)
 
 __all__ = [
     "PreprocessingCheckedPath",
@@ -32,6 +37,8 @@ __all__ = [
     "PreprocessingReferencePackageIssue",
     "PreprocessingReferencePackageReport",
     "PreprocessingResidueLibraryBridgeError",
+    "PreprocessingResidueLibraryValidationIssue",
+    "PreprocessingResidueLibraryValidationReport",
     "ResolvedResidueLibraryManifestOptions",
     "ResidueLibraryInputConfig",
     "TrajectoryInputConfig",
@@ -40,4 +47,5 @@ __all__ = [
     "load_residue_library_from_manifest_options",
     "resolve_residue_library_manifest_paths",
     "validate_preprocessing_manifest_paths",
+    "validate_residue_library_from_manifest_options",
 ]

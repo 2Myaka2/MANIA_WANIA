@@ -76,9 +76,43 @@ bridge does not infer a base directory from a manifest path and does not use
 strict path resolution. File existence and content errors remain the
 responsibility of the existing loader or explicit preprocessing path checks.
 
+## Stage 10.2 local format validation
+
+`validate_residue_library_from_manifest_options(options, base_dir=None)`
+provides explicit local validation of the residue-library files declared in
+`ResidueLibraryInputConfig`. It is publicly exported from
+`mania.preprocessing`.
+
+The validator:
+
+- resolves paths through
+  `resolve_residue_library_manifest_paths(...)`, including the same explicit
+  `base_dir` behavior;
+- returns a `PreprocessingResidueLibraryValidationReport` rather than raising
+  for expected missing-path, file-type, load, or extension problems;
+- requires `residue_library.library_path`;
+- checks that the source and optional custom paths exist and are files;
+- loads both files through the existing `load_residue_library(...)`;
+- applies custom residue entries through the existing
+  `extend_residue_library(...)`;
+- maps `allow_user_overrides` to the existing `allow_override_existing`
+  extension policy;
+- reports whether the source loaded, whether custom residues were applied, and
+  the effective residue count when available.
+
+Validation issues distinguish a missing `library_path`, missing files,
+non-file paths, source load errors, custom load errors, and extension errors.
+The report and issue `to_dict()` methods return JSON-serializable dictionaries,
+including string path values. They do not contain a `ResidueLibrary` object.
+
+Normalized `skip_resnames` remain available through the report's resolved
+options, but Stage 10.2 does not use them to run residue QC or classification.
+The validator checks only the declared residue-library JSON files. It does not
+inspect topology, trajectory, or reference-structure paths.
+
 ## Stage 10.1 boundaries
 
-Stage 10.1 does not:
+Stage 10.1 itself does not:
 
 - add a separate full-library validation task;
 - run residue QC;
@@ -90,6 +124,21 @@ Stage 10.1 does not:
 - compute Rg;
 - compute contacts;
 - integrate residue-library loading with the CLI or workflow.
+
+## Stage 10.2 boundaries
+
+Stage 10.2 does not:
+
+- run residue QC;
+- classify residues from topology or trajectory data;
+- parse topology files;
+- parse trajectory files;
+- require MDAnalysis;
+- require GROMACS;
+- compute Rg;
+- compute contacts;
+- integrate residue-library validation with the CLI or workflow;
+- commit real residue libraries.
 
 Full real residue libraries remain external or local reference inputs.
 `data/reference/...` is not populated by this bridge.
