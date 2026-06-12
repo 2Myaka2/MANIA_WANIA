@@ -133,6 +133,12 @@ not run in default CI. They may require the optional extras and local,
 uncommitted MD data. Stage 9.3 adds strategy only; see
 `docs/local_scientific_integration_tests.md`.
 
+## Stage 9.4 default CI boundary
+
+Default CI must not require optional scientific extras or real MD data, and
+local scientific tests remain opt-in. Stage 9.4 adds boundary documentation
+and tests only; see `docs/default_ci_scientific_boundary.md`.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
@@ -169,7 +175,7 @@ Stage 9.3:
   define the local-only scientific integration test strategy.
 
 Stage 9.4:
-  document and enforce that CI/default tests do not require real MD data.
+  document and test the default CI scientific boundary.
 
 Stage 10:
   residue-library bridge work.
@@ -179,8 +185,8 @@ Stage 11:
   decisions.
 ```
 
-Stages 9.1 through 9.3 record dependency and test-boundary decisions only. The
-later-stage entries are planning notes and do not describe implemented
+Stages 9.1 through 9.4 record dependency, test, and CI boundary decisions only.
+The later-stage entries are planning notes and do not describe implemented
 capabilities.
 
 ## Open questions

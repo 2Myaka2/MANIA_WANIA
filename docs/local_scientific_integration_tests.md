@@ -46,6 +46,8 @@ Local scientific integration tests are future opt-in tests only. They may:
 
 They must not become part of default CI, require real data in the repository,
 or make optional scientific dependencies necessary for the default test suite.
+Default CI remains separate from these future tests, as documented in
+`docs/default_ci_scientific_boundary.md`.
 
 ## Proposed future markers
 
@@ -126,6 +128,9 @@ MANIA_LOCAL_REFERENCE_PACKAGE=/path/to/local_reference_package \
 This command is not enabled by Stage 9.3. The `tests/local_scientific`
 directory is not created, and the marker is not registered in Stage 9.3. The
 exact command may be refined in Stage 9.4 or Stage 11.
+
+Future local tests must be explicitly enabled and must not be selected by the
+plain `pytest` command used in default CI.
 
 ## What default tests must not require
 
