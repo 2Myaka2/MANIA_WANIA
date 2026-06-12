@@ -126,6 +126,13 @@ Stage 9.2 does not implement scientific runtime code, topology or trajectory
 loading, or scientific calculations. It also does not make real MD data part
 of default CI or the default test suite.
 
+## Stage 9.3 local test strategy
+
+Future local scientific integration tests are explicit opt-in tests that must
+not run in default CI. They may require the optional extras and local,
+uncommitted MD data. Stage 9.3 adds strategy only; see
+`docs/local_scientific_integration_tests.md`.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
@@ -159,7 +166,7 @@ Stage 9.2:
   scientific preprocessing.
 
 Stage 9.3:
-  define a local-only scientific integration test strategy.
+  define the local-only scientific integration test strategy.
 
 Stage 9.4:
   document and enforce that CI/default tests do not require real MD data.
@@ -172,8 +179,9 @@ Stage 11:
   decisions.
 ```
 
-Stages 9.1 and 9.2 record dependency-boundary decisions only. The later-stage
-entries are planning notes and do not describe implemented capabilities.
+Stages 9.1 through 9.3 record dependency and test-boundary decisions only. The
+later-stage entries are planning notes and do not describe implemented
+capabilities.
 
 ## Open questions
 
