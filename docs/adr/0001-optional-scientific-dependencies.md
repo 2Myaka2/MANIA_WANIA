@@ -146,6 +146,13 @@ residue-name QC work without scientific dependencies. Topology and trajectory
 loading remain future optional scientific runtime work. See
 `docs/preprocessing_before_trajectory_parsing.md`.
 
+## Stage 11.1 optional runtime boundary
+
+Stage 11.1 implements safe MDAnalysis availability, status, and lazy import
+helpers while keeping MDAnalysis optional. Default CI and default tests must
+continue to work without it. Actual topology and trajectory loading remains
+future Stage 11.4 work.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

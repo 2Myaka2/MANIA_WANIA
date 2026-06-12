@@ -33,10 +33,19 @@ from mania.preprocessing.residue_qc import (
     PreprocessingResidueQCReport,
     run_residue_qc_from_manifest_options,
 )
+from mania.preprocessing.scientific_runtime import (
+    OptionalScientificDependencyStatus,
+    PreprocessingOptionalDependencyError,
+    get_mdanalysis_status,
+    is_mdanalysis_available,
+    require_mdanalysis,
+)
 
 __all__ = [
+    "OptionalScientificDependencyStatus",
     "PreprocessingCheckedPath",
     "PreprocessingInputManifest",
+    "PreprocessingOptionalDependencyError",
     "PreprocessingPathValidationIssue",
     "PreprocessingPathValidationReport",
     "PreprocessingReferencePackageIssue",
@@ -50,8 +59,11 @@ __all__ = [
     "ResidueLibraryInputConfig",
     "TrajectoryInputConfig",
     "check_preprocessing_reference_package",
+    "get_mdanalysis_status",
+    "is_mdanalysis_available",
     "load_preprocessing_input_manifest",
     "load_residue_library_from_manifest_options",
+    "require_mdanalysis",
     "resolve_residue_library_manifest_paths",
     "run_residue_qc_from_manifest_options",
     "validate_preprocessing_manifest_paths",

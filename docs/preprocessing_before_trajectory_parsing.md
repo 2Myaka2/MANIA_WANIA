@@ -7,7 +7,8 @@ topology and trajectory parsing begins.
 
 Stages 8 through 10 provide lightweight contracts, local path checks,
 residue-library loading and validation, and residue QC for explicit residue
-names. They do not add scientific file parsing or a trajectory runtime.
+names. Stage 11.1 adds an optional scientific dependency boundary. These
+stages do not add scientific file parsing or a trajectory runtime object.
 
 ## Current implemented capabilities
 
@@ -21,6 +22,7 @@ The current preprocessing layer supports:
   custom-residue extension behavior;
 - report-based local residue-library format validation;
 - residue QC for residue names provided explicitly by the caller.
+- safe MDAnalysis availability, status, and lazy-require helpers.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -32,11 +34,32 @@ load_residue_library_from_manifest_options(...)
 resolve_residue_library_manifest_paths(...)
 validate_residue_library_from_manifest_options(...)
 run_residue_qc_from_manifest_options(...)
+get_mdanalysis_status(...)
+is_mdanalysis_available(...)
+require_mdanalysis(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
 and explicit residue-name QC. They do not create a scientific trajectory
 session.
+
+## Stage 11.1 optional runtime boundary
+
+Stage 11.1 provides a small optional dependency boundary for `MDAnalysis`:
+
+- `get_mdanalysis_status(...)` reports deterministic availability and version
+  information when safely available;
+- `is_mdanalysis_available(...)` checks availability without importing
+  `MDAnalysis` at module import time;
+- `require_mdanalysis(...)` lazily imports `MDAnalysis` or raises a clear
+  project-specific optional dependency error.
+
+The default/core install and imports such as `import mania.preprocessing`
+remain valid without `MDAnalysis`. Future Stage 11 loading code should call
+`require_mdanalysis(...)` when it actually needs the optional runtime.
+
+This boundary does not load topology or trajectory files, create an MDAnalysis
+Universe/session object, or implement Stage 11.4 loading.
 
 ## Explicit residue-name boundary
 
@@ -142,10 +165,13 @@ These examples do not parse topology or trajectory files and do not require
 
 The `md` and `science` extras exist for future opt-in scientific runtime work.
 Stage 10 APIs do not require those extras and do not import `MDAnalysis`.
+Stage 11.1 can report availability and lazily require `MDAnalysis`, while
+keeping it outside the default/core dependency set.
 
-Stage 10 default tests run without optional scientific dependencies. Stage 11
-and later may use the optional extras for actual topology and trajectory
-loading, but default and core tests must continue to avoid requiring them.
+Default tests run without requiring optional scientific dependencies. Future
+Stage 11 loading work may use the optional extras for actual topology and
+trajectory loading, but default and core tests must continue to avoid requiring
+them.
 
 The dependency decision is documented in
 `docs/adr/0001-optional-scientific-dependencies.md`. The local test policy is
@@ -154,26 +180,36 @@ boundary is documented in `docs/default_ci_scientific_boundary.md`.
 
 ## Relationship to future Stage 11
 
-Likely Stage 11 ownership is:
+Stage 11 ownership is:
 
 ```text
 Stage 11.1:
-  Load topology/trajectory paths from preprocessing manifest options.
+  Optional MDAnalysis scientific runtime boundary.
 
 Stage 11.2:
-  Expose a condition-level Universe/session object or lightweight runtime object.
+  Runtime result dataclasses.
 
 Stage 11.3:
-  Collect basic metadata/provenance such as frame count and time range.
+  Local-only scientific test harness.
 
 Stage 11.4:
-  Extract minimal residue-name information if feasible.
+  Load a single condition.
 
 Stage 11.5:
-  Keep contacts/Rg out of the first loading step.
+  Load manifest conditions.
+
+Stage 11.6:
+  Collect metadata/provenance.
+
+Stage 11.7:
+  Extract residue names.
+
+Stage 11.8:
+  Document the boundary before Rg.
 ```
 
-These entries describe future work, not implemented behavior.
+Only the Stage 11.1 optional dependency boundary is implemented. The remaining
+entries describe future work.
 
 ## Non-goals for Stage 10.4
 
