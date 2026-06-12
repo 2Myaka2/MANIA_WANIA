@@ -23,4 +23,8 @@ manifest = load_preprocessing_input_manifest(
 print(manifest.condition_names())
 ```
 
+Loading an example and validating its declared file paths are separate
+operations. The examples intentionally use placeholder paths, so explicit local
+path validation is expected to fail unless matching local files are created.
+
 There is currently no preprocessing-manifest CLI command.

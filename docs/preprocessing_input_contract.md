@@ -19,6 +19,9 @@ manifest residue-library options to residue QC, parse topology or trajectory
 files, compute Rg or contacts, export backend scientific outputs, or run through
 the CLI.
 
+Stage 8.3 adds an explicit local path validator. Manifest loading remains
+shape-and-type validation only, and the new validator is not run automatically.
+
 ## Example files
 
 Two tiny committed placeholder manifests demonstrate the contract:
@@ -97,6 +100,38 @@ or residue-library data should be committed to this repository.
 `custom_residues_path` is the canonical field for the optional custom residue
 definition path. Competing names are not supported aliases.
 
+## Local file-existence validation
+
+`validate_preprocessing_manifest_paths(...)` performs optional, opt-in checks of
+local filesystem metadata. It checks whether declared input paths exist and are
+files, but it does not open, read, or parse topology or trajectory files, parse
+residue-library content, or compute Rg or contacts.
+
+Relative manifest paths can be evaluated against an explicit `base_dir`.
+`output_root` is not checked by default because it may not exist before
+preprocessing. Set `check_output_root=True` to include it as a required
+directory in a local preflight check.
+
+```python
+from pathlib import Path
+
+from mania.preprocessing import (
+    load_preprocessing_input_manifest,
+    validate_preprocessing_manifest_paths,
+)
+
+manifest_path = Path("examples/preprocessing/full_manifest.yaml")
+manifest = load_preprocessing_input_manifest(manifest_path)
+
+report = validate_preprocessing_manifest_paths(
+    manifest,
+    base_dir=manifest_path.parent,
+)
+
+print(report.passed)
+print(report.to_dict())
+```
+
 ## Future use
 
 Later stages may use this manifest to drive local file existence validation,
@@ -104,10 +139,9 @@ residue library QC, trajectory loading, Rg computation, contacts extraction,
 and backend contract export. None of those capabilities is implemented by this
 contract task.
 
-Stage 8.3 may add local declared-file existence validation for preprocessing
-manifests. Stage 8.4 may add a residue-library validation bridge. Optional
-scientific runtime dependencies may be introduced only in later stages after an
-explicit architectural decision.
+Stage 8.4 may add a residue-library validation bridge. Optional scientific
+runtime dependencies may be introduced only in later stages after an explicit
+architectural decision.
 
 ## Non-goals
 
