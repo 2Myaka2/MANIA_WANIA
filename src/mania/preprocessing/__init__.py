@@ -40,6 +40,7 @@ from mania.preprocessing.scientific_runtime import (
     is_mdanalysis_available,
     require_mdanalysis,
 )
+from mania.preprocessing.trajectory_loader import load_single_condition_runtime
 from mania.preprocessing.trajectory_runtime import (
     PreprocessingConditionLoadResult,
     PreprocessingConditionRuntime,
@@ -73,6 +74,7 @@ __all__ = [
     "is_mdanalysis_available",
     "load_preprocessing_input_manifest",
     "load_residue_library_from_manifest_options",
+    "load_single_condition_runtime",
     "require_mdanalysis",
     "resolve_residue_library_manifest_paths",
     "run_residue_qc_from_manifest_options",

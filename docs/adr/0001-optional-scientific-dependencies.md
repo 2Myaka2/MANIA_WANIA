@@ -168,6 +168,14 @@ Stage 11.3 implements an opt-in `local_scientific` harness with
 remains optional, and default CI remains independent from scientific extras
 and real data.
 
+## Stage 11.4 single-condition loader
+
+Stage 11.4 adds the first single-condition MDAnalysis loader. MDAnalysis
+remains optional and is required lazily only after declared paths are
+validated. Default CI remains independent from real MD data. Manifest-wide
+loading, metadata and provenance, residue extraction, Rg, contacts, and graph
+export remain future work.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

@@ -85,9 +85,19 @@ dependency boundaries, and the absence of committed real data.
 
 ### Local scientific integration tests
 
-The local directory is now available as opt-in harness space. Stage 11.3 adds
-only marker smoke tests; it does not add actual topology or trajectory loading
-tests.
+The local directory is opt-in harness space. It contains the Stage 11.3 marker
+smoke tests and a Stage 11.4 single-condition loading test.
+
+The loading test requires:
+
+- `MANIA_RUN_LOCAL_SCIENTIFIC=1`;
+- MDAnalysis installed through the `md` or `science` optional extra;
+- `MANIA_LOCAL_REFERENCE_PACKAGE` pointing to local data.
+
+The test looks for `preprocessing_manifest.yaml` and then `manifest.yaml` under
+the local package directory. It loads only the first condition in manifest
+order. If no supported manifest exists, the test skips with a clear message.
+Default CI does not run this opt-in test.
 
 ## Stage 9.3 history
 

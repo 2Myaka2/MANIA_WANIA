@@ -7,10 +7,9 @@ topology and trajectory parsing begins.
 
 Stages 8 through 10 provide lightweight contracts, local path checks,
 residue-library loading and validation, and residue QC for explicit residue
-names. Stage 11.1 adds an optional scientific dependency boundary. These
-stages do not add scientific file parsing. Stage 11.2 adds value models for
-future condition runtime inputs and loading results, but does not create a
-trajectory runtime object.
+names. Stages 11.1 through 11.3 add the optional runtime boundary, runtime
+value models, and local-only test harness. Stage 11.4 adds the first loader for
+one already-prepared condition.
 
 ## Current implemented capabilities
 
@@ -26,7 +25,9 @@ The current preprocessing layer supports:
 - residue QC for residue names provided explicitly by the caller;
 - safe MDAnalysis availability, status, and lazy-require helpers;
 - file-agnostic runtime input, runtime wrapper, load issue, and load result
-  dataclasses.
+  dataclasses;
+- single-condition topology and trajectory loading through
+  `load_single_condition_runtime(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -41,11 +42,11 @@ run_residue_qc_from_manifest_options(...)
 get_mdanalysis_status(...)
 is_mdanalysis_available(...)
 require_mdanalysis(...)
+load_single_condition_runtime(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
-and explicit residue-name QC. They do not create a scientific trajectory
-session.
+explicit residue-name QC, and loading one explicitly prepared condition.
 
 ## Stage 11.1 optional runtime boundary
 
@@ -62,8 +63,9 @@ The default/core install and imports such as `import mania.preprocessing`
 remain valid without `MDAnalysis`. Future Stage 11 loading code should call
 `require_mdanalysis(...)` when it actually needs the optional runtime.
 
-This boundary does not load topology or trajectory files, create an MDAnalysis
-Universe/session object, or implement Stage 11.4 loading.
+The helper itself does not load topology or trajectory files or create an
+MDAnalysis Universe/session object. Stage 11.4 uses it only after declared
+paths pass lightweight filesystem validation.
 
 ## Stage 11.2 runtime result models
 
@@ -81,8 +83,7 @@ These dataclasses do not check or read files, call
 MDAnalysis Universe/session object. Runtime objects are retained only on the
 runtime wrapper and are excluded from `to_dict()` output.
 
-Actual single-condition loading remains future Stage 11.4 work. Runtime
-metadata and provenance collection remains future Stage 11.6 work.
+Runtime metadata and provenance collection remains future Stage 11.6 work.
 
 ## Stage 11.3 local scientific test harness
 
@@ -95,9 +96,28 @@ enable them. Tests requiring local real data also use
 `MANIA_LOCAL_REFERENCE_PACKAGE`; tests requiring MDAnalysis skip when the
 optional runtime is unavailable.
 
-The harness contains marker smoke tests only. It does not load topology or
-trajectory files, and actual single-condition loading remains future Stage
-11.4 work.
+The harness includes marker smoke tests and an opt-in Stage 11.4 test that can
+load the first condition from a local manifest. Default test runs still skip
+all tests in this directory.
+
+## Stage 11.4 single-condition loading
+
+`load_single_condition_runtime(...)` accepts one
+`PreprocessingConditionRuntimeInput` and returns a
+`PreprocessingConditionLoadResult`.
+
+The loader validates the declared topology and trajectory paths before calling
+`require_mdanalysis(...)`. Missing paths, non-file paths, a missing optional
+runtime, and expected Universe constructor failures are returned as
+deterministic load issues instead of escaping as expected local errors.
+
+On success, exactly one Universe/session object is wrapped in
+`PreprocessingConditionRuntime`. The runtime object remains excluded from
+`to_dict()` output. The loader does not inspect runtime internals, collect
+metadata or provenance, extract residue names, iterate frames, select atoms,
+or compute Rg or contacts.
+
+Manifest-wide condition loading remains Stage 11.5 work.
 
 ## Explicit residue-name boundary
 
@@ -117,9 +137,8 @@ before Stage 11.
 
 The following capabilities are not implemented:
 
-- topology loading;
-- trajectory loading;
-- an MDAnalysis Universe, session, or other scientific runtime object;
+- manifest-wide topology loading;
+- manifest-wide trajectory loading;
 - GROMACS runtime integration;
 - residue extraction from topology/trajectory;
 - frame iteration;
@@ -129,14 +148,13 @@ The following capabilities are not implemented:
 - real contact extraction;
 - contacts-per-frame outputs;
 - graph export from real preprocessing;
-- local scientific integration tests requiring real MD data;
 - CLI or workflow integration for real preprocessing.
 
 ## Why trajectory parsing comes next
 
-Stage 11 should begin with minimal topology and trajectory loading because the
-later scientific preprocessing stages depend on information that Stage 10
-cannot provide:
+Stage 11.4 begins minimal topology and trajectory loading because later
+scientific preprocessing stages depend on information that Stage 10 cannot
+provide:
 
 - residue names from real topology or trajectory inputs;
 - frame count and frame times;
@@ -147,8 +165,7 @@ cannot provide:
 - inputs for graph export from real preprocessing.
 
 Starting with contacts or Rg before establishing this loading boundary would
-leave the scientific calculations without a defined runtime input. Stage 11 is
-future work and is not implemented by Stage 10.4.
+leave the scientific calculations without a defined runtime input.
 
 ## Safe API usage today
 
@@ -206,10 +223,9 @@ Stage 10 APIs do not require those extras and do not import `MDAnalysis`.
 Stage 11.1 can report availability and lazily require `MDAnalysis`, while
 keeping it outside the default/core dependency set.
 
-Default tests run without requiring optional scientific dependencies. Future
-Stage 11 loading work may use the optional extras for actual topology and
-trajectory loading, but default and core tests must continue to avoid requiring
-them.
+Default tests run without requiring optional scientific dependencies. Stage
+11.4 uses the optional extras only for actual local topology and trajectory
+loading, while default and core tests continue to avoid requiring them.
 
 The dependency decision is documented in
 `docs/adr/0001-optional-scientific-dependencies.md`. The local test policy is
@@ -247,8 +263,8 @@ Stage 11.8:
 ```
 
 The Stage 11.1 optional dependency boundary, Stage 11.2 runtime result models,
-and Stage 11.3 local scientific test harness are implemented. The remaining
-entries describe future work.
+Stage 11.3 local scientific test harness, and Stage 11.4 single-condition
+loader are implemented. The remaining entries describe future work.
 
 ## Non-goals for Stage 10.4
 
@@ -289,5 +305,6 @@ Stage 15:
   scientific MVP workflow.
 ```
 
-This roadmap is planning only. None of the Stage 11 through Stage 15
-capabilities is implemented by Stage 10.4.
+This roadmap is planning only. Current Stage 11 work stops at the
+single-condition loader in Stage 11.4; Stages 12 through 15 remain future
+work.
