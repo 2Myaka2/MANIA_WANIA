@@ -11,7 +11,9 @@ names. Stages 11.1 through 11.3 add the optional runtime boundary, runtime
 value models, and local-only test harness. Stage 11.4 adds the first loader for
 one already-prepared condition, Stage 11.5 composes it across a manifest, and
 Stage 11.6 reports lightweight metadata from loaded results. Stage 11.7 adds
-minimal residue-name extraction from those loaded results.
+minimal residue-name extraction from those loaded results. Stage 11.8 closes
+the runtime boundary before Rg; see
+`docs/preprocessing_runtime_boundary_before_rg.md`.
 
 ## Current implemented capabilities
 
@@ -112,9 +114,9 @@ enable them. Tests requiring local real data also use
 `MANIA_LOCAL_REFERENCE_PACKAGE`; tests requiring MDAnalysis skip when the
 optional runtime is unavailable.
 
-The harness includes marker smoke tests and opt-in Stage 11.4 through 11.6
-loading and metadata checks. Default test runs still skip all tests in this
-directory.
+The harness includes marker smoke tests and opt-in Stage 11.4 through 11.7
+checks for single-condition loading, manifest loading, metadata, and residue
+names. Default test runs still skip all tests in this directory.
 
 ## Stage 11.4 single-condition loading
 
@@ -176,6 +178,16 @@ The extraction layer does not serialize runtime objects, load files, acquire
 MDAnalysis, call loaders or metadata collectors, or run residue QC. It does
 not access atoms, iterate frames, or access coordinates or positions. Rg,
 contacts, and graph export remain future work.
+
+## Stage 11.8 runtime boundary before Rg
+
+Stage 11.8 documents the completed Stage 11 public API, opaque runtime-object
+boundary, local scientific test controls, explicit pre-Rg non-goals, and Stage
+12 composition rules. The canonical handoff is
+`docs/preprocessing_runtime_boundary_before_rg.md`.
+
+Stage 11.8 adds documentation and boundary tests only. Rg, contacts, graph
+export, CLI integration, and workflow integration remain future work.
 
 ## Explicit residue-name boundary
 
@@ -322,11 +334,8 @@ Stage 11.8:
   Document the boundary before Rg.
 ```
 
-The Stage 11.1 optional dependency boundary, Stage 11.2 runtime result models,
-Stage 11.3 local scientific test harness, Stage 11.4 single-condition loader,
-Stage 11.5 manifest loader, Stage 11.6 runtime metadata reports, and Stage 11.7
-residue-name extraction are implemented. The remaining entry describes future
-work.
+Stages 11.1 through 11.7 provide the runtime capabilities listed above. Stage
+11.8 documents and tests their boundary before Stage 12 begins.
 
 ## Non-goals for Stage 10.4
 
@@ -367,5 +376,5 @@ Stage 15:
   scientific MVP workflow.
 ```
 
-This roadmap is planning only. Current Stage 11 work stops at residue-name
-extraction in Stage 11.7; Stages 12 through 15 remain future work.
+This roadmap is planning only. Stage 11 closes with the documented pre-Rg
+boundary in Stage 11.8; Stages 12 through 15 remain future work.

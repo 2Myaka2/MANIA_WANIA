@@ -104,6 +104,13 @@ Stage 11.7 extracts residue names from the loaded result. If no supported
 manifest exists, the tests skip with a clear message. Default CI does not run
 these opt-in tests.
 
+Stage 11.8 records this completed local coverage as single-condition loading,
+manifest loading, metadata, and residue names. The suite remains opt-in:
+`MANIA_RUN_LOCAL_SCIENTIFIC` enables it, and
+`MANIA_LOCAL_REFERENCE_PACKAGE` identifies local data. The runtime boundary
+before Rg is documented in
+`docs/preprocessing_runtime_boundary_before_rg.md`.
+
 ## Stage 9.3 history
 
 Stage 9.3 documented the original strategy only.

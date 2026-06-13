@@ -195,6 +195,13 @@ Stage 11.7 adds residue-name extraction from already loaded runtime results.
 MDAnalysis remains optional and default CI remains independent from real MD
 data. Residue QC, Rg, contacts, and graph export remain future work.
 
+## Stage 11.8 runtime boundary before Rg
+
+Stage 11.8 documents the completed Stage 11 runtime boundary before Rg.
+MDAnalysis remains optional, default CI remains independent from real MD data,
+and Stage 12 Rg work remains future work. See
+`docs/preprocessing_runtime_boundary_before_rg.md`.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
