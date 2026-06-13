@@ -9,7 +9,8 @@ Stages 8 through 10 provide lightweight contracts, local path checks,
 residue-library loading and validation, and residue QC for explicit residue
 names. Stages 11.1 through 11.3 add the optional runtime boundary, runtime
 value models, and local-only test harness. Stage 11.4 adds the first loader for
-one already-prepared condition, and Stage 11.5 composes it across a manifest.
+one already-prepared condition, Stage 11.5 composes it across a manifest, and
+Stage 11.6 reports lightweight metadata from loaded results.
 
 ## Current implemented capabilities
 
@@ -29,7 +30,10 @@ The current preprocessing layer supports:
 - single-condition topology and trajectory loading through
   `load_single_condition_runtime(...)`;
 - manifest-wide condition loading through
-  `load_manifest_condition_runtimes(...)`.
+  `load_manifest_condition_runtimes(...)`;
+- lightweight runtime metadata reports through
+  `collect_condition_runtime_metadata(...)` and
+  `collect_manifest_runtime_metadata(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -46,6 +50,8 @@ is_mdanalysis_available(...)
 require_mdanalysis(...)
 load_single_condition_runtime(...)
 load_manifest_condition_runtimes(...)
+collect_condition_runtime_metadata(...)
+collect_manifest_runtime_metadata(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -86,7 +92,8 @@ These dataclasses do not check or read files, call
 MDAnalysis Universe/session object. Runtime objects are retained only on the
 runtime wrapper and are excluded from `to_dict()` output.
 
-Runtime metadata and provenance collection remains future Stage 11.6 work.
+Runtime objects remain opaque to serialization. Stage 11.6 can inspect only
+safe count-style runtime interfaces after loading.
 
 ## Stage 11.3 local scientific test harness
 
@@ -99,9 +106,9 @@ enable them. Tests requiring local real data also use
 `MANIA_LOCAL_REFERENCE_PACKAGE`; tests requiring MDAnalysis skip when the
 optional runtime is unavailable.
 
-The harness includes marker smoke tests and an opt-in Stage 11.4 test that can
-load the first condition from a local manifest. Default test runs still skip
-all tests in this directory.
+The harness includes marker smoke tests and opt-in Stage 11.4 through 11.6
+loading and metadata checks. Default test runs still skip all tests in this
+directory.
 
 ## Stage 11.4 single-condition loading
 
@@ -136,8 +143,20 @@ unexpected conversion or wrapper-call failures.
 
 The aggregate result serializes through the existing per-condition
 `to_dict()` boundary, so runtime objects remain opaque and are not serialized.
-Metadata and provenance remain Stage 11.6 work, and residue-name extraction
-remains Stage 11.7 work. Rg, contacts, and graph export remain future work.
+
+## Stage 11.6 runtime metadata
+
+`collect_condition_runtime_metadata(...)` and
+`collect_manifest_runtime_metadata(...)` consume already loaded condition and
+manifest results. Reports preserve condition names, load status, declared
+paths, runtime type, and lightweight atom, residue, segment, and frame counts
+when those count-style interfaces are safely available.
+
+The metadata layer does not load files, acquire MDAnalysis, or call either
+loader. Runtime objects are never serialized. Collection does not extract
+residue names, iterate frames, access coordinates or positions, or perform
+atom selections. Residue-name extraction remains Stage 11.7 work; Rg,
+contacts, and graph export remain future work.
 
 ## Explicit residue-name boundary
 
@@ -245,8 +264,9 @@ keeping it outside the default/core dependency set.
 
 Default tests run without requiring optional scientific dependencies. Stages
 11.4 and 11.5 use the optional extras only for actual local topology and
-trajectory loading, while default and core tests continue to avoid requiring
-them.
+trajectory loading. Stage 11.6 consumes their existing results without
+acquiring MDAnalysis, while default and core tests continue to avoid requiring
+scientific extras.
 
 The dependency decision is documented in
 `docs/adr/0001-optional-scientific-dependencies.md`. The local test policy is
@@ -285,8 +305,8 @@ Stage 11.8:
 
 The Stage 11.1 optional dependency boundary, Stage 11.2 runtime result models,
 Stage 11.3 local scientific test harness, Stage 11.4 single-condition loader,
-and Stage 11.5 manifest loader are implemented. The remaining entries describe
-future work.
+Stage 11.5 manifest loader, and Stage 11.6 runtime metadata reports are
+implemented. The remaining entries describe future work.
 
 ## Non-goals for Stage 10.4
 
@@ -327,5 +347,5 @@ Stage 15:
   scientific MVP workflow.
 ```
 
-This roadmap is planning only. Current Stage 11 work stops at manifest
-condition loading in Stage 11.5; Stages 12 through 15 remain future work.
+This roadmap is planning only. Current Stage 11 work stops at lightweight
+runtime metadata in Stage 11.6; Stages 12 through 15 remain future work.

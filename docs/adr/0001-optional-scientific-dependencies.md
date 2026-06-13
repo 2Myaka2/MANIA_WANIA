@@ -172,17 +172,23 @@ and real data.
 
 Stage 11.4 adds the first single-condition MDAnalysis loader. MDAnalysis
 remains optional and is required lazily only after declared paths are
-validated. Default CI remains independent from real MD data. Metadata and
-provenance, residue extraction, Rg, contacts, and graph export remain future
-work.
+validated. Default CI remains independent from real MD data. Residue
+extraction, Rg, contacts, and graph export remain future work.
 
 ## Stage 11.5 manifest condition loader
 
 Stage 11.5 adds manifest-wide condition loading by reusing the single-condition
 loader. MDAnalysis remains optional and is lazily required only by
 single-condition loading, while default CI remains independent from real MD
-data. Metadata and provenance, residue extraction, Rg, contacts, and graph
-export remain future work.
+data. Residue extraction, Rg, contacts, and graph export remain future work.
+
+## Stage 11.6 runtime metadata reports
+
+Stage 11.6 adds lightweight metadata and provenance reports that consume
+already loaded runtime results. The metadata layer does not acquire MDAnalysis
+directly, so MDAnalysis remains optional and default CI remains independent
+from real MD data. Residue extraction, Rg, contacts, and graph export remain
+future work.
 
 ## Non-goals for Stage 9.1
 
