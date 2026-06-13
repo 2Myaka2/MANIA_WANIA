@@ -9,7 +9,7 @@ Stages 8 through 10 provide lightweight contracts, local path checks,
 residue-library loading and validation, and residue QC for explicit residue
 names. Stages 11.1 through 11.3 add the optional runtime boundary, runtime
 value models, and local-only test harness. Stage 11.4 adds the first loader for
-one already-prepared condition.
+one already-prepared condition, and Stage 11.5 composes it across a manifest.
 
 ## Current implemented capabilities
 
@@ -27,7 +27,9 @@ The current preprocessing layer supports:
 - file-agnostic runtime input, runtime wrapper, load issue, and load result
   dataclasses;
 - single-condition topology and trajectory loading through
-  `load_single_condition_runtime(...)`.
+  `load_single_condition_runtime(...)`;
+- manifest-wide condition loading through
+  `load_manifest_condition_runtimes(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -43,10 +45,11 @@ get_mdanalysis_status(...)
 is_mdanalysis_available(...)
 require_mdanalysis(...)
 load_single_condition_runtime(...)
+load_manifest_condition_runtimes(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
-explicit residue-name QC, and loading one explicitly prepared condition.
+explicit residue-name QC, and condition runtime loading.
 
 ## Stage 11.1 optional runtime boundary
 
@@ -117,7 +120,24 @@ On success, exactly one Universe/session object is wrapped in
 metadata or provenance, extract residue names, iterate frames, select atoms,
 or compute Rg or contacts.
 
-Manifest-wide condition loading remains Stage 11.5 work.
+## Stage 11.5 manifest condition loading
+
+`load_manifest_condition_runtimes(...)` accepts a
+`PreprocessingInputManifest` and returns a
+`PreprocessingManifestLoadResult`. It iterates in manifest order, converts each
+condition through
+`PreprocessingConditionRuntimeInput.from_manifest_condition(...)`, and calls
+`load_single_condition_runtime(...)` for each condition.
+
+All returned `PreprocessingConditionLoadResult` values are preserved.
+A normal failure for one condition does not stop later conditions and is not
+duplicated as a manifest-level issue. Manifest-level issues are reserved for
+unexpected conversion or wrapper-call failures.
+
+The aggregate result serializes through the existing per-condition
+`to_dict()` boundary, so runtime objects remain opaque and are not serialized.
+Metadata and provenance remain Stage 11.6 work, and residue-name extraction
+remains Stage 11.7 work. Rg, contacts, and graph export remain future work.
 
 ## Explicit residue-name boundary
 
@@ -137,8 +157,8 @@ before Stage 11.
 
 The following capabilities are not implemented:
 
-- manifest-wide topology loading;
-- manifest-wide trajectory loading;
+- topology loading beyond declared manifest condition inputs;
+- trajectory loading beyond declared manifest condition inputs;
 - GROMACS runtime integration;
 - residue extraction from topology/trajectory;
 - frame iteration;
@@ -223,9 +243,10 @@ Stage 10 APIs do not require those extras and do not import `MDAnalysis`.
 Stage 11.1 can report availability and lazily require `MDAnalysis`, while
 keeping it outside the default/core dependency set.
 
-Default tests run without requiring optional scientific dependencies. Stage
-11.4 uses the optional extras only for actual local topology and trajectory
-loading, while default and core tests continue to avoid requiring them.
+Default tests run without requiring optional scientific dependencies. Stages
+11.4 and 11.5 use the optional extras only for actual local topology and
+trajectory loading, while default and core tests continue to avoid requiring
+them.
 
 The dependency decision is documented in
 `docs/adr/0001-optional-scientific-dependencies.md`. The local test policy is
@@ -263,8 +284,9 @@ Stage 11.8:
 ```
 
 The Stage 11.1 optional dependency boundary, Stage 11.2 runtime result models,
-Stage 11.3 local scientific test harness, and Stage 11.4 single-condition
-loader are implemented. The remaining entries describe future work.
+Stage 11.3 local scientific test harness, Stage 11.4 single-condition loader,
+and Stage 11.5 manifest loader are implemented. The remaining entries describe
+future work.
 
 ## Non-goals for Stage 10.4
 
@@ -305,6 +327,5 @@ Stage 15:
   scientific MVP workflow.
 ```
 
-This roadmap is planning only. Current Stage 11 work stops at the
-single-condition loader in Stage 11.4; Stages 12 through 15 remain future
-work.
+This roadmap is planning only. Current Stage 11 work stops at manifest
+condition loading in Stage 11.5; Stages 12 through 15 remain future work.

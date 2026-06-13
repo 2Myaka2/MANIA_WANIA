@@ -41,6 +41,11 @@ from mania.preprocessing.scientific_runtime import (
     require_mdanalysis,
 )
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
+from mania.preprocessing.trajectory_manifest_loader import (
+    PreprocessingManifestLoadIssue,
+    PreprocessingManifestLoadResult,
+    load_manifest_condition_runtimes,
+)
 from mania.preprocessing.trajectory_runtime import (
     PreprocessingConditionLoadResult,
     PreprocessingConditionRuntime,
@@ -55,6 +60,8 @@ __all__ = [
     "PreprocessingConditionRuntime",
     "PreprocessingConditionRuntimeInput",
     "PreprocessingInputManifest",
+    "PreprocessingManifestLoadIssue",
+    "PreprocessingManifestLoadResult",
     "PreprocessingOptionalDependencyError",
     "PreprocessingPathValidationIssue",
     "PreprocessingPathValidationReport",
@@ -72,6 +79,7 @@ __all__ = [
     "check_preprocessing_reference_package",
     "get_mdanalysis_status",
     "is_mdanalysis_available",
+    "load_manifest_condition_runtimes",
     "load_preprocessing_input_manifest",
     "load_residue_library_from_manifest_options",
     "load_single_condition_runtime",
