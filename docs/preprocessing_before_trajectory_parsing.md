@@ -10,7 +10,8 @@ residue-library loading and validation, and residue QC for explicit residue
 names. Stages 11.1 through 11.3 add the optional runtime boundary, runtime
 value models, and local-only test harness. Stage 11.4 adds the first loader for
 one already-prepared condition, Stage 11.5 composes it across a manifest, and
-Stage 11.6 reports lightweight metadata from loaded results.
+Stage 11.6 reports lightweight metadata from loaded results. Stage 11.7 adds
+minimal residue-name extraction from those loaded results.
 
 ## Current implemented capabilities
 
@@ -33,7 +34,10 @@ The current preprocessing layer supports:
   `load_manifest_condition_runtimes(...)`;
 - lightweight runtime metadata reports through
   `collect_condition_runtime_metadata(...)` and
-  `collect_manifest_runtime_metadata(...)`.
+  `collect_manifest_runtime_metadata(...)`;
+- ordered residue-name extraction through
+  `extract_condition_residue_names(...)` and
+  `extract_manifest_residue_names(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -52,6 +56,8 @@ load_single_condition_runtime(...)
 load_manifest_condition_runtimes(...)
 collect_condition_runtime_metadata(...)
 collect_manifest_runtime_metadata(...)
+extract_condition_residue_names(...)
+extract_manifest_residue_names(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -155,7 +161,20 @@ when those count-style interfaces are safely available.
 The metadata layer does not load files, acquire MDAnalysis, or call either
 loader. Runtime objects are never serialized. Collection does not extract
 residue names, iterate frames, access coordinates or positions, or perform
-atom selections. Residue-name extraction remains Stage 11.7 work; Rg,
+atom selections.
+
+## Stage 11.7 residue-name extraction
+
+`extract_condition_residue_names(...)` and
+`extract_manifest_residue_names(...)` consume already loaded results and read
+only `runtime_object.residues.resnames`. Accepted values are converted with
+`str(value).strip()`, preserve case and source order, and produce deterministic
+first-seen unique names. `None` and empty stripped values are excluded and
+reported as invalid.
+
+The extraction layer does not serialize runtime objects, load files, acquire
+MDAnalysis, call loaders or metadata collectors, or run residue QC. It does
+not access atoms, iterate frames, or access coordinates or positions. Rg,
 contacts, and graph export remain future work.
 
 ## Explicit residue-name boundary
@@ -179,7 +198,7 @@ The following capabilities are not implemented:
 - topology loading beyond declared manifest condition inputs;
 - trajectory loading beyond declared manifest condition inputs;
 - GROMACS runtime integration;
-- residue extraction from topology/trajectory;
+- residue QC from loaded topology;
 - frame iteration;
 - atom or residue selection;
 - coordinate or position access from trajectory files;
@@ -305,8 +324,9 @@ Stage 11.8:
 
 The Stage 11.1 optional dependency boundary, Stage 11.2 runtime result models,
 Stage 11.3 local scientific test harness, Stage 11.4 single-condition loader,
-Stage 11.5 manifest loader, and Stage 11.6 runtime metadata reports are
-implemented. The remaining entries describe future work.
+Stage 11.5 manifest loader, Stage 11.6 runtime metadata reports, and Stage 11.7
+residue-name extraction are implemented. The remaining entry describes future
+work.
 
 ## Non-goals for Stage 10.4
 
@@ -347,5 +367,5 @@ Stage 15:
   scientific MVP workflow.
 ```
 
-This roadmap is planning only. Current Stage 11 work stops at lightweight
-runtime metadata in Stage 11.6; Stages 12 through 15 remain future work.
+This roadmap is planning only. Current Stage 11 work stops at residue-name
+extraction in Stage 11.7; Stages 12 through 15 remain future work.

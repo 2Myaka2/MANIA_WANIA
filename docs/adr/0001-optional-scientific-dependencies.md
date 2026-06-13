@@ -187,8 +187,13 @@ data. Residue extraction, Rg, contacts, and graph export remain future work.
 Stage 11.6 adds lightweight metadata and provenance reports that consume
 already loaded runtime results. The metadata layer does not acquire MDAnalysis
 directly, so MDAnalysis remains optional and default CI remains independent
-from real MD data. Residue extraction, Rg, contacts, and graph export remain
-future work.
+from real MD data. Rg, contacts, and graph export remain future work.
+
+## Stage 11.7 residue-name extraction
+
+Stage 11.7 adds residue-name extraction from already loaded runtime results.
+MDAnalysis remains optional and default CI remains independent from real MD
+data. Residue QC, Rg, contacts, and graph export remain future work.
 
 ## Non-goals for Stage 9.1
 

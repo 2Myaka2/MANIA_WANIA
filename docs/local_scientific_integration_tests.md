@@ -88,20 +88,21 @@ dependency boundaries, and the absence of committed real data.
 The local directory is opt-in harness space. It contains the Stage 11.3 marker
 smoke tests, a Stage 11.4 single-condition loading test, and a Stage 11.5
 manifest-wide condition loading test. Stage 11.6 adds a metadata report test
-for already loaded local runtimes.
+for already loaded local runtimes, and Stage 11.7 adds a residue-name
+extraction test.
 
-The loading and metadata tests require:
+The loading, metadata, and residue-name tests require:
 
 - `MANIA_RUN_LOCAL_SCIENTIFIC=1`;
 - MDAnalysis installed through the `md` or `science` optional extra;
 - `MANIA_LOCAL_REFERENCE_PACKAGE` pointing to local data.
 
-The loading and metadata tests look for `preprocessing_manifest.yaml` and then
-`manifest.yaml` under the local package directory. The Stage 11.4 test loads
-only the first condition in manifest order; the Stage 11.5 test loads all
-declared conditions; the Stage 11.6 test collects metadata from that manifest
-load result. If no supported manifest exists, the tests skip with a clear
-message. Default CI does not run these opt-in tests.
+These tests look for `preprocessing_manifest.yaml` and then `manifest.yaml`
+under the local package directory. The Stage 11.4 test loads only the first
+condition, Stage 11.5 loads all conditions, Stage 11.6 collects metadata, and
+Stage 11.7 extracts residue names from the loaded result. If no supported
+manifest exists, the tests skip with a clear message. Default CI does not run
+these opt-in tests.
 
 ## Stage 9.3 history
 
