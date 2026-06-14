@@ -312,6 +312,17 @@ Contacts extraction belongs to Stage 13 in separate contacts-specific modules.
 Graph integration follows only after contacts are stable; neither is part of
 the Stage 12 Rg modules.
 
+## Stage 13.1a contacts definition and options contract
+
+Stage 13.1a adds only dependency-free contact definition and options
+dataclasses. The contracts use the standard library, serialize without runtime
+objects, and do not acquire MDAnalysis or load scientific files.
+
+MDAnalysis remains optional. Actual contact computation will later consume
+already loaded runtimes through the established preprocessing boundary.
+Default CI remains independent from real MD data, and Stage 13.1a adds no
+local scientific contacts test, contact export, or graph export.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

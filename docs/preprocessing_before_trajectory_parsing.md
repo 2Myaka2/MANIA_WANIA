@@ -27,7 +27,9 @@ opt-in local scientific smoke coverage for Rg CSV export and validation. Stage
 readiness validation. Stage 12.3b adds dependency-free numeric-tolerant
 comparison of exported actual and reference Rg CSV files. Stage 12.4a adds a
 dependency-free in-memory bundle for existing Stage 12 result objects. Final
-Rg MVP boundary documentation is completed by Stage 12.4b.
+Rg MVP boundary documentation is completed by Stage 12.4b. Stage 12 Rg MVP is
+complete. Stage 13 contacts begins with a dependency-free MVP definition and
+options contract in separate contacts-specific modules.
 
 ## Current implemented capabilities
 
@@ -71,7 +73,10 @@ The current preprocessing layer supports:
 - numeric-tolerant exported Rg CSV comparison through
   `compare_rg_timeseries_csv(...)`;
 - lightweight in-memory Rg result bundling through
-  `build_rg_report_bundle(...)`.
+  `build_rg_report_bundle(...)`;
+- dependency-free Stage 13 contact definition and detection option contracts
+  through `PreprocessingContactDefinition` and
+  `PreprocessingContactDetectionOptions`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -356,6 +361,21 @@ manager. Supported outputs are in-memory Rg dataclass results,
 and an in-memory report bundle. No JSON, Markdown, or HTML report file writer
 is part of Stage 12.
 
+## Stage 13.1a contacts definition and options contract
+
+Stage 12 Rg MVP is complete. Stage 13 contacts begins with the dependency-free
+MVP definition and options contract documented in
+`docs/preprocessing_contacts_mvp.md`.
+
+`PreprocessingContactDefinition` records the residue-level, per-frame,
+distinct-residue-pair definition. `PreprocessingContactDetectionOptions`
+records validated future detection settings. No contacts computation exists
+yet, no contacts export exists yet, and no graph export exists yet.
+
+Contacts use contacts-specific modules rather than the Stage 12 Rg
+computation, export, validation, comparison, or report modules. Contact result
+dataclasses remain Stage 13.1b, and computation remains Stage 13.2a.
+
 ## Stage 11.8 runtime boundary before Rg
 
 Stage 11.8 documents the completed Stage 11 public API, opaque runtime-object
@@ -565,7 +585,7 @@ contacts extraction in separate contacts-specific modules and should not add
 contacts to the Rg-specific computation, export, validation, comparison, or
 report modules. Recommended order:
 
-1. Contact options and output contracts.
+1. Contact definition and options contract.
 2. Minimal per-frame contacts extraction.
 3. Contacts export, validation, and comparison.
 4. Graph integration after contacts are stable.

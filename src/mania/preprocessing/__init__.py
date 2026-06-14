@@ -41,6 +41,10 @@ from mania.preprocessing.scientific_runtime import (
     is_mdanalysis_available,
     require_mdanalysis,
 )
+from mania.preprocessing.trajectory_contacts import (
+    PreprocessingContactDefinition,
+    PreprocessingContactDetectionOptions,
+)
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
 from mania.preprocessing.trajectory_manifest_loader import (
     PreprocessingManifestLoadIssue,
@@ -109,6 +113,8 @@ compute_manifest_rg = getattr(
 __all__ = [
     "OptionalScientificDependencyStatus",
     "PreprocessingCheckedPath",
+    "PreprocessingContactDefinition",
+    "PreprocessingContactDetectionOptions",
     "PreprocessingConditionLoadResult",
     "PreprocessingConditionRgResult",
     "PreprocessingConditionResidueNames",
