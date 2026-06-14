@@ -48,6 +48,13 @@ result, an output path, and the keyword arguments
 `csv_path`, `passed`, `row_count`, `valid_row_count`, `invalid_row_count`, and
 `issues`. Both reports provide JSON-serializable `to_dict()` output.
 
+Stage 12.3a also exports
+`PreprocessingRgReferenceComparisonOptions`,
+`PreprocessingRgReferenceComparisonInput`,
+`PreprocessingRgReferenceComparisonIssue`,
+`PreprocessingRgReferenceComparisonInputValidationResult`, and
+`validate_rg_reference_comparison_input(...)`.
+
 ## Minimal manifest-level usage
 
 ```python
@@ -133,6 +140,20 @@ CSV.
 The validator reads only and does not mutate CSV files. It does not compute
 Rg, load runtime files, or compare reference values.
 
+## Reference comparison preparation
+
+Stage 12.3a defines the paths, options, issue types, and readiness-report shape
+for future Rg reference comparison.
+`validate_rg_reference_comparison_input(...)` checks that the actual and
+reference paths identify distinct existing files. By default it also calls
+`validate_rg_timeseries_csv(...)` for each file; callers may set
+`validate_csv_contract=False` to perform path and option checks without
+reading CSV contents.
+
+This input validation does not compare numeric Rg values, time values, or row
+counts. The tolerance options are serialized contract fields only in Stage
+12.3a. Numeric-tolerant comparison remains Stage 12.3b.
+
 ## Local scientific boundary
 
 Stage 12.1d provides an opt-in local scientific Rg computation smoke test.
@@ -142,27 +163,28 @@ and CSV validation through the accepted APIs.
 
 The test writes only under pytest's temporary path and does not commit
 generated CSV from local data. It checks export and validation consistency,
-not exact numeric Rg values. Reference and numeric-tolerance comparison remain
-Stage 12.3.
+not exact numeric Rg values. No local scientific comparison smoke test is part
+of Stage 12.3a.
 
 Real MD data must remain outside the repository. Default CI remains
 independent from local real data and optional scientific dependencies.
 
 ## Not implemented yet
 
-Stage 12.2c does not add:
+Stage 12.3a does not add:
 
 - new computation logic;
 - new writer or validator behavior;
-- reference or numeric-tolerance comparison;
+- numeric-tolerance comparison or row matching;
 - a report bundle;
 - contacts or graph computation;
 - CLI or workflow integration;
 - a CI job using real MD data;
 - committed real MD data.
 
-Reference comparison remains Stage 12.3, and the lightweight report bundle
-remains Stage 12.4. Contacts and graph work remain later stages.
+Reference comparison remains Stage 12.3 overall: its input contract now
+exists, while numeric comparison remains Stage 12.3b. The lightweight report
+bundle remains Stage 12.4. Contacts and graph work remain later stages.
 
 ## Troubleshooting
 

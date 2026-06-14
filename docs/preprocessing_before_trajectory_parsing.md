@@ -22,7 +22,9 @@ a dependency-free `rg_timeseries.csv` writer for existing condition-level and
 manifest-level Rg results. Stage 12.2b adds dependency-free validation for
 already exported Rg CSV files. Stage 12.2c adds Rg export documentation and
 synthetic examples without changing runtime behavior. Stage 12.2d adds
-opt-in local scientific smoke coverage for Rg CSV export and validation.
+opt-in local scientific smoke coverage for Rg CSV export and validation. Stage
+12.3a adds the dependency-free Rg reference comparison input contract and
+readiness validation; numeric comparison and reporting remain future work.
 
 ## Current implemented capabilities
 
@@ -57,7 +59,12 @@ The current preprocessing layer supports:
 - deterministic Rg CSV writing through `write_rg_timeseries_csv(...)`;
 - read-only Rg CSV validation through `validate_rg_timeseries_csv(...)`;
 - Rg export documentation and dependency-free synthetic examples;
-- opt-in local scientific Rg export smoke coverage.
+- opt-in local scientific Rg export smoke coverage;
+- Rg reference comparison input and option contracts through
+  `PreprocessingRgReferenceComparisonInput` and
+  `PreprocessingRgReferenceComparisonOptions`;
+- comparison readiness validation through
+  `validate_rg_reference_comparison_input(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -270,7 +277,9 @@ does not write files, compute Rg, or load scientific runtimes.
 
 Stage 12.2c documents validation as the final step in the accepted export
 chain. Stage 12.2d exercises that chain on explicitly configured local data.
-Reference comparison remains Stage 12.3, and report bundle work remains Stage
+Stage 12.3a now defines reference comparison inputs and validates their paths
+and optional CSV contracts. It does not compare values, times, or row counts.
+Numeric comparison remains Stage 12.3b, and report bundle work remains Stage
 12.4.
 
 ## Stage 12.2c Rg export docs and examples
@@ -287,6 +296,14 @@ loading, Rg computation, temporary CSV writing, and CSV validation. It checks
 the accepted export chain without exact numeric reference comparison and does
 not commit generated local-data output. Comparison, reporting, contacts, and
 graph work remain future stages.
+
+## Stage 12.3a Rg reference comparison input contract
+
+The dependency-free input contract stores actual and reference CSV paths,
+future comparison options, and structured validation issues. Its validator
+checks path readiness and may call the existing Rg CSV validator for each
+file. It does not compare Rg values, time values, or row counts. Numeric
+comparison remains Stage 12.3b, and report bundle work remains Stage 12.4.
 
 ## Stage 11.8 runtime boundary before Rg
 
@@ -323,7 +340,7 @@ The following capabilities are not implemented:
 - frame iteration beyond single-condition Rg computation;
 - atom or residue selection;
 - coordinate or position access from trajectory files;
-- Rg reference comparison;
+- numeric Rg reference comparison;
 - real contact extraction;
 - contacts-per-frame outputs;
 - graph export from real preprocessing;

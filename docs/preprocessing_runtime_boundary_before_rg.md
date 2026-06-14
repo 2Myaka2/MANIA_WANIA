@@ -12,9 +12,10 @@ already computed Rg results, and Stage 12.2b adds dependency-free validation
 for those exported CSV files. Stage 12.2c documents and demonstrates that
 accepted export chain without adding runtime behavior. Stage 12.2d adds
 opt-in local scientific smoke coverage for the full export chain. This
-document records the capabilities that later Stage 12 work may compose, the
-limits that remain in force, and the local-only testing policy for scientific
-runtime behavior.
+document also records the Stage 12.3a dependency-free reference comparison
+input contract. It validates readiness for future comparison without computing
+differences. The remaining limits and local-only testing policy for scientific
+runtime behavior stay in force.
 
 ## Stage 11 completed capabilities
 
@@ -189,6 +190,23 @@ numeric Rg comparison. Default CI remains independent from MDAnalysis and
 local real data. Reference comparison remains Stage 12.3, the report bundle
 remains Stage 12.4, and contacts and graph generation remain future stages.
 
+### Stage 12.3a Rg reference comparison input contract
+
+```python
+PreprocessingRgReferenceComparisonOptions
+PreprocessingRgReferenceComparisonInput
+PreprocessingRgReferenceComparisonIssue
+PreprocessingRgReferenceComparisonInputValidationResult
+validate_rg_reference_comparison_input(...)
+```
+
+The dependency-free contract records actual and reference CSV paths and future
+comparison options. Input validation checks path readiness and can reuse
+`validate_rg_timeseries_csv(...)` for each file. It does not compute
+differences or compare Rg values, time values, or row counts. Numeric
+comparison remains Stage 12.3b, and report bundle work remains Stage 12.4.
+Contacts and graph generation remain future stages.
+
 ## Runtime object boundary
 
 Runtime objects are intentionally opaque. Loaders may create and retain a
@@ -255,9 +273,9 @@ numeric reference comparison. Real MD data must remain uncommitted.
 
 ## What is explicitly not implemented before Rg computation
 
-Stage 12.2d does not implement:
+Stage 12.3a does not implement:
 
-- reference comparison for exported Rg values;
+- numeric comparison for exported Rg values;
 - contacts computation or contacts-per-frame output;
 - aggregate contact edge output;
 - graph export from real preprocessing;
@@ -274,7 +292,7 @@ Stage 12.2d does not implement:
 - a CI job with real MD data.
 
 Contacts and graph export remain future work after the Rg stage. These items
-are non-goals for the Stage 12.2d smoke test.
+are non-goals for the Stage 12.3a input contract.
 
 ## Stage 12.1d local scientific boundary
 
@@ -292,10 +310,11 @@ The dependency-free CSV writer is now available for existing Rg result
 objects, and dependency-free validation is available for its exported files.
 The Rg export guide and synthetic examples now document that chain without
 changing runtime behavior. The opt-in local scientific export smoke test now
-checks the complete accepted chain on explicitly configured local data.
-Reference comparison remains Stage 12.3, and the lightweight report bundle
-remains Stage 12.4. Contacts and graph generation remain future stages after
-Rg.
+checks the complete accepted chain on explicitly configured local data. The
+Stage 12.3a reference comparison input contract now validates future
+comparison readiness without computing differences. Numeric comparison
+remains Stage 12.3b, and the lightweight report bundle remains Stage 12.4.
+Contacts and graph generation remain future stages after Rg.
 
 ## Stage 12 handoff
 

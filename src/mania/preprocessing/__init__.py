@@ -78,6 +78,13 @@ from mania.preprocessing.trajectory_rg_export_validation import (
     PreprocessingRgCsvValidationResult,
     validate_rg_timeseries_csv,
 )
+from mania.preprocessing.trajectory_rg_reference_comparison import (
+    PreprocessingRgReferenceComparisonInput,
+    PreprocessingRgReferenceComparisonInputValidationResult,
+    PreprocessingRgReferenceComparisonIssue,
+    PreprocessingRgReferenceComparisonOptions,
+    validate_rg_reference_comparison_input,
+)
 from mania.preprocessing.trajectory_runtime import (
     PreprocessingConditionLoadResult,
     PreprocessingConditionRuntime,
@@ -122,6 +129,10 @@ __all__ = [
     "PreprocessingRgCsvWriteIssue",
     "PreprocessingRgCsvWriteResult",
     "PreprocessingRgFrameResult",
+    "PreprocessingRgReferenceComparisonInput",
+    "PreprocessingRgReferenceComparisonInputValidationResult",
+    "PreprocessingRgReferenceComparisonIssue",
+    "PreprocessingRgReferenceComparisonOptions",
     "PreprocessingRuntimeMetadataIssue",
     "PreprocessingTrajectoryLoadIssue",
     "ResolvedResidueLibraryManifestOptions",
@@ -144,6 +155,7 @@ __all__ = [
     "resolve_residue_library_manifest_paths",
     "run_residue_qc_from_manifest_options",
     "validate_preprocessing_manifest_paths",
+    "validate_rg_reference_comparison_input",
     "validate_rg_timeseries_csv",
     "validate_residue_library_from_manifest_options",
     "write_rg_timeseries_csv",

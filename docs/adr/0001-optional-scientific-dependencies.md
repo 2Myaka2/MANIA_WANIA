@@ -262,6 +262,18 @@ dependency-free, generated CSV is written only to pytest's temporary path,
 and no scientific data is committed. The smoke test remains opt-in, so default
 CI stays independent from local real data.
 
+## Stage 12.3a Rg reference comparison input contract
+
+Stage 12.3a adds dependency-free dataclasses and readiness validation for
+future Rg reference comparison. The validator uses only filesystem metadata
+unless CSV contract validation is requested, in which case it reuses the
+dependency-free `validate_rg_timeseries_csv(...)` API. It does not compare
+numeric values or acquire MDAnalysis.
+
+MDAnalysis remains optional and unrelated to comparison input validation.
+Default CI remains independent from local real data, and no local scientific
+comparison smoke test is added in this stage.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
