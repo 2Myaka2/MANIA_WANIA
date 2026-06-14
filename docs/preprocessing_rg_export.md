@@ -3,9 +3,9 @@
 ## What this guide covers
 
 This guide documents the accepted Stage 12 Python API chain for computing,
-writing, and validating radius-of-gyration (Rg) time-series output. Stage
-12.2c adds documentation and synthetic examples only; it does not add runtime
-behavior or a new public API.
+writing, validating, and comparing radius-of-gyration (Rg) time-series output.
+Stage 12.2c added documentation and synthetic examples only. Stage 12.3b now
+adds dependency-free numeric-tolerant comparison for two exported CSV files.
 
 ## Current Stage 12 export chain
 
@@ -54,6 +54,11 @@ Stage 12.3a also exports
 `PreprocessingRgReferenceComparisonIssue`,
 `PreprocessingRgReferenceComparisonInputValidationResult`, and
 `validate_rg_reference_comparison_input(...)`.
+
+Stage 12.3b adds
+`PreprocessingRgReferenceComparisonRowResult`,
+`PreprocessingRgReferenceComparisonResult`, and
+`compare_rg_timeseries_csv(...)`.
 
 ## Minimal manifest-level usage
 
@@ -140,7 +145,7 @@ CSV.
 The validator reads only and does not mutate CSV files. It does not compute
 Rg, load runtime files, or compare reference values.
 
-## Reference comparison preparation
+## Reference comparison
 
 Stage 12.3a defines the paths, options, issue types, and readiness-report shape
 for future Rg reference comparison.
@@ -150,9 +155,17 @@ reference paths identify distinct existing files. By default it also calls
 `validate_csv_contract=False` to perform path and option checks without
 reading CSV contents.
 
-This input validation does not compare numeric Rg values, time values, or row
-counts. The tolerance options are serialized contract fields only in Stage
-12.3a. Numeric-tolerant comparison remains Stage 12.3b.
+Stage 12.3b uses that input contract and its comparison options with
+`compare_rg_timeseries_csv(...)`. It matches rows by `condition_name` and
+`frame_index` by default, compares `rg_value` with absolute or relative
+tolerance, compares present `time_ps` values with absolute tolerance, and
+checks exact `rg_unit` consistency when requested. It reports missing or extra
+rows, failed-frame rows, numeric and time mismatches, and duplicate row keys
+in deterministic JSON-serializable results.
+
+The comparison reads exported CSV files only. It does not recompute Rg,
+convert units, load runtime data, discover reference files, or create a report
+bundle.
 
 ## Local scientific boundary
 
@@ -164,27 +177,27 @@ and CSV validation through the accepted APIs.
 The test writes only under pytest's temporary path and does not commit
 generated CSV from local data. It checks export and validation consistency,
 not exact numeric Rg values. No local scientific comparison smoke test is part
-of Stage 12.3a.
+of Stage 12.3a or Stage 12.3b.
 
 Real MD data must remain outside the repository. Default CI remains
 independent from local real data and optional scientific dependencies.
 
 ## Not implemented yet
 
-Stage 12.3a does not add:
+Stage 12.3b does not add:
 
 - new computation logic;
 - new writer or validator behavior;
-- numeric-tolerance comparison or row matching;
 - a report bundle;
 - contacts or graph computation;
 - CLI or workflow integration;
 - a CI job using real MD data;
 - committed real MD data.
 
-Reference comparison remains Stage 12.3 overall: its input contract now
-exists, while numeric comparison remains Stage 12.3b. The lightweight report
-bundle remains Stage 12.4. Contacts and graph work remain later stages.
+Reference comparison remains Stage 12.3 overall: Stage 12.3a defines input
+readiness and Stage 12.3b performs numeric-tolerant exported CSV comparison.
+The lightweight report bundle remains Stage 12.4. Contacts and graph work
+remain later stages.
 
 ## Troubleshooting
 

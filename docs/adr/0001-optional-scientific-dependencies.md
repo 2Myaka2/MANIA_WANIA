@@ -274,6 +274,17 @@ MDAnalysis remains optional and unrelated to comparison input validation.
 Default CI remains independent from local real data, and no local scientific
 comparison smoke test is added in this stage.
 
+## Stage 12.3b numeric-tolerant Rg CSV comparison
+
+Stage 12.3b adds dependency-free comparison of exported actual and reference
+Rg CSV files. It uses standard-library CSV parsing and mathematics, reuses the
+Stage 12.3a input validation boundary, and does not load trajectories or
+recompute Rg.
+
+MDAnalysis remains optional and unrelated to exported CSV comparison. Default
+CI remains independent from local real data, no scientific data is committed,
+and no local scientific comparison smoke test is added in this stage.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

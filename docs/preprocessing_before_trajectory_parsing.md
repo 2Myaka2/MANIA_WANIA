@@ -24,7 +24,9 @@ already exported Rg CSV files. Stage 12.2c adds Rg export documentation and
 synthetic examples without changing runtime behavior. Stage 12.2d adds
 opt-in local scientific smoke coverage for Rg CSV export and validation. Stage
 12.3a adds the dependency-free Rg reference comparison input contract and
-readiness validation; numeric comparison and reporting remain future work.
+readiness validation. Stage 12.3b adds dependency-free numeric-tolerant
+comparison of exported actual and reference Rg CSV files. Report bundle work
+remains Stage 12.4.
 
 ## Current implemented capabilities
 
@@ -64,7 +66,9 @@ The current preprocessing layer supports:
   `PreprocessingRgReferenceComparisonInput` and
   `PreprocessingRgReferenceComparisonOptions`;
 - comparison readiness validation through
-  `validate_rg_reference_comparison_input(...)`.
+  `validate_rg_reference_comparison_input(...)`;
+- numeric-tolerant exported Rg CSV comparison through
+  `compare_rg_timeseries_csv(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -305,6 +309,18 @@ checks path readiness and may call the existing Rg CSV validator for each
 file. It does not compare Rg values, time values, or row counts. Numeric
 comparison remains Stage 12.3b, and report bundle work remains Stage 12.4.
 
+## Stage 12.3b numeric-tolerant Rg CSV comparison
+
+`compare_rg_timeseries_csv(...)` consumes the Stage 12.3a input contract and
+compares exported actual and reference CSV rows without loading trajectories
+or recomputing Rg. It applies absolute and relative Rg tolerances, absolute
+time tolerance, optional exact unit matching, deterministic key matching, and
+missing, extra, duplicate, or failed-row reporting.
+
+The comparison uses only the standard library and returns deterministic
+JSON-serializable row and whole-file results. Report bundle generation remains
+Stage 12.4. Contacts and graph generation remain future stages.
+
 ## Stage 11.8 runtime boundary before Rg
 
 Stage 11.8 documents the completed Stage 11 public API, opaque runtime-object
@@ -340,7 +356,7 @@ The following capabilities are not implemented:
 - frame iteration beyond single-condition Rg computation;
 - atom or residue selection;
 - coordinate or position access from trajectory files;
-- numeric Rg reference comparison;
+- an Rg comparison report bundle;
 - real contact extraction;
 - contacts-per-frame outputs;
 - graph export from real preprocessing;
