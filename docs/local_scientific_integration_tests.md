@@ -90,7 +90,7 @@ smoke tests, a Stage 11.4 single-condition loading test, and a Stage 11.5
 manifest-wide condition loading test. Stage 11.6 adds a metadata report test
 for already loaded local runtimes, and Stage 11.7 adds a residue-name
 extraction test. Stage 12.1d adds an Rg computation smoke test over the loaded
-manifest result.
+manifest result. Stage 12.2d adds an Rg CSV export and validation smoke test.
 
 These local scientific integration tests require:
 
@@ -102,9 +102,11 @@ These tests look for `preprocessing_manifest.yaml` and then `manifest.yaml`
 under the local package directory. The Stage 11.4 test loads only the first
 condition, Stage 11.5 loads all conditions, Stage 11.6 collects metadata, and
 Stage 11.7 extracts residue names from the loaded result. Stage 12.1d loads all
-conditions and computes manifest-level Rg. If no supported manifest exists,
-the tests skip with a clear message. Default CI does not run these opt-in
-tests.
+conditions and computes manifest-level Rg. Stage 12.2d repeats that accepted
+loading and computation chain, writes `rg_timeseries.csv` only under pytest's
+temporary path, and validates the exported file. If no supported manifest
+exists, the tests skip with a clear message. Default CI does not run these
+opt-in tests.
 
 Stage 11.8 records this completed local coverage as single-condition loading,
 manifest loading, metadata, and residue names. The suite remains opt-in:
@@ -117,6 +119,25 @@ The Stage 12.1d smoke test checks the Rg result/report shape, JSON
 serialization, deterministic frame indexes, and finite non-negative Rg
 values. It does not write CSV, compare numeric references, compute contacts,
 or generate graphs.
+
+## Stage 12.2d local Rg export smoke test
+
+The Stage 12.2d smoke test is opt-in through the existing harness. It requires:
+
+- `MANIA_RUN_LOCAL_SCIENTIFIC=1`;
+- MDAnalysis through the optional `md` or `science` setup;
+- `MANIA_LOCAL_REFERENCE_PACKAGE` pointing to a local package containing
+  `preprocessing_manifest.yaml` or `manifest.yaml`.
+
+The test loads the local manifest and condition runtimes, computes
+manifest-level Rg, writes `rg_timeseries.csv` under pytest's `tmp_path`, and
+validates the exported CSV. It checks the exact header, report serialization,
+row-count consistency, known condition names, and lowercase `frame_passed`
+values.
+
+The test does not compare exact Rg values or use numeric tolerances. It does
+not write persistent repository artifacts, commit generated local-data CSV,
+or run in default CI. Exact numeric reference comparison remains Stage 12.3.
 
 ## Stage 9.3 history
 

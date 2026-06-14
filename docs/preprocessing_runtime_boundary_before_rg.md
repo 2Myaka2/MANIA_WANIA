@@ -10,9 +10,11 @@ result. Stage 12.1d adds an opt-in local scientific smoke test for that loading
 and computation path. Stage 12.2a adds a dependency-free CSV writer for
 already computed Rg results, and Stage 12.2b adds dependency-free validation
 for those exported CSV files. Stage 12.2c documents and demonstrates that
-accepted export chain without adding runtime behavior. This document records
-the capabilities that later Stage 12 work may compose, the limits that remain
-in force, and the local-only testing policy for scientific runtime behavior.
+accepted export chain without adding runtime behavior. Stage 12.2d adds
+opt-in local scientific smoke coverage for the full export chain. This
+document records the capabilities that later Stage 12 work may compose, the
+limits that remain in force, and the local-only testing policy for scientific
+runtime behavior.
 
 ## Stage 11 completed capabilities
 
@@ -170,9 +172,22 @@ validator with synthetic result objects, and
 `examples/preprocessing/rg_timeseries.example.csv` shows the exact schema.
 
 The synthetic examples require neither MDAnalysis nor real data. Stage 12.2c
-adds no runtime behavior. Local scientific export smoke coverage remains Stage
-12.2d, reference comparison remains Stage 12.3, and the report bundle remains
-Stage 12.4. Contacts and graph generation remain future stages.
+adds no runtime behavior. Reference comparison remains Stage 12.3, and the
+report bundle remains Stage 12.4. Contacts and graph generation remain future
+stages.
+
+### Stage 12.2d local scientific Rg export smoke test
+
+The opt-in local scientific export smoke test uses an explicitly configured
+local reference package to load a manifest and condition runtimes, compute
+manifest-level Rg, write `rg_timeseries.csv` under pytest's temporary path,
+and validate the exported file.
+
+It checks report serialization, the exact CSV header, row-count consistency,
+known condition names, and valid lowercase `frame_passed` values without exact
+numeric Rg comparison. Default CI remains independent from MDAnalysis and
+local real data. Reference comparison remains Stage 12.3, the report bundle
+remains Stage 12.4, and contacts and graph generation remain future stages.
 
 ## Runtime object boundary
 
@@ -240,9 +255,8 @@ numeric reference comparison. Real MD data must remain uncommitted.
 
 ## What is explicitly not implemented before Rg computation
 
-Stage 12.2c does not implement:
+Stage 12.2d does not implement:
 
-- local scientific export smoke coverage;
 - reference comparison for exported Rg values;
 - contacts computation or contacts-per-frame output;
 - aggregate contact edge output;
@@ -260,7 +274,7 @@ Stage 12.2c does not implement:
 - a CI job with real MD data.
 
 Contacts and graph export remain future work after the Rg stage. These items
-are non-goals for the Stage 12.2c documentation and examples.
+are non-goals for the Stage 12.2d smoke test.
 
 ## Stage 12.1d local scientific boundary
 
@@ -277,10 +291,11 @@ default CI requirement.
 The dependency-free CSV writer is now available for existing Rg result
 objects, and dependency-free validation is available for its exported files.
 The Rg export guide and synthetic examples now document that chain without
-changing runtime behavior. Local scientific export smoke coverage remains
-Stage 12.2d. Reference comparison remains Stage 12.3, and the lightweight
-report bundle remains Stage 12.4. Contacts and graph generation remain future
-stages after Rg.
+changing runtime behavior. The opt-in local scientific export smoke test now
+checks the complete accepted chain on explicitly configured local data.
+Reference comparison remains Stage 12.3, and the lightweight report bundle
+remains Stage 12.4. Contacts and graph generation remain future stages after
+Rg.
 
 ## Stage 12 handoff
 

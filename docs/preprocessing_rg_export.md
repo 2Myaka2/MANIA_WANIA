@@ -136,8 +136,14 @@ Rg, load runtime files, or compare reference values.
 ## Local scientific boundary
 
 Stage 12.1d provides an opt-in local scientific Rg computation smoke test.
-The local scientific export smoke test is not part of Stage 12.2c and remains
-Stage 12.2d.
+Stage 12.2d adds an opt-in local scientific export smoke test that verifies
+local manifest loading, runtime loading, manifest Rg computation, CSV writing,
+and CSV validation through the accepted APIs.
+
+The test writes only under pytest's temporary path and does not commit
+generated CSV from local data. It checks export and validation consistency,
+not exact numeric Rg values. Reference and numeric-tolerance comparison remain
+Stage 12.3.
 
 Real MD data must remain outside the repository. Default CI remains
 independent from local real data and optional scientific dependencies.
@@ -148,7 +154,6 @@ Stage 12.2c does not add:
 
 - new computation logic;
 - new writer or validator behavior;
-- a local scientific export smoke test;
 - reference or numeric-tolerance comparison;
 - a report bundle;
 - contacts or graph computation;

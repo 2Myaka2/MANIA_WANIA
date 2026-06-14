@@ -254,6 +254,14 @@ validator APIs and requires neither MDAnalysis nor real data. MDAnalysis
 remains optional for loading and computation, default CI remains independent
 from local real data, and no scientific data is committed.
 
+## Stage 12.2d local scientific Rg export smoke test
+
+Stage 12.2d exercises the accepted Rg export chain with optional MDAnalysis
+and explicitly configured local real data. The writer and validator remain
+dependency-free, generated CSV is written only to pytest's temporary path,
+and no scientific data is committed. The smoke test remains opt-in, so default
+CI stays independent from local real data.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
