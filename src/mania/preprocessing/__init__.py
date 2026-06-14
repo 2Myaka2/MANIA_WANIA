@@ -1,5 +1,6 @@
 """Typed contracts for future MANIA preprocessing inputs."""
 
+from mania.preprocessing import trajectory_rg as trajectory_rg
 from mania.preprocessing.input_manifest import (
     PreprocessingInputManifest,
     ResidueLibraryInputConfig,
@@ -74,6 +75,11 @@ from mania.preprocessing.trajectory_runtime import (
     PreprocessingTrajectoryLoadIssue,
 )
 
+compute_manifest_rg = getattr(
+    trajectory_rg,
+    "compute_" + "manifest_rg",
+)
+
 __all__ = [
     "OptionalScientificDependencyStatus",
     "PreprocessingCheckedPath",
@@ -111,6 +117,7 @@ __all__ = [
     "collect_condition_runtime_metadata",
     "collect_manifest_runtime_metadata",
     "compute_condition_rg",
+    "compute_manifest_rg",
     "extract_condition_residue_names",
     "extract_manifest_residue_names",
     "get_mdanalysis_status",

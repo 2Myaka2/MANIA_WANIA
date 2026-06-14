@@ -4,8 +4,9 @@
 
 Stage 11 closes the minimal preprocessing runtime boundary needed before real
 radius-of-gyration (Rg) work begins. Stage 12.1a adds dependency-free Rg result
-and report contracts, and Stage 12.1b computes Rg for one already loaded
-condition. This document records the capabilities that later Stage 12 work may
+and report contracts, Stage 12.1b computes Rg for one already loaded
+condition, and Stage 12.1c composes those results across a manifest load
+result. This document records the capabilities that later Stage 12 work may
 compose, the limits that remain in force, and the local-only testing policy
 for scientific runtime behavior.
 
@@ -108,6 +109,18 @@ Rg, uses the loaded runtime's primary atom group, and returns a
 `PreprocessingConditionRgResult`. The unit field labels the coordinate unit
 used by the loaded runtime; no unit conversion is performed.
 
+### Stage 12.1c manifest Rg computation
+
+```python
+compute_manifest_rg(...)
+```
+
+`compute_manifest_rg(...)` consumes a `PreprocessingManifestLoadResult`,
+calls `compute_condition_rg(...)` once for each condition in source order,
+preserves partial failures and manifest load issues, and returns a
+`PreprocessingManifestRgResult`. The manifest layer does not directly inspect
+runtime objects.
+
 ## Runtime object boundary
 
 Runtime objects are intentionally opaque. Loaders may create and retain a
@@ -172,9 +185,9 @@ metadata, and residue names. Real MD data must remain uncommitted.
 
 ## What is explicitly not implemented before Rg computation
 
-Stage 12.1b does not implement:
+Stage 12.1c does not implement:
 
-- manifest-level Rg computation;
+- local scientific Rg smoke coverage;
 - `rg_timeseries.csv` export;
 - contacts computation or contacts-per-frame output;
 - aggregate contact edge output;
@@ -192,19 +205,19 @@ Stage 12.1b does not implement:
 - a CI job with real MD data.
 
 Contacts and graph export remain future work after the Rg stage. These items
-are non-goals for the Stage 12.1b computation.
+are non-goals for the Stage 12.1c computation.
 
-## Stage 12.1b computation boundary
+## Stage 12.1c computation boundary
 
-Single-condition Rg computation now exists. It consumes an already loaded
-runtime result and does not load files or acquire MDAnalysis dependencies.
-Frame iteration and primary atom-group access are limited to the Rg operation;
-there are no configurable selections or direct coordinate reads.
+Manifest-level Rg computation now composes the accepted single-condition
+function over ordered load results. It preserves failed and partial condition
+reports and maps manifest load issues without directly inspecting runtime
+objects. It does not load files or acquire MDAnalysis dependencies.
 
-Manifest-level Rg remains Stage 12.1c, and the local scientific Rg smoke test
-remains Stage 12.1d. CSV export remains Stage 12.2, reference comparison
-remains Stage 12.3, and the lightweight report bundle remains Stage 12.4.
-Contacts and graph generation remain future stages after Rg.
+The local scientific Rg smoke test remains Stage 12.1d. CSV export remains
+Stage 12.2, reference comparison remains Stage 12.3, and the lightweight
+report bundle remains Stage 12.4. Contacts and graph generation remain future
+stages after Rg.
 
 ## Stage 12 handoff
 

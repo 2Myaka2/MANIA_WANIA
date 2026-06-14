@@ -216,6 +216,14 @@ uses the runtime object produced through the existing Stage 11 loading
 boundary. MDAnalysis remains optional and local-scientific, while default CI
 remains independent from real MD data.
 
+## Stage 12.1c manifest Rg computation
+
+Stage 12.1c composes the accepted single-condition Rg function across an
+existing manifest load result. The manifest layer does not acquire
+dependencies, load files, or directly inspect runtime objects. MDAnalysis
+remains optional behind the Stage 11 loading boundary, and default CI remains
+independent from real MD data.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

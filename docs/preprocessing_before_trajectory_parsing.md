@@ -15,7 +15,8 @@ minimal residue-name extraction from those loaded results. Stage 11.8 closes
 the runtime boundary before Rg; see
 `docs/preprocessing_runtime_boundary_before_rg.md`. Stage 12.1a adds only the
 dependency-free Rg result/report contract. Stage 12.1b adds Rg computation for
-one already loaded condition.
+one already loaded condition, and Stage 12.1c composes condition Rg results
+across a manifest load result.
 
 ## Current implemented capabilities
 
@@ -44,7 +45,8 @@ The current preprocessing layer supports:
   `extract_manifest_residue_names(...)`;
 - frozen frame, condition, manifest, and issue contracts for future Rg
   computation;
-- single-condition Rg computation through `compute_condition_rg(...)`.
+- single-condition Rg computation through `compute_condition_rg(...)`;
+- manifest-level Rg computation through `compute_manifest_rg(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -210,6 +212,19 @@ Stage 12.1d, CSV export remains Stage 12.2, and reference comparison remains
 Stage 12.3. Configurable atom selections, contacts, graph generation,
 workflow integration, and CLI integration remain future work.
 
+## Stage 12.1c manifest Rg computation
+
+`compute_manifest_rg(...)` consumes one `PreprocessingManifestLoadResult`,
+calls `compute_condition_rg(...)` for every condition result in order, and
+returns a `PreprocessingManifestRgResult`. Failed and partial condition
+results are retained, and manifest-level load issues are mapped into the Rg
+report. The manifest function does not directly inspect runtime objects.
+
+Local scientific Rg coverage remains Stage 12.1d, CSV export remains Stage
+12.2, and reference comparison remains Stage 12.3. Report bundles, contacts,
+graph generation, workflow integration, and CLI integration remain future
+work.
+
 ## Stage 11.8 runtime boundary before Rg
 
 Stage 11.8 documents the completed Stage 11 public API, opaque runtime-object
@@ -245,7 +260,7 @@ The following capabilities are not implemented:
 - frame iteration beyond single-condition Rg computation;
 - atom or residue selection;
 - coordinate or position access from trajectory files;
-- manifest-level Rg computation and Rg export;
+- local scientific Rg coverage and Rg export;
 - real contact extraction;
 - contacts-per-frame outputs;
 - graph export from real preprocessing;

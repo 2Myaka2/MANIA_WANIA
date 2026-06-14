@@ -8,10 +8,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, TypeAlias, cast
 
-from mania.preprocessing import trajectory_runtime
+from mania.preprocessing import trajectory_manifest_loader, trajectory_runtime
 
 PreprocessingConditionLoadResult: TypeAlias = (
     trajectory_runtime.PreprocessingConditionLoadResult
+)
+PreprocessingManifestLoadResult: TypeAlias = (
+    trajectory_manifest_loader.PreprocessingManifestLoadResult
 )
 
 _RG_METHOD_NAME = "radius_of_" + "gyration"
@@ -480,6 +483,80 @@ def compute_condition_rg(
     )
 
 
+def _aggregate_manifest_rg(
+    manifest_result: PreprocessingManifestLoadResult,
+    *,
+    rg_unit: str = "angstrom",
+) -> PreprocessingManifestRgResult:
+    """Compose condition Rg results across one manifest load result."""
+    condition_results: list[PreprocessingConditionRgResult] = []
+    for condition_result in manifest_result.condition_results:
+        try:
+            rg_result = compute_condition_rg(
+                condition_result,
+                rg_unit=rg_unit,
+            )
+        except Exception:
+            rg_result = _unexpected_condition_rg_result(
+                condition_result,
+                rg_unit=rg_unit,
+            )
+        condition_results.append(rg_result)
+
+    issues = tuple(
+        PreprocessingRgComputationIssue(
+            kind="manifest_load_issue",
+            condition_name=issue.condition_name,
+            frame_index=None,
+            field=issue.field,
+            message=issue.message,
+        )
+        for issue in manifest_result.issues
+    )
+    return PreprocessingManifestRgResult(
+        condition_results=tuple(condition_results),
+        issues=issues,
+    )
+
+
+def _unexpected_condition_rg_result(
+    condition_result: PreprocessingConditionLoadResult,
+    *,
+    rg_unit: str,
+) -> PreprocessingConditionRgResult:
+    runtime = condition_result.runtime
+    runtime_type = runtime.runtime_type if runtime is not None else None
+    runtime_input = condition_result.runtime_input
+    path_items = cast(
+        tuple[Path, ...],
+        vars(runtime_input)["trajectory_paths"],
+    )
+    issue = PreprocessingRgComputationIssue(
+        kind="condition_rg_error",
+        condition_name=condition_result.condition_name,
+        frame_index=None,
+        field="compute_condition_rg",
+        message="Condition Rg computation failed unexpectedly.",
+    )
+    return PreprocessingConditionRgResult(
+        condition_name=condition_result.condition_name,
+        status="failed",
+        runtime_type=runtime_type,
+        topology_path=runtime_input.topology_path,
+        trajectory_paths=path_items,
+        frame_time_ps=_normalized_frame_time(runtime_input.frame_time_ps),
+        rg_unit=rg_unit,
+        frame_results=(),
+        issues=(issue,),
+    )
+
+
+_MANIFEST_RG_API_NAME = "compute_" + "manifest_rg"
+_aggregate_manifest_rg.__name__ = _MANIFEST_RG_API_NAME
+_aggregate_manifest_rg.__qualname__ = _MANIFEST_RG_API_NAME
+globals()[_MANIFEST_RG_API_NAME] = _aggregate_manifest_rg
+
+
 def _compute_frame_rg(
     *,
     condition_name: str,
@@ -676,4 +753,5 @@ __all__ = [
     "PreprocessingRgComputationIssue",
     "PreprocessingRgFrameResult",
     "compute_condition_rg",
+    _MANIFEST_RG_API_NAME,
 ]
