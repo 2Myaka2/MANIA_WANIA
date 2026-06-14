@@ -20,7 +20,8 @@ across a manifest load result. Stage 12.1d adds an opt-in local scientific
 smoke test for the loading and manifest Rg computation chain. Stage 12.2a adds
 a dependency-free `rg_timeseries.csv` writer for existing condition-level and
 manifest-level Rg results. Stage 12.2b adds dependency-free validation for
-already exported Rg CSV files.
+already exported Rg CSV files. Stage 12.2c adds Rg export documentation and
+synthetic examples without changing runtime behavior.
 
 ## Current implemented capabilities
 
@@ -53,7 +54,8 @@ The current preprocessing layer supports:
 - manifest-level Rg computation through `compute_manifest_rg(...)`;
 - opt-in local scientific smoke coverage for manifest-level Rg computation;
 - deterministic Rg CSV writing through `write_rg_timeseries_csv(...)`;
-- read-only Rg CSV validation through `validate_rg_timeseries_csv(...)`.
+- read-only Rg CSV validation through `validate_rg_timeseries_csv(...)`;
+- Rg export documentation and dependency-free synthetic examples.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -250,10 +252,11 @@ future work.
 It writes deterministic frame rows without loading files, recomputing Rg, or
 acquiring MDAnalysis.
 
-Expanded export docs and examples remain Stage 12.2c, and local scientific
-export smoke coverage remains Stage 12.2d. Reference comparison remains Stage
-12.3. Contacts, graph generation, workflow integration, and CLI integration
-remain future work.
+The accepted export chain is documented in
+`docs/preprocessing_rg_export.md`, with synthetic examples under
+`examples/preprocessing`. Local scientific export smoke coverage remains Stage
+12.2d. Reference comparison remains Stage 12.3. Contacts, graph generation,
+workflow integration, and CLI integration remain future work.
 
 ## Stage 12.2b Rg CSV validation
 
@@ -262,9 +265,16 @@ their exact header, row shapes, fields, passed-frame consistency, and
 per-condition frame ordering. It uses only standard-library CSV parsing and
 does not write files, compute Rg, or load scientific runtimes.
 
-Expanded export docs and examples remain Stage 12.2c, local scientific export
-smoke coverage remains Stage 12.2d, and reference comparison remains Stage
-12.3.
+Stage 12.2c documents validation as the final step in the accepted export
+chain. Local scientific export smoke coverage remains Stage 12.2d, reference
+comparison remains Stage 12.3, and report bundle work remains Stage 12.4.
+
+## Stage 12.2c Rg export docs and examples
+
+The Rg export guide shows the Python API flow from manifest loading through
+CSV validation. The examples are synthetic, do not load trajectories, and do
+not require MDAnalysis or local reference data. Stage 12.2c adds no source
+runtime behavior or public API.
 
 ## Stage 11.8 runtime boundary before Rg
 

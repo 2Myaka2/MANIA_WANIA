@@ -246,6 +246,14 @@ standard-library CSV parsing and consumes exported files only. MDAnalysis
 remains optional and is required only by loading and computation paths.
 Default CI remains independent from local real data.
 
+## Stage 12.2c Rg export docs and examples
+
+Stage 12.2c adds documentation and synthetic examples for the accepted Rg
+export chain. The synthetic example uses existing result, writer, and
+validator APIs and requires neither MDAnalysis nor real data. MDAnalysis
+remains optional for loading and computation, default CI remains independent
+from local real data, and no scientific data is committed.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

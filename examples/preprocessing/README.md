@@ -38,3 +38,30 @@ directories containing matching files; no local reference package is committed
 to this repository.
 
 There is currently no preprocessing-manifest CLI command.
+
+## Stage 12 Rg export
+
+Stage 12 Rg export is available through Python APIs:
+`write_rg_timeseries_csv(...)` writes `rg_timeseries.csv`, and
+`validate_rg_timeseries_csv(...)` validates the exported file.
+
+The committed Rg examples are synthetic and dependency-free:
+
+- `examples/preprocessing/rg_export_usage.py` constructs synthetic Stage 12
+  result objects, writes into a `TemporaryDirectory`, and validates the
+  output;
+- `examples/preprocessing/rg_timeseries.example.csv` shows the exact accepted
+  CSV schema and synthetic rows;
+- `docs/preprocessing_rg_export.md` documents the full manifest loading,
+  computation, writing, and validation chain.
+
+Run the synthetic example from the repository root:
+
+```bash
+python examples/preprocessing/rg_export_usage.py
+```
+
+It does not require MDAnalysis, real trajectories, or a local reference
+package. Real local MD data belongs outside the repository. The local
+scientific export smoke test remains planned for Stage 12.2d and is not part
+of Stage 12.2c.
