@@ -60,6 +60,12 @@ from mania.preprocessing.trajectory_residues import (
     extract_condition_residue_names,
     extract_manifest_residue_names,
 )
+from mania.preprocessing.trajectory_rg import (
+    PreprocessingConditionRgResult,
+    PreprocessingManifestRgResult,
+    PreprocessingRgComputationIssue,
+    PreprocessingRgFrameResult,
+)
 from mania.preprocessing.trajectory_runtime import (
     PreprocessingConditionLoadResult,
     PreprocessingConditionRuntime,
@@ -71,6 +77,7 @@ __all__ = [
     "OptionalScientificDependencyStatus",
     "PreprocessingCheckedPath",
     "PreprocessingConditionLoadResult",
+    "PreprocessingConditionRgResult",
     "PreprocessingConditionResidueNames",
     "PreprocessingConditionRuntime",
     "PreprocessingConditionRuntimeInput",
@@ -78,6 +85,7 @@ __all__ = [
     "PreprocessingInputManifest",
     "PreprocessingManifestLoadIssue",
     "PreprocessingManifestLoadResult",
+    "PreprocessingManifestRgResult",
     "PreprocessingManifestResidueNames",
     "PreprocessingManifestRuntimeMetadata",
     "PreprocessingOptionalDependencyError",
@@ -91,6 +99,8 @@ __all__ = [
     "PreprocessingResidueNameExtractionIssue",
     "PreprocessingResidueQCIssue",
     "PreprocessingResidueQCReport",
+    "PreprocessingRgComputationIssue",
+    "PreprocessingRgFrameResult",
     "PreprocessingRuntimeMetadataIssue",
     "PreprocessingTrajectoryLoadIssue",
     "ResolvedResidueLibraryManifestOptions",

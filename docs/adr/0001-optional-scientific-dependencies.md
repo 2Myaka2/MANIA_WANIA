@@ -202,6 +202,12 @@ MDAnalysis remains optional, default CI remains independent from real MD data,
 and Stage 12 Rg work remains future work. See
 `docs/preprocessing_runtime_boundary_before_rg.md`.
 
+## Stage 12.1a Rg result contracts
+
+Stage 12.1a adds dependency-free Rg result and report dataclasses. They use
+only the standard library, do not access runtime objects, and keep MDAnalysis
+optional. Actual Rg computation remains future Stage 12.1b work.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

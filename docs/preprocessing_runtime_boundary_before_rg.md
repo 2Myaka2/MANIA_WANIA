@@ -3,9 +3,11 @@
 ## Purpose
 
 Stage 11 closes the minimal preprocessing runtime boundary needed before real
-radius-of-gyration (Rg) work begins. This document records the capabilities
-that Stage 12 may compose, the limits that remain in force, and the local-only
-testing policy for scientific runtime behavior.
+radius-of-gyration (Rg) work begins. Stage 12.1a now adds dependency-free Rg
+result and report contracts without scientific computation. This document
+records the capabilities that later Stage 12 work may compose, the limits that
+remain in force, and the local-only testing policy for scientific runtime
+behavior.
 
 ## Stage 11 completed capabilities
 
@@ -81,6 +83,19 @@ PreprocessingConditionResidueNames
 PreprocessingManifestResidueNames
 ```
 
+### Stage 12.1a Rg result contracts
+
+```python
+PreprocessingRgComputationIssue
+PreprocessingRgFrameResult
+PreprocessingConditionRgResult
+PreprocessingManifestRgResult
+```
+
+These frozen dataclasses define frame, condition, and manifest report shapes,
+deterministic pass/fail summaries, aggregate counts, and JSON-serializable
+`to_dict()` output. They do not retain or serialize runtime objects.
+
 ## Runtime object boundary
 
 Runtime objects are intentionally opaque. Loaders may create and retain a
@@ -143,11 +158,11 @@ MDAnalysis and local-data availability.
 The local scientific suite covers single-condition loading, manifest loading,
 metadata, and residue names. Real MD data must remain uncommitted.
 
-## What is explicitly not implemented before Rg
+## What is explicitly not implemented before Rg computation
 
-Stage 11 does not implement:
+Stage 12.1a does not implement:
 
-- Rg calculation or an Rg time series;
+- Rg calculation or population of an Rg time series;
 - `rg_timeseries.csv` export;
 - contacts computation or contacts-per-frame output;
 - aggregate contact edge output;
@@ -165,7 +180,15 @@ Stage 11 does not implement:
 - a CI job with real MD data.
 
 Contacts and graph export remain future work after the Rg stage. These items
-are non-goals for the completed Stage 11 boundary.
+are non-goals for the Stage 12.1a contract.
+
+## Stage 12.1a contract boundary
+
+The Rg result/report contract exists, but actual Rg computation remains Stage
+12.1b. Stage 12.1a does not iterate frames, access MDAnalysis runtime objects,
+select atoms, or read coordinates. CSV export remains Stage 12.2, reference
+comparison remains Stage 12.3, and the lightweight report bundle remains Stage
+12.4. Contacts and graph generation remain future stages after Rg.
 
 ## Stage 12 handoff
 

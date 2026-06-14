@@ -13,7 +13,9 @@ one already-prepared condition, Stage 11.5 composes it across a manifest, and
 Stage 11.6 reports lightweight metadata from loaded results. Stage 11.7 adds
 minimal residue-name extraction from those loaded results. Stage 11.8 closes
 the runtime boundary before Rg; see
-`docs/preprocessing_runtime_boundary_before_rg.md`.
+`docs/preprocessing_runtime_boundary_before_rg.md`. Stage 12.1a adds only the
+dependency-free Rg result/report contract; actual Rg computation has not
+started.
 
 ## Current implemented capabilities
 
@@ -39,7 +41,9 @@ The current preprocessing layer supports:
   `collect_manifest_runtime_metadata(...)`;
 - ordered residue-name extraction through
   `extract_condition_residue_names(...)` and
-  `extract_manifest_residue_names(...)`.
+  `extract_manifest_residue_names(...)`;
+- frozen frame, condition, manifest, and issue contracts for future Rg
+  computation.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -179,6 +183,19 @@ MDAnalysis, call loaders or metadata collectors, or run residue QC. It does
 not access atoms, iterate frames, or access coordinates or positions. Rg,
 contacts, and graph export remain future work.
 
+## Stage 12.1a Rg result contract
+
+Stage 12.1a defines `PreprocessingRgComputationIssue`,
+`PreprocessingRgFrameResult`, `PreprocessingConditionRgResult`, and
+`PreprocessingManifestRgResult`. These dependency-free dataclasses provide
+validated numeric fields, property-based pass/fail semantics, deterministic
+aggregates, path serialization, and JSON-serializable reports without runtime
+objects.
+
+Stage 12.1a does not compute Rg, iterate frames, access MDAnalysis runtime
+objects, export CSV, compare reference results, build report bundles, compute
+contacts, or generate graphs. Actual Rg computation begins in Stage 12.1b.
+
 ## Stage 11.8 runtime boundary before Rg
 
 Stage 11.8 documents the completed Stage 11 public API, opaque runtime-object
@@ -214,7 +231,7 @@ The following capabilities are not implemented:
 - frame iteration;
 - atom or residue selection;
 - coordinate or position access from trajectory files;
-- real Rg computation;
+- real Rg computation beyond the Stage 12.1a result contract;
 - real contact extraction;
 - contacts-per-frame outputs;
 - graph export from real preprocessing;
