@@ -231,6 +231,14 @@ with optional MDAnalysis and explicitly configured local real data. The smoke
 test remains opt-in, adds no new CI job, and keeps default CI independent from
 MDAnalysis and local reference data.
 
+## Stage 12.2a Rg CSV writer
+
+Stage 12.2a adds a dependency-free CSV writer that consumes existing Rg result
+objects. It uses only the standard library and does not load files or acquire
+MDAnalysis. MDAnalysis remains optional and is required only by the existing
+loading and computation paths. Default CI remains independent from local real
+data.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

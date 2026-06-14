@@ -68,6 +68,11 @@ from mania.preprocessing.trajectory_rg import (
     PreprocessingRgFrameResult,
     compute_condition_rg,
 )
+from mania.preprocessing.trajectory_rg_export import (
+    PreprocessingRgCsvWriteIssue,
+    PreprocessingRgCsvWriteResult,
+    write_rg_timeseries_csv,
+)
 from mania.preprocessing.trajectory_runtime import (
     PreprocessingConditionLoadResult,
     PreprocessingConditionRuntime,
@@ -107,6 +112,8 @@ __all__ = [
     "PreprocessingResidueQCIssue",
     "PreprocessingResidueQCReport",
     "PreprocessingRgComputationIssue",
+    "PreprocessingRgCsvWriteIssue",
+    "PreprocessingRgCsvWriteResult",
     "PreprocessingRgFrameResult",
     "PreprocessingRuntimeMetadataIssue",
     "PreprocessingTrajectoryLoadIssue",
@@ -131,4 +138,5 @@ __all__ = [
     "run_residue_qc_from_manifest_options",
     "validate_preprocessing_manifest_paths",
     "validate_residue_library_from_manifest_options",
+    "write_rg_timeseries_csv",
 ]
