@@ -14,8 +14,8 @@ Stage 11.6 reports lightweight metadata from loaded results. Stage 11.7 adds
 minimal residue-name extraction from those loaded results. Stage 11.8 closes
 the runtime boundary before Rg; see
 `docs/preprocessing_runtime_boundary_before_rg.md`. Stage 12.1a adds only the
-dependency-free Rg result/report contract; actual Rg computation has not
-started.
+dependency-free Rg result/report contract. Stage 12.1b adds Rg computation for
+one already loaded condition.
 
 ## Current implemented capabilities
 
@@ -43,7 +43,8 @@ The current preprocessing layer supports:
   `extract_condition_residue_names(...)` and
   `extract_manifest_residue_names(...)`;
 - frozen frame, condition, manifest, and issue contracts for future Rg
-  computation.
+  computation;
+- single-condition Rg computation through `compute_condition_rg(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -196,6 +197,19 @@ Stage 12.1a does not compute Rg, iterate frames, access MDAnalysis runtime
 objects, export CSV, compare reference results, build report bundles, compute
 contacts, or generate graphs. Actual Rg computation begins in Stage 12.1b.
 
+## Stage 12.1b single-condition Rg computation
+
+`compute_condition_rg(...)` consumes one existing
+`PreprocessingConditionLoadResult` and returns a
+`PreprocessingConditionRgResult`. It uses the loaded runtime's primary atom
+group and iterates that condition's trajectory to compute one Rg value per
+visited frame. It does not load files or acquire MDAnalysis itself.
+
+Manifest-level Rg remains Stage 12.1c. Local scientific Rg coverage remains
+Stage 12.1d, CSV export remains Stage 12.2, and reference comparison remains
+Stage 12.3. Configurable atom selections, contacts, graph generation,
+workflow integration, and CLI integration remain future work.
+
 ## Stage 11.8 runtime boundary before Rg
 
 Stage 11.8 documents the completed Stage 11 public API, opaque runtime-object
@@ -228,10 +242,10 @@ The following capabilities are not implemented:
 - trajectory loading beyond declared manifest condition inputs;
 - GROMACS runtime integration;
 - residue QC from loaded topology;
-- frame iteration;
+- frame iteration beyond single-condition Rg computation;
 - atom or residue selection;
 - coordinate or position access from trajectory files;
-- real Rg computation beyond the Stage 12.1a result contract;
+- manifest-level Rg computation and Rg export;
 - real contact extraction;
 - contacts-per-frame outputs;
 - graph export from real preprocessing;

@@ -65,6 +65,7 @@ from mania.preprocessing.trajectory_rg import (
     PreprocessingManifestRgResult,
     PreprocessingRgComputationIssue,
     PreprocessingRgFrameResult,
+    compute_condition_rg,
 )
 from mania.preprocessing.trajectory_runtime import (
     PreprocessingConditionLoadResult,
@@ -109,6 +110,7 @@ __all__ = [
     "check_preprocessing_reference_package",
     "collect_condition_runtime_metadata",
     "collect_manifest_runtime_metadata",
+    "compute_condition_rg",
     "extract_condition_residue_names",
     "extract_manifest_residue_names",
     "get_mdanalysis_status",

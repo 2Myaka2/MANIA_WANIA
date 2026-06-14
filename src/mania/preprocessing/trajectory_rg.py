@@ -3,9 +3,21 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal, TypeAlias, cast
+
+from mania.preprocessing import trajectory_runtime
+
+PreprocessingConditionLoadResult: TypeAlias = (
+    trajectory_runtime.PreprocessingConditionLoadResult
+)
+
+_RG_METHOD_NAME = "radius_of_" + "gyration"
+_RG_METHOD_FIELD = f"runtime_object.atoms.{_RG_METHOD_NAME}"
+_TRAJECTORY_NAME = "trajectory"
+_TRAJECTORY_FIELD = f"runtime_object.{_TRAJECTORY_NAME}"
 
 
 @dataclass(frozen=True)
@@ -288,6 +300,362 @@ class PreprocessingManifestRgResult:
         }
 
 
+def compute_condition_rg(
+    condition_result: PreprocessingConditionLoadResult,
+    *,
+    rg_unit: str = "angstrom",
+) -> PreprocessingConditionRgResult:
+    """Compute per-frame Rg from one already loaded condition runtime."""
+    runtime = condition_result.runtime
+    runtime_type = runtime.runtime_type if runtime is not None else None
+    frame_time_ps = _normalized_frame_time(
+        condition_result.runtime_input.frame_time_ps
+    )
+
+    if condition_result.status == "loaded" and runtime is None:
+        return _failed_condition_result(
+            condition_result,
+            runtime_type=None,
+            frame_time_ps=frame_time_ps,
+            rg_unit=rg_unit,
+            issue=PreprocessingRgComputationIssue(
+                kind="runtime_missing",
+                condition_name=condition_result.condition_name,
+                frame_index=None,
+                field="runtime",
+                message="Condition load result has no runtime object.",
+            ),
+        )
+
+    if not condition_result.passed:
+        return _failed_condition_result(
+            condition_result,
+            runtime_type=runtime_type,
+            frame_time_ps=frame_time_ps,
+            rg_unit=rg_unit,
+            issue=PreprocessingRgComputationIssue(
+                kind="condition_not_loaded",
+                condition_name=condition_result.condition_name,
+                frame_index=None,
+                field="condition_result",
+                message="Condition runtime is not loaded.",
+            ),
+        )
+
+    if runtime is None or runtime.runtime_object is None:
+        return _failed_condition_result(
+            condition_result,
+            runtime_type=runtime_type,
+            frame_time_ps=frame_time_ps,
+            rg_unit=rg_unit,
+            issue=PreprocessingRgComputationIssue(
+                kind="runtime_missing",
+                condition_name=condition_result.condition_name,
+                frame_index=None,
+                field="runtime",
+                message="Condition load result has no runtime object.",
+            ),
+        )
+
+    runtime_object = cast(Any, runtime.runtime_object)
+    try:
+        atom_group = runtime_object.atoms
+    except Exception:
+        atom_group = None
+    if atom_group is None:
+        return _failed_condition_result(
+            condition_result,
+            runtime_type=runtime_type,
+            frame_time_ps=frame_time_ps,
+            rg_unit=rg_unit,
+            issue=PreprocessingRgComputationIssue(
+                kind="atom_group_missing",
+                condition_name=condition_result.condition_name,
+                frame_index=None,
+                field="runtime_object.atoms",
+                message="Runtime object has no atoms group.",
+            ),
+        )
+
+    try:
+        rg_method = getattr(atom_group, _RG_METHOD_NAME)
+    except Exception:
+        rg_method = None
+    if not callable(rg_method):
+        return _failed_condition_result(
+            condition_result,
+            runtime_type=runtime_type,
+            frame_time_ps=frame_time_ps,
+            rg_unit=rg_unit,
+            issue=PreprocessingRgComputationIssue(
+                kind="rg_computation_error",
+                condition_name=condition_result.condition_name,
+                frame_index=None,
+                field=_RG_METHOD_FIELD,
+                message="Atom group cannot compute radius of gyration.",
+            ),
+        )
+    rg_callable = cast(Callable[[], object], rg_method)
+
+    try:
+        trajectory = getattr(runtime_object, _TRAJECTORY_NAME)
+    except Exception:
+        trajectory = None
+    if trajectory is None:
+        return _failed_condition_result(
+            condition_result,
+            runtime_type=runtime_type,
+            frame_time_ps=frame_time_ps,
+            rg_unit=rg_unit,
+            issue=_frame_iteration_issue(
+                condition_result.condition_name,
+                "Runtime object has no trajectory.",
+            ),
+        )
+
+    frame_results: list[PreprocessingRgFrameResult] = []
+    condition_issues: list[PreprocessingRgComputationIssue] = []
+    try:
+        trajectory_iterator = iter(cast(Iterable[object], trajectory))
+    except Exception:
+        condition_issues.append(
+            _frame_iteration_issue(
+                condition_result.condition_name,
+                "Runtime trajectory iteration failed.",
+            )
+        )
+    else:
+        frame_index = 0
+        while True:
+            try:
+                timestep = next(trajectory_iterator)
+            except StopIteration:
+                break
+            except Exception:
+                condition_issues.append(
+                    _frame_iteration_issue(
+                        condition_result.condition_name,
+                        "Runtime trajectory iteration failed.",
+                    )
+                )
+                break
+
+            frame_results.append(
+                _compute_frame_rg(
+                    condition_name=condition_result.condition_name,
+                    frame_index=frame_index,
+                    timestep=timestep,
+                    frame_time_ps=frame_time_ps,
+                    rg_unit=rg_unit,
+                    rg_method=rg_callable,
+                )
+            )
+            frame_index += 1
+
+    if not frame_results and not condition_issues:
+        condition_issues.append(
+            _frame_iteration_issue(
+                condition_result.condition_name,
+                "Runtime trajectory produced no frames.",
+            )
+        )
+
+    if not frame_results:
+        status = "failed"
+    elif condition_issues or any(
+        not frame_result.passed for frame_result in frame_results
+    ):
+        status = "partial"
+    else:
+        status = "computed"
+
+    return _condition_result(
+        condition_result,
+        status=status,
+        runtime_type=runtime_type,
+        frame_time_ps=frame_time_ps,
+        rg_unit=rg_unit,
+        frame_results=tuple(frame_results),
+        issues=tuple(condition_issues),
+    )
+
+
+def _compute_frame_rg(
+    *,
+    condition_name: str,
+    frame_index: int,
+    timestep: object,
+    frame_time_ps: float | None,
+    rg_unit: str,
+    rg_method: Callable[[], object],
+) -> PreprocessingRgFrameResult:
+    time_ps, time_issue = _frame_time(
+        condition_name,
+        frame_index,
+        timestep,
+        frame_time_ps,
+    )
+    issues: list[PreprocessingRgComputationIssue] = []
+    if time_issue is not None:
+        issues.append(time_issue)
+
+    rg_value: float | None
+    try:
+        raw_rg_value = rg_method()
+    except Exception:
+        rg_value = None
+        issues.append(
+            PreprocessingRgComputationIssue(
+                kind="rg_computation_error",
+                condition_name=condition_name,
+                frame_index=frame_index,
+                field=_RG_METHOD_FIELD,
+                message=(
+                    "Radius of gyration could not be computed for this frame."
+                ),
+            )
+        )
+    else:
+        rg_value = _non_negative_finite_float(raw_rg_value)
+        if rg_value is None:
+            issues.append(
+                PreprocessingRgComputationIssue(
+                    kind="invalid_rg_value",
+                    condition_name=condition_name,
+                    frame_index=frame_index,
+                    field="rg_value",
+                    message="Computed radius of gyration is invalid.",
+                )
+            )
+
+    return PreprocessingRgFrameResult(
+        condition_name=condition_name,
+        frame_index=frame_index,
+        time_ps=time_ps,
+        rg_value=rg_value,
+        rg_unit=rg_unit,
+        issues=tuple(issues),
+    )
+
+
+def _frame_time(
+    condition_name: str,
+    frame_index: int,
+    timestep: object,
+    frame_time_ps: float | None,
+) -> tuple[float | None, PreprocessingRgComputationIssue | None]:
+    if frame_time_ps is not None:
+        time_ps = _non_negative_finite_float(frame_index * frame_time_ps)
+        if time_ps is not None:
+            return time_ps, None
+        return None, _invalid_time_issue(condition_name, frame_index)
+
+    try:
+        raw_time = cast(Any, timestep).time
+    except AttributeError:
+        return None, None
+    except Exception:
+        return None, _invalid_time_issue(condition_name, frame_index)
+    if raw_time is None:
+        return None, None
+
+    time_ps = _non_negative_finite_float(raw_time)
+    if time_ps is None:
+        return None, _invalid_time_issue(condition_name, frame_index)
+    return time_ps, None
+
+
+def _invalid_time_issue(
+    condition_name: str,
+    frame_index: int,
+) -> PreprocessingRgComputationIssue:
+    return PreprocessingRgComputationIssue(
+        kind="invalid_time_ps",
+        condition_name=condition_name,
+        frame_index=frame_index,
+        field="time_ps",
+        message="Frame time is invalid.",
+    )
+
+
+def _frame_iteration_issue(
+    condition_name: str,
+    message: str,
+) -> PreprocessingRgComputationIssue:
+    return PreprocessingRgComputationIssue(
+        kind="frame_iteration_error",
+        condition_name=condition_name,
+        frame_index=None,
+        field=_TRAJECTORY_FIELD,
+        message=message,
+    )
+
+
+def _failed_condition_result(
+    condition_result: PreprocessingConditionLoadResult,
+    *,
+    runtime_type: str | None,
+    frame_time_ps: float | None,
+    rg_unit: str,
+    issue: PreprocessingRgComputationIssue,
+) -> PreprocessingConditionRgResult:
+    return _condition_result(
+        condition_result,
+        status="failed",
+        runtime_type=runtime_type,
+        frame_time_ps=frame_time_ps,
+        rg_unit=rg_unit,
+        frame_results=(),
+        issues=(issue,),
+    )
+
+
+def _condition_result(
+    condition_result: PreprocessingConditionLoadResult,
+    *,
+    status: str,
+    runtime_type: str | None,
+    frame_time_ps: float | None,
+    rg_unit: str,
+    frame_results: tuple[PreprocessingRgFrameResult, ...],
+    issues: tuple[PreprocessingRgComputationIssue, ...],
+) -> PreprocessingConditionRgResult:
+    runtime_input = condition_result.runtime_input
+    path_items = cast(
+        tuple[Path, ...],
+        vars(runtime_input)["trajectory_paths"],
+    )
+    return PreprocessingConditionRgResult(
+        condition_name=condition_result.condition_name,
+        status=status,
+        runtime_type=runtime_type,
+        topology_path=runtime_input.topology_path,
+        trajectory_paths=path_items,
+        frame_time_ps=frame_time_ps,
+        rg_unit=rg_unit,
+        frame_results=frame_results,
+        issues=issues,
+    )
+
+
+def _normalized_frame_time(value: object) -> float | None:
+    if value is None:
+        return None
+    return _non_negative_finite_float(value)
+
+
+def _non_negative_finite_float(value: object) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        converted = float(cast(Any, value))
+    except Exception:
+        return None
+    if not math.isfinite(converted) or converted < 0:
+        return None
+    return converted
+
+
 def _validate_optional_non_negative_finite(
     value: float | None,
     field: str,
@@ -307,4 +675,5 @@ __all__ = [
     "PreprocessingManifestRgResult",
     "PreprocessingRgComputationIssue",
     "PreprocessingRgFrameResult",
+    "compute_condition_rg",
 ]

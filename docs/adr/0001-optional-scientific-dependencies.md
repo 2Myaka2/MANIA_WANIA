@@ -208,6 +208,14 @@ Stage 12.1a adds dependency-free Rg result and report dataclasses. They use
 only the standard library, do not access runtime objects, and keep MDAnalysis
 optional. Actual Rg computation remains future Stage 12.1b work.
 
+## Stage 12.1b single-condition Rg computation
+
+Stage 12.1b computes Rg from one already loaded condition result.
+`compute_condition_rg(...)` does not acquire dependencies or load files; it
+uses the runtime object produced through the existing Stage 11 loading
+boundary. MDAnalysis remains optional and local-scientific, while default CI
+remains independent from real MD data.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
