@@ -27,7 +27,7 @@ opt-in local scientific smoke coverage for Rg CSV export and validation. Stage
 readiness validation. Stage 12.3b adds dependency-free numeric-tolerant
 comparison of exported actual and reference Rg CSV files. Stage 12.4a adds a
 dependency-free in-memory bundle for existing Stage 12 result objects. Final
-Rg MVP boundary documentation remains Stage 12.4b.
+Rg MVP boundary documentation is completed by Stage 12.4b.
 
 ## Current implemented capabilities
 
@@ -332,8 +332,29 @@ JSON-serializable reports and provides a flattened summary without reading or
 writing files, recomputing Rg, validating CSV, or comparing references.
 
 The bundle does not add a report-file writer, CLI command, workflow runner,
-contacts, or graph generation. Final Rg MVP boundary documentation remains
-Stage 12.4b.
+contacts, or graph generation. Stage 12.4b completes the final Rg MVP
+boundary documentation.
+
+## Stage 12.4b final Rg MVP boundary
+
+Stage 12 now supports Rg result contracts, condition and manifest computation,
+`rg_timeseries.csv` writing and validation, export documentation and examples,
+numeric-tolerant reference comparison, and an in-memory report bundle. Its
+local scientific coverage includes opt-in Rg computation and export smoke
+tests; default CI remains independent from MDAnalysis and real MD data.
+
+The conceptual Python API flow is:
+
+```text
+manifest -> load runtimes -> compute Rg -> write rg_timeseries.csv
+         -> validate CSV -> compare with reference CSV -> build report bundle
+```
+
+This is not a CLI command, workflow wrapper, or persistent output directory
+manager. Supported outputs are in-memory Rg dataclass results,
+`rg_timeseries.csv`, a CSV validation report, a reference comparison report,
+and an in-memory report bundle. No JSON, Markdown, or HTML report file writer
+is part of Stage 12.
 
 ## Stage 11.8 runtime boundary before Rg
 
@@ -370,10 +391,17 @@ The following capabilities are not implemented:
 - frame iteration beyond single-condition Rg computation;
 - atom or residue selection;
 - coordinate or position access from trajectory files;
-- an Rg comparison report bundle;
+- report file writing or persistent output directory management;
+- automatic reference package discovery;
+- unit conversion between `nm` and `angstrom`;
+- notebook parity guarantees beyond CSV comparison support;
+- performance optimization for large trajectories;
+- a broad trajectory preprocessing pipeline;
 - real contact extraction;
+- contacts export;
 - contacts-per-frame outputs;
 - graph export from real preprocessing;
+- graph diagnostics from real preprocessing outputs;
 - CLI or workflow integration for real preprocessing.
 
 ## Why trajectory parsing comes next
@@ -532,5 +560,14 @@ Stage 15:
   scientific MVP workflow.
 ```
 
-This roadmap is planning only. Stage 11 closes with the documented pre-Rg
-boundary in Stage 11.8; Stages 12 through 15 remain future work.
+Stage 12 is complete at the documented Rg MVP boundary. Stage 13 should begin
+contacts extraction in separate contacts-specific modules and should not add
+contacts to the Rg-specific computation, export, validation, comparison, or
+report modules. Recommended order:
+
+1. Contact options and output contracts.
+2. Minimal per-frame contacts extraction.
+3. Contacts export, validation, and comparison.
+4. Graph integration after contacts are stable.
+
+Stages 13 through 15 remain planning only.

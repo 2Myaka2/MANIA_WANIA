@@ -18,6 +18,78 @@ files. Stage 12.4a adds a dependency-free in-memory bundle that summarizes
 existing Stage 12 results. The remaining limits and local-only testing policy
 for scientific runtime behavior stay in force.
 
+## Final Stage 12 Rg MVP boundary
+
+Stage 12.4b closes the Rg MVP documentation boundary before contacts. The
+completed Stage 12 scope includes:
+
+- dependency-free frame, condition, manifest, and issue result contracts;
+- single-condition Rg computation;
+- manifest-level Rg computation;
+- an opt-in local scientific Rg computation smoke test;
+- the deterministic `rg_timeseries.csv` writer;
+- read-only validation for exported Rg CSV files;
+- Rg export documentation and synthetic examples;
+- an opt-in local scientific Rg export smoke test;
+- the reference comparison input and readiness contract;
+- numeric-tolerant actual/reference CSV comparison;
+- a lightweight in-memory Rg report bundle.
+
+The accepted Stage 12 public API exported by `mania.preprocessing` is:
+
+```python
+# Computation
+PreprocessingRgComputationIssue
+PreprocessingRgFrameResult
+PreprocessingConditionRgResult
+PreprocessingManifestRgResult
+compute_condition_rg(...)
+compute_manifest_rg(...)
+
+# Export
+PreprocessingRgCsvWriteIssue
+PreprocessingRgCsvWriteResult
+write_rg_timeseries_csv(...)
+
+# Validation
+PreprocessingRgCsvValidationIssue
+PreprocessingRgCsvValidationResult
+validate_rg_timeseries_csv(...)
+
+# Reference comparison
+PreprocessingRgReferenceComparisonOptions
+PreprocessingRgReferenceComparisonInput
+PreprocessingRgReferenceComparisonIssue
+PreprocessingRgReferenceComparisonInputValidationResult
+validate_rg_reference_comparison_input(...)
+PreprocessingRgReferenceComparisonRowResult
+PreprocessingRgReferenceComparisonResult
+compare_rg_timeseries_csv(...)
+
+# In-memory report bundle
+PreprocessingRgReportBundleIssue
+PreprocessingRgReportBundleSummary
+PreprocessingRgReportBundle
+build_rg_report_bundle(...)
+```
+
+The accepted conceptual Python API flow is:
+
+```text
+manifest -> load runtimes -> compute Rg -> write rg_timeseries.csv
+         -> validate CSV -> compare with reference CSV -> build report bundle
+```
+
+This is a conceptual Python API flow, not a CLI command or workflow wrapper.
+It does not imply a persistent output directory manager. Callers compose the
+existing functions and own their input and output paths.
+
+Stage 12 currently produces in-memory Rg dataclass results,
+`rg_timeseries.csv`, a CSV validation report, a reference comparison report,
+and an in-memory report bundle. It does not provide a report JSON file writer,
+report Markdown writer, report HTML writer, workflow output directory manager,
+or Stage 12 CLI command.
+
 ## Stage 11 completed capabilities
 
 Stage 11 now provides:
@@ -240,8 +312,8 @@ dictionary reports and adds a flattened status and count summary without
 performing any scientific or file operation.
 
 Stage 12.4a does not add contacts, graph generation, report-file output, CLI
-commands, or workflow integration. Final Rg MVP boundary documentation before
-contacts remains Stage 12.4b.
+commands, or workflow integration. Stage 12.4b closes the final Rg MVP
+boundary documentation before contacts.
 
 ## Runtime object boundary
 
@@ -303,9 +375,22 @@ enable the local scientific tests. Local runs may pass or skip depending on
 MDAnalysis and local-data availability.
 
 The local scientific suite covers single-condition loading, manifest loading,
-metadata, residue names, and manifest-level Rg computation. The Rg smoke test
-checks report shape and basic finite, non-negative scientific sanity without
-numeric reference comparison. Real MD data must remain uncommitted.
+metadata, residue names, manifest-level Rg computation, and Rg CSV export and
+validation. The local scientific Rg computation smoke test checks report shape
+and basic finite, non-negative scientific sanity. The local scientific Rg
+export smoke test writes generated output only into a pytest temporary
+directory and validates it without exact numeric reference comparison.
+
+Both Rg smoke tests require `MANIA_RUN_LOCAL_SCIENTIFIC=1`, optional
+MDAnalysis setup, and `MANIA_LOCAL_REFERENCE_PACKAGE`. Local scientific tests
+are skipped by default. No real MD data or generated local-data CSV is
+committed.
+
+Default CI does not require MDAnalysis. Default CI does not require real MD data
+and does not run the local scientific tests as real-data tests. The default
+suite uses fake, synthetic, and unit-level coverage for Rg contracts,
+computation boundaries, the writer, validator, comparison, and report bundle.
+MDAnalysis remains optional.
 
 ## What is explicitly not implemented before Rg computation
 
@@ -313,18 +398,24 @@ Stage 12.4a does not implement:
 
 - an Rg report-file writer;
 - contacts computation or contacts-per-frame output;
+- contacts export or validation;
 - aggregate contact edge output;
 - graph export from real preprocessing;
+- graph diagnostics from real preprocessing outputs;
 - graph JSON, node, or edge output from real runtime results;
 - a real preprocessing workflow runner;
 - CLI integration or workflow integration for real scientific preprocessing;
+- a persistent workflow output directory manager;
+- automatic reference package discovery;
 - automatic residue QC from loaded topology;
-- atom selections;
+- configurable atom selections;
+- unit conversion between nanometers and angstroms;
 - frame iteration outside one-condition Rg computation;
 - coordinate or position extraction;
-- notebook parity checks for real Rg, contacts, or graph outputs;
+- notebook parity guarantees beyond exported CSV comparison support;
 - reference notebook comparison for real Rg, contacts, or graph outputs;
 - scientific workload performance optimization;
+- a broad trajectory preprocessing pipeline;
 - a CI job with real MD data.
 
 Contacts and graph export remain future work after the Rg stage. These items
@@ -351,12 +442,12 @@ Stage 12.3a reference comparison input contract validates comparison
 readiness, and Stage 12.3b now performs dependency-free numeric-tolerant
 comparison of exported CSV files without runtime loading or Rg recomputation.
 Stage 12.4a now summarizes existing Stage 12 results in a lightweight
-in-memory bundle. Final boundary documentation remains Stage 12.4b, and
+in-memory bundle. Stage 12.4b closes the final boundary documentation, and
 contacts and graph generation remain future stages after Rg.
 
 ## Stage 12 handoff
 
-Stage 12 may build on:
+The completed Stage 12 Rg MVP builds on:
 
 ```python
 PreprocessingManifestLoadResult
@@ -369,17 +460,20 @@ It may also compose the optional MDAnalysis boundary, loaded runtime objects
 from Stage 11.4 and Stage 11.5, local manifest package behavior, and the local
 scientific harness.
 
-Stage 12 should begin with a real Rg preprocessing MVP. Its recommended scope
-is:
+Rg computation lives in Rg-specific preprocessing modules. Rg export,
+validation, comparison, and report construction also remain in Rg-specific
+modules. Contacts must not be mixed into those Stage 12 modules.
 
-- compute Rg per frame;
-- export `rg_timeseries.csv` in the backend contract format;
-- compare with notebook or reference outputs where possible;
-- validate and compare Rg outputs, with lightweight reporting if needed.
+Stage 13 should start a contacts extraction MVP in separate contacts-specific
+modules. The recommended ordering is:
 
-Unless separately scoped, Stage 12 should still avoid contacts, graph export,
-the full workflow MVP, broad CLI integration, and any CI job with real MD
-data.
+1. Define contact options and output contracts.
+2. Add a minimal per-frame contacts extraction boundary.
+3. Add contacts export, validation, and comparison.
+4. Integrate graph work only after contacts are stable.
+
+Graph export remains a later stage after contacts. Stage 13 should begin with
+contract-only or minimal extraction boundaries rather than a broad workflow.
 
 ## Safe composition rules for Stage 12
 

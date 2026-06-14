@@ -136,8 +136,27 @@ row-count consistency, known condition names, and lowercase `frame_passed`
 values.
 
 The test does not compare exact Rg values or use numeric tolerances. It does
-not write persistent repository artifacts, commit generated local-data CSV,
-or run in default CI. Exact numeric reference comparison remains Stage 12.3.
+not write persistent repository artifacts or run in default CI. Generated
+files stay in a pytest temp directory. There is no committed generated CSV
+from local data.
+
+## Final Stage 12 local scientific boundary
+
+Stage 12 includes exactly two Rg-focused local scientific smoke tests:
+
+- the Stage 12.1d local scientific Rg computation smoke;
+- the Stage 12.2d local scientific Rg export smoke.
+
+They are opt-in through `MANIA_RUN_LOCAL_SCIENTIFIC=1`, require optional
+MDAnalysis setup, and require `MANIA_LOCAL_REFERENCE_PACKAGE`. Local
+scientific tests are skipped by default, and default CI does not run them as
+real-data tests.
+
+The computation smoke checks manifest-level Rg report shape and basic numeric
+sanity. The export smoke writes `rg_timeseries.csv` only into a pytest temp
+directory and validates it. No real MD data or generated local-data CSV is
+committed. Stage 12 adds no local scientific comparison, report-bundle,
+contacts, or graph smoke test.
 
 ## Stage 9.3 history
 

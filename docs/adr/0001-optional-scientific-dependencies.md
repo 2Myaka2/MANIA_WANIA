@@ -295,6 +295,23 @@ MDAnalysis remains optional and unrelated to report bundle construction.
 Default CI remains independent from local real data, and no local scientific
 report smoke test or report-file writer is added in this stage.
 
+## Stage 12.4b final Rg MVP boundary
+
+Stage 12 closes with computation, CSV writing and validation, numeric-tolerant
+CSV comparison, and an in-memory report bundle. The conceptual Python API flow
+does not create a CLI command, workflow wrapper, persistent output directory
+manager, or report-file writer.
+
+Only local Rg computation and export smoke tests use optional MDAnalysis and
+explicitly configured real data. MDAnalysis remains optional. Default CI does
+not require real MD data, local scientific tests are skipped by default, and
+the default suite uses fake, synthetic, or unit-level coverage for the Stage
+12 contracts, writer, validator, comparison, and report bundle.
+
+Contacts extraction belongs to Stage 13 in separate contacts-specific modules.
+Graph integration follows only after contacts are stable; neither is part of
+the Stage 12 Rg modules.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
