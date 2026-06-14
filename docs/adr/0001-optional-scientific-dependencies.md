@@ -224,6 +224,13 @@ dependencies, load files, or directly inspect runtime objects. MDAnalysis
 remains optional behind the Stage 11 loading boundary, and default CI remains
 independent from real MD data.
 
+## Stage 12.1d local scientific Rg smoke test
+
+Stage 12.1d validates the existing loading and manifest Rg computation path
+with optional MDAnalysis and explicitly configured local real data. The smoke
+test remains opt-in, adds no new CI job, and keeps default CI independent from
+MDAnalysis and local reference data.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

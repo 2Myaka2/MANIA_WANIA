@@ -16,7 +16,8 @@ the runtime boundary before Rg; see
 `docs/preprocessing_runtime_boundary_before_rg.md`. Stage 12.1a adds only the
 dependency-free Rg result/report contract. Stage 12.1b adds Rg computation for
 one already loaded condition, and Stage 12.1c composes condition Rg results
-across a manifest load result.
+across a manifest load result. Stage 12.1d adds an opt-in local scientific
+smoke test for the loading and manifest Rg computation chain.
 
 ## Current implemented capabilities
 
@@ -46,7 +47,8 @@ The current preprocessing layer supports:
 - frozen frame, condition, manifest, and issue contracts for future Rg
   computation;
 - single-condition Rg computation through `compute_condition_rg(...)`;
-- manifest-level Rg computation through `compute_manifest_rg(...)`.
+- manifest-level Rg computation through `compute_manifest_rg(...)`;
+- opt-in local scientific smoke coverage for manifest-level Rg computation.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -220,10 +222,20 @@ returns a `PreprocessingManifestRgResult`. Failed and partial condition
 results are retained, and manifest-level load issues are mapped into the Rg
 report. The manifest function does not directly inspect runtime objects.
 
-Local scientific Rg coverage remains Stage 12.1d, CSV export remains Stage
-12.2, and reference comparison remains Stage 12.3. Report bundles, contacts,
-graph generation, workflow integration, and CLI integration remain future
-work.
+CSV export remains Stage 12.2, and reference comparison remains Stage 12.3.
+Report bundles, contacts, graph generation, workflow integration, and CLI
+integration remain future work.
+
+## Stage 12.1d local scientific Rg smoke test
+
+The opt-in local scientific suite now loads a configured local manifest, loads
+its condition runtimes, and computes manifest-level Rg. The smoke test checks
+the report shape, JSON serialization, deterministic frame indexes, and finite
+non-negative Rg values without asserting exact numeric references.
+
+The test requires the existing optional MDAnalysis runtime and local real data.
+It remains skipped by default and outside default CI. CSV export, reference
+comparison, contacts, and graph generation remain future work.
 
 ## Stage 11.8 runtime boundary before Rg
 
@@ -260,7 +272,7 @@ The following capabilities are not implemented:
 - frame iteration beyond single-condition Rg computation;
 - atom or residue selection;
 - coordinate or position access from trajectory files;
-- local scientific Rg coverage and Rg export;
+- Rg export and reference comparison;
 - real contact extraction;
 - contacts-per-frame outputs;
 - graph export from real preprocessing;

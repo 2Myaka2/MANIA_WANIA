@@ -89,9 +89,10 @@ The local directory is opt-in harness space. It contains the Stage 11.3 marker
 smoke tests, a Stage 11.4 single-condition loading test, and a Stage 11.5
 manifest-wide condition loading test. Stage 11.6 adds a metadata report test
 for already loaded local runtimes, and Stage 11.7 adds a residue-name
-extraction test.
+extraction test. Stage 12.1d adds an Rg computation smoke test over the loaded
+manifest result.
 
-The loading, metadata, and residue-name tests require:
+These local scientific integration tests require:
 
 - `MANIA_RUN_LOCAL_SCIENTIFIC=1`;
 - MDAnalysis installed through the `md` or `science` optional extra;
@@ -100,9 +101,10 @@ The loading, metadata, and residue-name tests require:
 These tests look for `preprocessing_manifest.yaml` and then `manifest.yaml`
 under the local package directory. The Stage 11.4 test loads only the first
 condition, Stage 11.5 loads all conditions, Stage 11.6 collects metadata, and
-Stage 11.7 extracts residue names from the loaded result. If no supported
-manifest exists, the tests skip with a clear message. Default CI does not run
-these opt-in tests.
+Stage 11.7 extracts residue names from the loaded result. Stage 12.1d loads all
+conditions and computes manifest-level Rg. If no supported manifest exists,
+the tests skip with a clear message. Default CI does not run these opt-in
+tests.
 
 Stage 11.8 records this completed local coverage as single-condition loading,
 manifest loading, metadata, and residue names. The suite remains opt-in:
@@ -110,6 +112,11 @@ manifest loading, metadata, and residue names. The suite remains opt-in:
 `MANIA_LOCAL_REFERENCE_PACKAGE` identifies local data. The runtime boundary
 before Rg is documented in
 `docs/preprocessing_runtime_boundary_before_rg.md`.
+
+The Stage 12.1d smoke test checks the Rg result/report shape, JSON
+serialization, deterministic frame indexes, and finite non-negative Rg
+values. It does not write CSV, compare numeric references, compute contacts,
+or generate graphs.
 
 ## Stage 9.3 history
 
