@@ -88,6 +88,12 @@ from mania.preprocessing.trajectory_rg_reference_comparison import (
     compare_rg_timeseries_csv,
     validate_rg_reference_comparison_input,
 )
+from mania.preprocessing.trajectory_rg_report import (
+    PreprocessingRgReportBundle,
+    PreprocessingRgReportBundleIssue,
+    PreprocessingRgReportBundleSummary,
+    build_rg_report_bundle,
+)
 from mania.preprocessing.trajectory_runtime import (
     PreprocessingConditionLoadResult,
     PreprocessingConditionRuntime,
@@ -138,12 +144,16 @@ __all__ = [
     "PreprocessingRgReferenceComparisonOptions",
     "PreprocessingRgReferenceComparisonResult",
     "PreprocessingRgReferenceComparisonRowResult",
+    "PreprocessingRgReportBundle",
+    "PreprocessingRgReportBundleIssue",
+    "PreprocessingRgReportBundleSummary",
     "PreprocessingRuntimeMetadataIssue",
     "PreprocessingTrajectoryLoadIssue",
     "ResolvedResidueLibraryManifestOptions",
     "ResidueLibraryInputConfig",
     "TrajectoryInputConfig",
     "check_preprocessing_reference_package",
+    "build_rg_report_bundle",
     "collect_condition_runtime_metadata",
     "collect_manifest_runtime_metadata",
     "compare_rg_timeseries_csv",

@@ -4,8 +4,9 @@
 
 This guide documents the accepted Stage 12 Python API chain for computing,
 writing, validating, and comparing radius-of-gyration (Rg) time-series output.
-Stage 12.2c added documentation and synthetic examples only. Stage 12.3b now
-adds dependency-free numeric-tolerant comparison for two exported CSV files.
+Stage 12.2c added documentation and synthetic examples only. Stage 12.3b adds
+dependency-free numeric-tolerant comparison for two exported CSV files. Stage
+12.4a adds a lightweight in-memory report bundle for existing results.
 
 ## Current Stage 12 export chain
 
@@ -59,6 +60,10 @@ Stage 12.3b adds
 `PreprocessingRgReferenceComparisonRowResult`,
 `PreprocessingRgReferenceComparisonResult`, and
 `compare_rg_timeseries_csv(...)`.
+
+Stage 12.4a adds `PreprocessingRgReportBundleIssue`,
+`PreprocessingRgReportBundleSummary`, `PreprocessingRgReportBundle`, and
+`build_rg_report_bundle(...)`.
 
 ## Minimal manifest-level usage
 
@@ -167,6 +172,19 @@ The comparison reads exported CSV files only. It does not recompute Rg,
 convert units, load runtime data, discover reference files, or create a report
 bundle.
 
+## In-memory report bundle
+
+Stage 12.4a adds `build_rg_report_bundle(...)` for combining existing
+computation, CSV write, CSV validation, and optional reference comparison
+results. The bundle preserves each nested result through its own `to_dict()`
+method and provides a flattened summary for quick display.
+
+The report bundle is dependency-free and JSON-serializable. It does not
+compute Rg, write or validate CSV, compare reference files, read runtime data,
+or acquire MDAnalysis. It is not a CLI command, workflow runner, or JSON,
+Markdown, or HTML report-file writer. Final Rg MVP boundary documentation
+before contacts remains Stage 12.4b.
+
 ## Local scientific boundary
 
 Stage 12.1d provides an opt-in local scientific Rg computation smoke test.
@@ -184,11 +202,11 @@ independent from local real data and optional scientific dependencies.
 
 ## Not implemented yet
 
-Stage 12.3b does not add:
+Stage 12.4a does not add:
 
 - new computation logic;
 - new writer or validator behavior;
-- a report bundle;
+- a report-file writer;
 - contacts or graph computation;
 - CLI or workflow integration;
 - a CI job using real MD data;
@@ -196,8 +214,9 @@ Stage 12.3b does not add:
 
 Reference comparison remains Stage 12.3 overall: Stage 12.3a defines input
 readiness and Stage 12.3b performs numeric-tolerant exported CSV comparison.
-The lightweight report bundle remains Stage 12.4. Contacts and graph work
-remain later stages.
+Stage 12.4a provides the lightweight in-memory report bundle, while final Rg
+MVP boundary documentation remains Stage 12.4b. Contacts and graph work remain
+later stages.
 
 ## Troubleshooting
 

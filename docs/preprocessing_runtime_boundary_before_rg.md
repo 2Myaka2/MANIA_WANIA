@@ -14,8 +14,9 @@ accepted export chain without adding runtime behavior. Stage 12.2d adds
 opt-in local scientific smoke coverage for the full export chain. This
 document also records the Stage 12.3a dependency-free reference comparison
 input contract and Stage 12.3b numeric-tolerant comparison of exported Rg CSV
-files. The remaining limits and local-only testing policy for scientific
-runtime behavior stay in force.
+files. Stage 12.4a adds a dependency-free in-memory bundle that summarizes
+existing Stage 12 results. The remaining limits and local-only testing policy
+for scientific runtime behavior stay in force.
 
 ## Stage 11 completed capabilities
 
@@ -224,6 +225,24 @@ This layer compares exported CSVs only. It does not recompute Rg, load runtime
 data, or acquire MDAnalysis. The report bundle remains Stage 12.4, and
 contacts and graph generation remain future stages.
 
+### Stage 12.4a lightweight in-memory Rg report bundle
+
+```python
+PreprocessingRgReportBundleIssue
+PreprocessingRgReportBundleSummary
+PreprocessingRgReportBundle
+build_rg_report_bundle(...)
+```
+
+The dependency-free bundle summarizes existing computation, write,
+validation, and optional comparison result objects. It preserves their nested
+dictionary reports and adds a flattened status and count summary without
+performing any scientific or file operation.
+
+Stage 12.4a does not add contacts, graph generation, report-file output, CLI
+commands, or workflow integration. Final Rg MVP boundary documentation before
+contacts remains Stage 12.4b.
+
 ## Runtime object boundary
 
 Runtime objects are intentionally opaque. Loaders may create and retain a
@@ -290,9 +309,9 @@ numeric reference comparison. Real MD data must remain uncommitted.
 
 ## What is explicitly not implemented before Rg computation
 
-Stage 12.3b does not implement:
+Stage 12.4a does not implement:
 
-- an Rg comparison report bundle;
+- an Rg report-file writer;
 - contacts computation or contacts-per-frame output;
 - aggregate contact edge output;
 - graph export from real preprocessing;
@@ -309,7 +328,7 @@ Stage 12.3b does not implement:
 - a CI job with real MD data.
 
 Contacts and graph export remain future work after the Rg stage. These items
-are non-goals for the Stage 12.3b CSV comparison.
+are non-goals for the Stage 12.4a in-memory report bundle.
 
 ## Stage 12.1d local scientific boundary
 
@@ -331,8 +350,9 @@ checks the complete accepted chain on explicitly configured local data. The
 Stage 12.3a reference comparison input contract validates comparison
 readiness, and Stage 12.3b now performs dependency-free numeric-tolerant
 comparison of exported CSV files without runtime loading or Rg recomputation.
-The lightweight report bundle remains Stage 12.4. Contacts and graph
-generation remain future stages after Rg.
+Stage 12.4a now summarizes existing Stage 12 results in a lightweight
+in-memory bundle. Final boundary documentation remains Stage 12.4b, and
+contacts and graph generation remain future stages after Rg.
 
 ## Stage 12 handoff
 

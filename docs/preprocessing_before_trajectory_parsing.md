@@ -25,8 +25,9 @@ synthetic examples without changing runtime behavior. Stage 12.2d adds
 opt-in local scientific smoke coverage for Rg CSV export and validation. Stage
 12.3a adds the dependency-free Rg reference comparison input contract and
 readiness validation. Stage 12.3b adds dependency-free numeric-tolerant
-comparison of exported actual and reference Rg CSV files. Report bundle work
-remains Stage 12.4.
+comparison of exported actual and reference Rg CSV files. Stage 12.4a adds a
+dependency-free in-memory bundle for existing Stage 12 result objects. Final
+Rg MVP boundary documentation remains Stage 12.4b.
 
 ## Current implemented capabilities
 
@@ -68,7 +69,9 @@ The current preprocessing layer supports:
 - comparison readiness validation through
   `validate_rg_reference_comparison_input(...)`;
 - numeric-tolerant exported Rg CSV comparison through
-  `compare_rg_timeseries_csv(...)`.
+  `compare_rg_timeseries_csv(...)`;
+- lightweight in-memory Rg result bundling through
+  `build_rg_report_bundle(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -318,8 +321,19 @@ time tolerance, optional exact unit matching, deterministic key matching, and
 missing, extra, duplicate, or failed-row reporting.
 
 The comparison uses only the standard library and returns deterministic
-JSON-serializable row and whole-file results. Report bundle generation remains
-Stage 12.4. Contacts and graph generation remain future stages.
+JSON-serializable row and whole-file results. Contacts and graph generation
+remain future stages.
+
+## Stage 12.4a lightweight in-memory Rg report bundle
+
+`build_rg_report_bundle(...)` accepts existing computation, CSV write, CSV
+validation, and optional comparison results. It preserves nested
+JSON-serializable reports and provides a flattened summary without reading or
+writing files, recomputing Rg, validating CSV, or comparing references.
+
+The bundle does not add a report-file writer, CLI command, workflow runner,
+contacts, or graph generation. Final Rg MVP boundary documentation remains
+Stage 12.4b.
 
 ## Stage 11.8 runtime boundary before Rg
 

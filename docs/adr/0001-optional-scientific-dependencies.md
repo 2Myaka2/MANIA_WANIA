@@ -285,6 +285,16 @@ MDAnalysis remains optional and unrelated to exported CSV comparison. Default
 CI remains independent from local real data, no scientific data is committed,
 and no local scientific comparison smoke test is added in this stage.
 
+## Stage 12.4a lightweight in-memory Rg report bundle
+
+Stage 12.4a adds a dependency-free in-memory bundle that consumes existing Rg
+computation, CSV write, CSV validation, and reference comparison result
+objects only. Bundle construction performs no scientific or file operation.
+
+MDAnalysis remains optional and unrelated to report bundle construction.
+Default CI remains independent from local real data, and no local scientific
+report smoke test or report-file writer is added in this stage.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
