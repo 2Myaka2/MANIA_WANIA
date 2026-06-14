@@ -42,8 +42,13 @@ from mania.preprocessing.scientific_runtime import (
     require_mdanalysis,
 )
 from mania.preprocessing.trajectory_contacts import (
+    PreprocessingConditionContactsResult,
+    PreprocessingContactComputationIssue,
     PreprocessingContactDefinition,
     PreprocessingContactDetectionOptions,
+    PreprocessingContactFrameResult,
+    PreprocessingContactPairResult,
+    PreprocessingManifestContactsResult,
 )
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
 from mania.preprocessing.trajectory_manifest_loader import (
@@ -113,8 +118,12 @@ compute_manifest_rg = getattr(
 __all__ = [
     "OptionalScientificDependencyStatus",
     "PreprocessingCheckedPath",
+    "PreprocessingConditionContactsResult",
+    "PreprocessingContactComputationIssue",
     "PreprocessingContactDefinition",
     "PreprocessingContactDetectionOptions",
+    "PreprocessingContactFrameResult",
+    "PreprocessingContactPairResult",
     "PreprocessingConditionLoadResult",
     "PreprocessingConditionRgResult",
     "PreprocessingConditionResidueNames",
@@ -124,6 +133,7 @@ __all__ = [
     "PreprocessingInputManifest",
     "PreprocessingManifestLoadIssue",
     "PreprocessingManifestLoadResult",
+    "PreprocessingManifestContactsResult",
     "PreprocessingManifestRgResult",
     "PreprocessingManifestResidueNames",
     "PreprocessingManifestRuntimeMetadata",

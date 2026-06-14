@@ -323,6 +323,18 @@ already loaded runtimes through the established preprocessing boundary.
 Default CI remains independent from real MD data, and Stage 13.1a adds no
 local scientific contacts test, contact export, or graph export.
 
+## Stage 13.1b contacts result contracts
+
+Stage 13.1b adds dependency-free contacts issue, pair, frame, condition, and
+manifest result contracts. They use only standard-library dataclasses and
+mathematics, validate value and nested-result shapes, and serialize without
+runtime objects.
+
+MDAnalysis remains optional. Actual contact computation will later use already
+loaded runtimes through the existing preprocessing boundary. Default CI
+remains independent from real MD data, and this stage adds no local scientific
+contacts test, CSV export, or graph export.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

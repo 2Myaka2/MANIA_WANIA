@@ -29,7 +29,8 @@ comparison of exported actual and reference Rg CSV files. Stage 12.4a adds a
 dependency-free in-memory bundle for existing Stage 12 result objects. Final
 Rg MVP boundary documentation is completed by Stage 12.4b. Stage 12 Rg MVP is
 complete. Stage 13 contacts begins with a dependency-free MVP definition and
-options contract in separate contacts-specific modules.
+options contract in separate contacts-specific modules. Stage 13.1b adds the
+dependency-free contact result dataclasses and report shape.
 
 ## Current implemented capabilities
 
@@ -76,7 +77,9 @@ The current preprocessing layer supports:
   `build_rg_report_bundle(...)`;
 - dependency-free Stage 13 contact definition and detection option contracts
   through `PreprocessingContactDefinition` and
-  `PreprocessingContactDetectionOptions`.
+  `PreprocessingContactDetectionOptions`;
+- dependency-free Stage 13 contact issue, pair, frame, condition, and manifest
+  result contracts.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -374,7 +377,18 @@ yet, no contacts export exists yet, and no graph export exists yet.
 
 Contacts use contacts-specific modules rather than the Stage 12 Rg
 computation, export, validation, comparison, or report modules. Contact result
-dataclasses remain Stage 13.1b, and computation remains Stage 13.2a.
+dataclasses were deferred to Stage 13.1b, and computation remains Stage 13.2a.
+
+## Stage 13.1b contacts result contracts
+
+The contact result dataclasses and report shape now exist for issues,
+residue-residue pairs, frames, conditions, and manifests. They provide strict
+constructor validation, deterministic summary counts, and JSON-safe nested
+serialization.
+
+Contacts are still not computed, and no distance calculation is performed.
+Single-condition extraction starts in Stage 13.2a. CSV export remains future
+Stage 13.3 work, and graph export remains after the contacts MVP is stable.
 
 ## Stage 11.8 runtime boundary before Rg
 
