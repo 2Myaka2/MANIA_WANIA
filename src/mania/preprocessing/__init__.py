@@ -49,6 +49,7 @@ from mania.preprocessing.trajectory_contacts import (
     PreprocessingContactFrameResult,
     PreprocessingContactPairResult,
     PreprocessingManifestContactsResult,
+    compute_condition_contacts,
 )
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
 from mania.preprocessing.trajectory_manifest_loader import (
@@ -173,6 +174,7 @@ __all__ = [
     "collect_condition_runtime_metadata",
     "collect_manifest_runtime_metadata",
     "compare_rg_timeseries_csv",
+    "compute_condition_contacts",
     "compute_condition_rg",
     "compute_manifest_rg",
     "extract_condition_residue_names",

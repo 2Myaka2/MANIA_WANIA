@@ -335,6 +335,17 @@ loaded runtimes through the existing preprocessing boundary. Default CI
 remains independent from real MD data, and this stage adds no local scientific
 contacts test, CSV export, or graph export.
 
+## Stage 13.2a single-condition contacts computation
+
+Stage 13.2a adds dependency-free contact computation that consumes one already
+loaded condition runtime object. `compute_condition_contacts(...)` does not
+load files, call runtime loaders, or acquire MDAnalysis.
+
+MDAnalysis remains optional behind the existing Stage 11 loading boundary.
+Default CI uses fake runtime objects and does not need MDAnalysis or real MD
+data. Manifest aggregation, local scientific contacts smoke coverage, CSV
+export, and graph export remain future explicit stages.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

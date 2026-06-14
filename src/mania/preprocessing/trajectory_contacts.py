@@ -1,9 +1,18 @@
-"""Dependency-free definition and options contracts for contact detection."""
+"""Dependency-free contracts and single-condition contact computation."""
 
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable
 from dataclasses import dataclass
+from numbers import Integral
+from typing import Any, TypeAlias, cast
+
+from mania.preprocessing import trajectory_runtime
+
+PreprocessingConditionLoadResult: TypeAlias = (
+    trajectory_runtime.PreprocessingConditionLoadResult
+)
 
 _ATOM_FILTERS = ("heavy", "all")
 _CONTACT_LEVEL = "residue"
@@ -22,6 +31,14 @@ _BOOLEAN_OPTION_FIELDS = (
     "include_frame_index",
     "include_time_ps",
 )
+_TRAJECTORY_ATTRIBUTE = "trajectory"
+_RESIDUES_ATTRIBUTE = "residues"
+_ATOMS_ATTRIBUTE = "atoms"
+_POSITION_ATTRIBUTE = "position"
+_POSITIONS_ATTRIBUTE = "positions"
+_TIME_ATTRIBUTE = "time"
+
+_Coordinate = tuple[float, float, float]
 
 
 def _require_positive_finite_number(value: object, field_name: str) -> None:
@@ -614,6 +631,567 @@ class PreprocessingManifestContactsResult:
         }
 
 
+@dataclass(frozen=True)
+class _ResidueCandidate:
+    index: int
+    resname: str
+    residue_id: int | str | None
+    segid: str | None
+    coordinates: tuple[_Coordinate, ...]
+
+
+def compute_condition_contacts(
+    condition_load_result: PreprocessingConditionLoadResult,
+    *,
+    options: PreprocessingContactDetectionOptions | None = None,
+) -> PreprocessingConditionContactsResult:
+    """Compute per-frame contacts from one already loaded condition."""
+    selected_options = options or PreprocessingContactDetectionOptions()
+    option_issue = _unsupported_options_issue(selected_options)
+    if option_issue is not None:
+        return _condition_contacts_result(
+            condition_load_result.condition_name,
+            selected_options,
+            status="failed",
+            issues=(option_issue,),
+        )
+
+    runtime = condition_load_result.runtime
+    if condition_load_result.status == "loaded" and runtime is None:
+        return _condition_contacts_result(
+            condition_load_result.condition_name,
+            selected_options,
+            status="failed",
+            issues=(_missing_runtime_issue(),),
+        )
+    if not condition_load_result.passed:
+        issues = _condition_load_issues(condition_load_result)
+        if runtime is None or runtime.runtime_object is None:
+            issues.append(_missing_runtime_issue())
+        return _condition_contacts_result(
+            condition_load_result.condition_name,
+            selected_options,
+            status="failed",
+            issues=tuple(issues),
+        )
+
+    if runtime is None or runtime.runtime_object is None:
+        return _condition_contacts_result(
+            condition_load_result.condition_name,
+            selected_options,
+            status="failed",
+            issues=(_missing_runtime_issue(),),
+        )
+
+    runtime_object = runtime.runtime_object
+    trajectory, has_trajectory = _read_attribute(
+        runtime_object,
+        _TRAJECTORY_ATTRIBUTE,
+    )
+    residues, has_residues = _read_attribute(
+        runtime_object,
+        _RESIDUES_ATTRIBUTE,
+    )
+    fatal_issues: list[PreprocessingContactComputationIssue] = []
+    if not has_trajectory or trajectory is None:
+        fatal_issues.append(
+            PreprocessingContactComputationIssue(
+                kind="missing_trajectory",
+                field="runtime_object_trajectory",
+                message="Runtime object has no usable trajectory.",
+            )
+        )
+    if not has_residues or residues is None:
+        fatal_issues.append(
+            PreprocessingContactComputationIssue(
+                kind="missing_residues",
+                field="runtime_object_residues",
+                message="Runtime object has no usable residues collection.",
+            )
+        )
+    if fatal_issues:
+        return _condition_contacts_result(
+            condition_load_result.condition_name,
+            selected_options,
+            status="failed",
+            issues=tuple(fatal_issues),
+        )
+
+    try:
+        residue_items = tuple(cast(Iterable[object], residues))
+    except Exception:
+        return _condition_contacts_result(
+            condition_load_result.condition_name,
+            selected_options,
+            status="failed",
+            issues=(
+                PreprocessingContactComputationIssue(
+                    kind="missing_residues",
+                    field="runtime_object_residues",
+                    message="Runtime residues could not be iterated.",
+                ),
+            ),
+        )
+
+    frame_time_ps = _usable_non_negative_float(
+        condition_load_result.runtime_input.frame_time_ps
+    )
+    frame_results: list[PreprocessingContactFrameResult] = []
+    condition_issues: list[PreprocessingContactComputationIssue] = []
+    try:
+        trajectory_iterator = iter(cast(Iterable[object], trajectory))
+    except Exception:
+        condition_issues.append(_frame_iteration_issue())
+    else:
+        frame_index = 0
+        while True:
+            try:
+                timestep = next(trajectory_iterator)
+            except StopIteration:
+                break
+            except Exception:
+                condition_issues.append(_frame_iteration_issue())
+                break
+
+            try:
+                frame_result = _compute_contact_frame(
+                    condition_name=condition_load_result.condition_name,
+                    frame_index=frame_index,
+                    timestep=timestep,
+                    frame_time_ps=frame_time_ps,
+                    residue_items=residue_items,
+                    options=selected_options,
+                )
+            except Exception:
+                frame_result = PreprocessingContactFrameResult(
+                    condition_name=condition_load_result.condition_name,
+                    frame_index=frame_index,
+                    time_ps=_frame_time(
+                        timestep,
+                        frame_index,
+                        frame_time_ps,
+                    ),
+                    issues=(
+                        PreprocessingContactComputationIssue(
+                            kind="contact_computation_error",
+                            field=f"frames[{frame_index}]",
+                            message=(
+                                "Contacts could not be computed for this "
+                                "frame."
+                            ),
+                        ),
+                    ),
+                )
+            frame_results.append(frame_result)
+            frame_index += 1
+
+    if not frame_results and not condition_issues:
+        condition_issues.append(
+            PreprocessingContactComputationIssue(
+                kind="frame_iteration_error",
+                field="runtime_object_trajectory",
+                message="Runtime trajectory produced no frames.",
+            )
+        )
+
+    if not frame_results:
+        status = "failed"
+    elif condition_issues or any(
+        not frame_result.passed for frame_result in frame_results
+    ):
+        status = "partial"
+    else:
+        status = "computed"
+
+    return _condition_contacts_result(
+        condition_load_result.condition_name,
+        selected_options,
+        status=status,
+        frame_results=tuple(frame_results),
+        issues=tuple(condition_issues),
+    )
+
+
+def _compute_contact_frame(
+    *,
+    condition_name: str,
+    frame_index: int,
+    timestep: object,
+    frame_time_ps: float | None,
+    residue_items: tuple[object, ...],
+    options: PreprocessingContactDetectionOptions,
+) -> PreprocessingContactFrameResult:
+    candidates: list[_ResidueCandidate] = []
+    issues: list[PreprocessingContactComputationIssue] = []
+    for residue_index, residue in enumerate(residue_items):
+        candidate, residue_issues = _residue_candidate(
+            residue,
+            residue_index,
+            options,
+        )
+        issues.extend(residue_issues)
+        if candidate is not None:
+            candidates.append(candidate)
+
+    contacts: list[PreprocessingContactPairResult] = []
+    for source_offset, source in enumerate(candidates):
+        for target in candidates[source_offset + 1 :]:
+            try:
+                minimum_distance = _minimum_distance(
+                    source.coordinates,
+                    target.coordinates,
+                )
+            except Exception:
+                issues.append(
+                    PreprocessingContactComputationIssue(
+                        kind="distance_calculation_error",
+                        field=(
+                            f"residue_pairs[{source.index},{target.index}]"
+                        ),
+                        message=(
+                            "Minimum residue-pair distance could not be "
+                            "computed."
+                        ),
+                    )
+                )
+                continue
+            if minimum_distance is None:
+                continue
+            if minimum_distance <= options.cutoff_distance:
+                contacts.append(
+                    PreprocessingContactPairResult(
+                        source_residue_index=source.index,
+                        target_residue_index=target.index,
+                        source_resname=source.resname,
+                        target_resname=target.resname,
+                        minimum_distance=minimum_distance,
+                        distance_unit=options.distance_unit,
+                        atom_filter=options.atom_filter,
+                        source_residue_id=source.residue_id,
+                        target_residue_id=target.residue_id,
+                        source_segid=source.segid,
+                        target_segid=target.segid,
+                    )
+                )
+
+    contacts.sort(
+        key=lambda contact: (
+            contact.source_residue_index,
+            contact.target_residue_index,
+            contact.source_resname,
+            contact.target_resname,
+        )
+    )
+    return PreprocessingContactFrameResult(
+        condition_name=condition_name,
+        frame_index=frame_index,
+        time_ps=_frame_time(timestep, frame_index, frame_time_ps),
+        contacts=tuple(contacts),
+        issues=tuple(issues),
+    )
+
+
+def _residue_candidate(
+    residue: object,
+    residue_index: int,
+    options: PreprocessingContactDetectionOptions,
+) -> tuple[
+    _ResidueCandidate | None,
+    tuple[PreprocessingContactComputationIssue, ...],
+]:
+    raw_resname, has_resname = _read_attribute(residue, "resname")
+    if not has_resname or raw_resname is None:
+        return None, (
+            PreprocessingContactComputationIssue(
+                kind="contact_computation_error",
+                field=f"residues[{residue_index}].resname",
+                message="Residue name is unavailable.",
+            ),
+        )
+    resname = str(raw_resname).strip()
+    if not resname:
+        return None, (
+            PreprocessingContactComputationIssue(
+                kind="contact_computation_error",
+                field=f"residues[{residue_index}].resname",
+                message="Residue name is empty.",
+            ),
+        )
+    if resname in options.skip_resnames:
+        return None, ()
+
+    atom_group, has_atom_group = _read_attribute(
+        residue,
+        _ATOMS_ATTRIBUTE,
+    )
+    if not has_atom_group or atom_group is None:
+        return _ResidueCandidate(
+            index=residue_index,
+            resname=resname,
+            residue_id=_residue_id(residue),
+            segid=_segid(residue),
+            coordinates=(),
+        ), ()
+
+    try:
+        atom_items = tuple(cast(Iterable[object], atom_group))
+    except Exception:
+        return None, (
+            PreprocessingContactComputationIssue(
+                kind="contact_computation_error",
+                field=f"residues[{residue_index}]_atoms",
+                message="Residue atoms could not be iterated.",
+            ),
+        )
+
+    fallback_positions = _atom_group_positions(atom_group)
+    coordinates: list[_Coordinate] = []
+    issues: list[PreprocessingContactComputationIssue] = []
+    for atom_index, atom in enumerate(atom_items):
+        if options.atom_filter == "heavy" and _is_hydrogen(atom):
+            continue
+        raw_position, has_position = _read_attribute(
+            atom,
+            _POSITION_ATTRIBUTE,
+        )
+        if (
+            (not has_position or raw_position is None)
+            and fallback_positions is not None
+            and atom_index < len(fallback_positions)
+        ):
+            raw_position = fallback_positions[atom_index]
+            has_position = True
+        field = (
+            f"residues[{residue_index}]_atoms[{atom_index}]_position"
+        )
+        if not has_position or raw_position is None:
+            issues.append(
+                PreprocessingContactComputationIssue(
+                    kind="missing_atom_position",
+                    field=field,
+                    message="Selected atom position is unavailable.",
+                )
+            )
+            continue
+        coordinate = _coordinate(raw_position)
+        if coordinate is None:
+            issues.append(
+                PreprocessingContactComputationIssue(
+                    kind="invalid_atom_position",
+                    field=field,
+                    message="Selected atom position must contain 3D values.",
+                )
+            )
+            continue
+        coordinates.append(coordinate)
+
+    return _ResidueCandidate(
+        index=residue_index,
+        resname=resname,
+        residue_id=_residue_id(residue),
+        segid=_segid(residue),
+        coordinates=tuple(coordinates),
+    ), tuple(issues)
+
+
+def _minimum_distance(
+    source_coordinates: tuple[_Coordinate, ...],
+    target_coordinates: tuple[_Coordinate, ...],
+) -> float | None:
+    minimum: float | None = None
+    for source in source_coordinates:
+        for target in target_coordinates:
+            distance = math.sqrt(
+                (source[0] - target[0]) ** 2
+                + (source[1] - target[1]) ** 2
+                + (source[2] - target[2]) ** 2
+            )
+            if minimum is None or distance < minimum:
+                minimum = distance
+    return minimum
+
+
+def _coordinate(value: object) -> _Coordinate | None:
+    if isinstance(value, (str, bytes)):
+        return None
+    try:
+        items = tuple(cast(Iterable[object], value))
+    except Exception:
+        return None
+    if len(items) != 3:
+        return None
+    converted: list[float] = []
+    for item in items:
+        if isinstance(item, bool):
+            return None
+        try:
+            component = float(cast(Any, item))
+        except Exception:
+            return None
+        if not math.isfinite(component):
+            return None
+        converted.append(component)
+    return converted[0], converted[1], converted[2]
+
+
+def _atom_group_positions(atom_group: object) -> tuple[object, ...] | None:
+    raw_positions, has_positions = _read_attribute(
+        atom_group,
+        _POSITIONS_ATTRIBUTE,
+    )
+    if not has_positions or raw_positions is None:
+        return None
+    try:
+        return tuple(cast(Iterable[object], raw_positions))
+    except Exception:
+        return None
+
+
+def _is_hydrogen(atom: object) -> bool:
+    raw_element, has_element = _read_attribute(atom, "element")
+    if has_element and raw_element is not None:
+        element = str(raw_element).strip().upper()
+        if element == "H":
+            return True
+
+    raw_name, has_name = _read_attribute(atom, "name")
+    if has_name and raw_name is not None:
+        return str(raw_name).strip().upper().startswith("H")
+    return False
+
+
+def _residue_id(residue: object) -> int | str | None:
+    value, present = _read_attribute(residue, "resid")
+    if not present or value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, Integral):
+        return int(value)
+    if isinstance(value, str):
+        normalized = value.strip()
+        return normalized or None
+    return None
+
+
+def _segid(residue: object) -> str | None:
+    value, present = _read_attribute(residue, "segid")
+    if not present or value is None:
+        return None
+    normalized = str(value).strip()
+    return normalized or None
+
+
+def _frame_time(
+    timestep: object,
+    frame_index: int,
+    frame_time_ps: float | None,
+) -> float | None:
+    raw_time, has_time = _read_attribute(timestep, _TIME_ATTRIBUTE)
+    if has_time and raw_time is not None:
+        time_ps = _usable_non_negative_float(raw_time)
+        if time_ps is not None:
+            return time_ps
+    if frame_time_ps is None:
+        return None
+    return _usable_non_negative_float(frame_index * frame_time_ps)
+
+
+def _usable_non_negative_float(value: object) -> float | None:
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        converted = float(cast(Any, value))
+    except Exception:
+        return None
+    if not math.isfinite(converted) or converted < 0:
+        return None
+    return converted
+
+
+def _read_attribute(value: object, name: str) -> tuple[object | None, bool]:
+    try:
+        return getattr(cast(Any, value), name), True
+    except Exception:
+        return None, False
+
+
+def _unsupported_options_issue(
+    options: PreprocessingContactDetectionOptions,
+) -> PreprocessingContactComputationIssue | None:
+    if options.contact_level != _CONTACT_LEVEL:
+        return PreprocessingContactComputationIssue(
+            kind="unsupported_contact_level",
+            field="options.contact_level",
+            message="Only residue-level contacts are supported.",
+        )
+    if options.atom_filter not in _ATOM_FILTERS:
+        return PreprocessingContactComputationIssue(
+            kind="unsupported_atom_filter",
+            field="options.atom_filter",
+            message="Only heavy and all atom filters are supported.",
+        )
+    if not options.exclude_duplicate_pairs:
+        return PreprocessingContactComputationIssue(
+            kind="unsupported_duplicate_pair_mode",
+            field="options.exclude_duplicate_pairs",
+            message="Directed duplicate contact pairs are not supported.",
+        )
+    return None
+
+
+def _condition_load_issues(
+    condition_load_result: PreprocessingConditionLoadResult,
+) -> list[PreprocessingContactComputationIssue]:
+    if condition_load_result.issues:
+        return [
+            PreprocessingContactComputationIssue(
+                kind="condition_load_issue",
+                field=issue.field,
+                message=issue.message,
+            )
+            for issue in condition_load_result.issues
+        ]
+    return [
+        PreprocessingContactComputationIssue(
+            kind="condition_not_loaded",
+            field="condition_load_result",
+            message="Condition runtime is not loaded.",
+        )
+    ]
+
+
+def _missing_runtime_issue() -> PreprocessingContactComputationIssue:
+    return PreprocessingContactComputationIssue(
+        kind="missing_runtime_object",
+        field="runtime",
+        message="Condition load result has no runtime object.",
+    )
+
+
+def _frame_iteration_issue() -> PreprocessingContactComputationIssue:
+    return PreprocessingContactComputationIssue(
+        kind="frame_iteration_error",
+        field="runtime_object_trajectory",
+        message="Runtime trajectory iteration failed.",
+    )
+
+
+def _condition_contacts_result(
+    condition_name: str,
+    options: PreprocessingContactDetectionOptions,
+    *,
+    status: str,
+    frame_results: tuple[PreprocessingContactFrameResult, ...] = (),
+    issues: tuple[PreprocessingContactComputationIssue, ...] = (),
+) -> PreprocessingConditionContactsResult:
+    return PreprocessingConditionContactsResult(
+        condition_name=condition_name,
+        options=options,
+        frame_results=frame_results,
+        issues=issues,
+        status=status,
+    )
+
+
 __all__ = [
     "PreprocessingConditionContactsResult",
     "PreprocessingContactComputationIssue",
@@ -622,4 +1200,5 @@ __all__ = [
     "PreprocessingContactFrameResult",
     "PreprocessingContactPairResult",
     "PreprocessingManifestContactsResult",
+    "compute_condition_contacts",
 ]

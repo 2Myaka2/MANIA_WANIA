@@ -30,7 +30,8 @@ dependency-free in-memory bundle for existing Stage 12 result objects. Final
 Rg MVP boundary documentation is completed by Stage 12.4b. Stage 12 Rg MVP is
 complete. Stage 13 contacts begins with a dependency-free MVP definition and
 options contract in separate contacts-specific modules. Stage 13.1b adds the
-dependency-free contact result dataclasses and report shape.
+dependency-free contact result dataclasses and report shape. Stage 13.2a adds
+single-condition residue contacts extraction from already loaded runtimes.
 
 ## Current implemented capabilities
 
@@ -79,7 +80,9 @@ The current preprocessing layer supports:
   through `PreprocessingContactDefinition` and
   `PreprocessingContactDetectionOptions`;
 - dependency-free Stage 13 contact issue, pair, frame, condition, and manifest
-  result contracts.
+  result contracts;
+- single-condition residue contacts extraction through
+  `compute_condition_contacts(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -100,6 +103,7 @@ collect_condition_runtime_metadata(...)
 collect_manifest_runtime_metadata(...)
 extract_condition_residue_names(...)
 extract_manifest_residue_names(...)
+compute_condition_contacts(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -372,12 +376,14 @@ MVP definition and options contract documented in
 
 `PreprocessingContactDefinition` records the residue-level, per-frame,
 distinct-residue-pair definition. `PreprocessingContactDetectionOptions`
-records validated future detection settings. No contacts computation exists
-yet, no contacts export exists yet, and no graph export exists yet.
+records validated detection settings. No contacts computation was implemented
+by Stage 13.1; Stage 13.2a now provides the first single-condition computation.
+No contacts export exists yet, and no graph export exists yet.
 
 Contacts use contacts-specific modules rather than the Stage 12 Rg
 computation, export, validation, comparison, or report modules. Contact result
-dataclasses were deferred to Stage 13.1b, and computation remains Stage 13.2a.
+dataclasses were deferred to Stage 13.1b, followed by computation in Stage
+13.2a.
 
 ## Stage 13.1b contacts result contracts
 
@@ -386,9 +392,30 @@ residue-residue pairs, frames, conditions, and manifests. They provide strict
 constructor validation, deterministic summary counts, and JSON-safe nested
 serialization.
 
-Contacts are still not computed, and no distance calculation is performed.
-Single-condition extraction starts in Stage 13.2a. CSV export remains future
+Stage 13.1b itself performs no distance calculation. Stage 13.2a now consumes
+these contracts for single-condition extraction. CSV export remains future
 Stage 13.3 work, and graph export remains after the contacts MVP is stable.
+
+## Stage 13.2a single-condition contacts extraction
+
+`compute_condition_contacts(...)` accepts one
+`PreprocessingConditionLoadResult` and
+`PreprocessingContactDetectionOptions`, then returns a
+`PreprocessingConditionContactsResult`. It uses the existing runtime object,
+iterates frames in order, and computes residue-level contacts from the minimum
+selected atom distance. The default filter excludes hydrogens; the `all`
+filter includes all atoms with usable positions, and `skip_resnames` is
+respected.
+
+The function does not load files, call manifest loaders, or acquire
+MDAnalysis. Coordinates are assumed to match the configured unit label and no
+unit conversion is performed. Default CI covers the duck-typed runtime
+boundary with fake objects and no real MD data.
+
+Manifest-level contacts aggregation is future Stage 13.2b work. The local
+scientific contacts smoke test is future Stage 13.2c work. Contacts CSV export,
+validation, comparison, and reporting remain later stages. No graph export is
+part of Stage 13.2a.
 
 ## Stage 11.8 runtime boundary before Rg
 
@@ -422,16 +449,16 @@ The following capabilities are not implemented:
 - trajectory loading beyond declared manifest condition inputs;
 - GROMACS runtime integration;
 - residue QC from loaded topology;
-- frame iteration beyond single-condition Rg computation;
-- atom or residue selection;
-- coordinate or position access from trajectory files;
+- frame iteration beyond single-condition Rg and contacts computation;
+- configurable atom or residue selection beyond the contacts heavy/all MVP;
+- coordinate or position access outside existing loaded runtime objects;
 - report file writing or persistent output directory management;
 - automatic reference package discovery;
 - unit conversion between `nm` and `angstrom`;
 - notebook parity guarantees beyond CSV comparison support;
 - performance optimization for large trajectories;
 - a broad trajectory preprocessing pipeline;
-- real contact extraction;
+- manifest-level contact extraction;
 - contacts export;
 - contacts-per-frame outputs;
 - graph export from real preprocessing;
