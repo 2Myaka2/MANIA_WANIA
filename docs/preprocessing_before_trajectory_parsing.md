@@ -19,7 +19,8 @@ one already loaded condition, and Stage 12.1c composes condition Rg results
 across a manifest load result. Stage 12.1d adds an opt-in local scientific
 smoke test for the loading and manifest Rg computation chain. Stage 12.2a adds
 a dependency-free `rg_timeseries.csv` writer for existing condition-level and
-manifest-level Rg results.
+manifest-level Rg results. Stage 12.2b adds dependency-free validation for
+already exported Rg CSV files.
 
 ## Current implemented capabilities
 
@@ -51,7 +52,8 @@ The current preprocessing layer supports:
 - single-condition Rg computation through `compute_condition_rg(...)`;
 - manifest-level Rg computation through `compute_manifest_rg(...)`;
 - opt-in local scientific smoke coverage for manifest-level Rg computation;
-- deterministic Rg CSV writing through `write_rg_timeseries_csv(...)`.
+- deterministic Rg CSV writing through `write_rg_timeseries_csv(...)`;
+- read-only Rg CSV validation through `validate_rg_timeseries_csv(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -237,9 +239,9 @@ the report shape, JSON serialization, deterministic frame indexes, and finite
 non-negative Rg values without asserting exact numeric references.
 
 The test requires the existing optional MDAnalysis runtime and local real data.
-It remains skipped by default and outside default CI. CSV validation, local
-scientific export smoke coverage, reference comparison, contacts, and graph
-generation remain future work.
+It remains skipped by default and outside default CI. Local scientific export
+smoke coverage, reference comparison, contacts, and graph generation remain
+future work.
 
 ## Stage 12.2a Rg CSV writer
 
@@ -248,10 +250,21 @@ generation remain future work.
 It writes deterministic frame rows without loading files, recomputing Rg, or
 acquiring MDAnalysis.
 
-Backend validation remains Stage 12.2b, expanded export docs and examples
-remain Stage 12.2c, and local scientific export smoke coverage remains Stage
-12.2d. Reference comparison remains Stage 12.3. Contacts, graph generation,
-workflow integration, and CLI integration remain future work.
+Expanded export docs and examples remain Stage 12.2c, and local scientific
+export smoke coverage remains Stage 12.2d. Reference comparison remains Stage
+12.3. Contacts, graph generation, workflow integration, and CLI integration
+remain future work.
+
+## Stage 12.2b Rg CSV validation
+
+`validate_rg_timeseries_csv(...)` reads existing Rg CSV files and validates
+their exact header, row shapes, fields, passed-frame consistency, and
+per-condition frame ordering. It uses only standard-library CSV parsing and
+does not write files, compute Rg, or load scientific runtimes.
+
+Expanded export docs and examples remain Stage 12.2c, local scientific export
+smoke coverage remains Stage 12.2d, and reference comparison remains Stage
+12.3.
 
 ## Stage 11.8 runtime boundary before Rg
 
@@ -288,7 +301,7 @@ The following capabilities are not implemented:
 - frame iteration beyond single-condition Rg computation;
 - atom or residue selection;
 - coordinate or position access from trajectory files;
-- Rg CSV backend validation and reference comparison;
+- Rg reference comparison;
 - real contact extraction;
 - contacts-per-frame outputs;
 - graph export from real preprocessing;

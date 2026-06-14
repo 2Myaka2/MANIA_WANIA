@@ -8,9 +8,10 @@ and report contracts, Stage 12.1b computes Rg for one already loaded
 condition, and Stage 12.1c composes those results across a manifest load
 result. Stage 12.1d adds an opt-in local scientific smoke test for that loading
 and computation path. Stage 12.2a adds a dependency-free CSV writer for
-already computed Rg results. This document records the capabilities that later
-Stage 12 work may compose, the limits that remain in force, and the local-only
-testing policy for scientific runtime behavior.
+already computed Rg results, and Stage 12.2b adds dependency-free validation
+for those exported CSV files. This document records the capabilities that
+later Stage 12 work may compose, the limits that remain in force, and the
+local-only testing policy for scientific runtime behavior.
 
 ## Stage 11 completed capabilities
 
@@ -137,10 +138,28 @@ existing condition and frame order. It does not compute Rg, load files, or
 acquire MDAnalysis dependencies.
 
 Failed frame rows are skipped by default and may be included explicitly.
-Backend format validation remains Stage 12.2b, expanded docs and examples
-remain Stage 12.2c, and the local scientific export smoke test remains Stage
-12.2d. Reference comparison remains Stage 12.3. Contacts and graph generation
-remain future stages.
+Expanded docs and examples remain Stage 12.2c, and the local scientific export
+smoke test remains Stage 12.2d. Reference comparison remains Stage 12.3.
+Contacts and graph generation remain future stages.
+
+### Stage 12.2b Rg CSV validation
+
+```python
+validate_rg_timeseries_csv(...)
+PreprocessingRgCsvValidationIssue
+PreprocessingRgCsvValidationResult
+```
+
+The validator reads an already exported `rg_timeseries.csv` without modifying
+it. It checks the exact Stage 12.2a header, row shape, numeric fields,
+`frame_passed` values, passed-frame value and unit consistency, and
+non-monotonic frame indexes within each condition.
+
+Validation does not compute Rg, write files, load runtime files, acquire
+MDAnalysis, or compare reference values. Expanded docs and examples remain
+Stage 12.2c, local scientific export smoke coverage remains Stage 12.2d, and
+reference comparison remains Stage 12.3. Contacts and graph generation remain
+future stages.
 
 ## Runtime object boundary
 
@@ -208,9 +227,8 @@ numeric reference comparison. Real MD data must remain uncommitted.
 
 ## What is explicitly not implemented before Rg computation
 
-Stage 12.2a does not implement:
+Stage 12.2b does not implement:
 
-- backend validation of `rg_timeseries.csv`;
 - expanded export examples;
 - local scientific export smoke coverage;
 - reference comparison for exported Rg values;
@@ -230,7 +248,7 @@ Stage 12.2a does not implement:
 - a CI job with real MD data.
 
 Contacts and graph export remain future work after the Rg stage. These items
-are non-goals for the Stage 12.2a writer.
+are non-goals for the Stage 12.2b validator.
 
 ## Stage 12.1d local scientific boundary
 
@@ -245,11 +263,11 @@ uses the existing optional MDAnalysis boundary, and does not make real data a
 default CI requirement.
 
 The dependency-free CSV writer is now available for existing Rg result
-objects. Backend validation remains Stage 12.2b, expanded docs and examples
-remain Stage 12.2c, and local scientific export smoke coverage remains Stage
-12.2d. Reference comparison remains Stage 12.3, and the lightweight report
-bundle remains Stage 12.4. Contacts and graph generation remain future stages
-after Rg.
+objects, and dependency-free validation is available for its exported files.
+Expanded docs and examples remain Stage 12.2c, and local scientific export
+smoke coverage remains Stage 12.2d. Reference comparison remains Stage 12.3,
+and the lightweight report bundle remains Stage 12.4. Contacts and graph
+generation remain future stages after Rg.
 
 ## Stage 12 handoff
 

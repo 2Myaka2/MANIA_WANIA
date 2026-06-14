@@ -239,6 +239,13 @@ MDAnalysis. MDAnalysis remains optional and is required only by the existing
 loading and computation paths. Default CI remains independent from local real
 data.
 
+## Stage 12.2b Rg CSV validation
+
+Stage 12.2b adds dependency-free validation for exported Rg CSV files. It uses
+standard-library CSV parsing and consumes exported files only. MDAnalysis
+remains optional and is required only by loading and computation paths.
+Default CI remains independent from local real data.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
