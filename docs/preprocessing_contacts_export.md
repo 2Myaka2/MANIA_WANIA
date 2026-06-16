@@ -192,7 +192,35 @@ The smoke test does not add new export APIs, compare references, build a
 report bundle, or produce graph outputs. contact_edges.csv remains aggregate
 contacts output, not backend graph edges.csv.
 
+## Reference comparison input contract
+
+Stage 13.4a adds a dependency-free input contract for future contacts
+reference comparison:
+
+```python
+PreprocessingContactsReferenceComparisonOptions
+PreprocessingContactsReferenceComparisonInput
+PreprocessingContactsReferenceComparisonIssue
+PreprocessingContactsReferenceComparisonInputValidationResult
+validate_contacts_reference_comparison_input(...)
+```
+
+The contract describes generated/reference path pairs for both accepted
+contacts CSV targets:
+
+```text
+generated contacts_perframe.csv vs reference contacts_perframe.csv
+generated contact_edges.csv vs reference contact_edges.csv
+```
+
+Validation checks option values, requested path pairs, file existence,
+directory paths, same generated/reference paths, and the existing
+`validate_contacts_perframe_csv(...)` and `validate_contact_edges_csv(...)`
+contracts. It does not compare generated and reference rows, compute numeric
+differences, match rows, produce mismatch reports, build report bundles, or
+produce graph outputs.
+
 ## Future stages
 
-Stage 13.4 will add contacts reference comparison.
+Stage 13.4b will add contacts output comparison.
 Graph export remains future after contacts MVP.

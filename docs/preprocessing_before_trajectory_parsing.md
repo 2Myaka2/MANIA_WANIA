@@ -40,7 +40,9 @@ aggregate contacts writing, explicitly not backend graph `edges.csv`. Stage
 13.3c adds read-only validation for both contacts CSV outputs. Stage 13.3d
 adds contacts export documentation and dependency-free synthetic examples.
 Stage 13.3e adds opt-in local scientific smoke coverage for contacts
-computation, export, and validation.
+computation, export, and validation. Stage 13.4a adds only the
+dependency-free contacts reference comparison input contract and readiness
+validation.
 
 ## Current implemented capabilities
 
@@ -104,6 +106,11 @@ The current preprocessing layer supports:
   `validate_contact_edges_csv(...)`;
 - contacts export documentation and synthetic examples;
 - opt-in local scientific contacts export smoke coverage.
+- contacts reference comparison input and option contracts through
+  `PreprocessingContactsReferenceComparisonInput` and
+  `PreprocessingContactsReferenceComparisonOptions`;
+- contacts comparison readiness validation through
+  `validate_contacts_reference_comparison_input(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -543,6 +550,21 @@ diagnostics, create graph outputs, add CLI/workflow integration, or change
 source behavior. Reference comparison is future Stage 13.4, and graph export
 remains future.
 
+## Stage 13.4a contacts reference comparison input contract
+
+`PreprocessingContactsReferenceComparisonInput` describes generated/reference
+path pairs for the accepted contacts CSV outputs:
+`contacts_perframe.csv` and `contact_edges.csv`.
+`PreprocessingContactsReferenceComparisonOptions` stores validated future
+tolerances and target-selection flags.
+
+`validate_contacts_reference_comparison_input(...)` validates requested path
+pairs and calls the existing contacts CSV validators for structural readiness.
+It does not compare generated/reference rows, compute numeric differences,
+match rows, produce mismatch reports, build report bundles, load runtimes,
+acquire MDAnalysis, or produce graph output. Contacts output comparison remains
+Stage 13.4b.
+
 ## Stage 11.8 runtime boundary before Rg
 
 Stage 11.8 documents the completed Stage 11 public API, opaque runtime-object
@@ -584,7 +606,7 @@ The following capabilities are not implemented:
 - notebook parity guarantees beyond CSV comparison support;
 - performance optimization for large trajectories;
 - a broad trajectory preprocessing pipeline;
-- contacts CSV validation and comparison;
+- contacts CSV output comparison;
 - graph export from real preprocessing;
 - graph diagnostics from real preprocessing outputs;
 - CLI or workflow integration for real preprocessing.

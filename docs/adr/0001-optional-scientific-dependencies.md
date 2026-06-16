@@ -432,6 +432,18 @@ not change dependency requirements, commit generated CSV artifacts, compare
 references, build report bundles, produce graph outputs, or add graph
 dependencies.
 
+## Stage 13.4a contacts reference comparison input contract
+
+Stage 13.4a adds dependency-free contacts reference comparison input and
+option contracts for generated/reference `contacts_perframe.csv` and
+`contact_edges.csv` pairs. The validator uses only filesystem metadata and the
+existing contacts CSV validators. It does not load MDAnalysis, recompute
+contacts, compare rows, compute numeric differences, build report bundles, or
+produce graph outputs.
+
+Default CI remains independent from MDAnalysis, real MD data, local reference
+packages, and graph dependencies.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

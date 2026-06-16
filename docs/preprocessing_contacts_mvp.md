@@ -15,7 +15,9 @@ adds dependency-free `contact_edges.csv` aggregate contacts writing. Stage
 13.3c adds read-only validation for both contacts CSV outputs. Stage 13.3d
 adds dependency-free contacts export documentation and synthetic examples.
 Stage 13.3e adds opt-in local scientific smoke coverage for the accepted
-contacts compute/export/validation chain.
+contacts compute/export/validation chain. Stage 13.4a adds the
+dependency-free contacts reference comparison input contract and readiness
+validation only.
 
 ## MVP contact definition
 
@@ -268,13 +270,32 @@ comparison, report bundles, graph export, CLI integration, workflow
 integration, real-data CI, benchmark thresholds, or biological interpretation.
 Reference comparison remains Stage 13.4, and graph export remains future.
 
+## Stage 13.4a contacts reference comparison input contract
+
+`PreprocessingContactsReferenceComparisonInput` stores generated/reference CSV
+path pairs for `contacts_perframe.csv` and `contact_edges.csv`.
+`PreprocessingContactsReferenceComparisonOptions` stores future distance,
+frequency, row-order, and target-selection options.
+
+`validate_contacts_reference_comparison_input(...)` checks that requested
+targets have both generated and reference paths, that paths exist and are not
+directories, that generated/reference paths are distinct, and that each
+requested file passes the accepted contacts CSV validator. It is
+dependency-free and read-only.
+
+Stage 13.4a does not compare CSV rows, compute numeric differences, match
+rows, produce mismatch reports, build report bundles, add local scientific
+comparison smoke coverage, or produce graph outputs. Numeric contacts output
+comparison remains Stage 13.4b.
+
 ## What is not implemented yet
 
 Before Stage 13.3a there was no `contacts_perframe.csv` writer.
 Before Stage 13.3b there was no `contact_edges.csv` writer. Before Stage
 13.3c there were no contacts CSV validators. Before Stage 13.3d there were no
 contacts export docs/examples. Before Stage 13.3e there was no local
-scientific contacts export smoke. Reference comparison remains Stage 13.4,
+scientific contacts export smoke. Stage 13.4a adds only contacts reference
+comparison input validation. Contacts output comparison remains Stage 13.4b,
 graph export remains future stage, and report bundles remain future work.
 
 ## Boundary before graph
@@ -287,4 +308,5 @@ Graph export belongs to a later stage after contacts are stable.
 
 ## Next Stage 13 steps
 
-Later explicit steps cover reference comparison and performance boundaries.
+Later explicit steps cover contacts output comparison and performance
+boundaries.
