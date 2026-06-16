@@ -52,6 +52,11 @@ from mania.preprocessing.trajectory_contacts import (
     PreprocessingManifestContactsResult,
     compute_condition_contacts,
 )
+from mania.preprocessing.trajectory_contacts_export import (
+    PreprocessingContactsPerFrameCsvWriteIssue,
+    PreprocessingContactsPerFrameCsvWriteResult,
+    write_contacts_perframe_csv,
+)
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
 from mania.preprocessing.trajectory_manifest_loader import (
     PreprocessingManifestLoadIssue,
@@ -130,6 +135,8 @@ __all__ = [
     "PreprocessingContactDetectionOptions",
     "PreprocessingContactFrameResult",
     "PreprocessingContactPairResult",
+    "PreprocessingContactsPerFrameCsvWriteIssue",
+    "PreprocessingContactsPerFrameCsvWriteResult",
     "PreprocessingConditionLoadResult",
     "PreprocessingConditionRgResult",
     "PreprocessingConditionResidueNames",
@@ -198,5 +205,6 @@ __all__ = [
     "validate_rg_reference_comparison_input",
     "validate_rg_timeseries_csv",
     "validate_residue_library_from_manifest_options",
+    "write_contacts_perframe_csv",
     "write_rg_timeseries_csv",
 ]

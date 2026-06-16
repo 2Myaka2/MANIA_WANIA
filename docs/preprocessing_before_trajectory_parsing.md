@@ -34,6 +34,8 @@ dependency-free contact result dataclasses and report shape. Stage 13.2a adds
 single-condition residue contacts extraction from already loaded runtimes.
 Stage 13.2b composes contact computation across manifest load results. Stage
 13.2c adds opt-in local scientific smoke coverage for contacts computation.
+Stage 13.3a adds dependency-free `contacts_perframe.csv` writing for existing
+contacts results.
 
 ## Current implemented capabilities
 
@@ -87,7 +89,9 @@ The current preprocessing layer supports:
   `compute_condition_contacts(...)`;
 - manifest-level contacts aggregation through
   `compute_manifest_contacts(...)`;
-- opt-in local scientific contacts computation smoke coverage.
+- opt-in local scientific contacts computation smoke coverage;
+- dependency-free contacts per-frame CSV writing through
+  `write_contacts_perframe_csv(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -110,6 +114,7 @@ extract_condition_residue_names(...)
 extract_manifest_residue_names(...)
 compute_condition_contacts(...)
 compute_manifest_contacts(...)
+write_contacts_perframe_csv(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -384,7 +389,7 @@ MVP definition and options contract documented in
 distinct-residue-pair definition. `PreprocessingContactDetectionOptions`
 records validated detection settings. No contacts computation was implemented
 by Stage 13.1; Stage 13.2a now provides the first single-condition computation.
-No contacts export exists yet, and no graph export exists yet.
+No contacts export existed in Stage 13.1, and no graph export exists yet.
 
 Contacts use contacts-specific modules rather than the Stage 12 Rg
 computation, export, validation, comparison, or report modules. Contact result
@@ -418,9 +423,10 @@ MDAnalysis. Coordinates are assumed to match the configured unit label and no
 unit conversion is performed. Default CI covers the duck-typed runtime
 boundary with fake objects and no real MD data.
 
-Opt-in local scientific contacts smoke coverage exists in Stage 13.2c.
-Contacts CSV export, validation, comparison, and reporting remain later
-stages. No graph export is part of Stage 13.2a.
+Opt-in local scientific contacts smoke coverage exists in Stage 13.2c. The
+per-frame contacts CSV writer begins in Stage 13.3a. Contacts aggregate export,
+validation, comparison, and reporting remain later stages. No graph export is
+part of Stage 13.2a.
 
 ## Stage 13.2b manifest contacts aggregation
 
@@ -444,8 +450,20 @@ checks result shape, nested JSON serialization, and basic nonnegative count
 sanity without asserting exact contact counts.
 
 The test requires the existing optional MDAnalysis runtime and local real data.
-It remains skipped by default and outside default CI. Contacts export remains
-future Stage 13.3 work, and graph export remains future work.
+It remains skipped by default and outside default CI. Contacts export begins
+with the Stage 13.3a per-frame writer, while graph export remains future work.
+
+## Stage 13.3a contacts per-frame CSV writer
+
+`write_contacts_perframe_csv(...)` consumes existing condition-level or
+manifest-level contacts results and writes deterministic `contacts_perframe.csv`
+rows. It writes one row per detected contact pair per frame and does not
+recompute contacts, load runtimes, acquire MDAnalysis, validate CSV, compare
+references, or create graph outputs.
+
+The aggregate `contact_edges.csv` writer remains future Stage 13.3b work.
+Contacts CSV validation and comparison remain future stages, and graph export
+remains future work.
 
 ## Stage 11.8 runtime boundary before Rg
 
@@ -488,8 +506,8 @@ The following capabilities are not implemented:
 - notebook parity guarantees beyond CSV comparison support;
 - performance optimization for large trajectories;
 - a broad trajectory preprocessing pipeline;
-- contacts export;
-- contacts-per-frame outputs;
+- aggregate contact-edge export;
+- contacts CSV validation and comparison;
 - graph export from real preprocessing;
 - graph diagnostics from real preprocessing outputs;
 - CLI or workflow integration for real preprocessing.

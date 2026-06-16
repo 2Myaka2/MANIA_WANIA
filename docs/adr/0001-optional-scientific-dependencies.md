@@ -370,6 +370,18 @@ is explicitly enabled. Default CI remains independent from MDAnalysis, real MD
 data, and local reference packages. This stage does not change dependency
 requirements, add contact export, or add graph output.
 
+## Stage 13.3a contacts per-frame CSV writer
+
+Stage 13.3a adds a dependency-free `contacts_perframe.csv` writer for existing
+condition-level and manifest-level contacts results. The writer uses the
+standard library, consumes already computed contacts objects only, and does
+not load files, acquire MDAnalysis, recompute contacts, validate CSV, compare
+references, write aggregate contact edges, or produce graph outputs.
+
+MDAnalysis remains optional behind the existing Stage 11 loading boundary.
+Default CI remains independent from MDAnalysis, real MD data, and local
+reference packages.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

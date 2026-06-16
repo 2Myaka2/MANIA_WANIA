@@ -9,7 +9,8 @@ dependency-free result dataclasses and report shape. Stage 13.2a adds
 single-condition residue contact extraction from an already loaded runtime.
 Stage 13.2b composes those condition results across an existing manifest load
 result. Stage 13.2c adds opt-in local scientific smoke coverage for the
-manifest contacts computation path.
+manifest contacts computation path. Stage 13.3a adds dependency-free
+`contacts_perframe.csv` writing for existing contacts results.
 
 ## MVP contact definition
 
@@ -128,8 +129,37 @@ serialization.
 
 The smoke test is opt-in and local only. It does not add export, validation,
 reference comparison, report bundles, graph output, benchmark thresholds, or
-biological interpretation. Contacts CSV export remains future Stage 13.3
-work, and graph export remains future work.
+biological interpretation. At Stage 13.2c, contacts CSV export remained future
+Stage 13.3 work, and graph export remained future work.
+
+## Stage 13.3a contacts_perframe.csv writer
+
+`write_contacts_perframe_csv(...)` accepts either a
+`PreprocessingConditionContactsResult` or a
+`PreprocessingManifestContactsResult` and writes the canonical
+`contacts_perframe.csv` table. It writes one row per detected contact pair per
+frame, preserving condition result order, frame result order, and contact pair
+order from the existing result object.
+
+The fixed header is:
+
+```text
+condition_name,frame_index,time_ps,source_residue_index,target_residue_index,source_residue_id,target_residue_id,source_resname,target_resname,source_segid,target_segid,minimum_distance,distance_unit,atom_filter,frame_passed
+```
+
+Zero-contact results and empty manifest results write the header only and pass
+when the input object and output path are otherwise valid. Failed condition
+results are reported through deterministic write issues but do not fail the
+write solely because the condition failed. Failed frames are skipped by
+default, counted in `skipped_frame_count`, and reported through
+`frame_result_failed`; with `include_failed_frames=True`, any contacts already
+present on failed frames are written with `frame_passed` set to `false`.
+
+The writer returns a JSON-safe
+`PreprocessingContactsPerFrameCsvWriteResult`. It does not recompute contacts,
+load runtimes, acquire MDAnalysis, create parent directories, validate the
+written CSV, compare references, write `contact_edges.csv`, or produce graph
+outputs.
 
 ## What contact_edges.csv means
 
@@ -137,10 +167,13 @@ contact_edges.csv is a future aggregate contacts table of observed residue
 pairs. It is not backend graph edges.csv and does not establish the backend
 graph data contract.
 
+`contacts_perframe.csv` is the Stage 13.3a per-frame contacts export.
+`contact_edges.csv` remains future Stage 13.3b work. Backend graph `edges.csv`
+remains future graph-stage work.
+
 ## What is not implemented yet
 
-No CSV export exists yet.
-No `contacts_perframe.csv` writer exists yet.
+Before Stage 13.3a there was no `contacts_perframe.csv` writer.
 No `contact_edges.csv` writer exists yet.
 No contact aggregation writer exists yet. CSV validation, comparison, report
 bundles, and contacts export smoke coverage also remain future work.
@@ -155,5 +188,6 @@ Graph export belongs to a later stage after contacts are stable.
 
 ## Next Stage 13 steps
 
-CSV export begins only in Stage 13.3. Later explicit steps cover validation,
-reference comparison, and performance boundaries.
+The aggregate `contact_edges.csv` writer is future Stage 13.3b work. Later
+explicit steps cover validation, reference comparison, and performance
+boundaries.
