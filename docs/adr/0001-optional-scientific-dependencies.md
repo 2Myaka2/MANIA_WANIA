@@ -355,7 +355,20 @@ logic, export CSV, compare references, or add graph semantics.
 
 MDAnalysis remains optional behind the existing Stage 11 loading boundary.
 Default CI uses fake load results and does not need MDAnalysis or real MD data.
-Local scientific contacts smoke coverage remains a future explicit stage.
+Contact CSV export and graph output remain future explicit stages.
+
+## Stage 13.2c local contacts computation smoke test
+
+Stage 13.2c adds an opt-in local scientific smoke test for the accepted
+contacts computation chain. The test loads a local manifest, loads local
+condition runtimes, computes manifest-level contacts, inspects result shape,
+and serializes the result.
+
+MDAnalysis remains optional behind the existing Stage 11 loading boundary, and
+the local smoke test runs only when the existing local scientific environment
+is explicitly enabled. Default CI remains independent from MDAnalysis, real MD
+data, and local reference packages. This stage does not change dependency
+requirements, add contact export, or add graph output.
 
 ## Non-goals for Stage 9.1
 

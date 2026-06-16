@@ -8,7 +8,8 @@ detection options before any contact computation. Stage 13.1b added only the
 dependency-free result dataclasses and report shape. Stage 13.2a adds
 single-condition residue contact extraction from an already loaded runtime.
 Stage 13.2b composes those condition results across an existing manifest load
-result.
+result. Stage 13.2c adds opt-in local scientific smoke coverage for the
+manifest contacts computation path.
 
 ## MVP contact definition
 
@@ -117,6 +118,19 @@ Stage 13.2b is orchestration only. It does not inspect runtime objects, load
 files, acquire MDAnalysis, add distance logic, export CSV, compare references,
 run local scientific smoke tests, or add graph semantics.
 
+## Stage 13.2c local scientific smoke
+
+The local scientific contacts computation smoke test validates the accepted
+runtime computation path when explicitly enabled with the existing local
+scientific harness. It uses the public load-manifest, load-runtimes, and
+compute-manifest-contacts APIs, then checks result shape and JSON
+serialization.
+
+The smoke test is opt-in and local only. It does not add export, validation,
+reference comparison, report bundles, graph output, benchmark thresholds, or
+biological interpretation. Contacts CSV export remains future Stage 13.3
+work, and graph export remains future work.
+
 ## What contact_edges.csv means
 
 contact_edges.csv is a future aggregate contacts table of observed residue
@@ -129,7 +143,7 @@ No CSV export exists yet.
 No `contacts_perframe.csv` writer exists yet.
 No `contact_edges.csv` writer exists yet.
 No contact aggregation writer exists yet. CSV validation, comparison, report
-bundles, and a local scientific contacts smoke test also remain future work.
+bundles, and contacts export smoke coverage also remain future work.
 
 ## Boundary before graph
 
@@ -141,6 +155,5 @@ Graph export belongs to a later stage after contacts are stable.
 
 ## Next Stage 13 steps
 
-Stage 13.2c will add opt-in local scientific smoke coverage. CSV export begins
-only in Stage 13.3. Later explicit steps cover validation, reference
-comparison, and performance boundaries.
+CSV export begins only in Stage 13.3. Later explicit steps cover validation,
+reference comparison, and performance boundaries.

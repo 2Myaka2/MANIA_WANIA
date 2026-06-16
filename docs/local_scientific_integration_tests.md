@@ -91,6 +91,8 @@ manifest-wide condition loading test. Stage 11.6 adds a metadata report test
 for already loaded local runtimes, and Stage 11.7 adds a residue-name
 extraction test. Stage 12.1d adds an Rg computation smoke test over the loaded
 manifest result. Stage 12.2d adds an Rg CSV export and validation smoke test.
+Stage 13.2c adds a contacts computation smoke test over the loaded manifest
+result.
 
 These local scientific integration tests require:
 
@@ -104,7 +106,8 @@ condition, Stage 11.5 loads all conditions, Stage 11.6 collects metadata, and
 Stage 11.7 extracts residue names from the loaded result. Stage 12.1d loads all
 conditions and computes manifest-level Rg. Stage 12.2d repeats that accepted
 loading and computation chain, writes `rg_timeseries.csv` only under pytest's
-temporary path, and validates the exported file. If no supported manifest
+temporary path, and validates the exported file. Stage 13.2c loads all
+conditions and computes manifest-level contacts. If no supported manifest
 exists, the tests skip with a clear message. Default CI does not run these
 opt-in tests.
 
@@ -119,6 +122,23 @@ The Stage 12.1d smoke test checks the Rg result/report shape, JSON
 serialization, deterministic frame indexes, and finite non-negative Rg
 values. It does not write CSV, compare numeric references, compute contacts,
 or generate graphs.
+
+## Stage 13.2c local contacts computation smoke test
+
+The Stage 13.2c smoke test is opt-in through the existing harness. It requires:
+
+- `MANIA_RUN_LOCAL_SCIENTIFIC=1`;
+- MDAnalysis through the optional `md` or `science` setup;
+- `MANIA_LOCAL_REFERENCE_PACKAGE` pointing to a local package containing
+  `preprocessing_manifest.yaml` or `manifest.yaml`.
+
+The test loads the local manifest, loads condition runtimes, computes
+manifest-level contacts with `compute_manifest_contacts(...)`, inspects the
+result shape, and serializes the result with `json.dumps(...)`.
+
+The test does not write contacts CSV, validate contacts CSV, compare
+references, run graph diagnostics, or run in default CI. It does not assert
+exact contact counts or benchmark timing thresholds.
 
 ## Stage 12.2d local Rg export smoke test
 

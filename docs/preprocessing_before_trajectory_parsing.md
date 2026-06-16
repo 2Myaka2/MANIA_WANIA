@@ -32,7 +32,8 @@ complete. Stage 13 contacts begins with a dependency-free MVP definition and
 options contract in separate contacts-specific modules. Stage 13.1b adds the
 dependency-free contact result dataclasses and report shape. Stage 13.2a adds
 single-condition residue contacts extraction from already loaded runtimes.
-Stage 13.2b composes contact computation across manifest load results.
+Stage 13.2b composes contact computation across manifest load results. Stage
+13.2c adds opt-in local scientific smoke coverage for contacts computation.
 
 ## Current implemented capabilities
 
@@ -83,9 +84,10 @@ The current preprocessing layer supports:
 - dependency-free Stage 13 contact issue, pair, frame, condition, and manifest
   result contracts;
 - single-condition residue contacts extraction through
-  `compute_condition_contacts(...)`.
+  `compute_condition_contacts(...)`;
 - manifest-level contacts aggregation through
-  `compute_manifest_contacts(...)`.
+  `compute_manifest_contacts(...)`;
+- opt-in local scientific contacts computation smoke coverage.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -416,9 +418,9 @@ MDAnalysis. Coordinates are assumed to match the configured unit label and no
 unit conversion is performed. Default CI covers the duck-typed runtime
 boundary with fake objects and no real MD data.
 
-The local scientific contacts smoke test is future Stage 13.2c work. Contacts
-CSV export, validation, comparison, and reporting remain later stages. No graph
-export is part of Stage 13.2a.
+Opt-in local scientific contacts smoke coverage exists in Stage 13.2c.
+Contacts CSV export, validation, comparison, and reporting remain later
+stages. No graph export is part of Stage 13.2a.
 
 ## Stage 13.2b manifest contacts aggregation
 
@@ -433,6 +435,17 @@ condition results.
 The manifest function does not inspect runtime objects, load files, call
 runtime loaders, acquire MDAnalysis, add contact distance logic, export CSV,
 compare references, run local scientific smoke tests, or add graph semantics.
+
+## Stage 13.2c local contacts computation smoke test
+
+The opt-in local scientific suite now loads a configured local manifest, loads
+its condition runtimes, and computes manifest-level contacts. The smoke test
+checks result shape, nested JSON serialization, and basic nonnegative count
+sanity without asserting exact contact counts.
+
+The test requires the existing optional MDAnalysis runtime and local real data.
+It remains skipped by default and outside default CI. Contacts export remains
+future Stage 13.3 work, and graph export remains future work.
 
 ## Stage 11.8 runtime boundary before Rg
 
