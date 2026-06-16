@@ -12,7 +12,8 @@ result. Stage 13.2c adds opt-in local scientific smoke coverage for the
 manifest contacts computation path. Stage 13.3a adds dependency-free
 `contacts_perframe.csv` writing for existing contacts results. Stage 13.3b
 adds dependency-free `contact_edges.csv` aggregate contacts writing. Stage
-13.3c adds read-only validation for both contacts CSV outputs.
+13.3c adds read-only validation for both contacts CSV outputs. Stage 13.3d
+adds dependency-free contacts export documentation and synthetic examples.
 
 ## MVP contact definition
 
@@ -232,14 +233,26 @@ data contract.
 graph `nodes.csv`, backend graph `edges.csv`, and `graph.json` remain future
 graph-stage artifacts.
 
+## Stage 13.3d contacts export docs and examples
+
+The contacts export guide documents the accepted flow from existing contacts
+result objects through `contacts_perframe.csv`, `contact_edges.csv`, and both
+CSV validators. The examples are synthetic, dependency-free, and write
+temporary output only when run directly.
+
+Stage 13.3d adds no source behavior changes, contact computation, local
+scientific export smoke test, reference comparison, report bundle, graph
+export, CLI integration, workflow integration, real-data CI, or biological
+interpretation.
+
 ## What is not implemented yet
 
 Before Stage 13.3a there was no `contacts_perframe.csv` writer.
 Before Stage 13.3b there was no `contact_edges.csv` writer. Before Stage
-13.3c there were no contacts CSV validators. Docs/examples remain Stage 13.3d,
-local scientific export smoke remains Stage 13.3e, reference comparison
-remains Stage 13.4, graph export remains future stage, and report bundles
-remain future work.
+13.3c there were no contacts CSV validators. Before Stage 13.3d there were no
+contacts export docs/examples. Local scientific export smoke remains Stage
+13.3e, reference comparison remains Stage 13.4, graph export remains future
+stage, and report bundles remain future work.
 
 ## Boundary before graph
 
@@ -251,6 +264,5 @@ Graph export belongs to a later stage after contacts are stable.
 
 ## Next Stage 13 steps
 
-Docs/examples remain Stage 13.3d and local scientific export smoke remains
-Stage 13.3e. Later explicit steps cover reference comparison and performance
-boundaries.
+Local scientific export smoke remains Stage 13.3e. Later explicit steps cover
+reference comparison and performance boundaries.

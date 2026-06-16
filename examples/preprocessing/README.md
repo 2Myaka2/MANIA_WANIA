@@ -65,3 +65,33 @@ It does not require MDAnalysis, real trajectories, or a local reference
 package. Real local MD data belongs outside the repository. The local
 scientific export smoke test remains planned for Stage 12.2d and is not part
 of Stage 12.2c.
+
+## Stage 13 contacts export
+
+Stage 13 contacts export is available through Python APIs:
+`write_contacts_perframe_csv(...)` writes `contacts_perframe.csv`,
+`write_contact_edges_csv(...)` writes `contact_edges.csv`, and
+`validate_contacts_perframe_csv(...)` plus `validate_contact_edges_csv(...)`
+validate the exported files.
+
+The committed contacts examples are synthetic and dependency-free:
+
+- `examples/preprocessing/contacts_export_usage.py` constructs synthetic
+  Stage 13 result objects, writes both CSV outputs into a `TemporaryDirectory`,
+  and validates both outputs;
+- `examples/preprocessing/contacts_perframe.example.csv` shows the exact
+  accepted per-frame contacts schema and synthetic rows;
+- `examples/preprocessing/contact_edges.example.csv` shows the exact accepted
+  aggregate contacts schema and synthetic rows;
+- `docs/preprocessing_contacts_export.md` documents the contacts result,
+  writing, and validation chain.
+
+Run the synthetic example from the repository root:
+
+```bash
+python examples/preprocessing/contacts_export_usage.py
+```
+
+It does not require MDAnalysis, real trajectories, or a local reference
+package. It does not compute contacts from runtime objects and does not create
+graph outputs. Real local MD data belongs outside the repository.

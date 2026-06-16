@@ -405,6 +405,19 @@ runtime objects.
 Default CI remains independent from MDAnalysis and real MD data. Graph
 dependencies remain out of scope.
 
+## Stage 13.3d contacts export docs and examples
+
+Stage 13.3d adds documentation and synthetic examples for the accepted contacts
+export chain. The synthetic example uses existing result, writer, and validator
+APIs and requires neither MDAnalysis nor real data. It writes generated output
+only into a temporary directory when run directly.
+
+MDAnalysis remains optional for loading and computation, default CI remains
+independent from local real data, and no scientific data is committed. This
+stage does not add source behavior changes, local scientific export smoke
+coverage, reference comparison, report bundles, graph export, CLI integration,
+workflow integration, or graph dependencies.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

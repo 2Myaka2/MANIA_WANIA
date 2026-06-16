@@ -37,7 +37,8 @@ Stage 13.2b composes contact computation across manifest load results. Stage
 Stage 13.3a adds dependency-free `contacts_perframe.csv` writing for existing
 contacts results. Stage 13.3b adds dependency-free `contact_edges.csv`
 aggregate contacts writing, explicitly not backend graph `edges.csv`. Stage
-13.3c adds read-only validation for both contacts CSV outputs.
+13.3c adds read-only validation for both contacts CSV outputs. Stage 13.3d
+adds contacts export documentation and dependency-free synthetic examples.
 
 ## Current implemented capabilities
 
@@ -98,7 +99,8 @@ The current preprocessing layer supports:
   `write_contact_edges_csv(...)`;
 - dependency-free contacts CSV validation through
   `validate_contacts_perframe_csv(...)` and
-  `validate_contact_edges_csv(...)`.
+  `validate_contact_edges_csv(...)`;
+- contacts export documentation and synthetic examples.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -501,8 +503,28 @@ filters, duplicate keys, and aggregate consistency for `contact_edges.csv`.
 
 They are read-only and dependency-free. They do not recompute contacts, call
 contacts writers, load runtimes, acquire MDAnalysis, compare references, or
-produce graph output. Docs/examples are future Stage 13.3d, local scientific
-export smoke is future Stage 13.3e, and graph remains future.
+produce graph output. Docs/examples are Stage 13.3d, local scientific export
+smoke is future Stage 13.3e, and graph remains future.
+
+## Stage 13.3d contacts export docs and examples
+
+The contacts export guide documents the dependency-free writer and validator
+flow for existing contacts results:
+
+```text
+contacts result object -> write contacts_perframe.csv
+-> write contact_edges.csv -> validate both CSV outputs
+```
+
+The committed examples construct synthetic contact result dataclasses, write
+temporary files when run directly, and include small static CSV examples that
+pass the accepted validators.
+
+Stage 13.3d does not add source behavior changes, new computation, local
+scientific export smoke coverage, reference comparison, report bundles, graph
+export, CLI integration, workflow integration, real-data CI, or biological
+interpretation. `contact_edges.csv` remains an aggregate contacts table, not
+backend graph `edges.csv`.
 
 ## Stage 11.8 runtime boundary before Rg
 
