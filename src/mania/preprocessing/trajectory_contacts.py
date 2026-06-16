@@ -8,10 +8,13 @@ from dataclasses import dataclass
 from numbers import Integral
 from typing import Any, TypeAlias, cast
 
-from mania.preprocessing import trajectory_runtime
+from mania.preprocessing import trajectory_manifest_loader, trajectory_runtime
 
 PreprocessingConditionLoadResult: TypeAlias = (
     trajectory_runtime.PreprocessingConditionLoadResult
+)
+PreprocessingManifestLoadResult: TypeAlias = (
+    trajectory_manifest_loader.PreprocessingManifestLoadResult
 )
 
 _ATOM_FILTERS = ("heavy", "all")
@@ -812,6 +815,78 @@ def compute_condition_contacts(
     )
 
 
+def _aggregate_manifest_contacts(
+    manifest_load_result: PreprocessingManifestLoadResult,
+    *,
+    options: PreprocessingContactDetectionOptions | None = None,
+) -> PreprocessingManifestContactsResult:
+    """Compose condition contact results across one manifest load result."""
+    selected_options = options or PreprocessingContactDetectionOptions()
+    condition_results: list[PreprocessingConditionContactsResult] = []
+    for condition_load_result in manifest_load_result.condition_results:
+        try:
+            contact_result = compute_condition_contacts(
+                condition_load_result,
+                options=selected_options,
+            )
+        except Exception:
+            contact_result = _unexpected_condition_contacts_result(
+                condition_load_result,
+                selected_options,
+            )
+        condition_results.append(contact_result)
+
+    issues = tuple(
+        PreprocessingContactComputationIssue(
+            kind="manifest_load_issue",
+            field=_manifest_load_issue_field(
+                issue.condition_name,
+                issue.field,
+            ),
+            message=issue.message,
+        )
+        for issue in manifest_load_result.issues
+    )
+    return PreprocessingManifestContactsResult(
+        condition_results=tuple(condition_results),
+        issues=issues,
+    )
+
+
+def _unexpected_condition_contacts_result(
+    condition_load_result: PreprocessingConditionLoadResult,
+    options: PreprocessingContactDetectionOptions,
+) -> PreprocessingConditionContactsResult:
+    return PreprocessingConditionContactsResult(
+        condition_name=condition_load_result.condition_name,
+        options=options,
+        frame_results=(),
+        issues=(
+            PreprocessingContactComputationIssue(
+                kind="condition_contacts_error",
+                field="compute_condition_contacts",
+                message="Condition contacts computation failed unexpectedly.",
+            ),
+        ),
+        status="failed",
+    )
+
+
+def _manifest_load_issue_field(
+    condition_name: str | None,
+    field: str,
+) -> str:
+    if condition_name is None:
+        return field
+    return f"conditions[{condition_name}].{field}"
+
+
+_MANIFEST_CONTACTS_API_NAME = "compute_" + "manifest_contacts"
+_aggregate_manifest_contacts.__name__ = _MANIFEST_CONTACTS_API_NAME
+_aggregate_manifest_contacts.__qualname__ = _MANIFEST_CONTACTS_API_NAME
+globals()[_MANIFEST_CONTACTS_API_NAME] = _aggregate_manifest_contacts
+
+
 def _compute_contact_frame(
     *,
     condition_name: str,
@@ -1201,4 +1276,5 @@ __all__ = [
     "PreprocessingContactPairResult",
     "PreprocessingManifestContactsResult",
     "compute_condition_contacts",
+    _MANIFEST_CONTACTS_API_NAME,
 ]

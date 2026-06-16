@@ -343,8 +343,19 @@ load files, call runtime loaders, or acquire MDAnalysis.
 
 MDAnalysis remains optional behind the existing Stage 11 loading boundary.
 Default CI uses fake runtime objects and does not need MDAnalysis or real MD
-data. Manifest aggregation, local scientific contacts smoke coverage, CSV
-export, and graph export remain future explicit stages.
+data. Local scientific contacts smoke coverage, CSV export, and graph export
+remain future explicit stages.
+
+## Stage 13.2b manifest contacts aggregation
+
+Stage 13.2b composes the accepted single-condition contacts function across an
+existing manifest load result. The manifest layer does not acquire
+dependencies, load files, directly inspect runtime objects, add distance
+logic, export CSV, compare references, or add graph semantics.
+
+MDAnalysis remains optional behind the existing Stage 11 loading boundary.
+Default CI uses fake load results and does not need MDAnalysis or real MD data.
+Local scientific contacts smoke coverage remains a future explicit stage.
 
 ## Non-goals for Stage 9.1
 

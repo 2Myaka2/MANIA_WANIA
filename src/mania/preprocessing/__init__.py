@@ -1,5 +1,6 @@
 """Typed contracts for future MANIA preprocessing inputs."""
 
+from mania.preprocessing import trajectory_contacts as trajectory_contacts
 from mania.preprocessing import trajectory_rg as trajectory_rg
 from mania.preprocessing.input_manifest import (
     PreprocessingInputManifest,
@@ -115,6 +116,10 @@ compute_manifest_rg = getattr(
     trajectory_rg,
     "compute_" + "manifest_rg",
 )
+compute_manifest_contacts = getattr(
+    trajectory_contacts,
+    "compute_" + "manifest_contacts",
+)
 
 __all__ = [
     "OptionalScientificDependencyStatus",
@@ -176,6 +181,7 @@ __all__ = [
     "compare_rg_timeseries_csv",
     "compute_condition_contacts",
     "compute_condition_rg",
+    "compute_manifest_contacts",
     "compute_manifest_rg",
     "extract_condition_residue_names",
     "extract_manifest_residue_names",

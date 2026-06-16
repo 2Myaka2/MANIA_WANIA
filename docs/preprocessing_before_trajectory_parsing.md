@@ -32,6 +32,7 @@ complete. Stage 13 contacts begins with a dependency-free MVP definition and
 options contract in separate contacts-specific modules. Stage 13.1b adds the
 dependency-free contact result dataclasses and report shape. Stage 13.2a adds
 single-condition residue contacts extraction from already loaded runtimes.
+Stage 13.2b composes contact computation across manifest load results.
 
 ## Current implemented capabilities
 
@@ -83,6 +84,8 @@ The current preprocessing layer supports:
   result contracts;
 - single-condition residue contacts extraction through
   `compute_condition_contacts(...)`.
+- manifest-level contacts aggregation through
+  `compute_manifest_contacts(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -104,6 +107,7 @@ collect_manifest_runtime_metadata(...)
 extract_condition_residue_names(...)
 extract_manifest_residue_names(...)
 compute_condition_contacts(...)
+compute_manifest_contacts(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -412,10 +416,23 @@ MDAnalysis. Coordinates are assumed to match the configured unit label and no
 unit conversion is performed. Default CI covers the duck-typed runtime
 boundary with fake objects and no real MD data.
 
-Manifest-level contacts aggregation is future Stage 13.2b work. The local
-scientific contacts smoke test is future Stage 13.2c work. Contacts CSV export,
-validation, comparison, and reporting remain later stages. No graph export is
-part of Stage 13.2a.
+The local scientific contacts smoke test is future Stage 13.2c work. Contacts
+CSV export, validation, comparison, and reporting remain later stages. No graph
+export is part of Stage 13.2a.
+
+## Stage 13.2b manifest contacts aggregation
+
+`compute_manifest_contacts(...)` consumes one
+`PreprocessingManifestLoadResult`, calls `compute_condition_contacts(...)` for
+every condition result in order, and returns a
+`PreprocessingManifestContactsResult`. Failed and partial condition results are
+retained, manifest-level load issues are mapped into the contact report, and
+unexpected condition-computation exceptions become deterministic failed
+condition results.
+
+The manifest function does not inspect runtime objects, load files, call
+runtime loaders, acquire MDAnalysis, add contact distance logic, export CSV,
+compare references, run local scientific smoke tests, or add graph semantics.
 
 ## Stage 11.8 runtime boundary before Rg
 
@@ -458,7 +475,6 @@ The following capabilities are not implemented:
 - notebook parity guarantees beyond CSV comparison support;
 - performance optimization for large trajectories;
 - a broad trajectory preprocessing pipeline;
-- manifest-level contact extraction;
 - contacts export;
 - contacts-per-frame outputs;
 - graph export from real preprocessing;

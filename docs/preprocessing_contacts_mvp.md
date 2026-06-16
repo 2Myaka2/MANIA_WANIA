@@ -7,6 +7,8 @@ Stage 13 introduces residue contacts in small, contacts-specific steps. Stage
 detection options before any contact computation. Stage 13.1b added only the
 dependency-free result dataclasses and report shape. Stage 13.2a adds
 single-condition residue contact extraction from an already loaded runtime.
+Stage 13.2b composes those condition results across an existing manifest load
+result.
 
 ## MVP contact definition
 
@@ -57,7 +59,9 @@ canonical lower-index-first order.
 
 Frame, condition, and manifest contracts provide deterministic contact, frame,
 and condition counts plus nested JSON-safe `to_dict()` output. Stage 13.2a
-consumes the frame and condition contracts without changing their behavior.
+consumes the frame and condition contracts without changing their behavior,
+and Stage 13.2b consumes the manifest contract without changing its summary
+semantics.
 
 Stage 13.1a added no contact computation and no contact result dataclasses.
 Stage 13.1b added those dataclasses before Stage 13.2a implemented
@@ -94,6 +98,25 @@ and the condition can return `partial`. Residues with no selected atoms,
 including hydrogen-only residues under the heavy filter, produce no contacts
 without failing.
 
+## Stage 13.2b manifest aggregation
+
+`compute_manifest_contacts(...)` accepts one existing
+`PreprocessingManifestLoadResult`, calls `compute_condition_contacts(...)` for
+each contained condition load result in deterministic manifest order, and
+returns `PreprocessingManifestContactsResult`.
+
+The manifest function defaults options to
+`PreprocessingContactDetectionOptions()` and passes the selected options to
+each condition computation. Failed and partial condition contact results are
+preserved. Manifest-level load issues are mapped into contact computation
+issues on the manifest result. Unexpected per-condition computation exceptions
+are captured as deterministic failed condition contact results so later
+conditions can still be processed.
+
+Stage 13.2b is orchestration only. It does not inspect runtime objects, load
+files, acquire MDAnalysis, add distance logic, export CSV, compare references,
+run local scientific smoke tests, or add graph semantics.
+
 ## What contact_edges.csv means
 
 contact_edges.csv is a future aggregate contacts table of observed residue
@@ -102,7 +125,7 @@ graph data contract.
 
 ## What is not implemented yet
 
-No manifest aggregation exists yet. No CSV export exists yet.
+No CSV export exists yet.
 No `contacts_perframe.csv` writer exists yet.
 No `contact_edges.csv` writer exists yet.
 No contact aggregation writer exists yet. CSV validation, comparison, report
@@ -118,7 +141,6 @@ Graph export belongs to a later stage after contacts are stable.
 
 ## Next Stage 13 steps
 
-Stage 13.2b will compose manifest results, and Stage 13.2c will add opt-in
-local scientific smoke coverage. CSV export begins only in Stage 13.3. Later
-explicit steps cover validation, reference comparison, and performance
-boundaries.
+Stage 13.2c will add opt-in local scientific smoke coverage. CSV export begins
+only in Stage 13.3. Later explicit steps cover validation, reference
+comparison, and performance boundaries.
