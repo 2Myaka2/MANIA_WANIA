@@ -471,9 +471,20 @@ performance.
 
 MDAnalysis remains optional. Default CI remains independent from real MD data,
 local reference packages, and local scientific environment variables. No hard
-timing benchmark requirement is introduced. Stage 13.5b remains the future
-step for lightweight performance sanity checks, and graph export remains
-future work.
+timing benchmark requirement is introduced. Graph export remains future work.
+
+## Stage 13.5b contacts performance sanity checks
+
+Stage 13.5b adds lightweight contacts performance sanity checks that are
+dependency-free and default-CI-safe. They use small synthetic contacts data and
+exercise bounded deterministic result, export, validation, and comparison
+behavior.
+
+The checks add no MDAnalysis requirement, no real MD data requirement, no
+benchmark dependency, and no hard timing gate. MDAnalysis remains optional,
+local scientific tests remain opt-in, and default CI remains stable. This
+stage does not change source behavior, add performance optimization, or add
+graph export.
 
 ## Non-goals for Stage 9.1
 

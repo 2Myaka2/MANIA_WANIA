@@ -20,7 +20,8 @@ dependency-free contacts reference comparison input contract and readiness
 validation only. Stage 13.4b adds dependency-free output comparison for the
 two accepted contacts CSV outputs. Stage 13.5a adds contacts performance
 boundary documentation only; see
-`docs/preprocessing_contacts_performance_boundary.md`.
+`docs/preprocessing_contacts_performance_boundary.md`. Stage 13.5b adds
+lightweight contacts performance sanity checks using small synthetic data only.
 
 ## MVP contact definition
 
@@ -332,8 +333,19 @@ contacts output rather than backend graph `edges.csv`.
 
 Stage 13.5a adds no performance tests, benchmark tests, hard timing
 benchmarks, source behavior changes, performance optimizations, CLI/workflow
-integration, report bundles, or graph export. Stage 13.5b will add lightweight
+integration, report bundles, or graph export. Stage 13.5b adds lightweight
 performance sanity checks without hard timing thresholds. Graph remains
+future work.
+
+## Stage 13.5b contacts performance sanity checks
+
+Stage 13.5b adds dependency-free lightweight performance sanity checks for the
+contacts MVP. The checks use small synthetic data only and cover bounded,
+deterministic result, export, validation, and comparison behavior.
+
+Stage 13.5b adds no benchmark tests, hard timing thresholds, source behavior
+changes, implementation optimizations, local scientific performance gates,
+CLI/workflow integration, report bundles, or graph export. Graph remains
 future work.
 
 ## What is not implemented yet
@@ -344,8 +356,9 @@ Before Stage 13.3b there was no `contact_edges.csv` writer. Before Stage
 contacts export docs/examples. Before Stage 13.3e there was no local
 scientific contacts export smoke. Before Stage 13.4b there was no contacts
 output comparison. Before Stage 13.5a there was no contacts performance
-boundary doc. Stage 13.5a adds no contacts performance tests. Graph export
-remains future stage, and report bundles remain future work.
+boundary doc. Before Stage 13.5b there were no contacts performance sanity
+checks. Stage 13.5b adds no contacts benchmark tests. Graph export remains
+future stage, and report bundles remain future work.
 
 ## Boundary before graph
 
@@ -357,6 +370,5 @@ Graph export belongs to a later stage after contacts are stable.
 
 ## Next Stage 13 steps
 
-Stage 13.5b will add lightweight performance sanity checks without hard timing
-benchmarks. A later explicit step covers the final contacts MVP boundary before
-graph work.
+A later explicit step covers the final contacts MVP boundary before graph
+work.

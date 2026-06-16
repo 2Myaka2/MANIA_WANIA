@@ -43,7 +43,9 @@ Stage 13.3e adds opt-in local scientific smoke coverage for contacts
 computation, export, and validation. Stage 13.4a adds only the
 dependency-free contacts reference comparison input contract and readiness
 validation. Stage 13.4b adds dependency-free contacts output comparison.
-Stage 13.5a adds contacts performance boundary documentation only.
+Stage 13.5a adds contacts performance boundary documentation only. Stage
+13.5b adds lightweight contacts performance sanity checks using small
+synthetic data only.
 
 ## Current implemented capabilities
 
@@ -116,6 +118,8 @@ The current preprocessing layer supports:
   `compare_contacts_outputs(...)`.
 - contacts performance boundary documentation in
   `docs/preprocessing_contacts_performance_boundary.md`.
+- lightweight contacts performance sanity checks for bounded synthetic
+  result, export, validation, and comparison flows.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -604,8 +608,20 @@ performance tests, benchmark tests, hard timing thresholds, source behavior
 changes, implementation optimizations, CLI/workflow integration, or graph
 export.
 
-Stage 13.5b remains the future step for lightweight performance sanity checks
-without hard timing benchmarks. Graph remains future work.
+## Stage 13.5b contacts performance sanity checks
+
+Stage 13.5b adds lightweight contacts performance sanity checks for the
+existing contacts computation, export, validation, and comparison boundary.
+The checks are dependency-free, synthetic, default-CI-safe, and no-hard-timing
+checks.
+
+They verify bounded deterministic result shapes, writer row counts, validator
+row counts, comparison report counts, header-only output behavior, and failed
+frame skip behavior. They do not use MDAnalysis, real MD data, local
+scientific tests, benchmark tooling, source behavior changes, implementation
+optimizations, CLI/workflow integration, or graph export.
+
+Graph remains future work.
 
 ## Stage 11.8 runtime boundary before Rg
 

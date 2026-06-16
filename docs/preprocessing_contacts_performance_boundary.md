@@ -91,34 +91,38 @@ contact_edges.csv is not backend graph edges.csv.
 
 Graph export remains future work.
 
-## Future Stage 13.5b sanity checks
+## Stage 13.5b lightweight sanity checks
 
-Stage 13.5b should add lightweight performance sanity checks, not true
-benchmarks. Stage 13.5b must preserve the no-hard-benchmark boundary.
-Stage 13.5b must use no hard timing benchmarks.
-Stage 13.5b lightweight sanity checks must remain stable in default CI.
+Stage 13.5b adds lightweight contacts performance sanity checks, not true
+benchmarks. The checks use small synthetic data only, do not measure
+wall-clock time, do not enforce hard timing thresholds, and do not require
+MDAnalysis or real MD data.
+Stage 13.5b uses no hard timing benchmarks.
 
-Stage 13.5b checks should:
+The checks are default-CI-safe and dependency-free. They verify bounded,
+deterministic behavior of contacts result, export, validation, and comparison
+flows without adding a machine-specific performance gate.
+
+Stage 13.5b checks:
 
 - use small synthetic data;
 - avoid real MD data;
 - avoid MDAnalysis;
 - avoid hard timing thresholds;
 - avoid measuring machine-specific wall-clock performance;
-- check deterministic bounded behavior where possible;
+- check deterministic bounded behavior;
 - guard against accidentally obvious explosive behavior;
 - remain stable in default CI.
 
-Acceptable Stage 13.5b examples include:
+The accepted Stage 13.5b checks include:
 
-- verifying synthetic contacts computation completes on a small fixture
-  without excessive result size;
-- verifying writers, validators, and comparison handle small synthetic CSVs
-  deterministically;
+- verifying synthetic contacts result size remains bounded;
+- verifying writers, validators, and comparison handle small synthetic outputs
+  deterministically and with bounded row counts;
 - verifying no local scientific test is required;
 - verifying docs preserve the no-hard-benchmark boundary.
 
-Unacceptable Stage 13.5b examples include:
+Stage 13.5b still does not add:
 
 - failing if computation takes more than a fixed number of seconds;
 - requiring real trajectories;
@@ -129,7 +133,7 @@ Unacceptable Stage 13.5b examples include:
 
 ## Explicit non-goals
 
-Stage 13.5a does not add:
+Stage 13.5a and Stage 13.5b do not add:
 
 - source behavior changes;
 - new public APIs;
@@ -151,4 +155,4 @@ Future stages may consider spatial neighbor search, residue pair pruning,
 chunked processing, optional vectorized or scientific backends,
 memory-aware streaming exports, and graph-stage performance work.
 
-These directions are not implemented in Stage 13.5a.
+These directions are not implemented in Stage 13.5a or Stage 13.5b.
