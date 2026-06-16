@@ -3,7 +3,7 @@
 ## Purpose
 
 This document fixes the contacts MVP performance expectations and boundaries
-before Stage 13.5b adds lightweight performance sanity checks.
+before and after Stage 13.5b lightweight performance sanity checks.
 
 This document is not a benchmark report.
 This document does not introduce timing requirements.
@@ -12,7 +12,8 @@ This document does not change implementation behavior.
 Stage 13.5a is documentation and docs-test work only. It records what the
 contacts MVP currently does, where default CI and local scientific tests stop,
 and what Stage 13.5b may check without turning contacts into a hard
-performance-gated feature.
+performance-gated feature. Stage 13.6 keeps this as the final contacts MVP
+boundary before graph-specific work.
 
 ## Current MVP scope
 
@@ -23,7 +24,8 @@ The contacts MVP currently supports:
 - `contacts_perframe.csv` export;
 - `contact_edges.csv` aggregate export;
 - contacts validation for both CSV outputs;
-- contacts comparison against generated/reference CSV outputs.
+- contacts comparison against generated/reference CSV outputs;
+- lightweight performance sanity checks over small synthetic contacts data.
 
 Contacts computation consumes already loaded runtimes. It does not load
 topologies or trajectories and does not acquire MDAnalysis itself.
@@ -156,3 +158,33 @@ chunked processing, optional vectorized or scientific backends,
 memory-aware streaming exports, and graph-stage performance work.
 
 These directions are not implemented in Stage 13.5a or Stage 13.5b.
+
+## Final contacts MVP performance boundary
+
+The completed Stage 13 Contacts MVP flow is:
+
+```text
+loaded manifest runtimes
+-> contacts computation
+-> contacts export
+-> CSV validation
+-> reference comparison
+-> performance boundary/sanity checks
+```
+
+The final performance layer is limited to documentation and small synthetic
+sanity checks. It does not introduce benchmark reports, wall-clock thresholds,
+local scientific performance gates, real-data CI, graph performance tests, or
+optimization work.
+
+The following remain outside the contacts MVP:
+
+- contacts report bundle;
+- graph export;
+- backend graph `nodes.csv`;
+- backend graph `edges.csv`;
+- `graph.json`;
+- graph diagnostics from real preprocessing;
+- CLI/workflow scientific MVP;
+- biological interpretation;
+- real-data CI.

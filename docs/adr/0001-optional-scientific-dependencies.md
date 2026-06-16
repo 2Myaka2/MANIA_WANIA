@@ -486,6 +486,30 @@ local scientific tests remain opt-in, and default CI remains stable. This
 stage does not change source behavior, add performance optimization, or add
 graph export.
 
+## Stage 13.6 final contacts MVP boundary
+
+Stage 13.6 adds final contacts MVP boundary documentation and a docs test only.
+It records that the completed contacts MVP covers:
+
+```text
+loaded manifest runtimes
+-> contacts computation
+-> contacts export
+-> CSV validation
+-> reference comparison
+-> performance boundary/sanity checks
+```
+
+MDAnalysis remains optional behind the existing loading boundary. Default CI
+remains independent from MDAnalysis, real MD data, local reference packages,
+and local scientific environment variables.
+
+Stage 13.6 does not change dependency requirements, source behavior, public
+APIs, or implementation performance. It does not add a contacts report bundle,
+graph export, backend graph `nodes.csv`, backend graph `edges.csv`,
+`graph.json`, graph diagnostics from real preprocessing, CLI/workflow
+scientific MVP, biological interpretation, or real-data CI.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

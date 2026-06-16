@@ -341,12 +341,78 @@ future work.
 
 Stage 13.5b adds dependency-free lightweight performance sanity checks for the
 contacts MVP. The checks use small synthetic data only and cover bounded,
-deterministic result, export, validation, and comparison behavior.
+deterministic result, export, validation, and comparison behavior. Stage 13.6
+closes the contacts MVP documentation boundary before graph-specific work.
 
 Stage 13.5b adds no benchmark tests, hard timing thresholds, source behavior
 changes, implementation optimizations, local scientific performance gates,
 CLI/workflow integration, report bundles, or graph export. Graph remains
 future work.
+
+## Stage 13.6 final contacts MVP boundary
+
+Stage 13 Contacts MVP now covers the accepted Python API flow:
+
+```text
+loaded manifest runtimes
+-> contacts computation
+-> contacts export
+-> CSV validation
+-> reference comparison
+-> performance boundary/sanity checks
+```
+
+The implemented contacts blocks are:
+
+- loaded-runtime contact computation through `compute_condition_contacts(...)`
+  and `compute_manifest_contacts(...)`;
+- dependency-free `contacts_perframe.csv` and aggregate `contact_edges.csv`
+  export;
+- read-only CSV validation for both accepted contacts outputs;
+- dependency-free generated/reference CSV comparison for both contacts
+  outputs;
+- documented performance boundary plus small synthetic sanity checks.
+
+The final contacts MVP public surface includes:
+
+```python
+PreprocessingContactDefinition
+PreprocessingContactDetectionOptions
+PreprocessingContactComputationIssue
+PreprocessingContactPairResult
+PreprocessingContactFrameResult
+PreprocessingConditionContactsResult
+PreprocessingManifestContactsResult
+compute_condition_contacts(...)
+compute_manifest_contacts(...)
+PreprocessingContactsPerFrameCsvWriteIssue
+PreprocessingContactsPerFrameCsvWriteResult
+write_contacts_perframe_csv(...)
+PreprocessingContactEdgesCsvWriteIssue
+PreprocessingContactEdgesCsvWriteResult
+write_contact_edges_csv(...)
+PreprocessingContactsPerFrameCsvValidationIssue
+PreprocessingContactsPerFrameCsvValidationResult
+validate_contacts_perframe_csv(...)
+PreprocessingContactEdgesCsvValidationIssue
+PreprocessingContactEdgesCsvValidationResult
+validate_contact_edges_csv(...)
+PreprocessingContactsReferenceComparisonOptions
+PreprocessingContactsReferenceComparisonInput
+PreprocessingContactsReferenceComparisonIssue
+PreprocessingContactsReferenceComparisonInputValidationResult
+validate_contacts_reference_comparison_input(...)
+PreprocessingContactsReferenceComparisonRowResult
+PreprocessingContactsReferenceComparisonResult
+compare_contacts_outputs(...)
+```
+
+This is a Python API and documentation/test boundary, not a workflow product.
+`contact_edges.csv` remains an aggregate contacts table. It is not backend
+graph `edges.csv`.
+
+Stage 13.6 adds no source behavior, public APIs, report bundle, graph export,
+CLI/workflow integration, real-data CI, or biological interpretation.
 
 ## What is not implemented yet
 
@@ -357,8 +423,20 @@ contacts export docs/examples. Before Stage 13.3e there was no local
 scientific contacts export smoke. Before Stage 13.4b there was no contacts
 output comparison. Before Stage 13.5a there was no contacts performance
 boundary doc. Before Stage 13.5b there were no contacts performance sanity
-checks. Stage 13.5b adds no contacts benchmark tests. Graph export remains
-future stage, and report bundles remain future work.
+checks. Stage 13.5b adds no contacts benchmark tests. Stage 13.6 adds final
+boundary docs and tests only.
+
+Still not implemented:
+
+- contacts report bundle;
+- graph export;
+- backend graph `nodes.csv`;
+- backend graph `edges.csv`;
+- `graph.json`;
+- graph diagnostics from real preprocessing;
+- CLI/workflow scientific MVP;
+- biological interpretation;
+- real-data CI.
 
 ## Boundary before graph
 
@@ -368,7 +446,7 @@ No backend graph `edges.csv` is produced.
 No `graph.json` is produced.
 Graph export belongs to a later stage after contacts are stable.
 
-## Next Stage 13 steps
-
-A later explicit step covers the final contacts MVP boundary before graph
-work.
+The next stage may begin graph-specific work only after this contacts MVP
+boundary. Any backend graph `nodes.csv`, backend graph `edges.csv`,
+`graph.json`, or graph diagnostics from real preprocessing must be introduced
+by an explicit graph-stage task, not by the contacts MVP.

@@ -45,7 +45,8 @@ dependency-free contacts reference comparison input contract and readiness
 validation. Stage 13.4b adds dependency-free contacts output comparison.
 Stage 13.5a adds contacts performance boundary documentation only. Stage
 13.5b adds lightweight contacts performance sanity checks using small
-synthetic data only.
+synthetic data only. Stage 13.6 completes the final contacts MVP boundary
+documentation before graph work.
 
 ## Current implemented capabilities
 
@@ -115,11 +116,12 @@ The current preprocessing layer supports:
 - contacts comparison readiness validation through
   `validate_contacts_reference_comparison_input(...)`;
 - dependency-free contacts output comparison through
-  `compare_contacts_outputs(...)`.
+  `compare_contacts_outputs(...)`;
 - contacts performance boundary documentation in
-  `docs/preprocessing_contacts_performance_boundary.md`.
+  `docs/preprocessing_contacts_performance_boundary.md`;
 - lightweight contacts performance sanity checks for bounded synthetic
-  result, export, validation, and comparison flows.
+  result, export, validation, and comparison flows;
+- final contacts MVP boundary documentation before graph-specific work.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -623,6 +625,29 @@ optimizations, CLI/workflow integration, or graph export.
 
 Graph remains future work.
 
+## Stage 13.6 final contacts MVP boundary
+
+Stage 13 Contacts MVP is complete at the documentation/test boundary described
+in `docs/preprocessing_contacts_mvp.md`. The accepted flow is:
+
+```text
+loaded manifest runtimes
+-> contacts computation
+-> contacts export
+-> CSV validation
+-> reference comparison
+-> performance boundary/sanity checks
+```
+
+The completed contacts MVP consumes already loaded manifest runtimes, computes
+contacts, writes and validates the two accepted contacts CSV outputs, compares
+generated/reference contacts CSV files, and preserves the no-hard-benchmark
+performance boundary. It remains a Python API surface and docs/tests boundary.
+
+Stage 13.6 adds no source behavior, public APIs, contacts report bundle, graph
+export, CLI/workflow integration, local scientific comparison or performance
+gates, real-data CI, or biological interpretation.
+
 ## Stage 11.8 runtime boundary before Rg
 
 Stage 11.8 documents the completed Stage 11 public API, opaque runtime-object
@@ -664,9 +689,15 @@ The following capabilities are not implemented:
 - notebook parity guarantees beyond CSV comparison support;
 - performance optimization for large trajectories;
 - a broad trajectory preprocessing pipeline;
+- contacts report bundle;
 - graph export from real preprocessing;
+- backend graph `nodes.csv`;
+- backend graph `edges.csv`;
+- `graph.json`;
 - graph diagnostics from real preprocessing outputs;
-- CLI or workflow integration for real preprocessing.
+- CLI/workflow scientific MVP;
+- biological interpretation;
+- real-data CI.
 
 ## Why trajectory parsing comes next
 
@@ -815,7 +846,8 @@ Stage 12:
   real Rg preprocessing MVP.
 
 Stage 13:
-  contacts extraction MVP.
+  contacts extraction MVP. Complete at the final contacts documentation
+  boundary before graph-specific work.
 
 Stage 14:
   graph export from real preprocessing.
@@ -824,14 +856,16 @@ Stage 15:
   scientific MVP workflow.
 ```
 
-Stage 12 is complete at the documented Rg MVP boundary. Stage 13 should begin
-contacts extraction in separate contacts-specific modules and should not add
-contacts to the Rg-specific computation, export, validation, comparison, or
-report modules. Recommended order:
+Stage 12 is complete at the documented Rg MVP boundary. Stage 13 is complete
+at the documented contacts MVP boundary and uses separate contacts-specific
+modules rather than adding contacts to the Rg-specific computation, export,
+validation, comparison, or report modules. Completed order:
 
 1. Contact definition and options contract.
 2. Minimal per-frame contacts extraction.
 3. Contacts export, validation, and comparison.
-4. Graph integration after contacts are stable.
+4. Performance boundary/sanity checks.
+5. Final boundary documentation before graph-specific work.
 
-Stages 13 through 15 remain planning only.
+Graph integration after contacts are stable remains the Stage 14 handoff.
+Stages 14 and 15 remain planning only.

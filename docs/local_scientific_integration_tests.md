@@ -93,6 +93,8 @@ extraction test. Stage 12.1d adds an Rg computation smoke test over the loaded
 manifest result. Stage 12.2d adds an Rg CSV export and validation smoke test.
 Stage 13.2c adds a contacts computation smoke test over the loaded manifest
 result. Stage 13.3e adds a contacts CSV export and validation smoke test.
+Stage 13.6 documents the final contacts MVP boundary before graph-specific
+work.
 
 These local scientific integration tests require:
 
@@ -167,6 +169,35 @@ counts or requiring contacts to be non-zero.
 The test does not compare references, build a report bundle, run graph
 diagnostics, produce graph outputs, write persistent repository artifacts, or
 run in default CI.
+
+## Final Stage 13 local scientific boundary
+
+Stage 13 includes exactly two contacts-focused local scientific smoke tests:
+
+- the Stage 13.2c local scientific contacts computation smoke;
+- the Stage 13.3e local scientific contacts export and validation smoke.
+
+They are opt-in through `MANIA_RUN_LOCAL_SCIENTIFIC=1`, require optional
+MDAnalysis setup, and require `MANIA_LOCAL_REFERENCE_PACKAGE`. Local
+scientific tests are skipped by default, and default CI does not run them as
+real-data tests.
+
+The contacts MVP flow is documented as:
+
+```text
+loaded manifest runtimes
+-> contacts computation
+-> contacts export
+-> CSV validation
+-> reference comparison
+-> performance boundary/sanity checks
+```
+
+Local scientific coverage stops at computation plus temporary CSV export and
+validation. Stage 13 adds no local scientific reference comparison, local
+scientific performance gate, contacts report bundle, graph diagnostics from
+real preprocessing, graph export, CLI/workflow scientific MVP, real-data CI,
+or biological interpretation.
 
 ## Stage 12.2d local Rg export smoke test
 

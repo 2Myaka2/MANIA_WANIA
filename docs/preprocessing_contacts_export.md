@@ -259,6 +259,51 @@ table, not backend graph `edges.csv`.
 Stage 13.5a documents the contacts MVP performance boundary in
 `docs/preprocessing_contacts_performance_boundary.md`.
 
+Stage 13.5b adds lightweight performance sanity checks with small synthetic
+data only. These checks cover bounded deterministic contacts result, export,
+validation, and comparison behavior without hard timing thresholds.
+
+## Final contacts MVP boundary
+
+Stage 13 Contacts MVP now covers:
+
+```text
+loaded manifest runtimes
+-> contacts computation
+-> contacts export
+-> CSV validation
+-> reference comparison
+-> performance boundary/sanity checks
+```
+
+The only accepted contacts CSV outputs are:
+
+```text
+contacts_perframe.csv
+contact_edges.csv
+```
+
+`contact_edges.csv` is an aggregate contacts table. It is not backend graph
+`edges.csv`, does not imply backend graph `nodes.csv`, and is not
+`graph.json`.
+
+Still not implemented:
+
+- contacts report bundle
+- graph export
+- backend graph `nodes.csv`
+- backend graph `edges.csv`
+- `graph.json`
+- graph diagnostics from real preprocessing
+- CLI/workflow scientific MVP
+- biological interpretation
+- real-data CI
+
+Stage 13.6 adds final boundary documentation and a docs test only. It does
+not add source behavior, public APIs, report bundle output, graph export,
+CLI/workflow integration, local scientific comparison or performance gates,
+real-data CI, or biological interpretation.
+
 Export, validation, and comparison are dependency-free CSV-level operations.
 They consume existing contacts results or existing CSV files, do not load
 trajectories, and do not acquire MDAnalysis. Stage 13.5a adds no performance
