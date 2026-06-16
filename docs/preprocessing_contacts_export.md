@@ -22,6 +22,7 @@ contacts result object
 -> write contacts_perframe.csv
 -> write contact_edges.csv
 -> validate both CSV outputs
+-> optionally compare generated CSV outputs with references
 ```
 
 ## Inputs
@@ -220,7 +221,39 @@ contracts. It does not compare generated and reference rows, compute numeric
 differences, match rows, produce mismatch reports, build report bundles, or
 produce graph outputs.
 
+## Contacts output comparison
+
+Stage 13.4b adds dependency-free generated/reference comparison for the two
+accepted contacts CSV outputs:
+
+```python
+compare_contacts_outputs(...)
+```
+
+The comparison consumes a validated
+`PreprocessingContactsReferenceComparisonInput` and returns JSON-safe result
+objects:
+
+```python
+PreprocessingContactsReferenceComparisonRowResult
+PreprocessingContactsReferenceComparisonTargetResult
+PreprocessingContactsReferenceComparisonResult
+```
+
+The function compares `contacts_perframe.csv`, `contact_edges.csv`, or both
+according to `PreprocessingContactsReferenceComparisonOptions`. Rows are
+matched by the exact contacts CSV key used by the validators. Distance fields
+use the configured distance absolute/relative tolerances, `contact_frequency`
+uses the configured frequency absolute/relative tolerances, and non-tolerant
+status, time, and count fields are compared exactly. Row order is ignored by
+default and can be enforced with `require_exact_row_order=True`.
+
+The comparison is read-only and uses only the standard library. It does not
+compute contacts, change writers or validators, build report bundles, add a
+local scientific comparison smoke test, create CLI/workflow integration, or
+produce graph outputs. `contact_edges.csv` remains an aggregate contacts
+table, not backend graph `edges.csv`.
+
 ## Future stages
 
-Stage 13.4b will add contacts output comparison.
 Graph export remains future after contacts MVP.

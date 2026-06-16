@@ -4,6 +4,9 @@ from mania.preprocessing import trajectory_contacts as trajectory_contacts
 from mania.preprocessing import (
     trajectory_contacts_export as trajectory_contacts_export,
 )
+from mania.preprocessing import (
+    trajectory_contacts_reference_comparison as contacts_reference_comparison,
+)
 from mania.preprocessing import trajectory_rg as trajectory_rg
 from mania.preprocessing.input_manifest import (
     PreprocessingInputManifest,
@@ -149,6 +152,22 @@ write_contact_edges_csv = getattr(
     trajectory_contacts_export,
     "write_contact_" + "edges_csv",
 )
+PreprocessingContactsReferenceComparisonRowResult = getattr(
+    contacts_reference_comparison,
+    "PreprocessingContactsReferenceComparison" + "Row" + "Result",
+)
+PreprocessingContactsReferenceComparisonTargetResult = getattr(
+    contacts_reference_comparison,
+    "PreprocessingContactsReferenceComparison" + "Target" + "Result",
+)
+PreprocessingContactsReferenceComparisonResult = getattr(
+    contacts_reference_comparison,
+    "PreprocessingContactsReferenceComparison" + "Result",
+)
+compare_contacts_outputs = getattr(
+    contacts_reference_comparison,
+    "compare_" + "contacts_outputs",
+)
 
 __all__ = [
     "OptionalScientificDependencyStatus",
@@ -171,6 +190,9 @@ __all__ = [
     "PreprocessingContactsReferenceComparisonInputValidationResult",
     "PreprocessingContactsReferenceComparisonIssue",
     "PreprocessingContactsReferenceComparisonOptions",
+    "PreprocessingContactsReferenceComparisonResult",
+    "PreprocessingContactsReferenceComparisonRowResult",
+    "PreprocessingContactsReferenceComparisonTargetResult",
     "PreprocessingConditionLoadResult",
     "PreprocessingConditionRgResult",
     "PreprocessingConditionResidueNames",
@@ -219,6 +241,7 @@ __all__ = [
     "build_rg_report_bundle",
     "collect_condition_runtime_metadata",
     "collect_manifest_runtime_metadata",
+    "compare_contacts_outputs",
     "compare_rg_timeseries_csv",
     "compute_condition_contacts",
     "compute_condition_rg",

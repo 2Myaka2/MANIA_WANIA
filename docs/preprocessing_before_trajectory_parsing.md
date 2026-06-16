@@ -42,7 +42,7 @@ adds contacts export documentation and dependency-free synthetic examples.
 Stage 13.3e adds opt-in local scientific smoke coverage for contacts
 computation, export, and validation. Stage 13.4a adds only the
 dependency-free contacts reference comparison input contract and readiness
-validation.
+validation. Stage 13.4b adds dependency-free contacts output comparison.
 
 ## Current implemented capabilities
 
@@ -105,12 +105,14 @@ The current preprocessing layer supports:
   `validate_contacts_perframe_csv(...)` and
   `validate_contact_edges_csv(...)`;
 - contacts export documentation and synthetic examples;
-- opt-in local scientific contacts export smoke coverage.
+- opt-in local scientific contacts export smoke coverage;
 - contacts reference comparison input and option contracts through
   `PreprocessingContactsReferenceComparisonInput` and
   `PreprocessingContactsReferenceComparisonOptions`;
 - contacts comparison readiness validation through
-  `validate_contacts_reference_comparison_input(...)`.
+  `validate_contacts_reference_comparison_input(...)`;
+- dependency-free contacts output comparison through
+  `compare_contacts_outputs(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -137,6 +139,7 @@ write_contacts_perframe_csv(...)
 write_contact_edges_csv(...)
 validate_contacts_perframe_csv(...)
 validate_contact_edges_csv(...)
+compare_contacts_outputs(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -562,8 +565,28 @@ tolerances and target-selection flags.
 pairs and calls the existing contacts CSV validators for structural readiness.
 It does not compare generated/reference rows, compute numeric differences,
 match rows, produce mismatch reports, build report bundles, load runtimes,
-acquire MDAnalysis, or produce graph output. Contacts output comparison remains
-Stage 13.4b.
+acquire MDAnalysis, or produce graph output. Stage 13.4b consumes this
+validated input contract for output comparison.
+
+## Stage 13.4b contacts output comparison
+
+`compare_contacts_outputs(...)` consumes the accepted contacts reference
+comparison input contract and compares generated/reference
+`contacts_perframe.csv` and `contact_edges.csv` outputs according to the
+enabled targets. It returns JSON-safe row, target, and whole-comparison result
+objects with deterministic counts, issues, and maximum observed distance and
+frequency differences.
+
+Rows are matched by exact contacts CSV keys. Distance fields use configured
+distance tolerances, `contact_frequency` uses configured frequency
+tolerances, and time, status, and count fields are exact comparisons. Exact
+row order is optional through `require_exact_row_order`.
+
+Stage 13.4b uses only the standard library and the existing CSV validators.
+It does not compute contacts, change contacts writers or validators, build
+report bundles, run local scientific comparison smoke tests, add CLI/workflow
+integration, acquire MDAnalysis, or produce graph output. `contact_edges.csv`
+remains aggregate contacts output, not backend graph `edges.csv`.
 
 ## Stage 11.8 runtime boundary before Rg
 

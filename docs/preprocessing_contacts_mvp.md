@@ -17,7 +17,8 @@ adds dependency-free contacts export documentation and synthetic examples.
 Stage 13.3e adds opt-in local scientific smoke coverage for the accepted
 contacts compute/export/validation chain. Stage 13.4a adds the
 dependency-free contacts reference comparison input contract and readiness
-validation only.
+validation only. Stage 13.4b adds dependency-free output comparison for the
+two accepted contacts CSV outputs.
 
 ## MVP contact definition
 
@@ -268,13 +269,14 @@ temporary path during the test.
 The smoke test does not add source behavior changes, new APIs, reference
 comparison, report bundles, graph export, CLI integration, workflow
 integration, real-data CI, benchmark thresholds, or biological interpretation.
-Reference comparison remains Stage 13.4, and graph export remains future.
+Reference comparison is covered by Stage 13.4, and graph export remains
+future.
 
 ## Stage 13.4a contacts reference comparison input contract
 
 `PreprocessingContactsReferenceComparisonInput` stores generated/reference CSV
 path pairs for `contacts_perframe.csv` and `contact_edges.csv`.
-`PreprocessingContactsReferenceComparisonOptions` stores future distance,
+`PreprocessingContactsReferenceComparisonOptions` stores distance,
 frequency, row-order, and target-selection options.
 
 `validate_contacts_reference_comparison_input(...)` checks that requested
@@ -288,15 +290,43 @@ rows, produce mismatch reports, build report bundles, add local scientific
 comparison smoke coverage, or produce graph outputs. Numeric contacts output
 comparison remains Stage 13.4b.
 
+## Stage 13.4b contacts output comparison
+
+`compare_contacts_outputs(...)` compares generated contacts CSV outputs with
+reference contacts CSV outputs using the accepted Stage 13.4a input contract.
+It can compare only `contacts_perframe.csv`, only `contact_edges.csv`, or both
+targets according to `PreprocessingContactsReferenceComparisonOptions`.
+
+The comparison returns JSON-safe
+`PreprocessingContactsReferenceComparisonRowResult`,
+`PreprocessingContactsReferenceComparisonTargetResult`, and
+`PreprocessingContactsReferenceComparisonResult` objects. It first uses
+`validate_contacts_reference_comparison_input(...)`; invalid inputs return an
+empty failed comparison report with deterministic issues.
+
+Rows are matched by exact contacts CSV keys. For `contacts_perframe.csv`, the
+key is condition, frame index, residue pair identity, residue labels, segment
+labels, distance unit, and atom filter. For `contact_edges.csv`, the key is
+condition, residue pair identity, residue labels, segment labels, distance
+unit, and atom filter. Distance fields are compared with distance tolerances,
+`contact_frequency` is compared with frequency tolerances, and time, status,
+and count fields are exact comparisons. Row order is ignored unless
+`require_exact_row_order=True`.
+
+Stage 13.4b does not compute contacts, change contacts writers or validators,
+add report bundles, add local scientific comparison smoke coverage, add
+CLI/workflow integration, or produce graph outputs. `contact_edges.csv`
+remains an aggregate contacts table and is not backend graph `edges.csv`.
+
 ## What is not implemented yet
 
 Before Stage 13.3a there was no `contacts_perframe.csv` writer.
 Before Stage 13.3b there was no `contact_edges.csv` writer. Before Stage
 13.3c there were no contacts CSV validators. Before Stage 13.3d there were no
 contacts export docs/examples. Before Stage 13.3e there was no local
-scientific contacts export smoke. Stage 13.4a adds only contacts reference
-comparison input validation. Contacts output comparison remains Stage 13.4b,
-graph export remains future stage, and report bundles remain future work.
+scientific contacts export smoke. Before Stage 13.4b there was no contacts
+output comparison. Graph export remains future stage, and report bundles
+remain future work.
 
 ## Boundary before graph
 
@@ -308,5 +338,5 @@ Graph export belongs to a later stage after contacts are stable.
 
 ## Next Stage 13 steps
 
-Later explicit steps cover contacts output comparison and performance
-boundaries.
+Later explicit steps cover contacts performance boundaries and the final
+contacts MVP boundary before graph work.

@@ -444,6 +444,25 @@ produce graph outputs.
 Default CI remains independent from MDAnalysis, real MD data, local reference
 packages, and graph dependencies.
 
+## Stage 13.4b contacts output comparison
+
+Stage 13.4b adds dependency-free comparison for generated/reference
+`contacts_perframe.csv` and `contact_edges.csv` outputs. It uses
+standard-library CSV parsing and mathematics, reuses the Stage 13.4a input
+validation boundary and existing contacts CSV validators, and does not load
+trajectories or recompute contacts.
+
+The comparison supports exact contacts row-key matching, optional exact row
+order enforcement, tolerant distance and frequency comparisons, exact
+non-tolerant status, time, and count comparisons, and JSON-safe result
+objects. It does not build report bundles, add local scientific comparison
+smoke tests, add CLI/workflow integration, produce graph outputs, or add graph
+dependencies.
+
+MDAnalysis remains optional and unrelated to contacts CSV comparison. Default
+CI remains independent from real MD data, local reference packages, and graph
+dependencies.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
