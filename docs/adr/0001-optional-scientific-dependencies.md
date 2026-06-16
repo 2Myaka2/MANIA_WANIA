@@ -382,6 +382,19 @@ MDAnalysis remains optional behind the existing Stage 11 loading boundary.
 Default CI remains independent from MDAnalysis, real MD data, and local
 reference packages.
 
+## Stage 13.3b contact edges CSV writer
+
+Stage 13.3b adds a dependency-free `contact_edges.csv` writer for existing
+condition-level and manifest-level contacts results. The writer uses the
+standard library, consumes already computed contacts objects only, and does
+not load files, acquire MDAnalysis, recompute contacts, validate CSV, compare
+references, or produce graph outputs.
+
+`contact_edges.csv` is an aggregate contacts table, not backend graph
+`edges.csv`. Graph dependencies and graph export remain out of scope. Default
+CI remains independent from MDAnalysis, real MD data, and local reference
+packages.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

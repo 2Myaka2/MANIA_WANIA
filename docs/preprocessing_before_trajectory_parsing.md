@@ -35,7 +35,8 @@ single-condition residue contacts extraction from already loaded runtimes.
 Stage 13.2b composes contact computation across manifest load results. Stage
 13.2c adds opt-in local scientific smoke coverage for contacts computation.
 Stage 13.3a adds dependency-free `contacts_perframe.csv` writing for existing
-contacts results.
+contacts results. Stage 13.3b adds dependency-free `contact_edges.csv`
+aggregate contacts writing, explicitly not backend graph `edges.csv`.
 
 ## Current implemented capabilities
 
@@ -91,7 +92,9 @@ The current preprocessing layer supports:
   `compute_manifest_contacts(...)`;
 - opt-in local scientific contacts computation smoke coverage;
 - dependency-free contacts per-frame CSV writing through
-  `write_contacts_perframe_csv(...)`.
+  `write_contacts_perframe_csv(...)`;
+- dependency-free aggregate contacts CSV writing through
+  `write_contact_edges_csv(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -115,6 +118,7 @@ extract_manifest_residue_names(...)
 compute_condition_contacts(...)
 compute_manifest_contacts(...)
 write_contacts_perframe_csv(...)
+write_contact_edges_csv(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -461,9 +465,24 @@ rows. It writes one row per detected contact pair per frame and does not
 recompute contacts, load runtimes, acquire MDAnalysis, validate CSV, compare
 references, or create graph outputs.
 
-The aggregate `contact_edges.csv` writer remains future Stage 13.3b work.
-Contacts CSV validation and comparison remain future stages, and graph export
-remains future work.
+The aggregate `contact_edges.csv` writer begins in Stage 13.3b as contacts
+aggregate output. `contact_edges.csv` is not backend graph `edges.csv`.
+Contacts CSV validation remains future Stage 13.3c, comparison remains a
+future stage, and graph export remains future work.
+
+## Stage 13.3b contact_edges.csv aggregate contacts writer
+
+`write_contact_edges_csv(...)` consumes existing condition-level or
+manifest-level contacts results and writes deterministic `contact_edges.csv`
+aggregate rows. It writes one row per aggregate residue pair per condition and
+reports contact frame counts, total included frame counts, contact frequency,
+minimum distance, and mean minimum distance.
+
+`contact_edges.csv` is an aggregate contacts table. It is not backend graph
+`edges.csv`, does not create graph node IDs or graph edge IDs, and does not
+produce backend graph `nodes.csv`, backend graph `edges.csv`, or `graph.json`.
+Contacts CSV validation remains future Stage 13.3c, and graph export remains
+future work.
 
 ## Stage 11.8 runtime boundary before Rg
 
@@ -506,7 +525,6 @@ The following capabilities are not implemented:
 - notebook parity guarantees beyond CSV comparison support;
 - performance optimization for large trajectories;
 - a broad trajectory preprocessing pipeline;
-- aggregate contact-edge export;
 - contacts CSV validation and comparison;
 - graph export from real preprocessing;
 - graph diagnostics from real preprocessing outputs;

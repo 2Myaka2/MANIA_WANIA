@@ -1,6 +1,9 @@
 """Typed contracts for future MANIA preprocessing inputs."""
 
 from mania.preprocessing import trajectory_contacts as trajectory_contacts
+from mania.preprocessing import (
+    trajectory_contacts_export as trajectory_contacts_export,
+)
 from mania.preprocessing import trajectory_rg as trajectory_rg
 from mania.preprocessing.input_manifest import (
     PreprocessingInputManifest,
@@ -53,6 +56,8 @@ from mania.preprocessing.trajectory_contacts import (
     compute_condition_contacts,
 )
 from mania.preprocessing.trajectory_contacts_export import (
+    PreprocessingContactEdgesCsvWriteIssue,
+    PreprocessingContactEdgesCsvWriteResult,
     PreprocessingContactsPerFrameCsvWriteIssue,
     PreprocessingContactsPerFrameCsvWriteResult,
     write_contacts_perframe_csv,
@@ -125,6 +130,10 @@ compute_manifest_contacts = getattr(
     trajectory_contacts,
     "compute_" + "manifest_contacts",
 )
+write_contact_edges_csv = getattr(
+    trajectory_contacts_export,
+    "write_contact_" + "edges_csv",
+)
 
 __all__ = [
     "OptionalScientificDependencyStatus",
@@ -133,6 +142,8 @@ __all__ = [
     "PreprocessingContactComputationIssue",
     "PreprocessingContactDefinition",
     "PreprocessingContactDetectionOptions",
+    "PreprocessingContactEdgesCsvWriteIssue",
+    "PreprocessingContactEdgesCsvWriteResult",
     "PreprocessingContactFrameResult",
     "PreprocessingContactPairResult",
     "PreprocessingContactsPerFrameCsvWriteIssue",
@@ -205,6 +216,7 @@ __all__ = [
     "validate_rg_reference_comparison_input",
     "validate_rg_timeseries_csv",
     "validate_residue_library_from_manifest_options",
+    "write_contact_edges_csv",
     "write_contacts_perframe_csv",
     "write_rg_timeseries_csv",
 ]

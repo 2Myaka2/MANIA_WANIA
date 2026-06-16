@@ -161,22 +161,59 @@ load runtimes, acquire MDAnalysis, create parent directories, validate the
 written CSV, compare references, write `contact_edges.csv`, or produce graph
 outputs.
 
+## Stage 13.3b contact_edges.csv aggregate writer
+
+`write_contact_edges_csv(...)` accepts either a
+`PreprocessingConditionContactsResult` or a
+`PreprocessingManifestContactsResult` and writes the canonical
+`contact_edges.csv` aggregate contacts table. It writes one row per
+residue-pair aggregate per condition.
+
+The fixed header is:
+
+```text
+condition_name,source_residue_index,target_residue_index,source_residue_id,target_residue_id,source_resname,target_resname,source_segid,target_segid,contact_frame_count,total_frame_count,contact_frequency,minimum_distance,mean_minimum_distance,distance_unit,atom_filter
+```
+
+For each aggregate contact pair, the writer reports `contact_frame_count`,
+`total_frame_count`, `contact_frequency`, `minimum_distance`, and
+`mean_minimum_distance`. Pairs are aggregated by condition, residue-pair
+identity, residue labels, segment labels, distance unit, and atom filter, so
+pairs from different conditions, units, or atom filters are not merged.
+
+Zero-contact results and empty manifest results write the header only and pass
+when the input object and output path are otherwise valid. Failed condition
+results are reported through deterministic write issues but do not fail the
+write solely because the condition failed. Failed frames are skipped by
+default and do not contribute to `total_frame_count`; with
+`include_failed_frames=True`, failed frames contribute to totals and any
+contacts already present on those frames are aggregated. Duplicate same-pair
+contacts in one frame are reported as `duplicate_pair_in_frame`, count as one
+contacted frame, use the minimum duplicate distance for that frame, and make
+the write result fail as a data-quality issue.
+
+The writer returns a JSON-safe `PreprocessingContactEdgesCsvWriteResult`. It
+does not recompute contacts, load runtimes, acquire MDAnalysis, create parent
+directories, validate the written CSV, compare references, or produce graph
+outputs.
+
 ## What contact_edges.csv means
 
-contact_edges.csv is a future aggregate contacts table of observed residue
-pairs. It is not backend graph edges.csv and does not establish the backend
-graph data contract.
+contact_edges.csv is an aggregate contacts table of observed residue pairs.
+It is not backend graph edges.csv and does not establish the backend graph
+data contract.
 
 `contacts_perframe.csv` is the Stage 13.3a per-frame contacts export.
-`contact_edges.csv` remains future Stage 13.3b work. Backend graph `edges.csv`
-remains future graph-stage work.
+`contact_edges.csv` is the Stage 13.3b aggregate contacts export. Backend
+graph `nodes.csv`, backend graph `edges.csv`, and `graph.json` remain future
+graph-stage artifacts.
 
 ## What is not implemented yet
 
 Before Stage 13.3a there was no `contacts_perframe.csv` writer.
-No `contact_edges.csv` writer exists yet.
-No contact aggregation writer exists yet. CSV validation, comparison, report
-bundles, and contacts export smoke coverage also remain future work.
+Before Stage 13.3b there was no `contact_edges.csv` writer. CSV validation
+remains Stage 13.3c, docs/examples remain Stage 13.3d, local scientific export
+smoke remains Stage 13.3e, and comparison/report bundles remain future work.
 
 ## Boundary before graph
 
@@ -188,6 +225,5 @@ Graph export belongs to a later stage after contacts are stable.
 
 ## Next Stage 13 steps
 
-The aggregate `contact_edges.csv` writer is future Stage 13.3b work. Later
-explicit steps cover validation, reference comparison, and performance
-boundaries.
+Contacts validation is future Stage 13.3c. Later explicit steps cover
+reference comparison and performance boundaries.
