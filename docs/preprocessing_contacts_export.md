@@ -254,6 +254,20 @@ local scientific comparison smoke test, create CLI/workflow integration, or
 produce graph outputs. `contact_edges.csv` remains an aggregate contacts
 table, not backend graph `edges.csv`.
 
+## Performance boundary
+
+Stage 13.5a documents the contacts MVP performance boundary in
+`docs/preprocessing_contacts_performance_boundary.md`.
+
+Export, validation, and comparison are dependency-free CSV-level operations.
+They consume existing contacts results or existing CSV files, do not load
+trajectories, and do not acquire MDAnalysis. Stage 13.5a adds no performance
+tests, benchmark tests, hard timing thresholds, source behavior changes, or
+performance optimizations.
+
+Graph export remains future work. `contact_edges.csv` remains an aggregate
+contacts table, not backend graph `edges.csv`.
+
 ## Future stages
 
 Graph export remains future after contacts MVP.

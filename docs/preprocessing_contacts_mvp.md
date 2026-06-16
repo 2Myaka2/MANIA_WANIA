@@ -18,7 +18,9 @@ Stage 13.3e adds opt-in local scientific smoke coverage for the accepted
 contacts compute/export/validation chain. Stage 13.4a adds the
 dependency-free contacts reference comparison input contract and readiness
 validation only. Stage 13.4b adds dependency-free output comparison for the
-two accepted contacts CSV outputs.
+two accepted contacts CSV outputs. Stage 13.5a adds contacts performance
+boundary documentation only; see
+`docs/preprocessing_contacts_performance_boundary.md`.
 
 ## MVP contact definition
 
@@ -318,6 +320,22 @@ add report bundles, add local scientific comparison smoke coverage, add
 CLI/workflow integration, or produce graph outputs. `contact_edges.csv`
 remains an aggregate contacts table and is not backend graph `edges.csv`.
 
+## Stage 13.5a contacts performance boundary docs
+
+Stage 13.5a documents the contacts MVP performance boundary in
+`docs/preprocessing_contacts_performance_boundary.md`.
+
+The boundary records that contacts computation is MVP-level, default CI
+remains stable and independent from real MD data, local scientific tests remain
+opt-in integration smoke tests, and `contact_edges.csv` remains aggregate
+contacts output rather than backend graph `edges.csv`.
+
+Stage 13.5a adds no performance tests, benchmark tests, hard timing
+benchmarks, source behavior changes, performance optimizations, CLI/workflow
+integration, report bundles, or graph export. Stage 13.5b will add lightweight
+performance sanity checks without hard timing thresholds. Graph remains
+future work.
+
 ## What is not implemented yet
 
 Before Stage 13.3a there was no `contacts_perframe.csv` writer.
@@ -325,8 +343,9 @@ Before Stage 13.3b there was no `contact_edges.csv` writer. Before Stage
 13.3c there were no contacts CSV validators. Before Stage 13.3d there were no
 contacts export docs/examples. Before Stage 13.3e there was no local
 scientific contacts export smoke. Before Stage 13.4b there was no contacts
-output comparison. Graph export remains future stage, and report bundles
-remain future work.
+output comparison. Before Stage 13.5a there was no contacts performance
+boundary doc. Stage 13.5a adds no contacts performance tests. Graph export
+remains future stage, and report bundles remain future work.
 
 ## Boundary before graph
 
@@ -338,5 +357,6 @@ Graph export belongs to a later stage after contacts are stable.
 
 ## Next Stage 13 steps
 
-Later explicit steps cover contacts performance boundaries and the final
-contacts MVP boundary before graph work.
+Stage 13.5b will add lightweight performance sanity checks without hard timing
+benchmarks. A later explicit step covers the final contacts MVP boundary before
+graph work.

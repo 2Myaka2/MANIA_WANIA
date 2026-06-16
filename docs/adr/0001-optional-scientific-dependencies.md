@@ -463,6 +463,18 @@ MDAnalysis remains optional and unrelated to contacts CSV comparison. Default
 CI remains independent from real MD data, local reference packages, and graph
 dependencies.
 
+## Stage 13.5a contacts performance boundary docs
+
+Stage 13.5a adds contacts performance boundary documentation only. It does not
+change dependency requirements, source behavior, or implementation
+performance.
+
+MDAnalysis remains optional. Default CI remains independent from real MD data,
+local reference packages, and local scientific environment variables. No hard
+timing benchmark requirement is introduced. Stage 13.5b remains the future
+step for lightweight performance sanity checks, and graph export remains
+future work.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

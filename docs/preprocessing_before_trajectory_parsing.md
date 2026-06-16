@@ -43,6 +43,7 @@ Stage 13.3e adds opt-in local scientific smoke coverage for contacts
 computation, export, and validation. Stage 13.4a adds only the
 dependency-free contacts reference comparison input contract and readiness
 validation. Stage 13.4b adds dependency-free contacts output comparison.
+Stage 13.5a adds contacts performance boundary documentation only.
 
 ## Current implemented capabilities
 
@@ -113,6 +114,8 @@ The current preprocessing layer supports:
   `validate_contacts_reference_comparison_input(...)`;
 - dependency-free contacts output comparison through
   `compare_contacts_outputs(...)`.
+- contacts performance boundary documentation in
+  `docs/preprocessing_contacts_performance_boundary.md`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -588,6 +591,22 @@ report bundles, run local scientific comparison smoke tests, add CLI/workflow
 integration, acquire MDAnalysis, or produce graph output. `contact_edges.csv`
 remains aggregate contacts output, not backend graph `edges.csv`.
 
+## Stage 13.5a contacts performance boundary docs
+
+Stage 13.5a records the contacts performance boundary in
+`docs/preprocessing_contacts_performance_boundary.md`. Contacts computation,
+export, validation, and comparison exist, but the current computation remains
+MVP-level.
+
+Default CI remains independent from MDAnalysis and real MD data. Local
+scientific tests remain opt-in integration smoke tests. Stage 13.5a adds no
+performance tests, benchmark tests, hard timing thresholds, source behavior
+changes, implementation optimizations, CLI/workflow integration, or graph
+export.
+
+Stage 13.5b remains the future step for lightweight performance sanity checks
+without hard timing benchmarks. Graph remains future work.
+
 ## Stage 11.8 runtime boundary before Rg
 
 Stage 11.8 documents the completed Stage 11 public API, opaque runtime-object
@@ -629,7 +648,6 @@ The following capabilities are not implemented:
 - notebook parity guarantees beyond CSV comparison support;
 - performance optimization for large trajectories;
 - a broad trajectory preprocessing pipeline;
-- contacts CSV output comparison;
 - graph export from real preprocessing;
 - graph diagnostics from real preprocessing outputs;
 - CLI or workflow integration for real preprocessing.
