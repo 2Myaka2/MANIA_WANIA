@@ -418,6 +418,20 @@ stage does not add source behavior changes, local scientific export smoke
 coverage, reference comparison, report bundles, graph export, CLI integration,
 workflow integration, or graph dependencies.
 
+## Stage 13.3e local contacts export smoke test
+
+Stage 13.3e adds an opt-in local scientific smoke test for the accepted
+contacts computation/export/validation chain. It uses the existing local
+scientific harness and writes generated `contacts_perframe.csv` and
+`contact_edges.csv` files only as temporary pytest outputs.
+
+MDAnalysis remains optional behind the existing loading boundary, and default
+CI remains independent from real MD data, local reference packages, and local
+scientific environment variables. The local contacts export smoke test does
+not change dependency requirements, commit generated CSV artifacts, compare
+references, build report bundles, produce graph outputs, or add graph
+dependencies.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

@@ -92,7 +92,7 @@ for already loaded local runtimes, and Stage 11.7 adds a residue-name
 extraction test. Stage 12.1d adds an Rg computation smoke test over the loaded
 manifest result. Stage 12.2d adds an Rg CSV export and validation smoke test.
 Stage 13.2c adds a contacts computation smoke test over the loaded manifest
-result.
+result. Stage 13.3e adds a contacts CSV export and validation smoke test.
 
 These local scientific integration tests require:
 
@@ -107,9 +107,11 @@ Stage 11.7 extracts residue names from the loaded result. Stage 12.1d loads all
 conditions and computes manifest-level Rg. Stage 12.2d repeats that accepted
 loading and computation chain, writes `rg_timeseries.csv` only under pytest's
 temporary path, and validates the exported file. Stage 13.2c loads all
-conditions and computes manifest-level contacts. If no supported manifest
-exists, the tests skip with a clear message. Default CI does not run these
-opt-in tests.
+conditions and computes manifest-level contacts. Stage 13.3e repeats the
+accepted contacts computation chain, writes `contacts_perframe.csv` and
+`contact_edges.csv` only under pytest's temporary path, and validates both
+exported files. If no supported manifest exists, the tests skip with a clear
+message. Default CI does not run these opt-in tests.
 
 Stage 11.8 records this completed local coverage as single-condition loading,
 manifest loading, metadata, and residue names. The suite remains opt-in:
@@ -139,6 +141,32 @@ result shape, and serializes the result with `json.dumps(...)`.
 The test does not write contacts CSV, validate contacts CSV, compare
 references, run graph diagnostics, or run in default CI. It does not assert
 exact contact counts or benchmark timing thresholds.
+
+## Stage 13.3e local contacts export smoke test
+
+The Stage 13.3e smoke test is opt-in through the existing harness. It requires:
+
+- `MANIA_RUN_LOCAL_SCIENTIFIC=1`;
+- MDAnalysis through the optional `md` or `science` setup;
+- `MANIA_LOCAL_REFERENCE_PACKAGE` pointing to a local package containing
+  `preprocessing_manifest.yaml` or `manifest.yaml`.
+
+The test runs the accepted chain:
+
+```text
+load manifest -> load runtimes -> compute manifest contacts
+-> write contacts_perframe.csv -> write contact_edges.csv
+-> validate both CSVs
+```
+
+The generated CSV outputs are written only to pytest's temporary directory
+during the test. The test checks write and validation report shape,
+row-count consistency, and JSON serialization without asserting exact contact
+counts or requiring contacts to be non-zero.
+
+The test does not compare references, build a report bundle, run graph
+diagnostics, produce graph outputs, write persistent repository artifacts, or
+run in default CI.
 
 ## Stage 12.2d local Rg export smoke test
 

@@ -39,6 +39,8 @@ contacts results. Stage 13.3b adds dependency-free `contact_edges.csv`
 aggregate contacts writing, explicitly not backend graph `edges.csv`. Stage
 13.3c adds read-only validation for both contacts CSV outputs. Stage 13.3d
 adds contacts export documentation and dependency-free synthetic examples.
+Stage 13.3e adds opt-in local scientific smoke coverage for contacts
+computation, export, and validation.
 
 ## Current implemented capabilities
 
@@ -100,7 +102,8 @@ The current preprocessing layer supports:
 - dependency-free contacts CSV validation through
   `validate_contacts_perframe_csv(...)` and
   `validate_contact_edges_csv(...)`;
-- contacts export documentation and synthetic examples.
+- contacts export documentation and synthetic examples;
+- opt-in local scientific contacts export smoke coverage.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -525,6 +528,20 @@ scientific export smoke coverage, reference comparison, report bundles, graph
 export, CLI integration, workflow integration, real-data CI, or biological
 interpretation. `contact_edges.csv` remains an aggregate contacts table, not
 backend graph `edges.csv`.
+
+## Stage 13.3e local contacts export smoke
+
+The opt-in local scientific suite now covers contacts
+computation/export/validation. The smoke test loads a local manifest, loads
+condition runtimes, computes manifest-level contacts, writes
+`contacts_perframe.csv` and `contact_edges.csv` under pytest's temporary path,
+and validates both CSV outputs.
+
+The test is skipped by default and requires the existing local scientific
+environment. It does not compare references, build report bundles, run graph
+diagnostics, create graph outputs, add CLI/workflow integration, or change
+source behavior. Reference comparison is future Stage 13.4, and graph export
+remains future.
 
 ## Stage 11.8 runtime boundary before Rg
 

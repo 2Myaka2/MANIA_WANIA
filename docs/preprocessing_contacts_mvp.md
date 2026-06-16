@@ -14,6 +14,8 @@ manifest contacts computation path. Stage 13.3a adds dependency-free
 adds dependency-free `contact_edges.csv` aggregate contacts writing. Stage
 13.3c adds read-only validation for both contacts CSV outputs. Stage 13.3d
 adds dependency-free contacts export documentation and synthetic examples.
+Stage 13.3e adds opt-in local scientific smoke coverage for the accepted
+contacts compute/export/validation chain.
 
 ## MVP contact definition
 
@@ -245,14 +247,35 @@ scientific export smoke test, reference comparison, report bundle, graph
 export, CLI integration, workflow integration, real-data CI, or biological
 interpretation.
 
+## Stage 13.3e local scientific contacts export smoke
+
+The local scientific contacts export smoke test validates the accepted chain
+when explicitly enabled with the existing local scientific harness:
+
+```text
+load manifest -> load runtimes -> compute manifest contacts
+-> write contacts_perframe.csv -> write contact_edges.csv
+-> validate both CSV outputs
+```
+
+The Stage 13.3 export block now covers the per-frame writer,
+`contact_edges.csv` aggregate writer, validators, docs/examples, and opt-in
+local export smoke. Generated CSV files are written only under pytest's
+temporary path during the test.
+
+The smoke test does not add source behavior changes, new APIs, reference
+comparison, report bundles, graph export, CLI integration, workflow
+integration, real-data CI, benchmark thresholds, or biological interpretation.
+Reference comparison remains Stage 13.4, and graph export remains future.
+
 ## What is not implemented yet
 
 Before Stage 13.3a there was no `contacts_perframe.csv` writer.
 Before Stage 13.3b there was no `contact_edges.csv` writer. Before Stage
 13.3c there were no contacts CSV validators. Before Stage 13.3d there were no
-contacts export docs/examples. Local scientific export smoke remains Stage
-13.3e, reference comparison remains Stage 13.4, graph export remains future
-stage, and report bundles remain future work.
+contacts export docs/examples. Before Stage 13.3e there was no local
+scientific contacts export smoke. Reference comparison remains Stage 13.4,
+graph export remains future stage, and report bundles remain future work.
 
 ## Boundary before graph
 
@@ -264,5 +287,4 @@ Graph export belongs to a later stage after contacts are stable.
 
 ## Next Stage 13 steps
 
-Local scientific export smoke remains Stage 13.3e. Later explicit steps cover
-reference comparison and performance boundaries.
+Later explicit steps cover reference comparison and performance boundaries.

@@ -172,8 +172,27 @@ Stage 13.3d does not add:
 The examples do not create backend graph `nodes.csv`, backend graph
 `edges.csv`, or `graph.json`.
 
+## Local scientific smoke
+
+Stage 13.3e adds an opt-in local scientific contacts export smoke test. It
+verifies the accepted local compute/write/validate chain:
+
+```text
+load manifest -> load runtimes -> compute manifest contacts
+-> write contacts_perframe.csv -> write contact_edges.csv
+-> validate both CSV outputs
+```
+
+The test uses the existing local scientific harness, requires
+`MANIA_RUN_LOCAL_SCIENTIFIC=1`, and uses
+`MANIA_LOCAL_REFERENCE_PACKAGE=<path>` for local real data. Generated CSV
+files are written only to pytest's temporary directory.
+
+The smoke test does not add new export APIs, compare references, build a
+report bundle, or produce graph outputs. contact_edges.csv remains aggregate
+contacts output, not backend graph edges.csv.
+
 ## Future stages
 
-Stage 13.3e will add local scientific contacts export smoke.
 Stage 13.4 will add contacts reference comparison.
 Graph export remains future after contacts MVP.
