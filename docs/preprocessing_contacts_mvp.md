@@ -10,7 +10,9 @@ single-condition residue contact extraction from an already loaded runtime.
 Stage 13.2b composes those condition results across an existing manifest load
 result. Stage 13.2c adds opt-in local scientific smoke coverage for the
 manifest contacts computation path. Stage 13.3a adds dependency-free
-`contacts_perframe.csv` writing for existing contacts results.
+`contacts_perframe.csv` writing for existing contacts results. Stage 13.3b
+adds dependency-free `contact_edges.csv` aggregate contacts writing. Stage
+13.3c adds read-only validation for both contacts CSV outputs.
 
 ## MVP contact definition
 
@@ -197,6 +199,28 @@ does not recompute contacts, load runtimes, acquire MDAnalysis, create parent
 directories, validate the written CSV, compare references, or produce graph
 outputs.
 
+## Stage 13.3c contacts CSV validation
+
+`validate_contacts_perframe_csv(...)` validates an existing
+`contacts_perframe.csv` file. `validate_contact_edges_csv(...)` validates an
+existing `contact_edges.csv` aggregate contacts file.
+
+The validators check the exact fixed headers, row column counts, required
+fields, integer fields, finite non-negative numeric fields, lowercase
+`frame_passed` values for the per-frame table, `heavy` or `all` atom filters,
+same-residue pairs, and duplicate row keys. Header-only outputs pass with zero
+rows.
+
+For `contact_edges.csv`, validation also checks aggregate consistency:
+`contact_frame_count` and `total_frame_count` are positive integers,
+`contact_frame_count` does not exceed `total_frame_count`,
+`contact_frequency` is between 0 and 1 and matches the count ratio within
+`1e-12`, and `mean_minimum_distance` is not below `minimum_distance`.
+
+The validators are read-only. They read CSV files only, do not recompute
+contacts, do not write CSV, do not call contacts writers, do not compare
+references, and do not produce graph outputs.
+
 ## What contact_edges.csv means
 
 contact_edges.csv is an aggregate contacts table of observed residue pairs.
@@ -211,9 +235,11 @@ graph-stage artifacts.
 ## What is not implemented yet
 
 Before Stage 13.3a there was no `contacts_perframe.csv` writer.
-Before Stage 13.3b there was no `contact_edges.csv` writer. CSV validation
-remains Stage 13.3c, docs/examples remain Stage 13.3d, local scientific export
-smoke remains Stage 13.3e, and comparison/report bundles remain future work.
+Before Stage 13.3b there was no `contact_edges.csv` writer. Before Stage
+13.3c there were no contacts CSV validators. Docs/examples remain Stage 13.3d,
+local scientific export smoke remains Stage 13.3e, reference comparison
+remains Stage 13.4, graph export remains future stage, and report bundles
+remain future work.
 
 ## Boundary before graph
 
@@ -225,5 +251,6 @@ Graph export belongs to a later stage after contacts are stable.
 
 ## Next Stage 13 steps
 
-Contacts validation is future Stage 13.3c. Later explicit steps cover
-reference comparison and performance boundaries.
+Docs/examples remain Stage 13.3d and local scientific export smoke remains
+Stage 13.3e. Later explicit steps cover reference comparison and performance
+boundaries.

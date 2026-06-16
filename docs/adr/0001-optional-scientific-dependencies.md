@@ -395,6 +395,16 @@ references, or produce graph outputs.
 CI remains independent from MDAnalysis, real MD data, and local reference
 packages.
 
+## Stage 13.3c contacts CSV validation
+
+Stage 13.3c adds dependency-free validation for `contacts_perframe.csv` and
+`contact_edges.csv`. The validators read CSV files only, use only the standard
+library, do not need MDAnalysis, and do not load or recompute contacts from
+runtime objects.
+
+Default CI remains independent from MDAnalysis and real MD data. Graph
+dependencies remain out of scope.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

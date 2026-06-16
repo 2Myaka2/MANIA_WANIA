@@ -62,6 +62,14 @@ from mania.preprocessing.trajectory_contacts_export import (
     PreprocessingContactsPerFrameCsvWriteResult,
     write_contacts_perframe_csv,
 )
+from mania.preprocessing.trajectory_contacts_export_validation import (
+    PreprocessingContactEdgesCsvValidationIssue,
+    PreprocessingContactEdgesCsvValidationResult,
+    PreprocessingContactsPerFrameCsvValidationIssue,
+    PreprocessingContactsPerFrameCsvValidationResult,
+    validate_contact_edges_csv,
+    validate_contacts_perframe_csv,
+)
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
 from mania.preprocessing.trajectory_manifest_loader import (
     PreprocessingManifestLoadIssue,
@@ -142,10 +150,14 @@ __all__ = [
     "PreprocessingContactComputationIssue",
     "PreprocessingContactDefinition",
     "PreprocessingContactDetectionOptions",
+    "PreprocessingContactEdgesCsvValidationIssue",
+    "PreprocessingContactEdgesCsvValidationResult",
     "PreprocessingContactEdgesCsvWriteIssue",
     "PreprocessingContactEdgesCsvWriteResult",
     "PreprocessingContactFrameResult",
     "PreprocessingContactPairResult",
+    "PreprocessingContactsPerFrameCsvValidationIssue",
+    "PreprocessingContactsPerFrameCsvValidationResult",
     "PreprocessingContactsPerFrameCsvWriteIssue",
     "PreprocessingContactsPerFrameCsvWriteResult",
     "PreprocessingConditionLoadResult",
@@ -213,6 +225,8 @@ __all__ = [
     "resolve_residue_library_manifest_paths",
     "run_residue_qc_from_manifest_options",
     "validate_preprocessing_manifest_paths",
+    "validate_contact_edges_csv",
+    "validate_contacts_perframe_csv",
     "validate_rg_reference_comparison_input",
     "validate_rg_timeseries_csv",
     "validate_residue_library_from_manifest_options",

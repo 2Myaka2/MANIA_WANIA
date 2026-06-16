@@ -36,7 +36,8 @@ Stage 13.2b composes contact computation across manifest load results. Stage
 13.2c adds opt-in local scientific smoke coverage for contacts computation.
 Stage 13.3a adds dependency-free `contacts_perframe.csv` writing for existing
 contacts results. Stage 13.3b adds dependency-free `contact_edges.csv`
-aggregate contacts writing, explicitly not backend graph `edges.csv`.
+aggregate contacts writing, explicitly not backend graph `edges.csv`. Stage
+13.3c adds read-only validation for both contacts CSV outputs.
 
 ## Current implemented capabilities
 
@@ -94,7 +95,10 @@ The current preprocessing layer supports:
 - dependency-free contacts per-frame CSV writing through
   `write_contacts_perframe_csv(...)`;
 - dependency-free aggregate contacts CSV writing through
-  `write_contact_edges_csv(...)`.
+  `write_contact_edges_csv(...)`;
+- dependency-free contacts CSV validation through
+  `validate_contacts_perframe_csv(...)` and
+  `validate_contact_edges_csv(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -119,6 +123,8 @@ compute_condition_contacts(...)
 compute_manifest_contacts(...)
 write_contacts_perframe_csv(...)
 write_contact_edges_csv(...)
+validate_contacts_perframe_csv(...)
+validate_contact_edges_csv(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -467,8 +473,9 @@ references, or create graph outputs.
 
 The aggregate `contact_edges.csv` writer begins in Stage 13.3b as contacts
 aggregate output. `contact_edges.csv` is not backend graph `edges.csv`.
-Contacts CSV validation remains future Stage 13.3c, comparison remains a
-future stage, and graph export remains future work.
+Contacts CSV validation begins in Stage 13.3c, docs/examples remain future
+Stage 13.3d, local scientific export smoke remains future Stage 13.3e,
+comparison remains a future stage, and graph export remains future work.
 
 ## Stage 13.3b contact_edges.csv aggregate contacts writer
 
@@ -481,8 +488,21 @@ minimum distance, and mean minimum distance.
 `contact_edges.csv` is an aggregate contacts table. It is not backend graph
 `edges.csv`, does not create graph node IDs or graph edge IDs, and does not
 produce backend graph `nodes.csv`, backend graph `edges.csv`, or `graph.json`.
-Contacts CSV validation remains future Stage 13.3c, and graph export remains
+Contacts CSV validation begins in Stage 13.3c, and graph export remains
 future work.
+
+## Stage 13.3c contacts CSV validation
+
+`validate_contacts_perframe_csv(...)` validates existing
+`contacts_perframe.csv` files, and `validate_contact_edges_csv(...)` validates
+existing `contact_edges.csv` aggregate contacts files. The validators check
+exact headers, row shape, required fields, numeric values, booleans, atom
+filters, duplicate keys, and aggregate consistency for `contact_edges.csv`.
+
+They are read-only and dependency-free. They do not recompute contacts, call
+contacts writers, load runtimes, acquire MDAnalysis, compare references, or
+produce graph output. Docs/examples are future Stage 13.3d, local scientific
+export smoke is future Stage 13.3e, and graph remains future.
 
 ## Stage 11.8 runtime boundary before Rg
 
