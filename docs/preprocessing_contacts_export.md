@@ -122,6 +122,19 @@ contact_edges.csv is not backend graph edges.csv.
 contact_edges.csv is not graph.json.
 Graph export belongs to a later stage.
 
+Stage 14.1a adds in-memory graph export mapping from accepted contacts result
+objects. contacts export outputs can now feed graph export mapping through
+the same accepted contacts result semantics, but this does not make
+contact_edges.csv backend graph edges.csv.
+
+contact_edges.csv is aggregate contacts table output from Stage 13.
+backend graph edges.csv remains separate/future. Stage 14.1a maps contacts
+into graph edge records and contact endpoint residue identities into graph
+node records.
+
+Graph writers remain future stages: the nodes.csv writer is Stage 14.1b, the
+backend graph edges.csv writer is Stage 14.1c, and the graph.json writer is Stage 14.1e.
+
 ## Validation
 
 Use the read-only validators after writing:
@@ -312,6 +325,10 @@ performance optimizations.
 
 Graph export remains future work. `contact_edges.csv` remains an aggregate
 contacts table, not backend graph `edges.csv`.
+
+Stage 14.1a graph mapping is in-memory only. It writes no backend graph
+`nodes.csv`, no backend graph `edges.csv`, and no `graph.json`, and it does
+not run graph validators or diagnostics.
 
 ## Future stages
 

@@ -450,3 +450,24 @@ The next stage may begin graph-specific work only after this contacts MVP
 boundary. Any backend graph `nodes.csv`, backend graph `edges.csv`,
 `graph.json`, or graph diagnostics from real preprocessing must be introduced
 by an explicit graph-stage task, not by the contacts MVP.
+
+## Stage 14.1a transition
+
+Stage 13 Contacts MVP remains complete. Stage 14.1a starts graph mapping by
+turning accepted preprocessing contacts results into in-memory graph-ready
+records only.
+
+contact_edges.csv remains aggregate contacts output. contact_edges.csv is
+aggregate contacts table output from Stage 13; it is not backend graph
+edges.csv. backend graph edges.csv remains separate/future; the backend graph
+edges.csv writer is Stage 14.1c.
+
+Stage 14.1a maps contacts into graph edge records and maps contact-observed
+residue identities into condition-scoped node records. Stage 14.1a maps
+contact-observed residues only; isolated residues and Rg-to-graph mapping
+remain future unless explicitly scoped.
+
+Graph artifact writers remain future: the nodes.csv writer is Stage 14.1b,
+the backend graph edges.csv writer is Stage 14.1c, and the graph.json writer is Stage 14.1e.
+Stage 14.1a does not run graph validators or diagnostics and does not add
+CLI/workflow integration.

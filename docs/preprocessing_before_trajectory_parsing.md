@@ -46,7 +46,8 @@ validation. Stage 13.4b adds dependency-free contacts output comparison.
 Stage 13.5a adds contacts performance boundary documentation only. Stage
 13.5b adds lightweight contacts performance sanity checks using small
 synthetic data only. Stage 13.6 completes the final contacts MVP boundary
-documentation before graph work.
+documentation before graph work. Stage 14.1a starts graph export work with
+in-memory graph export mapping only.
 
 ## Current implemented capabilities
 
@@ -121,7 +122,9 @@ The current preprocessing layer supports:
   `docs/preprocessing_contacts_performance_boundary.md`;
 - lightweight contacts performance sanity checks for bounded synthetic
   result, export, validation, and comparison flows;
-- final contacts MVP boundary documentation before graph-specific work.
+- final contacts MVP boundary documentation before graph-specific work;
+- dependency-free in-memory graph export mapping from accepted preprocessing
+  contacts results through `build_preprocessing_graph_export_mapping(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -149,10 +152,24 @@ write_contact_edges_csv(...)
 validate_contacts_perframe_csv(...)
 validate_contact_edges_csv(...)
 compare_contacts_outputs(...)
+build_preprocessing_graph_export_mapping(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
 explicit residue-name QC, and condition runtime loading.
+
+## Stage 14.1a graph mapping boundary
+
+Graph export work has started at the in-memory mapping layer. Stage 14.1a
+adds in-memory graph export mapping only: contact-observed residue identities
+become condition-scoped node records, and aggregate contacts become
+condition-scoped graph edge records.
+
+No graph export exists yet for persistent backend graph artifacts: no graph
+CSV/JSON writer yet, no graph validators/diagnostics execution yet, and no
+workflow/CLI integration yet. The nodes.csv writer is Stage 14.1b, the
+backend graph edges.csv writer is Stage 14.1c, and the graph.json writer is Stage 14.1e.
+Rg-to-graph mapping remains future until explicitly scoped.
 
 ## Stage 11.1 optional runtime boundary
 

@@ -510,6 +510,27 @@ graph export, backend graph `nodes.csv`, backend graph `edges.csv`,
 `graph.json`, graph diagnostics from real preprocessing, CLI/workflow
 scientific MVP, biological interpretation, or real-data CI.
 
+## Stage 14.1a preprocessing graph export mapping
+
+Stage 14.1a starts graph export work with dependency-free in-memory graph
+export mapping only. It consumes accepted preprocessing contacts result
+objects and maps contact-observed residue identities to condition-scoped node
+records and aggregate contacts to condition-scoped graph edge records.
+
+The graph export mapping is dependency-free. It adds no MDAnalysis
+requirement, no real MD data requirement, and no dependency configuration
+change, so default CI remains stable. Graph diagnostics/validators are not run
+yet.
+
+contact_edges.csv is aggregate contacts table output from Stage 13. backend
+graph edges.csv remains separate/future. Stage 14.1a maps contacts into graph
+edge records but writes no backend graph `nodes.csv`, no backend graph
+`edges.csv`, and no `graph.json`.
+
+Graph artifact writers remain future stages: the nodes.csv writer is Stage
+14.1b, the backend graph edges.csv writer is Stage 14.1c, and the graph.json writer is Stage 14.1e.
+Rg-to-graph mapping remains future until explicitly scoped.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

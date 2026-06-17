@@ -80,6 +80,13 @@ from mania.preprocessing.trajectory_contacts_reference_comparison import (
     PreprocessingContactsReferenceComparisonOptions,
     validate_contacts_reference_comparison_input,
 )
+from mania.preprocessing.trajectory_graph_export import (
+    PreprocessingGraphEdgeMappingRecord,
+    PreprocessingGraphExportMappingIssue,
+    PreprocessingGraphExportMappingResult,
+    PreprocessingGraphNodeMappingRecord,
+    build_preprocessing_graph_export_mapping,
+)
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
 from mania.preprocessing.trajectory_manifest_loader import (
     PreprocessingManifestLoadIssue,
@@ -199,6 +206,10 @@ __all__ = [
     "PreprocessingConditionRuntime",
     "PreprocessingConditionRuntimeInput",
     "PreprocessingConditionRuntimeMetadata",
+    "PreprocessingGraphEdgeMappingRecord",
+    "PreprocessingGraphExportMappingIssue",
+    "PreprocessingGraphExportMappingResult",
+    "PreprocessingGraphNodeMappingRecord",
     "PreprocessingInputManifest",
     "PreprocessingManifestLoadIssue",
     "PreprocessingManifestLoadResult",
@@ -238,6 +249,7 @@ __all__ = [
     "ResidueLibraryInputConfig",
     "TrajectoryInputConfig",
     "check_preprocessing_reference_package",
+    "build_preprocessing_graph_export_mapping",
     "build_rg_report_bundle",
     "collect_condition_runtime_metadata",
     "collect_manifest_runtime_metadata",
