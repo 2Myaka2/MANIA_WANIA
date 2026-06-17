@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import csv
 import math
+import tempfile
 from dataclasses import dataclass
+from os import PathLike
+from pathlib import Path
 
+from mania.constants import NODE_COLUMNS
 from mania.preprocessing.trajectory_contacts import (
     PreprocessingConditionContactsResult,
     PreprocessingContactFrameResult,
@@ -17,6 +22,7 @@ _EDGE_KIND = "residue_contact"
 _SOURCE = "preprocessing_contacts"
 _ID_SEPARATOR = "|"
 _ID_ESCAPE = "\\"
+_PATHLIKE_TYPES = (str, Path, PathLike)
 
 
 @dataclass(frozen=True)
@@ -329,6 +335,90 @@ class PreprocessingGraphExportMappingResult:
 
 
 @dataclass(frozen=True)
+class PreprocessingGraphNodesCsvWriteIssue:
+    """One deterministic graph nodes CSV write issue."""
+
+    kind: str
+    message: str
+    node_id: str | None = None
+    field: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "kind",
+            _non_empty_string(self.kind, "kind"),
+        )
+        object.__setattr__(
+            self,
+            "message",
+            _non_empty_string(self.message, "message"),
+        )
+        object.__setattr__(
+            self,
+            "node_id",
+            _optional_non_empty_string(self.node_id, "node_id"),
+        )
+        object.__setattr__(
+            self,
+            "field",
+            _optional_non_empty_string(self.field, "field"),
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe write issue dictionary."""
+        return {
+            "kind": self.kind,
+            "message": self.message,
+            "node_id": self.node_id,
+            "field": self.field,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphNodesCsvWriteResult:
+    """Summary of one backend graph nodes CSV write attempt."""
+
+    output_path: Path
+    rows_written: int
+    issues: tuple[PreprocessingGraphNodesCsvWriteIssue, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "output_path", Path(self.output_path))
+        _require_non_negative_int(self.rows_written, "rows_written")
+        if not isinstance(self.issues, tuple):
+            raise ValueError(
+                "issues must be a tuple of "
+                "PreprocessingGraphNodesCsvWriteIssue"
+            )
+        for issue in self.issues:
+            if not isinstance(issue, PreprocessingGraphNodesCsvWriteIssue):
+                raise ValueError(
+                    "issues must contain PreprocessingGraphNodesCsvWriteIssue"
+                )
+
+    @property
+    def passed(self) -> bool:
+        """Return whether the write attempt had no issues."""
+        return self.issues == ()
+
+    @property
+    def issue_count(self) -> int:
+        """Return the number of write issues."""
+        return len(self.issues)
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe write result dictionary."""
+        return {
+            "output_path": str(self.output_path),
+            "passed": self.passed,
+            "rows_written": self.rows_written,
+            "issue_count": self.issue_count,
+            "issues": [issue.to_dict() for issue in self.issues],
+        }
+
+
+@dataclass(frozen=True)
 class _ResidueIdentity:
     condition_name: str
     residue_index: int
@@ -398,6 +488,90 @@ def build_preprocessing_graph_export_mapping(
                 ),
             ),
         )
+
+
+def write_preprocessing_graph_nodes_csv(
+    mapping_result: PreprocessingGraphExportMappingResult,
+    output_path: str | Path,
+) -> PreprocessingGraphNodesCsvWriteResult:
+    """Write backend graph nodes.csv from an accepted graph mapping result."""
+    path, path_issue = _graph_nodes_output_path(output_path)
+    if path_issue is not None:
+        return PreprocessingGraphNodesCsvWriteResult(
+            output_path=path,
+            rows_written=0,
+            issues=(path_issue,),
+        )
+
+    if not isinstance(mapping_result, PreprocessingGraphExportMappingResult):
+        return PreprocessingGraphNodesCsvWriteResult(
+            output_path=path,
+            rows_written=0,
+            issues=(
+                PreprocessingGraphNodesCsvWriteIssue(
+                    kind="invalid_input",
+                    field="mapping_result",
+                    message=(
+                        "mapping_result must be "
+                        "PreprocessingGraphExportMappingResult."
+                    ),
+                ),
+            ),
+        )
+
+    if not mapping_result.passed:
+        return PreprocessingGraphNodesCsvWriteResult(
+            output_path=path,
+            rows_written=0,
+            issues=(
+                PreprocessingGraphNodesCsvWriteIssue(
+                    kind="mapping_result_failed",
+                    field="mapping_result.issues",
+                    message="Graph export mapping result contains issues.",
+                ),
+            ),
+        )
+
+    duplicate_node_ids = _duplicates(
+        tuple(node.node_id for node in mapping_result.nodes)
+    )
+    if duplicate_node_ids:
+        return PreprocessingGraphNodesCsvWriteResult(
+            output_path=path,
+            rows_written=0,
+            issues=tuple(
+                PreprocessingGraphNodesCsvWriteIssue(
+                    kind="duplicate_node_id",
+                    node_id=node_id,
+                    field="mapping_result.nodes",
+                    message="Duplicate graph node ID cannot be written.",
+                )
+                for node_id in duplicate_node_ids
+            ),
+        )
+
+    path_write_issue = _graph_nodes_path_write_issue(path)
+    if path_write_issue is not None:
+        return PreprocessingGraphNodesCsvWriteResult(
+            output_path=path,
+            rows_written=0,
+            issues=(path_write_issue,),
+        )
+
+    rows = [_graph_node_row(node) for node in mapping_result.nodes]
+    write_issue = _write_graph_node_rows(path, rows)
+    if write_issue is not None:
+        return PreprocessingGraphNodesCsvWriteResult(
+            output_path=path,
+            rows_written=0,
+            issues=(write_issue,),
+        )
+
+    return PreprocessingGraphNodesCsvWriteResult(
+        output_path=path,
+        rows_written=len(rows),
+        issues=(),
+    )
 
 
 def _condition_results(
@@ -509,6 +683,111 @@ def _map_condition_result(
         )
     )
     return edges, tuple(issues)
+
+
+def _graph_node_row(
+    node: PreprocessingGraphNodeMappingRecord,
+) -> dict[str, str]:
+    row = {column: "" for column in NODE_COLUMNS}
+    row.update(
+        {
+            "resid": node.node_id,
+            "resname": node.resname,
+            "region": f"{node.source}:{node.node_kind}",
+            "condition": node.condition_name,
+        }
+    )
+    return row
+
+
+def _graph_nodes_output_path(
+    output_path: object,
+) -> tuple[Path, PreprocessingGraphNodesCsvWriteIssue | None]:
+    if output_path is None:
+        return Path(""), PreprocessingGraphNodesCsvWriteIssue(
+            kind="invalid_output_path",
+            field="output_path",
+            message="Output path is required.",
+        )
+    if isinstance(output_path, str) and not output_path.strip():
+        return Path(""), PreprocessingGraphNodesCsvWriteIssue(
+            kind="invalid_output_path",
+            field="output_path",
+            message="Output path is required.",
+        )
+    if not isinstance(output_path, _PATHLIKE_TYPES):
+        return Path(""), PreprocessingGraphNodesCsvWriteIssue(
+            kind="invalid_output_path",
+            field="output_path",
+            message="Output path must be path-like.",
+        )
+    try:
+        return Path(output_path), None
+    except TypeError:
+        return Path(""), PreprocessingGraphNodesCsvWriteIssue(
+            kind="invalid_output_path",
+            field="output_path",
+            message="Output path must be path-like.",
+        )
+
+
+def _graph_nodes_path_write_issue(
+    output_path: Path,
+) -> PreprocessingGraphNodesCsvWriteIssue | None:
+    if output_path.is_dir():
+        return PreprocessingGraphNodesCsvWriteIssue(
+            kind="output_path_is_directory",
+            field="output_path",
+            message="Output path is a directory.",
+        )
+    if not output_path.parent.exists():
+        return PreprocessingGraphNodesCsvWriteIssue(
+            kind="parent_directory_missing",
+            field="output_path.parent",
+            message="Output parent directory does not exist.",
+        )
+    if not output_path.parent.is_dir():
+        return PreprocessingGraphNodesCsvWriteIssue(
+            kind="parent_directory_missing",
+            field="output_path.parent",
+            message="Output parent path is not a directory.",
+        )
+    return None
+
+
+def _write_graph_node_rows(
+    output_path: Path,
+    rows: list[dict[str, str]],
+) -> PreprocessingGraphNodesCsvWriteIssue | None:
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="",
+            dir=output_path.parent,
+            prefix=f".{output_path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as csv_file:
+            temporary_path = Path(csv_file.name)
+            writer = csv.DictWriter(
+                csv_file,
+                fieldnames=NODE_COLUMNS,
+                lineterminator="\n",
+            )
+            writer.writeheader()
+            writer.writerows(rows)
+        temporary_path.replace(output_path)
+    except (OSError, csv.Error):
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+        return PreprocessingGraphNodesCsvWriteIssue(
+            kind="write_failed",
+            field="output_path",
+            message="Backend graph nodes CSV file could not be written.",
+        )
+    return None
 
 
 def _frame_distances(
@@ -723,6 +1002,9 @@ __all__ = [
     "PreprocessingGraphEdgeMappingRecord",
     "PreprocessingGraphExportMappingIssue",
     "PreprocessingGraphExportMappingResult",
+    "PreprocessingGraphNodesCsvWriteIssue",
+    "PreprocessingGraphNodesCsvWriteResult",
     "PreprocessingGraphNodeMappingRecord",
     "build_preprocessing_graph_export_mapping",
+    "write_preprocessing_graph_nodes_csv",
 ]

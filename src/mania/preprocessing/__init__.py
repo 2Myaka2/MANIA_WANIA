@@ -85,7 +85,10 @@ from mania.preprocessing.trajectory_graph_export import (
     PreprocessingGraphExportMappingIssue,
     PreprocessingGraphExportMappingResult,
     PreprocessingGraphNodeMappingRecord,
+    PreprocessingGraphNodesCsvWriteIssue,
+    PreprocessingGraphNodesCsvWriteResult,
     build_preprocessing_graph_export_mapping,
+    write_preprocessing_graph_nodes_csv,
 )
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
 from mania.preprocessing.trajectory_manifest_loader import (
@@ -209,6 +212,8 @@ __all__ = [
     "PreprocessingGraphEdgeMappingRecord",
     "PreprocessingGraphExportMappingIssue",
     "PreprocessingGraphExportMappingResult",
+    "PreprocessingGraphNodesCsvWriteIssue",
+    "PreprocessingGraphNodesCsvWriteResult",
     "PreprocessingGraphNodeMappingRecord",
     "PreprocessingInputManifest",
     "PreprocessingManifestLoadIssue",
@@ -279,5 +284,6 @@ __all__ = [
     "validate_residue_library_from_manifest_options",
     "write_contact_edges_csv",
     "write_contacts_perframe_csv",
+    "write_preprocessing_graph_nodes_csv",
     "write_rg_timeseries_csv",
 ]

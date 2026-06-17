@@ -531,6 +531,22 @@ Graph artifact writers remain future stages: the nodes.csv writer is Stage
 14.1b, the backend graph edges.csv writer is Stage 14.1c, and the graph.json writer is Stage 14.1e.
 Rg-to-graph mapping remains future until explicitly scoped.
 
+## Stage 14.1b preprocessing graph nodes CSV writer
+
+Stage 14.1b adds the backend graph nodes CSV writer from accepted
+preprocessing graph mapping. The graph nodes CSV writer is dependency-free,
+requires no MDAnalysis, requires no real MD data, and does not change
+dependency configuration, so default CI remains stable.
+
+The writer consumes `PreprocessingGraphExportMappingResult` and writes only
+backend graph nodes.csv. It does not write backend graph edges.csv, does not
+write `graph.json`, and graph diagnostics/validators are not run yet.
+
+Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv is separate/future, backend graph edges.csv writer remains Stage
+14.1c, graph CSV validation remains Stage 14.1d, and graph.json remains Stage
+14.1e.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

@@ -135,6 +135,18 @@ node records.
 Graph writers remain future stages: the nodes.csv writer is Stage 14.1b, the
 backend graph edges.csv writer is Stage 14.1c, and the graph.json writer is Stage 14.1e.
 
+Stage 14.1b adds a nodes.csv writer for contacts-derived graph mapping. This
+writer consumes `PreprocessingGraphExportMappingResult` and writes backend
+graph nodes.csv only. It does not write graph edges and does not turn Stage
+13 contact_edges.csv into backend graph edges.csv.
+
+Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv is separate/future, and the graph edge writer remains future Stage
+14.1c. graph CSV validation remains Stage 14.1d and graph.json remains Stage
+14.1e.
+
+backend graph edges.csv is separate/future.
+
 ## Validation
 
 Use the read-only validators after writing:

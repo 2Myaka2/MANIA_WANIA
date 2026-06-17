@@ -471,3 +471,18 @@ Graph artifact writers remain future: the nodes.csv writer is Stage 14.1b,
 the backend graph edges.csv writer is Stage 14.1c, and the graph.json writer is Stage 14.1e.
 Stage 14.1a does not run graph validators or diagnostics and does not add
 CLI/workflow integration.
+
+## Stage 14.1b transition
+
+Stage 13 Contacts MVP remains complete. Stage 14.1a graph mapping can feed
+Stage 14.1b nodes.csv writer, which writes backend graph nodes.csv only from
+accepted graph node mapping records.
+
+Stage 13 contact_edges.csv is aggregate contacts table output and remains
+aggregate contacts output. It is not backend graph edges.csv. backend graph
+edges.csv is separate/future, and backend graph edges.csv writer remains
+Stage 14.1c.
+
+Stage 14.1b does not write graph edges, does not validate graph CSV outputs,
+does not write `graph.json`, and does not run graph validators or diagnostics.
+graph CSV validation remains Stage 14.1d and graph.json remains Stage 14.1e.

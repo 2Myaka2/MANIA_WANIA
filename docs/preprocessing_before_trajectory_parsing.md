@@ -171,6 +171,17 @@ workflow/CLI integration yet. The nodes.csv writer is Stage 14.1b, the
 backend graph edges.csv writer is Stage 14.1c, and the graph.json writer is Stage 14.1e.
 Rg-to-graph mapping remains future until explicitly scoped.
 
+## Stage 14.1b graph nodes CSV writer boundary
+
+The nodes.csv writer from accepted graph mapping exists. The writer consumes
+`PreprocessingGraphExportMappingResult` and writes backend graph nodes.csv
+only, using the accepted backend graph node schema.
+
+Stage 14.1b does not write backend graph edges.csv or `graph.json`.
+backend graph edges.csv writer remains Stage 14.1c, graph CSV validation
+remains Stage 14.1d, and graph.json remains Stage 14.1e. There is no graph
+validators/diagnostics execution yet and no workflow/CLI integration yet.
+
 ## Stage 11.1 optional runtime boundary
 
 Stage 11.1 provides a small optional dependency boundary for `MDAnalysis`:
