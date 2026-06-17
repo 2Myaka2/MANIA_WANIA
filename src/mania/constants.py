@@ -41,10 +41,23 @@ NODE_COLUMNS = (
     "community_id",
 )
 
+EDGE_TYPE_PRIORITY = (
+    "hbond",
+    "disulfide",
+    "salt_bridge",
+    "ionic",
+    "cation_pi",
+    "aromatic_pi",
+    "hydrophobic",
+    "vdw",
+)
+
 EDGE_COLUMNS = (
     "resid_i",
     "resid_j",
     "edge_type",
+    "all_edge_types",
+    "n_edge_types",
     "condition",
     "contact_freq",
     "mean_dist_A",

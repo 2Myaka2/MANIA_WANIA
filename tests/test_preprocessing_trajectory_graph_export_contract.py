@@ -49,12 +49,19 @@ def node_record(node_id: str = "n1") -> PreprocessingGraphNodeMappingRecord:
     )
 
 
-def edge_record(edge_id: str = "e1") -> PreprocessingGraphEdgeMappingRecord:
+def edge_record(
+    edge_id: str = "e1",
+    *,
+    edge_kind: str = "residue_contact",
+    all_edge_types: tuple[str, ...] | None = None,
+) -> PreprocessingGraphEdgeMappingRecord:
     return PreprocessingGraphEdgeMappingRecord(
         edge_id=edge_id,
         source_node_id="n1",
         target_node_id="n2",
         condition_name="normal",
+        edge_kind=edge_kind,
+        all_edge_types=all_edge_types,
         contact_frame_count=1,
         total_frame_count=2,
         contact_frequency=0.5,
@@ -196,6 +203,9 @@ def test_edge_record_validates_and_serializes() -> None:
     assert record.target_node_id == "n2"
     assert record.condition_name == "normal"
     assert record.edge_kind == "residue_contact"
+    assert record.primary_edge_type == "residue_contact"
+    assert record.all_edge_types == ("residue_contact",)
+    assert record.n_edge_types == 1
     assert record.source == "preprocessing_contacts"
     assert record.contact_frame_count == 1
     assert record.total_frame_count == 2
@@ -204,7 +214,26 @@ def test_edge_record_validates_and_serializes() -> None:
     assert record.mean_minimum_distance == 3.0
     assert record.distance_unit == "angstrom"
     assert record.atom_filter == "heavy"
+    assert record.to_dict()["all_edge_types"] == ("residue_contact",)
+    assert record.to_dict()["n_edge_types"] == 1
     assert_json_safe(record.to_dict())
+
+
+def test_edge_record_prioritizes_multi_type_edges_deterministically() -> None:
+    record = edge_record(
+        edge_kind="hydrophobic",
+        all_edge_types=(
+            "vdw",
+            "hydrophobic",
+            "salt_bridge",
+            "hydrophobic",
+        ),
+    )
+
+    assert record.edge_kind == "salt_bridge"
+    assert record.primary_edge_type == "salt_bridge"
+    assert record.all_edge_types == ("salt_bridge", "hydrophobic", "vdw")
+    assert record.n_edge_types == 3
 
 
 @pytest.mark.parametrize(
@@ -227,6 +256,11 @@ def test_edge_record_validates_and_serializes() -> None:
         {"mean_minimum_distance": -1.0},
         {"mean_minimum_distance": math.inf},
         {"edge_kind": ""},
+        {"edge_kind": "vdw", "all_edge_types": ("hydrophobic",)},
+        {"all_edge_types": []},
+        {"all_edge_types": ()},
+        {"all_edge_types": ("",)},
+        {"all_edge_types": ("salt|bridge",)},
         {"source": " "},
     ),
 )
@@ -239,6 +273,7 @@ def test_edge_record_rejects_invalid_values(
         "target_node_id": "n2",
         "condition_name": "normal",
         "edge_kind": "residue_contact",
+        "all_edge_types": None,
         "source": "preprocessing_contacts",
         "contact_frame_count": 1,
         "total_frame_count": 2,
@@ -333,6 +368,9 @@ def test_single_condition_mapping_creates_nodes_and_edges() -> None:
     assert edge.edge_id == NORMAL_EDGE_ID
     assert edge.source_node_id == NORMAL_SOURCE_NODE_ID
     assert edge.target_node_id == NORMAL_TARGET_NODE_ID
+    assert edge.edge_kind == "residue_contact"
+    assert edge.all_edge_types == ("residue_contact",)
+    assert edge.n_edge_types == 1
     assert edge.contact_frame_count == 1
     assert edge.total_frame_count == 2
     assert edge.contact_frequency == 0.5
@@ -525,6 +563,18 @@ def test_docs_say_graph_writers_are_future() -> None:
         "nodes.csv writer is Stage 14.1b",
         "backend graph edges.csv writer is Stage 14.1c",
         "graph.json writer is Stage 14.1e",
+    ):
+        assert phrase in text
+
+
+def test_docs_document_v1_2_graph_reference_update() -> None:
+    text = "\n".join(path.read_text(encoding="utf-8") for path in DOC_PATHS)
+
+    for phrase in (
+        "current graph reference semantics",
+        "v1.2 Cell 5 adds interaction priority",
+        "v1.2 Cell 12 fixes temporal RIN export handling",
+        "remains future temporal/workflow artifact scope",
     ):
         assert phrase in text
 

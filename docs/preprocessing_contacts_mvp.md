@@ -500,9 +500,20 @@ write_preprocessing_graph_edges_csv(...)
 The writer consumes `PreprocessingGraphExportMappingResult` and writes
 backend graph edges.csv only. It uses the accepted backend graph `EDGE_COLUMNS`
 schema, preserving mapping source and target node IDs in `resid_i` and
-`resid_j`, preserving condition scope in `condition`, mapping `edge_kind` to
-`edge_type`, mapping `contact_frequency` to `contact_freq`, and mapping
-angstrom-labelled `mean_minimum_distance` to `mean_dist_A`.
+`resid_j`, preserving condition scope in `condition`, mapping the
+priority-selected `edge_kind` to `edge_type`, writing all unique edge types to
+`all_edge_types`, writing their count to `n_edge_types`, mapping
+`contact_frequency` to `contact_freq`, and mapping angstrom-labelled
+`mean_minimum_distance` to `mean_dist_A`.
+
+Stage 14.1c-fix treats
+`data/reference/notebooks_libraries_v1_2/MANIA_analysis_v1_2.ipynb` as the
+current graph reference semantics. v1.2 Cell 5 adds interaction priority for
+graph edge display. v1.2 Cell 12 fixes temporal RIN export handling, but that
+temporal RIN fix is documented-only here and remains future temporal/workflow
+artifact scope. Current Stage 13 contacts still emit one generic
+`residue_contact` edge type: `edge_type = residue_contact`,
+`all_edge_types = residue_contact`, and `n_edge_types = 1`.
 
 Unsupported optional edge metadata is serialized as empty strings because
 the backend graph edge schema has no columns for Stage 13 frame counts,

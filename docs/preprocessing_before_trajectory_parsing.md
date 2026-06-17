@@ -200,15 +200,32 @@ writer consumes `PreprocessingGraphExportMappingResult` and writes backend
 graph edges.csv only, using the accepted backend graph edge schema from
 `EDGE_COLUMNS`.
 
+Stage 14.1c-fix updates the graph reference semantics to
+`data/reference/notebooks_libraries_v1_2/MANIA_analysis_v1_2.ipynb`.
+The v1.1 notebook artifacts remain historical reference artifacts. The v1.2
+analysis notebook documents Cell 5 interaction priority for graph edge display
+and Cell 12 temporal RIN export handling. The temporal RIN v1.2 fix is
+documented now only; temporal RIN export remains future temporal/workflow
+artifact scope.
+
 `write_preprocessing_graph_edges_csv(...)` adapts accepted mapping fields to
 the backend graph schema narrowly:
 
 - `source_node_id` -> `resid_i`;
 - `target_node_id` -> `resid_j`;
-- `edge_kind` -> `edge_type`;
+- priority-selected `edge_kind` -> `edge_type`;
+- all unique edge types -> `all_edge_types`;
+- unique edge-type count -> `n_edge_types`;
 - `condition_name` -> `condition`;
 - `contact_frequency` -> `contact_freq`;
 - angstrom-labelled `mean_minimum_distance` -> `mean_dist_A`.
+
+`edge_type` remains the backward-compatible primary edge type. Multi-type
+edges use `all_edge_types` as a pipe-separated list in deterministic priority
+order and `n_edge_types` as the number of unique types. The accepted graph
+display priority is `hbond`, `disulfide`, `salt_bridge`, `ionic`,
+`cation_pi`, `aromatic_pi`, `hydrophobic`, then `vdw`; current generic
+preprocessing contacts still produce only `residue_contact`.
 
 Unsupported edge metadata, including frame counts, minimum distance,
 distance-unit labels, atom filters, dynamic lifetime fields, and non-angstrom

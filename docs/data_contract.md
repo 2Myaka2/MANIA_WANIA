@@ -34,10 +34,19 @@ mania_output/
 
 ## Notebook/Reference Layout vs Backend Contract Layout
 
-Notebook v1.1 outputs are reference/intermediate artifacts. The backend
-contract is the stable WANIA-facing output, so notebook filenames and layout
-must not become backend contract filenames and layout. A future export adapter
-will map notebook-like outputs to backend contract outputs.
+Notebook v1.1 outputs are historical reference/intermediate artifacts.
+Notebook v1.2 is the current graph reference semantics for Stage 14 graph
+export and future graph comparison. The backend contract is the stable
+WANIA-facing output, so notebook filenames and layout must not become backend
+contract filenames and layout. Export adapter logic maps notebook-like outputs
+to backend contract outputs.
+
+MANIA_analysis_v1_2 documents two graph-reference changes: Cell 5 selects a
+primary graph display edge type by interaction priority when one residue pair
+has multiple interaction types, and Cell 12 fixes temporal RIN export handling.
+The temporal RIN v1.2 fix is documented here as future temporal/workflow
+artifact scope; it is not implemented by the Stage 14.1c edge-schema
+correction.
 
 Examples:
 
@@ -110,6 +119,8 @@ Required columns:
 resid_i
 resid_j
 edge_type
+all_edge_types
+n_edge_types
 condition
 contact_freq
 mean_dist_A
@@ -125,6 +136,29 @@ first_seen_frame
 last_seen_frame
 window_cv
 ```
+
+`edge_type` remains the backward-compatible primary edge type. When a residue
+pair has multiple interaction types, `edge_type` is the priority-selected
+display type, `all_edge_types` is every unique type for the pair joined by
+`|`, and `n_edge_types` is the count of unique types in `all_edge_types`.
+Known graph-display interaction priority is:
+
+```text
+hbond
+disulfide
+salt_bridge
+ionic
+cation_pi
+aromatic_pi
+hydrophobic
+vdw
+```
+
+Unknown edge types, including current preprocessing generic
+`residue_contact`, are not inferred as biochemical classes. They are ordered
+deterministically after the known priority list. Current Stage 13 generic
+contacts therefore map to `edge_type = residue_contact`,
+`all_edge_types = residue_contact`, and `n_edge_types = 1`.
 
 ### centrality.csv
 

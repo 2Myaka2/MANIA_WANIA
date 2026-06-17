@@ -11,6 +11,7 @@ from mania.constants import (
     CENTRALITY_COLUMNS,
     COMMUNITIES_COLUMNS,
     EDGE_COLUMNS,
+    EDGE_TYPE_PRIORITY,
     GRAPH_REQUIRED_KEYS,
     NODE_COLUMNS,
     RG_TIMESERIES_COLUMNS,
@@ -30,6 +31,14 @@ from mania.validation.manifest import (
 
 NOTEBOOK_RG_COLUMNS = ("frame", "rg_A", "condition")
 RESIDUE_TABLE_COLUMNS = NODE_COLUMNS[:11]
+EDGE_MULTI_TYPE_COLUMNS = ("all_edge_types", "n_edge_types")
+NOTEBOOK_EDGE_REQUIRED_COLUMNS = tuple(
+    column for column in EDGE_COLUMNS if column not in EDGE_MULTI_TYPE_COLUMNS
+)
+EDGE_TYPE_SEPARATOR = "|"
+EDGE_TYPE_PRIORITY_INDEX = {
+    edge_type: index for index, edge_type in enumerate(EDGE_TYPE_PRIORITY)
+}
 
 
 class NotebookExportAdapterError(Exception):
@@ -364,10 +373,10 @@ def export_edges(
 ) -> Path:
     """Export backend edges from notebook-like contact edge rows."""
     input_path = Path(source_dir) / f"protein_contact_edges_undirected_{condition}.csv"
-    rows = _read_required_rows(input_path, condition, EDGE_COLUMNS)
+    rows = _read_required_rows(input_path, condition, NOTEBOOK_EDGE_REQUIRED_COLUMNS)
     _validate_unique_undirected_edges(rows, input_path)
 
-    output_rows = [{column: row[column] for column in EDGE_COLUMNS} for row in rows]
+    output_rows = _build_edge_rows(rows)
     output_path = Path(output_dir) / condition / "edges.csv"
     _write_contract_rows(output_path, EDGE_COLUMNS, output_rows)
     _validate_output_csv(output_path, "edges.csv", condition)
@@ -700,6 +709,43 @@ def _build_node_rows(
             }
         )
     return rows
+
+
+def _build_edge_rows(rows: Sequence[dict[str, str]]) -> list[dict[str, str]]:
+    return [_build_edge_row(row) for row in rows]
+
+
+def _build_edge_row(row: dict[str, str]) -> dict[str, str]:
+    all_edge_types = _edge_types_from_row(row)
+    output_row = {
+        column: row.get(column, "") if row.get(column) is not None else ""
+        for column in EDGE_COLUMNS
+    }
+    output_row["edge_type"] = all_edge_types[0]
+    output_row["all_edge_types"] = EDGE_TYPE_SEPARATOR.join(all_edge_types)
+    output_row["n_edge_types"] = str(len(all_edge_types))
+    return output_row
+
+
+def _edge_types_from_row(row: dict[str, str]) -> tuple[str, ...]:
+    raw_all_edge_types = row.get("all_edge_types", "").strip()
+    if raw_all_edge_types == "":
+        return (row["edge_type"],)
+    edge_types = tuple(
+        edge_type.strip()
+        for edge_type in raw_all_edge_types.split(EDGE_TYPE_SEPARATOR)
+        if edge_type.strip() != ""
+    )
+    if not edge_types:
+        return (row["edge_type"],)
+    return tuple(sorted(set(edge_types), key=_edge_type_priority_key))
+
+
+def _edge_type_priority_key(edge_type: str) -> tuple[int, str]:
+    return (
+        EDGE_TYPE_PRIORITY_INDEX.get(edge_type, len(EDGE_TYPE_PRIORITY)),
+        edge_type,
+    )
 
 
 def _validate_unique_undirected_edges(

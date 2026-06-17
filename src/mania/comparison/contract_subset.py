@@ -75,6 +75,7 @@ NODES_TEXT_COLUMNS = (
 
 EDGES_KEY_COLUMNS = ("condition", "resid_i", "resid_j", "edge_type")
 EDGES_NUMERIC_COLUMNS = (
+    "n_edge_types",
     "contact_freq",
     "mean_dist_A",
     "std_dist_A",
@@ -89,7 +90,7 @@ EDGES_NUMERIC_COLUMNS = (
     "last_seen_frame",
     "window_cv",
 )
-EDGES_TEXT_COLUMNS = ()
+EDGES_TEXT_COLUMNS = ("all_edge_types",)
 
 _NUMERIC_TOLERANCE_CSV_PROFILES = {
     "rg_timeseries.csv": (

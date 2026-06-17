@@ -217,10 +217,12 @@ def test_numeric_tolerance_edges_profile() -> None:
 
     assert spec.numeric_tolerance is not None
     assert spec.numeric_tolerance.key_columns == EDGES_KEY_COLUMNS
+    assert "n_edge_types" in spec.numeric_tolerance.numeric_columns
     assert "contact_freq" in spec.numeric_tolerance.numeric_columns
     assert "mean_dist_A" in spec.numeric_tolerance.numeric_columns
     assert "window_cv" in spec.numeric_tolerance.numeric_columns
     assert spec.numeric_tolerance.numeric_columns == EDGES_NUMERIC_COLUMNS
+    assert "all_edge_types" in spec.numeric_tolerance.text_columns
     assert spec.numeric_tolerance.text_columns == EDGES_TEXT_COLUMNS
 
 

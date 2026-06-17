@@ -160,13 +160,18 @@ def edge_row(
     resid_j: str = "2",
     *,
     edge_type: str = "contact",
+    all_edge_types: str | None = None,
+    n_edge_types: str = "1",
     condition: str = "normal",
     contact_freq: str = "0.75",
 ) -> tuple[str, ...]:
+    edge_types = edge_type if all_edge_types is None else all_edge_types
     return (
         resid_i,
         resid_j,
         edge_type,
+        edge_types,
+        n_edge_types,
         condition,
         contact_freq,
         "4.2",
@@ -1056,6 +1061,9 @@ def test_exports_normal_edges(tmp_path: Path) -> None:
     assert len(rows) == 1
     assert_conditions(rows, "normal")
     assert [(row["resid_i"], row["resid_j"]) for row in rows] == [("1", "2")]
+    assert rows[0]["edge_type"] == "protein_lipid"
+    assert rows[0]["all_edge_types"] == "protein_lipid"
+    assert rows[0]["n_edge_types"] == "1"
     validate_csv_artifact_schema(path, "edges.csv")
     validate_condition_column(path, "normal")
 
@@ -1087,7 +1095,11 @@ def test_missing_edge_source_file_fails(tmp_path: Path) -> None:
 def test_edge_file_missing_required_column_fails(tmp_path: Path) -> None:
     source_dir = tmp_path / "source"
     header = tuple(column for column in EDGE_COLUMNS if column != "contact_freq")
-    row = tuple(value for index, value in enumerate(edge_row()) if index != 4)
+    row = tuple(
+        value
+        for column, value in zip(EDGE_COLUMNS, edge_row(), strict=True)
+        if column != "contact_freq"
+    )
     write_edges_table(source_dir, header=header, rows=(row,))
 
     assert_export_edges_fails(source_dir, tmp_path)
@@ -1167,6 +1179,8 @@ def test_same_pair_with_different_edge_type_is_allowed(tmp_path: Path) -> None:
     rows = read_rows(path)
     assert len(rows) == 2
     assert [row["edge_type"] for row in rows] == ["contact", "hydrogen_bond"]
+    assert [row["all_edge_types"] for row in rows] == ["contact", "hydrogen_bond"]
+    assert [row["n_edge_types"] for row in rows] == ["1", "1"]
 
 
 def test_edge_extra_input_columns_are_dropped(tmp_path: Path) -> None:

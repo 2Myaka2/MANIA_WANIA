@@ -53,6 +53,8 @@ def edge_record(
     source_node_id: str = "normal|A|1|10|ALA",
     target_node_id: str = "normal|B|2|20|GLY",
     condition_name: str = "normal",
+    edge_kind: str = "residue_contact",
+    all_edge_types: tuple[str, ...] | None = None,
     contact_frequency: float | None = 0.5,
     mean_minimum_distance: float | None = 3.25,
     distance_unit: str | None = "angstrom",
@@ -62,6 +64,8 @@ def edge_record(
         source_node_id=source_node_id,
         target_node_id=target_node_id,
         condition_name=condition_name,
+        edge_kind=edge_kind,
+        all_edge_types=all_edge_types,
         contact_frame_count=2,
         total_frame_count=4,
         contact_frequency=contact_frequency,
@@ -216,11 +220,33 @@ def test_writer_writes_one_backend_edge_row(tmp_path: Path) -> None:
             "resid_i": "normal|A|1|10|ALA",
             "resid_j": "normal|B|2|20|GLY",
             "edge_type": "residue_contact",
+            "all_edge_types": "residue_contact",
+            "n_edge_types": "1",
             "condition": "normal",
             "contact_freq": "0.5",
             "mean_dist_A": "3.25",
         }
     ]
+
+
+def test_writer_writes_multi_type_backend_edge_row(tmp_path: Path) -> None:
+    edge = edge_record(
+        "edge-1",
+        edge_kind="hydrophobic",
+        all_edge_types=("vdw", "salt_bridge", "hydrophobic", "vdw"),
+    )
+    output_path = tmp_path / "edges.csv"
+
+    result = write_preprocessing_graph_edges_csv(
+        mapping_result(edge),
+        output_path,
+    )
+
+    _, rows = read_csv(output_path)
+    assert result.passed is True
+    assert rows[0]["edge_type"] == "salt_bridge"
+    assert rows[0]["all_edge_types"] == "salt_bridge|hydrophobic|vdw"
+    assert rows[0]["n_edge_types"] == "3"
 
 
 def test_writer_does_not_add_preprocessing_only_edge_columns(
@@ -457,6 +483,18 @@ def test_docs_state_stage_14_1c_boundary() -> None:
         "write_preprocessing_graph_edges_csv",
         "graph CSV validation remains Stage 14.1d",
         "graph.json remains Stage 14.1e",
+    ):
+        assert phrase in text
+
+
+def test_docs_state_multi_type_edge_schema() -> None:
+    text = "\n".join(path.read_text(encoding="utf-8") for path in DOC_PATHS)
+
+    for phrase in (
+        "all unique edge types",
+        "all_edge_types",
+        "n_edge_types",
+        "Current Stage 13 generic contacts",
     ):
         assert phrase in text
 

@@ -57,6 +57,8 @@
       "resid_i": "1",
       "resid_j": "2",
       "edge_type": "protein_lipid",
+      "all_edge_types": "protein_lipid",
+      "n_edge_types": "1",
       "condition": "normal",
       "contact_freq": "0.75",
       "mean_dist_A": "4.2",

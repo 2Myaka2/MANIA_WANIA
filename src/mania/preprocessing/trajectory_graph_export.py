@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
 
-from mania.constants import EDGE_COLUMNS, NODE_COLUMNS
+from mania.constants import EDGE_COLUMNS, EDGE_TYPE_PRIORITY, NODE_COLUMNS
 from mania.preprocessing.trajectory_contacts import (
     PreprocessingConditionContactsResult,
     PreprocessingContactFrameResult,
@@ -22,6 +22,10 @@ _EDGE_KIND = "residue_contact"
 _SOURCE = "preprocessing_contacts"
 _ID_SEPARATOR = "|"
 _ID_ESCAPE = "\\"
+_EDGE_TYPE_SEPARATOR = "|"
+_EDGE_TYPE_PRIORITY_INDEX = {
+    edge_type: index for index, edge_type in enumerate(EDGE_TYPE_PRIORITY)
+}
 _PATHLIKE_TYPES = (str, Path, PathLike)
 _EDGES_CSV_PUBLIC_WRITER_NAME = "write_preprocessing_graph_" + "edges_csv"
 
@@ -96,6 +100,7 @@ class PreprocessingGraphEdgeMappingRecord:
     target_node_id: str
     condition_name: str
     edge_kind: str = _EDGE_KIND
+    all_edge_types: tuple[str, ...] | None = None
     source: str = _SOURCE
     contact_frame_count: int | None = None
     total_frame_count: int | None = None
@@ -128,11 +133,15 @@ class PreprocessingGraphEdgeMappingRecord:
             "condition_name",
             _non_empty_string(self.condition_name, "condition_name"),
         )
-        object.__setattr__(
-            self,
-            "edge_kind",
-            _non_empty_string(self.edge_kind, "edge_kind"),
+        edge_kind = _edge_type_string(self.edge_kind, "edge_kind")
+        all_edge_types = _normalized_record_edge_types(
+            self.all_edge_types,
+            edge_kind=edge_kind,
         )
+        if edge_kind not in all_edge_types and edge_kind != _EDGE_KIND:
+            raise ValueError("edge_kind must be included in all_edge_types")
+        object.__setattr__(self, "edge_kind", all_edge_types[0])
+        object.__setattr__(self, "all_edge_types", all_edge_types)
         object.__setattr__(
             self,
             "source",
@@ -169,6 +178,19 @@ class PreprocessingGraphEdgeMappingRecord:
         _require_optional_string(self.distance_unit, "distance_unit")
         _require_optional_string(self.atom_filter, "atom_filter")
 
+    @property
+    def primary_edge_type(self) -> str:
+        """Return the priority-selected primary edge type."""
+        return self.edge_kind
+
+    @property
+    def n_edge_types(self) -> int:
+        """Return the number of unique edge types represented by this edge."""
+        all_edge_types = self.all_edge_types
+        if all_edge_types is None:
+            return 0
+        return len(all_edge_types)
+
     def to_dict(self) -> dict[str, object]:
         """Return a JSON-safe mapping dictionary."""
         return {
@@ -177,6 +199,9 @@ class PreprocessingGraphEdgeMappingRecord:
             "target_node_id": self.target_node_id,
             "condition_name": self.condition_name,
             "edge_kind": self.edge_kind,
+            "primary_edge_type": self.primary_edge_type,
+            "all_edge_types": self.all_edge_types,
+            "n_edge_types": self.n_edge_types,
             "source": self.source,
             "contact_frame_count": self.contact_frame_count,
             "total_frame_count": self.total_frame_count,
@@ -878,6 +903,8 @@ def _backend_edge_row(
             "resid_i": edge.source_node_id,
             "resid_j": edge.target_node_id,
             "edge_type": edge.edge_kind,
+            "all_edge_types": _all_edge_types_csv_value(edge),
+            "n_edge_types": str(edge.n_edge_types),
             "condition": edge.condition_name,
             "contact_freq": _optional_number_csv_value(
                 edge.contact_frequency
@@ -902,6 +929,15 @@ def _mean_distance_a_csv_value(
     if edge.distance_unit != "angstrom":
         return ""
     return str(edge.mean_minimum_distance)
+
+
+def _all_edge_types_csv_value(
+    edge: PreprocessingGraphEdgeMappingRecord,
+) -> str:
+    all_edge_types = edge.all_edge_types
+    if all_edge_types is None:
+        return edge.edge_kind
+    return _EDGE_TYPE_SEPARATOR.join(all_edge_types)
 
 
 def _graph_nodes_output_path(
@@ -1228,6 +1264,47 @@ def _identifier_part(value: object | None) -> str:
 
 def _residue_id(value: int | str | None, residue_index: int) -> str:
     return str(residue_index if value is None else value)
+
+
+def _normalized_record_edge_types(
+    all_edge_types: object,
+    *,
+    edge_kind: str,
+) -> tuple[str, ...]:
+    if all_edge_types is None:
+        return (edge_kind,)
+    if isinstance(all_edge_types, str) or not isinstance(all_edge_types, tuple):
+        raise ValueError("all_edge_types must be a tuple of edge type strings")
+    if not all_edge_types:
+        raise ValueError("all_edge_types must contain at least one edge type")
+
+    normalized_edge_types: list[str] = []
+    seen_edge_types: set[str] = set()
+    for index, edge_type in enumerate(all_edge_types):
+        normalized_edge_type = _edge_type_string(
+            edge_type,
+            f"all_edge_types[{index}]",
+        )
+        if normalized_edge_type in seen_edge_types:
+            continue
+        normalized_edge_types.append(normalized_edge_type)
+        seen_edge_types.add(normalized_edge_type)
+
+    return tuple(sorted(normalized_edge_types, key=_edge_type_priority_key))
+
+
+def _edge_type_priority_key(edge_type: str) -> tuple[int, str]:
+    return (
+        _EDGE_TYPE_PRIORITY_INDEX.get(edge_type, len(EDGE_TYPE_PRIORITY)),
+        edge_type,
+    )
+
+
+def _edge_type_string(value: object, field_name: str) -> str:
+    edge_type = _non_empty_string(value, field_name)
+    if _EDGE_TYPE_SEPARATOR in edge_type:
+        raise ValueError(f"{field_name} must not contain {_EDGE_TYPE_SEPARATOR!r}")
+    return edge_type
 
 
 def _non_empty_string(value: object, field_name: str) -> str:

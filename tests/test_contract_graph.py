@@ -88,6 +88,8 @@ def test_load_fixture_graph_preserves_order_and_builds_adjacency() -> None:
     assert graph.edges[0].source == "1"
     assert graph.edges[0].target == "2"
     assert graph.edges[0].edge_type == "protein_lipid"
+    assert graph.edges[0].row["all_edge_types"] == "protein_lipid"
+    assert graph.edges[0].row["n_edge_types"] == "1"
 
 
 def test_load_contract_graph_reads_explicit_paths() -> None:

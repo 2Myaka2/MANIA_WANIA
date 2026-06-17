@@ -7,6 +7,7 @@ from mania.constants import (
     CONTACTS_PERFRAME_COLUMNS,
     CROSS_CONDITION_ARTIFACTS,
     EDGE_COLUMNS,
+    EDGE_TYPE_PRIORITY,
     GRAPH_REQUIRED_KEYS,
     NODE_COLUMNS,
     PER_CONDITION_ARTIFACTS,
@@ -31,6 +32,17 @@ EXPECTED_PER_CONDITION_ARTIFACTS = (
 EXPECTED_CROSS_CONDITION_ARTIFACTS = (
     "comparison.csv",
     "stats.csv",
+)
+
+EXPECTED_EDGE_TYPE_PRIORITY = (
+    "hbond",
+    "disulfide",
+    "salt_bridge",
+    "ionic",
+    "cation_pi",
+    "aromatic_pi",
+    "hydrophobic",
+    "vdw",
 )
 
 EXPECTED_COLUMN_SCHEMAS = {
@@ -59,6 +71,8 @@ EXPECTED_COLUMN_SCHEMAS = {
         "resid_i",
         "resid_j",
         "edge_type",
+        "all_edge_types",
+        "n_edge_types",
         "condition",
         "contact_freq",
         "mean_dist_A",
@@ -176,6 +190,10 @@ def test_artifact_constants_are_tuples() -> None:
 def test_artifact_order() -> None:
     assert PER_CONDITION_ARTIFACTS == EXPECTED_PER_CONDITION_ARTIFACTS
     assert CROSS_CONDITION_ARTIFACTS == EXPECTED_CROSS_CONDITION_ARTIFACTS
+
+
+def test_edge_type_priority_order() -> None:
+    assert EDGE_TYPE_PRIORITY == EXPECTED_EDGE_TYPE_PRIORITY
 
 
 def test_cross_condition_artifacts_are_not_per_condition() -> None:
