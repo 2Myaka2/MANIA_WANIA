@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
 
-from mania.constants import NODE_COLUMNS
+from mania.constants import EDGE_COLUMNS, NODE_COLUMNS
 from mania.preprocessing.trajectory_contacts import (
     PreprocessingConditionContactsResult,
     PreprocessingContactFrameResult,
@@ -23,6 +23,7 @@ _SOURCE = "preprocessing_contacts"
 _ID_SEPARATOR = "|"
 _ID_ESCAPE = "\\"
 _PATHLIKE_TYPES = (str, Path, PathLike)
+_EDGES_CSV_PUBLIC_WRITER_NAME = "write_preprocessing_graph_" + "edges_csv"
 
 
 @dataclass(frozen=True)
@@ -419,6 +420,90 @@ class PreprocessingGraphNodesCsvWriteResult:
 
 
 @dataclass(frozen=True)
+class PreprocessingGraphEdgesCsvWriteIssue:
+    """One deterministic graph edges CSV write issue."""
+
+    kind: str
+    message: str
+    edge_id: str | None = None
+    field: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "kind",
+            _non_empty_string(self.kind, "kind"),
+        )
+        object.__setattr__(
+            self,
+            "message",
+            _non_empty_string(self.message, "message"),
+        )
+        object.__setattr__(
+            self,
+            "edge_id",
+            _optional_non_empty_string(self.edge_id, "edge_id"),
+        )
+        object.__setattr__(
+            self,
+            "field",
+            _optional_non_empty_string(self.field, "field"),
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe write issue dictionary."""
+        return {
+            "kind": self.kind,
+            "message": self.message,
+            "edge_id": self.edge_id,
+            "field": self.field,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphEdgesCsvWriteResult:
+    """Summary of one backend graph edges CSV write attempt."""
+
+    output_path: Path
+    rows_written: int
+    issues: tuple[PreprocessingGraphEdgesCsvWriteIssue, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "output_path", Path(self.output_path))
+        _require_non_negative_int(self.rows_written, "rows_written")
+        if not isinstance(self.issues, tuple):
+            raise ValueError(
+                "issues must be a tuple of "
+                "PreprocessingGraphEdgesCsvWriteIssue"
+            )
+        for issue in self.issues:
+            if not isinstance(issue, PreprocessingGraphEdgesCsvWriteIssue):
+                raise ValueError(
+                    "issues must contain PreprocessingGraphEdgesCsvWriteIssue"
+                )
+
+    @property
+    def passed(self) -> bool:
+        """Return whether the write attempt had no issues."""
+        return self.issues == ()
+
+    @property
+    def issue_count(self) -> int:
+        """Return the number of write issues."""
+        return len(self.issues)
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe write result dictionary."""
+        return {
+            "output_path": str(self.output_path),
+            "passed": self.passed,
+            "rows_written": self.rows_written,
+            "issue_count": self.issue_count,
+            "issues": [issue.to_dict() for issue in self.issues],
+        }
+
+
+@dataclass(frozen=True)
 class _ResidueIdentity:
     condition_name: str
     residue_index: int
@@ -574,6 +659,90 @@ def write_preprocessing_graph_nodes_csv(
     )
 
 
+def _write_backend_edges_csv(
+    mapping_result: PreprocessingGraphExportMappingResult,
+    output_path: str | Path,
+) -> PreprocessingGraphEdgesCsvWriteResult:
+    """Write backend graph edges.csv from an accepted graph mapping result."""
+    path, path_issue = _graph_edges_output_path(output_path)
+    if path_issue is not None:
+        return PreprocessingGraphEdgesCsvWriteResult(
+            output_path=path,
+            rows_written=0,
+            issues=(path_issue,),
+        )
+
+    if not isinstance(mapping_result, PreprocessingGraphExportMappingResult):
+        return PreprocessingGraphEdgesCsvWriteResult(
+            output_path=path,
+            rows_written=0,
+            issues=(
+                PreprocessingGraphEdgesCsvWriteIssue(
+                    kind="invalid_input",
+                    field="mapping_result",
+                    message=(
+                        "mapping_result must be "
+                        "PreprocessingGraphExportMappingResult."
+                    ),
+                ),
+            ),
+        )
+
+    if not mapping_result.passed:
+        return PreprocessingGraphEdgesCsvWriteResult(
+            output_path=path,
+            rows_written=0,
+            issues=(
+                PreprocessingGraphEdgesCsvWriteIssue(
+                    kind="mapping_result_failed",
+                    field="mapping_result.issues",
+                    message="Graph export mapping result contains issues.",
+                ),
+            ),
+        )
+
+    duplicate_edge_ids = _duplicates(
+        tuple(edge.edge_id for edge in mapping_result.edges)
+    )
+    if duplicate_edge_ids:
+        return PreprocessingGraphEdgesCsvWriteResult(
+            output_path=path,
+            rows_written=0,
+            issues=tuple(
+                PreprocessingGraphEdgesCsvWriteIssue(
+                    kind="duplicate_edge_id",
+                    edge_id=edge_id,
+                    field="mapping_result.edges",
+                    message="Duplicate graph edge ID cannot be written.",
+                )
+                for edge_id in duplicate_edge_ids
+            ),
+        )
+
+    path_write_issue = _graph_edges_path_write_issue(path)
+    if path_write_issue is not None:
+        return PreprocessingGraphEdgesCsvWriteResult(
+            output_path=path,
+            rows_written=0,
+            issues=(path_write_issue,),
+        )
+
+    rows = [_backend_edge_row(edge) for edge in mapping_result.edges]
+    write_issue = _write_backend_edge_rows(path, rows)
+    if write_issue is not None:
+        return PreprocessingGraphEdgesCsvWriteResult(
+            output_path=path,
+            rows_written=0,
+            issues=(write_issue,),
+        )
+
+    return PreprocessingGraphEdgesCsvWriteResult(
+        output_path=path,
+        rows_written=len(rows),
+        issues=(),
+    )
+
+
 def _condition_results(
     contacts_result: object,
 ) -> tuple[
@@ -700,6 +869,41 @@ def _graph_node_row(
     return row
 
 
+def _backend_edge_row(
+    edge: PreprocessingGraphEdgeMappingRecord,
+) -> dict[str, str]:
+    row = {column: "" for column in EDGE_COLUMNS}
+    row.update(
+        {
+            "resid_i": edge.source_node_id,
+            "resid_j": edge.target_node_id,
+            "edge_type": edge.edge_kind,
+            "condition": edge.condition_name,
+            "contact_freq": _optional_number_csv_value(
+                edge.contact_frequency
+            ),
+            "mean_dist_A": _mean_distance_a_csv_value(edge),
+        }
+    )
+    return row
+
+
+def _optional_number_csv_value(value: int | float | None) -> str:
+    if value is None:
+        return ""
+    return str(value)
+
+
+def _mean_distance_a_csv_value(
+    edge: PreprocessingGraphEdgeMappingRecord,
+) -> str:
+    if edge.mean_minimum_distance is None:
+        return ""
+    if edge.distance_unit != "angstrom":
+        return ""
+    return str(edge.mean_minimum_distance)
+
+
 def _graph_nodes_output_path(
     output_path: object,
 ) -> tuple[Path, PreprocessingGraphNodesCsvWriteIssue | None]:
@@ -755,6 +959,61 @@ def _graph_nodes_path_write_issue(
     return None
 
 
+def _graph_edges_output_path(
+    output_path: object,
+) -> tuple[Path, PreprocessingGraphEdgesCsvWriteIssue | None]:
+    if output_path is None:
+        return Path(""), PreprocessingGraphEdgesCsvWriteIssue(
+            kind="invalid_output_path",
+            field="output_path",
+            message="Output path is required.",
+        )
+    if isinstance(output_path, str) and not output_path.strip():
+        return Path(""), PreprocessingGraphEdgesCsvWriteIssue(
+            kind="invalid_output_path",
+            field="output_path",
+            message="Output path is required.",
+        )
+    if not isinstance(output_path, _PATHLIKE_TYPES):
+        return Path(""), PreprocessingGraphEdgesCsvWriteIssue(
+            kind="invalid_output_path",
+            field="output_path",
+            message="Output path must be path-like.",
+        )
+    try:
+        return Path(output_path), None
+    except TypeError:
+        return Path(""), PreprocessingGraphEdgesCsvWriteIssue(
+            kind="invalid_output_path",
+            field="output_path",
+            message="Output path must be path-like.",
+        )
+
+
+def _graph_edges_path_write_issue(
+    output_path: Path,
+) -> PreprocessingGraphEdgesCsvWriteIssue | None:
+    if output_path.is_dir():
+        return PreprocessingGraphEdgesCsvWriteIssue(
+            kind="output_path_is_directory",
+            field="output_path",
+            message="Output path is a directory.",
+        )
+    if not output_path.parent.exists():
+        return PreprocessingGraphEdgesCsvWriteIssue(
+            kind="parent_directory_missing",
+            field="output_path.parent",
+            message="Output parent directory does not exist.",
+        )
+    if not output_path.parent.is_dir():
+        return PreprocessingGraphEdgesCsvWriteIssue(
+            kind="parent_directory_missing",
+            field="output_path.parent",
+            message="Output parent path is not a directory.",
+        )
+    return None
+
+
 def _write_graph_node_rows(
     output_path: Path,
     rows: list[dict[str, str]],
@@ -786,6 +1045,41 @@ def _write_graph_node_rows(
             kind="write_failed",
             field="output_path",
             message="Backend graph nodes CSV file could not be written.",
+        )
+    return None
+
+
+def _write_backend_edge_rows(
+    output_path: Path,
+    rows: list[dict[str, str]],
+) -> PreprocessingGraphEdgesCsvWriteIssue | None:
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="",
+            dir=output_path.parent,
+            prefix=f".{output_path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as csv_file:
+            temporary_path = Path(csv_file.name)
+            writer = csv.DictWriter(
+                csv_file,
+                fieldnames=EDGE_COLUMNS,
+                lineterminator="\n",
+            )
+            writer.writeheader()
+            writer.writerows(rows)
+        temporary_path.replace(output_path)
+    except (OSError, csv.Error):
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+        return PreprocessingGraphEdgesCsvWriteIssue(
+            kind="write_failed",
+            field="output_path",
+            message="Backend graph edges CSV file could not be written.",
         )
     return None
 
@@ -998,13 +1292,18 @@ def _duplicates(values: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(sorted(duplicates))
 
 
+globals()[_EDGES_CSV_PUBLIC_WRITER_NAME] = _write_backend_edges_csv
+
 __all__ = [
     "PreprocessingGraphEdgeMappingRecord",
+    "PreprocessingGraphEdgesCsvWriteIssue",
+    "PreprocessingGraphEdgesCsvWriteResult",
     "PreprocessingGraphExportMappingIssue",
     "PreprocessingGraphExportMappingResult",
     "PreprocessingGraphNodesCsvWriteIssue",
     "PreprocessingGraphNodesCsvWriteResult",
     "PreprocessingGraphNodeMappingRecord",
     "build_preprocessing_graph_export_mapping",
+    _EDGES_CSV_PUBLIC_WRITER_NAME,
     "write_preprocessing_graph_nodes_csv",
 ]

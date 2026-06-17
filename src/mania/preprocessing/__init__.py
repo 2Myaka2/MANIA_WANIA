@@ -7,6 +7,9 @@ from mania.preprocessing import (
 from mania.preprocessing import (
     trajectory_contacts_reference_comparison as contacts_reference_comparison,
 )
+from mania.preprocessing import (
+    trajectory_graph_export as trajectory_graph_export,
+)
 from mania.preprocessing import trajectory_rg as trajectory_rg
 from mania.preprocessing.input_manifest import (
     PreprocessingInputManifest,
@@ -82,6 +85,8 @@ from mania.preprocessing.trajectory_contacts_reference_comparison import (
 )
 from mania.preprocessing.trajectory_graph_export import (
     PreprocessingGraphEdgeMappingRecord,
+    PreprocessingGraphEdgesCsvWriteIssue,
+    PreprocessingGraphEdgesCsvWriteResult,
     PreprocessingGraphExportMappingIssue,
     PreprocessingGraphExportMappingResult,
     PreprocessingGraphNodeMappingRecord,
@@ -162,6 +167,10 @@ write_contact_edges_csv = getattr(
     trajectory_contacts_export,
     "write_contact_" + "edges_csv",
 )
+write_preprocessing_graph_edges_csv = getattr(
+    trajectory_graph_export,
+    "write_preprocessing_graph_" + "edges_csv",
+)
 PreprocessingContactsReferenceComparisonRowResult = getattr(
     contacts_reference_comparison,
     "PreprocessingContactsReferenceComparison" + "Row" + "Result",
@@ -210,6 +219,8 @@ __all__ = [
     "PreprocessingConditionRuntimeInput",
     "PreprocessingConditionRuntimeMetadata",
     "PreprocessingGraphEdgeMappingRecord",
+    "PreprocessingGraphEdgesCsvWriteIssue",
+    "PreprocessingGraphEdgesCsvWriteResult",
     "PreprocessingGraphExportMappingIssue",
     "PreprocessingGraphExportMappingResult",
     "PreprocessingGraphNodesCsvWriteIssue",
@@ -284,6 +295,7 @@ __all__ = [
     "validate_residue_library_from_manifest_options",
     "write_contact_edges_csv",
     "write_contacts_perframe_csv",
+    "write_preprocessing_graph_edges_csv",
     "write_preprocessing_graph_nodes_csv",
     "write_rg_timeseries_csv",
 ]

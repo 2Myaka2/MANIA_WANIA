@@ -523,9 +523,9 @@ change, so default CI remains stable. Graph diagnostics/validators are not run
 yet.
 
 contact_edges.csv is aggregate contacts table output from Stage 13. backend
-graph edges.csv remains separate/future. Stage 14.1a maps contacts into graph
-edge records but writes no backend graph `nodes.csv`, no backend graph
-`edges.csv`, and no `graph.json`.
+graph edges.csv remains separate/future at the Stage 14.1a mapping boundary.
+Stage 14.1a maps contacts into graph edge records but writes no backend graph
+`nodes.csv`, no backend graph `edges.csv`, and no `graph.json`.
 
 Graph artifact writers remain future stages: the nodes.csv writer is Stage
 14.1b, the backend graph edges.csv writer is Stage 14.1c, and the graph.json writer is Stage 14.1e.
@@ -546,6 +546,30 @@ Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
 edges.csv is separate/future, backend graph edges.csv writer remains Stage
 14.1c, graph CSV validation remains Stage 14.1d, and graph.json remains Stage
 14.1e.
+
+## Stage 14.1c preprocessing graph edges CSV writer
+
+Stage 14.1c adds the backend graph edges.csv writer from accepted
+preprocessing graph mapping. The graph edges CSV writer is dependency-free,
+requires no MDAnalysis, requires no real MD data, and does not change
+dependency configuration, so default CI remains stable.
+
+The writer consumes `PreprocessingGraphExportMappingResult` and writes only
+backend graph edges.csv through `write_preprocessing_graph_edges_csv(...)`.
+It uses the accepted backend graph `EDGE_COLUMNS` schema and adapts mapping
+fields narrowly: source and target node IDs become `resid_i` and `resid_j`,
+`edge_kind` becomes `edge_type`, `condition_name` becomes `condition`,
+`contact_frequency` becomes `contact_freq`, and angstrom-labelled
+`mean_minimum_distance` becomes `mean_dist_A`. Unsupported optional edge
+metadata is serialized as empty strings.
+
+Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv is separate and is written only by this graph-stage writer from
+accepted graph mapping records. Stage 14.1c does not write backend graph
+nodes.csv, does not write `graph.json`, and graph diagnostics/validators are
+not run yet.
+
+graph CSV validation remains Stage 14.1d and graph.json remains Stage 14.1e.
 
 ## Non-goals for Stage 9.1
 

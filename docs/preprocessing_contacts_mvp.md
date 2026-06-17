@@ -426,7 +426,7 @@ boundary doc. Before Stage 13.5b there were no contacts performance sanity
 checks. Stage 13.5b adds no contacts benchmark tests. Stage 13.6 adds final
 boundary docs and tests only.
 
-Still not implemented:
+At the Stage 13.6 boundary, still not implemented:
 
 - contacts report bundle;
 - graph export;
@@ -467,8 +467,9 @@ residue identities into condition-scoped node records. Stage 14.1a maps
 contact-observed residues only; isolated residues and Rg-to-graph mapping
 remain future unless explicitly scoped.
 
-Graph artifact writers remain future: the nodes.csv writer is Stage 14.1b,
-the backend graph edges.csv writer is Stage 14.1c, and the graph.json writer is Stage 14.1e.
+Graph artifact writers remain future from the Stage 14.1a boundary: the
+nodes.csv writer is Stage 14.1b, the backend graph edges.csv writer is Stage
+14.1c, and the graph.json writer is Stage 14.1e.
 Stage 14.1a does not run graph validators or diagnostics and does not add
 CLI/workflow integration.
 
@@ -481,8 +482,38 @@ accepted graph node mapping records.
 Stage 13 contact_edges.csv is aggregate contacts table output and remains
 aggregate contacts output. It is not backend graph edges.csv. backend graph
 edges.csv is separate/future, and backend graph edges.csv writer remains
-Stage 14.1c.
+Stage 14.1c at this boundary.
 
 Stage 14.1b does not write graph edges, does not validate graph CSV outputs,
 does not write `graph.json`, and does not run graph validators or diagnostics.
 graph CSV validation remains Stage 14.1d and graph.json remains Stage 14.1e.
+
+## Stage 14.1c transition
+
+Stage 13 Contacts MVP remains complete. Stage 14.1c adds the backend graph
+edges.csv writer from accepted Stage 14.1a graph mapping records:
+
+```python
+write_preprocessing_graph_edges_csv(...)
+```
+
+The writer consumes `PreprocessingGraphExportMappingResult` and writes
+backend graph edges.csv only. It uses the accepted backend graph `EDGE_COLUMNS`
+schema, preserving mapping source and target node IDs in `resid_i` and
+`resid_j`, preserving condition scope in `condition`, mapping `edge_kind` to
+`edge_type`, mapping `contact_frequency` to `contact_freq`, and mapping
+angstrom-labelled `mean_minimum_distance` to `mean_dist_A`.
+
+Unsupported optional edge metadata is serialized as empty strings because
+the backend graph edge schema has no columns for Stage 13 frame counts,
+minimum distance, atom filter, distance unit, or dynamic lifetime metrics.
+
+Stage 13 contact_edges.csv is aggregate contacts table output and remains
+aggregate contacts output. It is not backend graph edges.csv. backend graph
+edges.csv is separate and is now written only by the Stage 14.1c graph edge
+writer from accepted graph mapping records.
+
+Stage 14.1c does not validate graph CSV outputs, does not write `graph.json`,
+does not run graph validators or diagnostics, and does not add workflow/CLI
+integration. graph CSV validation remains Stage 14.1d and graph.json remains
+Stage 14.1e.
