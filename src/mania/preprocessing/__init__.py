@@ -85,8 +85,11 @@ from mania.preprocessing.trajectory_contacts_reference_comparison import (
 )
 from mania.preprocessing.trajectory_graph_diagnostics import (
     PreprocessingGraphDiagnosticsCheckResult,
+    PreprocessingGraphDiagnosticsReport,
+    PreprocessingGraphDiagnosticsReportSection,
     PreprocessingGraphDiagnosticsRunIssue,
     PreprocessingGraphDiagnosticsRunResult,
+    build_preprocessing_graph_diagnostics_report,
     run_preprocessing_graph_diagnostics,
 )
 from mania.preprocessing.trajectory_graph_export import (
@@ -238,6 +241,8 @@ __all__ = [
     "PreprocessingGraphCsvValidationIssue",
     "PreprocessingGraphCsvValidationResult",
     "PreprocessingGraphDiagnosticsCheckResult",
+    "PreprocessingGraphDiagnosticsReport",
+    "PreprocessingGraphDiagnosticsReportSection",
     "PreprocessingGraphDiagnosticsRunIssue",
     "PreprocessingGraphDiagnosticsRunResult",
     "PreprocessingGraphEdgesCsvWriteIssue",
@@ -291,6 +296,7 @@ __all__ = [
     "ResidueLibraryInputConfig",
     "TrajectoryInputConfig",
     "check_preprocessing_reference_package",
+    "build_preprocessing_graph_diagnostics_report",
     "build_preprocessing_graph_export_bundle",
     "build_preprocessing_graph_export_mapping",
     "build_rg_report_bundle",

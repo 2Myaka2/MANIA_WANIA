@@ -686,6 +686,25 @@ temporal RIN export, local scientific graph smoke test, real-data CI, or
 CLI/workflow integration. diagnostics report shape remains Stage 14.2b and
 reference comparison remains Stage 14.3.
 
+## Stage 14.2b preprocessing graph diagnostics report shape
+
+Stage 14.2b adds a dependency-free in-memory diagnostics report shape for an
+already computed Stage 14.2a diagnostics result. It uses only standard-library
+dataclasses and scalar JSON-safe summaries.
+
+The report shape has no MDAnalysis requirement, no real MD data requirement,
+and no dependency configuration change, so default CI remains stable. It does
+not run diagnostics again, read or write files, create a report bundle,
+perform graph reference comparison, add a local scientific graph smoke test,
+export temporal RIN artifacts, or add CLI/workflow integration.
+
+Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv, graph.json, diagnostics, and diagnostics report are Stage 14 graph
+artifacts. MANIA_analysis_v1_2 remains the current graph reference semantics.
+v1.2 Cell 5 interaction priority defines the accepted graph edge display
+priority, v1.2 Cell 12 temporal RIN export fix remains documented-only here,
+and temporal RIN export remains future scope.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

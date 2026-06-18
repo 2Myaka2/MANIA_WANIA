@@ -55,7 +55,9 @@ boundary. Stage 14.1e adds the dependency-free `graph.json` writer from
 accepted/validated backend graph nodes.csv + corrected edges.csv. Stage 14.1f
 adds the dependency-free graph export bundle boundary for existing Stage 14
 graph artifacts. Stage 14.2a runs existing graph validators/diagnostics on generated graph artifacts.
-It runs after the accepted Stage 14.1f bundle boundary passes.
+It runs after the accepted Stage 14.1f bundle boundary passes. Stage 14.2b
+adds only the dependency-free in-memory diagnostics report shape for an
+already computed Stage 14.2a diagnostics result.
 
 ## Current implemented capabilities
 
@@ -144,7 +146,9 @@ The current preprocessing layer supports:
 - dependency-free preprocessing graph export bundle metadata through
   `build_preprocessing_graph_export_bundle(...)`;
 - dependency-free preprocessing graph diagnostics run metadata through
-  `run_preprocessing_graph_diagnostics(...)`.
+  `run_preprocessing_graph_diagnostics(...)`;
+- dependency-free preprocessing graph diagnostics report shape through
+  `build_preprocessing_graph_diagnostics_report(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -179,6 +183,7 @@ validate_preprocessing_graph_csvs(...)
 write_preprocessing_graph_json(...)
 build_preprocessing_graph_export_bundle(...)
 run_preprocessing_graph_diagnostics(...)
+build_preprocessing_graph_diagnostics_report(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -381,6 +386,26 @@ Stage 14.2a adds no diagnostics report shape, graph reference comparison,
 notebook artifact comparison, temporal RIN export, CLI/workflow integration,
 real-data CI, or biological interpretation. There is no CLI/workflow
 integration yet and no temporal RIN export yet.
+
+## Stage 14.2b graph diagnostics report shape
+
+Stage 14.2b adds the dependency-free in-memory diagnostics report shape for
+generated Stage 14 graph artifacts. The report builder consumes an already
+computed Stage 14.2a diagnostics run result and summarizes artifact paths,
+node and edge counts, checks, failed checks, top-level issues, check-level
+issues, and schema/reference context.
+
+The report preserves the corrected multi-type edge schema context:
+`edge_type`, `all_edge_types`, and `n_edge_types`. MANIA_analysis_v1_2 remains
+the current graph reference semantics. v1.2 Cell 5 interaction priority is
+reflected by `EDGE_TYPE_PRIORITY`; v1.2 Cell 12 temporal RIN export fix is
+documented only, and temporal RIN export remains future scope.
+
+Stage 14.2b does not run diagnostics again, read files, write files, create a
+report bundle, perform graph reference comparison, compare notebook artifacts,
+add CLI/workflow integration, export temporal RIN artifacts, or add biological
+interpretation. Reference comparison remains Stage 14.3, and expected
+mismatches / semantic differences remain Stage 14.4.
 
 ## Stage 11.1 optional runtime boundary
 

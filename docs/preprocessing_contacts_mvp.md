@@ -629,3 +629,23 @@ Stage 14.2a adds no diagnostics report shape, graph reference comparison,
 temporal RIN export, CLI/workflow integration, real-data CI, or biological
 interpretation. diagnostics report shape remains Stage 14.2b and reference
 comparison remains Stage 14.3.
+
+## Stage 14.2b transition
+
+Stage 13 Contacts MVP remains complete. Stage 14.2b adds only the
+dependency-free in-memory diagnostics report shape for an already computed
+Stage 14.2a diagnostics result.
+
+Stage 14 diagnostics reports describe backend graph artifacts, not Stage 13
+aggregate contacts output. Stage 13 contact_edges.csv is aggregate contacts
+table output and remains aggregate contacts output. backend graph edges.csv,
+graph.json, diagnostics, and diagnostics report are Stage 14 graph artifacts.
+Stage 14.2b does not reinterpret Stage 13 contact_edges.csv as backend graph
+edges.csv.
+
+The diagnostics report preserves corrected graph edge fields `edge_type`,
+`all_edge_types`, and `n_edge_types` as schema context. It does not run
+diagnostics again, perform reference comparison, add CLI/workflow integration,
+export temporal RIN artifacts, or add biological interpretation. Reference
+comparison remains Stage 14.3, and expected mismatches / semantic differences
+remain Stage 14.4.

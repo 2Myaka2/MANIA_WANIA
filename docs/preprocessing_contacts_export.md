@@ -455,6 +455,31 @@ temporal RIN export, CLI/workflow integration, real-data CI, or biological
 interpretation. diagnostics report shape remains Stage 14.2b and reference
 comparison remains Stage 14.3.
 
+Stage 14.2b adds the dependency-free diagnostics report shape that summarizes
+diagnostics over generated Stage 14 graph artifacts. The report builder
+consumes an already computed Stage 14.2a diagnostics result; it does not run
+diagnostics again, write report files, create a report bundle, compare
+references, add CLI/workflow integration, export temporal RIN artifacts, or
+add biological interpretation.
+
+The Stage 14.2b diagnostics report does not reinterpret Stage 13
+contact_edges.csv as backend graph edges.csv. Stage 13 contact_edges.csv is
+aggregate contacts table output. backend graph edges.csv, graph.json,
+diagnostics, and diagnostics report are Stage 14 graph artifacts.
+
+The report preserves corrected graph edge fields as schema/reference context:
+
+```text
+edge_type
+all_edge_types
+n_edge_types
+```
+
+MANIA_analysis_v1_2 remains the current graph reference semantics. v1.2 Cell
+5 interaction priority is the accepted display priority, v1.2 Cell 12
+temporal RIN export fix is documented, and temporal RIN export remains future
+scope. Reference comparison remains Stage 14.3.
+
 ## Future stages
 
 Graph export remains future after contacts MVP.

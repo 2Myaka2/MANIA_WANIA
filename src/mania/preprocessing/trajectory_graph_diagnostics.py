@@ -13,6 +13,7 @@ from mania.analysis.contract_graph import (
     load_contract_graph,
 )
 from mania.analysis.graph_qc import GraphQCError, compute_graph_qc
+from mania.constants import EDGE_TYPE_PRIORITY
 from mania.preprocessing.trajectory_graph_export import (
     PreprocessingGraphExportBundleIssue,
     PreprocessingGraphExportBundleResult,
@@ -25,6 +26,11 @@ _GRAPH_EXPORT_BUNDLE_CHECK = "graph_export_bundle"
 _GRAPH_JSON_VALIDATION_CHECK = "graph_json_validation"
 _CONTRACT_GRAPH_LOAD_CHECK = "contract_graph_load"
 _GRAPH_STRUCTURE_DIAGNOSTICS_CHECK = "graph_structure_diagnostics"
+_REPORT_SECTION_STATUSES = frozenset(
+    {"passed", "failed", "warning", "not_applicable"}
+)
+_REPORT_REFERENCE_SEMANTICS = "MANIA_analysis_v1_2"
+_REPORT_EDGE_SCHEMA = "corrected_multi_type_edges"
 
 _SummaryValue = str | int | float | bool | None
 
@@ -183,6 +189,173 @@ class PreprocessingGraphDiagnosticsRunResult:
             "checks": [check.to_dict() for check in self.checks],
             "issues": [issue.to_dict() for issue in self.issues],
         }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphDiagnosticsReportSection:
+    """One JSON-safe preprocessing graph diagnostics report section."""
+
+    title: str
+    status: str
+    summary: Mapping[str, _SummaryValue]
+    details: tuple[Mapping[str, _SummaryValue], ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "title", _non_empty_string(self.title, "title"))
+        status = _non_empty_string(self.status, "status")
+        if status not in _REPORT_SECTION_STATUSES:
+            raise ValueError("status must be a supported report section status")
+        object.__setattr__(self, "status", status)
+        object.__setattr__(self, "summary", _summary_dict(self.summary))
+        object.__setattr__(self, "details", _details_tuple(self.details))
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe report section dictionary."""
+        return {
+            "title": self.title,
+            "status": self.status,
+            "summary": dict(self.summary),
+            "details": [dict(detail) for detail in self.details],
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphDiagnosticsReport:
+    """In-memory report shape for preprocessing graph diagnostics results."""
+
+    passed: bool
+    status: str
+    nodes_csv_path: Path
+    edges_csv_path: Path
+    graph_json_path: Path
+    node_count: int
+    edge_count: int
+    check_count: int
+    failed_check_count: int
+    issue_count: int
+    sections: tuple[PreprocessingGraphDiagnosticsReportSection, ...]
+    schema_version: str | None = None
+    reference_semantics: str = _REPORT_REFERENCE_SEMANTICS
+    edge_schema: str = _REPORT_EDGE_SCHEMA
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.passed, bool):
+            raise ValueError("passed must be bool")
+        object.__setattr__(self, "status", _non_empty_string(self.status, "status"))
+        if not isinstance(self.nodes_csv_path, Path):
+            raise ValueError("nodes_csv_path must be Path")
+        if not isinstance(self.edges_csv_path, Path):
+            raise ValueError("edges_csv_path must be Path")
+        if not isinstance(self.graph_json_path, Path):
+            raise ValueError("graph_json_path must be Path")
+        _require_non_negative_int(self.node_count, "node_count")
+        _require_non_negative_int(self.edge_count, "edge_count")
+        _require_non_negative_int(self.check_count, "check_count")
+        _require_non_negative_int(self.failed_check_count, "failed_check_count")
+        _require_non_negative_int(self.issue_count, "issue_count")
+        if not isinstance(self.sections, tuple):
+            raise ValueError(
+                "sections must be a tuple of "
+                "PreprocessingGraphDiagnosticsReportSection"
+            )
+        for section in self.sections:
+            if not isinstance(section, PreprocessingGraphDiagnosticsReportSection):
+                raise ValueError(
+                    "sections must contain "
+                    "PreprocessingGraphDiagnosticsReportSection"
+                )
+        object.__setattr__(
+            self,
+            "schema_version",
+            _optional_non_empty_string(self.schema_version, "schema_version"),
+        )
+        object.__setattr__(
+            self,
+            "reference_semantics",
+            _non_empty_string(self.reference_semantics, "reference_semantics"),
+        )
+        object.__setattr__(
+            self,
+            "edge_schema",
+            _non_empty_string(self.edge_schema, "edge_schema"),
+        )
+
+    @property
+    def section_count(self) -> int:
+        """Return the number of report sections."""
+        return len(self.sections)
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe diagnostics report dictionary."""
+        return {
+            "passed": self.passed,
+            "status": self.status,
+            "nodes_csv_path": str(self.nodes_csv_path),
+            "edges_csv_path": str(self.edges_csv_path),
+            "graph_json_path": str(self.graph_json_path),
+            "node_count": self.node_count,
+            "edge_count": self.edge_count,
+            "check_count": self.check_count,
+            "failed_check_count": self.failed_check_count,
+            "issue_count": self.issue_count,
+            "section_count": self.section_count,
+            "schema_version": self.schema_version,
+            "reference_semantics": self.reference_semantics,
+            "edge_schema": self.edge_schema,
+            "sections": [section.to_dict() for section in self.sections],
+        }
+
+
+def build_preprocessing_graph_diagnostics_report(
+    diagnostics_result: PreprocessingGraphDiagnosticsRunResult,
+) -> PreprocessingGraphDiagnosticsReport:
+    """Build a JSON-safe report from an existing diagnostics run result."""
+    if not isinstance(diagnostics_result, PreprocessingGraphDiagnosticsRunResult):
+        raise TypeError(
+            "diagnostics_result must be a "
+            "PreprocessingGraphDiagnosticsRunResult"
+        )
+
+    passed = diagnostics_result.passed
+    status = "passed" if passed else "failed"
+    check_issue_count = sum(
+        len(check.issues) for check in diagnostics_result.checks
+    )
+    top_level_issue_count = len(diagnostics_result.issues)
+    issue_count = top_level_issue_count + check_issue_count
+    failed_check_count = diagnostics_result.failed_check_count
+
+    sections = (
+        _build_overview_report_section(
+            diagnostics_result,
+            status=status,
+            issue_count=issue_count,
+        ),
+        _build_artifacts_report_section(diagnostics_result),
+        _build_checks_report_section(diagnostics_result),
+        _build_issues_report_section(
+            diagnostics_result,
+            top_level_issue_count=top_level_issue_count,
+            check_issue_count=check_issue_count,
+        ),
+        _build_schema_reference_report_section(),
+        _build_boundaries_report_section(),
+    )
+
+    return PreprocessingGraphDiagnosticsReport(
+        passed=passed,
+        status=status,
+        nodes_csv_path=diagnostics_result.nodes_csv_path,
+        edges_csv_path=diagnostics_result.edges_csv_path,
+        graph_json_path=diagnostics_result.graph_json_path,
+        node_count=diagnostics_result.node_count,
+        edge_count=diagnostics_result.edge_count,
+        check_count=diagnostics_result.check_count,
+        failed_check_count=failed_check_count,
+        issue_count=issue_count,
+        sections=sections,
+        schema_version=_diagnostics_schema_version(diagnostics_result),
+    )
 
 
 def run_preprocessing_graph_diagnostics(
@@ -431,6 +604,200 @@ def _run_graph_structure_diagnostics(
     )
 
 
+def _build_overview_report_section(
+    diagnostics_result: PreprocessingGraphDiagnosticsRunResult,
+    *,
+    status: str,
+    issue_count: int,
+) -> PreprocessingGraphDiagnosticsReportSection:
+    return PreprocessingGraphDiagnosticsReportSection(
+        title="overview",
+        status=status,
+        summary={
+            "passed": diagnostics_result.passed,
+            "status": status,
+            "node_count": diagnostics_result.node_count,
+            "edge_count": diagnostics_result.edge_count,
+            "check_count": diagnostics_result.check_count,
+            "failed_check_count": diagnostics_result.failed_check_count,
+            "issue_count": issue_count,
+        },
+    )
+
+
+def _build_artifacts_report_section(
+    diagnostics_result: PreprocessingGraphDiagnosticsRunResult,
+) -> PreprocessingGraphDiagnosticsReportSection:
+    paths_are_valid = all(
+        isinstance(path, Path)
+        for path in (
+            diagnostics_result.nodes_csv_path,
+            diagnostics_result.edges_csv_path,
+            diagnostics_result.graph_json_path,
+        )
+    )
+    return PreprocessingGraphDiagnosticsReportSection(
+        title="artifacts",
+        status="passed" if paths_are_valid else "failed",
+        summary={
+            "nodes_csv_path": str(diagnostics_result.nodes_csv_path),
+            "edges_csv_path": str(diagnostics_result.edges_csv_path),
+            "graph_json_path": str(diagnostics_result.graph_json_path),
+        },
+    )
+
+
+def _build_checks_report_section(
+    diagnostics_result: PreprocessingGraphDiagnosticsRunResult,
+) -> PreprocessingGraphDiagnosticsReportSection:
+    failed_check_count = diagnostics_result.failed_check_count
+    return PreprocessingGraphDiagnosticsReportSection(
+        title="checks",
+        status="passed" if failed_check_count == 0 else "failed",
+        summary={
+            "total_checks": diagnostics_result.check_count,
+            "passed_checks": diagnostics_result.check_count - failed_check_count,
+            "failed_checks": failed_check_count,
+        },
+        details=tuple(
+            _check_report_detail(check) for check in diagnostics_result.checks
+        ),
+    )
+
+
+def _build_issues_report_section(
+    diagnostics_result: PreprocessingGraphDiagnosticsRunResult,
+    *,
+    top_level_issue_count: int,
+    check_issue_count: int,
+) -> PreprocessingGraphDiagnosticsReportSection:
+    issue_count = top_level_issue_count + check_issue_count
+    details = tuple(_iter_issue_report_details(diagnostics_result))
+    return PreprocessingGraphDiagnosticsReportSection(
+        title="issues",
+        status="passed" if issue_count == 0 else "failed",
+        summary={
+            "issue_count": issue_count,
+            "top_level_issue_count": top_level_issue_count,
+            "check_issue_count": check_issue_count,
+        },
+        details=details,
+    )
+
+
+def _build_schema_reference_report_section(
+) -> PreprocessingGraphDiagnosticsReportSection:
+    return PreprocessingGraphDiagnosticsReportSection(
+        title="schema_reference_context",
+        status="passed",
+        summary={
+            "reference_semantics": _REPORT_REFERENCE_SEMANTICS,
+            "edge_schema": _REPORT_EDGE_SCHEMA,
+            "edge_type_field": "edge_type",
+            "all_edge_types_field": "all_edge_types",
+            "n_edge_types_field": "n_edge_types",
+            "edge_type_priority": "|".join(EDGE_TYPE_PRIORITY),
+            "temporal_rin": (
+                "v1.2 fix documented; temporal RIN export remains future scope"
+            ),
+        },
+    )
+
+
+def _build_boundaries_report_section(
+) -> PreprocessingGraphDiagnosticsReportSection:
+    return PreprocessingGraphDiagnosticsReportSection(
+        title="boundaries",
+        status="not_applicable",
+        summary={
+            "stage_14_2b": "report-shape-only",
+            "reference_comparison": (
+                "not implemented; Stage 14.3 handles reference comparison"
+            ),
+            "expected_mismatches": (
+                "Stage 14.4 handles expected mismatches / semantic differences"
+            ),
+            "diagnostics_report_file_writer": "not implemented",
+            "diagnostics_report_bundle_writer": "not implemented",
+            "workflow_cli_integration": "not implemented",
+            "temporal_rin_export": "future scope",
+            "biological_interpretation": "not implemented",
+        },
+    )
+
+
+def _check_report_detail(
+    check: PreprocessingGraphDiagnosticsCheckResult,
+) -> dict[str, _SummaryValue]:
+    detail = _summary_dict(check.summary)
+    detail.update(
+        {
+            "name": check.name,
+            "passed": check.passed,
+            "issue_count": len(check.issues),
+        }
+    )
+    return detail
+
+
+def _iter_issue_report_details(
+    diagnostics_result: PreprocessingGraphDiagnosticsRunResult,
+) -> tuple[dict[str, _SummaryValue], ...]:
+    details: list[dict[str, _SummaryValue]] = []
+    for issue in diagnostics_result.issues:
+        details.append(_issue_report_detail(issue, scope="top_level"))
+    for check in diagnostics_result.checks:
+        for issue in check.issues:
+            details.append(
+                _issue_report_detail(
+                    issue,
+                    scope="check",
+                    check_name=check.name,
+                )
+            )
+    return tuple(details)
+
+
+def _issue_report_detail(
+    issue: PreprocessingGraphDiagnosticsRunIssue,
+    *,
+    scope: str,
+    check_name: str | None = None,
+) -> dict[str, _SummaryValue]:
+    resolved_check_name = check_name if check_name is not None else issue.check_name
+    return {
+        "scope": scope,
+        "check_name": resolved_check_name,
+        "kind": issue.kind,
+        "message": issue.message,
+        "field": issue.field,
+        "value": issue.value,
+    }
+
+
+def _diagnostics_schema_version(
+    diagnostics_result: PreprocessingGraphDiagnosticsRunResult,
+) -> str | None:
+    for check in diagnostics_result.checks:
+        schema_version = check.summary.get("schema_version")
+        if isinstance(schema_version, str) and schema_version.strip():
+            return schema_version
+    return None
+
+
+def _details_tuple(
+    details: tuple[Mapping[str, object], ...],
+) -> tuple[dict[str, _SummaryValue], ...]:
+    if not isinstance(details, tuple):
+        raise ValueError("details must be a tuple of JSON-safe mappings")
+    normalized: list[dict[str, _SummaryValue]] = []
+    for detail in details:
+        if not isinstance(detail, Mapping):
+            raise ValueError("details must contain JSON-safe mappings")
+        normalized.append(_summary_dict(detail))
+    return tuple(normalized)
+
+
 def _summary_dict(summary: Mapping[str, object]) -> dict[str, _SummaryValue]:
     if not isinstance(summary, Mapping):
         raise ValueError("summary must be a JSON-safe mapping")
@@ -468,7 +835,10 @@ def _require_non_negative_int(value: object, field_name: str) -> None:
 
 __all__ = [
     "PreprocessingGraphDiagnosticsCheckResult",
+    "PreprocessingGraphDiagnosticsReport",
+    "PreprocessingGraphDiagnosticsReportSection",
     "PreprocessingGraphDiagnosticsRunIssue",
     "PreprocessingGraphDiagnosticsRunResult",
+    "build_preprocessing_graph_diagnostics_report",
     "run_preprocessing_graph_diagnostics",
 ]
