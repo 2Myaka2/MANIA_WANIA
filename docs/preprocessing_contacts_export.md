@@ -428,6 +428,33 @@ Stage 14.1b writes backend graph `nodes.csv` from accepted graph mapping.
 Stage 14.1c writes backend graph `edges.csv` from accepted graph mapping.
 The contacts export layer still does not produce backend graph artifacts.
 
+Stage 14.2a runs existing graph validators/diagnostics on generated graph
+artifacts after the Stage 14.1f bundle boundary passes. Stage 13 contacts
+outputs can feed graph mapping and graph writers through accepted contacts
+result objects, but diagnostics do not reinterpret Stage 13 contact_edges.csv
+as backend graph edges.csv.
+
+Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv, graph.json, and diagnostics are Stage 14 graph artifacts. The
+diagnostics operate on corrected graph artifacts and preserve graph edge
+fields:
+
+```text
+edge_type
+all_edge_types
+n_edge_types
+```
+
+MANIA_analysis_v1_2 remains the current graph reference semantics. v1.2 Cell
+5 interaction priority is the accepted display priority, v1.2 Cell 12
+temporal RIN export fix is documented, and temporal RIN export remains future
+scope.
+
+Stage 14.2a adds no diagnostics report shape, graph reference comparison,
+temporal RIN export, CLI/workflow integration, real-data CI, or biological
+interpretation. diagnostics report shape remains Stage 14.2b and reference
+comparison remains Stage 14.3.
+
 ## Future stages
 
 Graph export remains future after contacts MVP.

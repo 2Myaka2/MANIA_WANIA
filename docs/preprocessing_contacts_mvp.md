@@ -601,3 +601,31 @@ Stage 14.1f does not run graph validators or diagnostics, graph comparison,
 local scientific graph smoke tests, temporal RIN export, or workflow/CLI
 integration. The bundle does not run diagnostics; diagnostics remain
 Stage 14.2a.
+
+## Stage 14.2a transition
+
+Stage 13 Contacts MVP remains complete. Stage 14.2a runs existing graph
+validators/diagnostics on generated graph artifacts after the Stage 14.1f
+bundle boundary passes.
+
+Stage 14 diagnostics operate on backend graph artifacts, not Stage 13
+aggregate contacts output. Stage 13 contact_edges.csv is aggregate contacts
+table output and remains aggregate contacts output. backend graph edges.csv,
+graph.json, and diagnostics are Stage 14 graph artifacts. Stage 14.2a does
+not reinterpret contact_edges.csv as backend graph edges.csv.
+
+The diagnostics runner consumes existing nodes.csv, corrected edges.csv, and
+graph.json artifacts. It preserves corrected graph edge fields `edge_type`,
+`all_edge_types`, and `n_edge_types`; current generic residue_contact remains
+valid as `edge_type = residue_contact`, `all_edge_types = residue_contact`,
+and `n_edge_types = 1`.
+
+MANIA_analysis_v1_2 remains the current graph reference semantics. v1.2 Cell
+5 interaction priority is the accepted display priority, v1.2 Cell 12
+temporal RIN export fix is documented, and temporal RIN export remains future
+scope.
+
+Stage 14.2a adds no diagnostics report shape, graph reference comparison,
+temporal RIN export, CLI/workflow integration, real-data CI, or biological
+interpretation. diagnostics report shape remains Stage 14.2b and reference
+comparison remains Stage 14.3.

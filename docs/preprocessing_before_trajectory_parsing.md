@@ -54,7 +54,8 @@ the multi-type edge schema, and Stage 14.1d adds the graph CSV validation
 boundary. Stage 14.1e adds the dependency-free `graph.json` writer from
 accepted/validated backend graph nodes.csv + corrected edges.csv. Stage 14.1f
 adds the dependency-free graph export bundle boundary for existing Stage 14
-graph artifacts.
+graph artifacts. Stage 14.2a runs existing graph validators/diagnostics on generated graph artifacts.
+It runs after the accepted Stage 14.1f bundle boundary passes.
 
 ## Current implemented capabilities
 
@@ -141,7 +142,9 @@ The current preprocessing layer supports:
 - dependency-free backend graph JSON writing through
   `write_preprocessing_graph_json(...)`;
 - dependency-free preprocessing graph export bundle metadata through
-  `build_preprocessing_graph_export_bundle(...)`.
+  `build_preprocessing_graph_export_bundle(...)`;
+- dependency-free preprocessing graph diagnostics run metadata through
+  `run_preprocessing_graph_diagnostics(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -175,6 +178,7 @@ write_preprocessing_graph_edges_csv(...)
 validate_preprocessing_graph_csvs(...)
 write_preprocessing_graph_json(...)
 build_preprocessing_graph_export_bundle(...)
+run_preprocessing_graph_diagnostics(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -341,6 +345,42 @@ Stage 14.1f does not run graph validators/diagnostics, graph comparison,
 report bundle expansion, local scientific graph smoke tests, temporal RIN
 export, or CLI/workflow integration. The bundle does not run diagnostics;
 diagnostics remain Stage 14.2a.
+
+## Stage 14.2a graph diagnostics runner bridge
+
+Stage 14.2a runs existing graph validators/diagnostics on generated graph artifacts.
+The runner is a narrow dependency-free bridge that consumes
+existing nodes.csv, corrected edges.csv, and graph.json artifacts only. It
+uses Stage 14.1f bundle boundary first and refuses downstream diagnostics
+when that bundle fails.
+
+When the bundle passes, the runner reuses existing read-only graph validation
+and diagnostics code, including graph.json validation, contract graph loading,
+and lightweight graph structure diagnostics. It returns lightweight
+deterministic JSON-safe run metadata with check results, issue summaries,
+node count, and edge count. It does not define a diagnostics report shape;
+diagnostics report shape remains Stage 14.2b. graph reference comparison
+remains Stage 14.3.
+
+The diagnostics operate on corrected Stage 14 graph artifacts preserving
+`edge_type`, `all_edge_types`, and `n_edge_types`. Current generic
+residue_contact semantics remain valid as `edge_type = residue_contact`,
+`all_edge_types = residue_contact`, and `n_edge_types = 1`.
+
+Stage 13 contact_edges.csv is aggregate contacts table output.
+backend graph edges.csv, graph.json, and diagnostics are Stage 14 graph artifacts.
+Stage 14.2a does not reinterpret Stage 13 contact_edges.csv as backend graph
+edges.csv.
+
+MANIA_analysis_v1_2 remains the current graph reference semantics.
+v1.2 Cell 5 interaction priority is reflected by `EDGE_TYPE_PRIORITY`.
+v1.2 Cell 12 temporal RIN export fix is documented only, and temporal RIN
+export remains future scope.
+
+Stage 14.2a adds no diagnostics report shape, graph reference comparison,
+notebook artifact comparison, temporal RIN export, CLI/workflow integration,
+real-data CI, or biological interpretation. There is no CLI/workflow
+integration yet and no temporal RIN export yet.
 
 ## Stage 11.1 optional runtime boundary
 

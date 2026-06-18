@@ -659,6 +659,33 @@ local scientific graph smoke test, temporal RIN export, or CLI/workflow
 integration. The bundle does not run diagnostics; diagnostics remain
 Stage 14.2a.
 
+## Stage 14.2a preprocessing graph diagnostics runner bridge
+
+Stage 14.2a adds a dependency-free graph diagnostics bridge that runs existing
+graph validators/diagnostics on generated graph artifacts. The runner consumes
+existing nodes.csv, corrected edges.csv, and graph.json artifacts and uses
+Stage 14.1f bundle boundary before running downstream checks.
+
+The graph diagnostics bridge must not require MDAnalysis, has no real MD data
+requirement, and makes no dependency configuration change. Default CI remains
+stable. It reuses existing read-only core graph validation/diagnostic code and
+does not add a new scientific dependency boundary.
+
+Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv, graph.json, and diagnostics are Stage 14 graph artifacts, and
+Stage 14.2a does not treat contact_edges.csv as backend graph edges.csv.
+
+The bridge preserves corrected graph edge fields `edge_type`,
+`all_edge_types`, and `n_edge_types`. MANIA_analysis_v1_2 remains the current
+graph reference semantics. v1.2 Cell 5 interaction priority defines the
+accepted graph edge display priority, v1.2 Cell 12 temporal RIN export fix
+remains documented-only here, and temporal RIN export remains future scope.
+
+Stage 14.2a adds no diagnostics report shape, graph reference comparison,
+temporal RIN export, local scientific graph smoke test, real-data CI, or
+CLI/workflow integration. diagnostics report shape remains Stage 14.2b and
+reference comparison remains Stage 14.3.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
