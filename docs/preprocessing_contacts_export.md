@@ -193,6 +193,22 @@ Stage 14.1d does not write `graph.json`, build a graph export bundle, run
 graph diagnostics, add CLI/workflow integration, or change contacts export.
 graph.json remains Stage 14.1e and diagnostics remain Stage 14.2a.
 
+Stage 14.1e adds the dependency-free graph.json writer from Stage 14 backend
+graph artifacts. Stage 13 contacts outputs can feed graph mapping and graph
+CSV writers through accepted contacts result objects, and Stage 14.1e writes
+graph.json from accepted/validated nodes.csv + corrected edges.csv. This does
+not make Stage 13 contact_edges.csv the backend graph edges.csv. Stage 13
+contact_edges.csv is aggregate contacts table output; backend graph edges.csv
+and graph.json are Stage 14 graph artifacts.
+
+The Stage 14.1e graph JSON writer uses Stage 14.1d validation before writing.
+graph JSON preserves corrected graph edge fields including `edge_type`,
+`all_edge_types`, and `n_edge_types`, and it preserves current generic
+residue_contact semantics as row fields. It does not build a graph export
+bundle, run graph diagnostics, perform graph comparison, or add CLI/workflow
+integration. graph export bundle remains Stage 14.1f and diagnostics remain
+Stage 14.2a.
+
 ## Validation
 
 Use the read-only validators after writing:

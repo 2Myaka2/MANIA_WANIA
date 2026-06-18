@@ -605,6 +605,31 @@ Stage 14.1d does not write `graph.json`, does not build graph export bundles,
 does not run graph diagnostics, and adds no local scientific graph smoke test.
 graph.json remains Stage 14.1e and diagnostics remain Stage 14.2a.
 
+## Stage 14.1e preprocessing graph JSON writer
+
+Stage 14.1e adds a dependency-free graph.json writer for generated backend
+graph artifacts. The writer consumes accepted/validated nodes.csv + corrected
+edges.csv, calls `validate_preprocessing_graph_csvs(...)` before writing, and
+preserves row fields in the accepted backend graph JSON structure.
+
+The writer uses only the standard library. It has no MDAnalysis requirement,
+no real MD data requirement, and no dependency configuration change, so
+default CI remains stable. graph JSON preserves `edge_type`, `all_edge_types`,
+and `n_edge_types` as corrected multi-type edge fields, including current
+generic residue_contact semantics.
+
+Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv and graph.json are Stage 14 graph artifacts.
+MANIA_analysis_v1_2 remains the current graph reference semantics. v1.2 Cell
+5 interaction priority defines the accepted graph edge display priority,
+v1.2 Cell 12 temporal RIN export fix remains documented-only here, and
+temporal RIN export remains future scope.
+
+Stage 14.1e does not build graph export bundles, does not run graph
+diagnostics, does not perform graph comparison, and adds no local scientific
+graph smoke test. graph export bundle remains Stage 14.1f and diagnostics
+remain Stage 14.2a.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

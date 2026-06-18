@@ -91,11 +91,14 @@ from mania.preprocessing.trajectory_graph_export import (
     PreprocessingGraphEdgesCsvWriteResult,
     PreprocessingGraphExportMappingIssue,
     PreprocessingGraphExportMappingResult,
+    PreprocessingGraphJsonWriteIssue,
+    PreprocessingGraphJsonWriteResult,
     PreprocessingGraphNodeMappingRecord,
     PreprocessingGraphNodesCsvWriteIssue,
     PreprocessingGraphNodesCsvWriteResult,
     build_preprocessing_graph_export_mapping,
     validate_preprocessing_graph_csvs,
+    write_preprocessing_graph_json,
     write_preprocessing_graph_nodes_csv,
 )
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
@@ -228,6 +231,8 @@ __all__ = [
     "PreprocessingGraphEdgesCsvWriteResult",
     "PreprocessingGraphExportMappingIssue",
     "PreprocessingGraphExportMappingResult",
+    "PreprocessingGraphJsonWriteIssue",
+    "PreprocessingGraphJsonWriteResult",
     "PreprocessingGraphNodesCsvWriteIssue",
     "PreprocessingGraphNodesCsvWriteResult",
     "PreprocessingGraphNodeMappingRecord",
@@ -302,6 +307,7 @@ __all__ = [
     "write_contact_edges_csv",
     "write_contacts_perframe_csv",
     "write_preprocessing_graph_edges_csv",
+    "write_preprocessing_graph_json",
     "write_preprocessing_graph_nodes_csv",
     "write_rg_timeseries_csv",
 ]

@@ -7,10 +7,16 @@ import math
 import tempfile
 from dataclasses import dataclass
 from io import StringIO
+from json import dumps as _json_dumps
 from os import PathLike
 from pathlib import Path
 
-from mania.constants import EDGE_COLUMNS, EDGE_TYPE_PRIORITY, NODE_COLUMNS
+from mania.constants import (
+    EDGE_COLUMNS,
+    EDGE_TYPE_PRIORITY,
+    NODE_COLUMNS,
+    SCHEMA_VERSION,
+)
 from mania.preprocessing.trajectory_contacts import (
     PreprocessingConditionContactsResult,
     PreprocessingContactFrameResult,
@@ -670,6 +676,121 @@ class PreprocessingGraphCsvValidationResult:
             "node_count": self.node_count,
             "edge_count": self.edge_count,
             "issue_count": self.issue_count,
+            "issues": [issue.to_dict() for issue in self.issues],
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphJsonWriteIssue:
+    """One deterministic backend graph JSON write issue."""
+
+    kind: str
+    message: str
+    field: str | None = None
+    csv_kind: str | None = None
+    row_number: int | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "kind",
+            _non_empty_string(self.kind, "kind"),
+        )
+        object.__setattr__(
+            self,
+            "message",
+            _non_empty_string(self.message, "message"),
+        )
+        object.__setattr__(
+            self,
+            "field",
+            _optional_non_empty_string(self.field, "field"),
+        )
+        object.__setattr__(
+            self,
+            "csv_kind",
+            _optional_non_empty_string(self.csv_kind, "csv_kind"),
+        )
+        if self.row_number is not None and (
+            isinstance(self.row_number, bool)
+            or not isinstance(self.row_number, int)
+            or self.row_number <= 0
+        ):
+            raise ValueError("row_number must be a positive int or None")
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe write issue dictionary."""
+        return {
+            "kind": self.kind,
+            "message": self.message,
+            "field": self.field,
+            "csv_kind": self.csv_kind,
+            "row_number": self.row_number,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphJsonWriteResult:
+    """Summary of one backend graph JSON write attempt."""
+
+    output_path: Path
+    nodes_csv_path: Path
+    edges_csv_path: Path
+    node_count: int
+    edge_count: int
+    issues: tuple[PreprocessingGraphJsonWriteIssue, ...] = ()
+    validation_passed: bool | None = None
+    validation_issue_count: int | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "output_path", Path(self.output_path))
+        object.__setattr__(self, "nodes_csv_path", Path(self.nodes_csv_path))
+        object.__setattr__(self, "edges_csv_path", Path(self.edges_csv_path))
+        _require_non_negative_int(self.node_count, "node_count")
+        _require_non_negative_int(self.edge_count, "edge_count")
+        if not isinstance(self.issues, tuple):
+            raise ValueError(
+                "issues must be a tuple of "
+                "PreprocessingGraphJsonWriteIssue"
+            )
+        for issue in self.issues:
+            if not isinstance(issue, PreprocessingGraphJsonWriteIssue):
+                raise ValueError(
+                    "issues must contain PreprocessingGraphJsonWriteIssue"
+                )
+        if self.validation_passed is not None and not isinstance(
+            self.validation_passed,
+            bool,
+        ):
+            raise ValueError("validation_passed must be bool or None")
+        if self.validation_issue_count is not None:
+            _require_non_negative_int(
+                self.validation_issue_count,
+                "validation_issue_count",
+            )
+
+    @property
+    def passed(self) -> bool:
+        """Return whether the write attempt had no issues."""
+        return self.issues == ()
+
+    @property
+    def issue_count(self) -> int:
+        """Return the number of write issues."""
+        return len(self.issues)
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe write result dictionary."""
+        return {
+            "output_path": str(self.output_path),
+            "nodes_csv_path": str(self.nodes_csv_path),
+            "edges_csv_path": str(self.edges_csv_path),
+            "passed": self.passed,
+            "node_count": self.node_count,
+            "edge_count": self.edge_count,
+            "issue_count": self.issue_count,
+            "validation_passed": self.validation_passed,
+            "validation_issue_count": self.validation_issue_count,
             "issues": [issue.to_dict() for issue in self.issues],
         }
 
@@ -1564,6 +1685,104 @@ def _condition_results(
     )
 
 
+def write_preprocessing_graph_json(
+    nodes_csv_path: str | Path,
+    edges_csv_path: str | Path,
+    output_path: str | Path,
+) -> PreprocessingGraphJsonWriteResult:
+    """Write backend graph.json from accepted, validated graph CSV artifacts."""
+    nodes_path = _coerced_json_input_path(nodes_csv_path)
+    edges_path = _coerced_json_input_path(edges_csv_path)
+    path, path_issue = _graph_json_output_path(output_path)
+    if path_issue is not None:
+        return PreprocessingGraphJsonWriteResult(
+            output_path=path,
+            nodes_csv_path=nodes_path,
+            edges_csv_path=edges_path,
+            node_count=0,
+            edge_count=0,
+            issues=(path_issue,),
+            validation_passed=None,
+            validation_issue_count=None,
+        )
+
+    validation = validate_preprocessing_graph_csvs(nodes_csv_path, edges_csv_path)
+    nodes_path = validation.nodes_csv_path
+    edges_path = validation.edges_csv_path
+    if not validation.passed:
+        return PreprocessingGraphJsonWriteResult(
+            output_path=path,
+            nodes_csv_path=nodes_path,
+            edges_csv_path=edges_path,
+            node_count=validation.node_count,
+            edge_count=validation.edge_count,
+            issues=(
+                PreprocessingGraphJsonWriteIssue(
+                    kind="validation_failed",
+                    field="validation.issues",
+                    message="Graph CSV validation failed before JSON write.",
+                ),
+            ),
+            validation_passed=False,
+            validation_issue_count=validation.issue_count,
+        )
+
+    path_write_issue = _graph_json_path_write_issue(path)
+    if path_write_issue is not None:
+        return PreprocessingGraphJsonWriteResult(
+            output_path=path,
+            nodes_csv_path=nodes_path,
+            edges_csv_path=edges_path,
+            node_count=validation.node_count,
+            edge_count=validation.edge_count,
+            issues=(path_write_issue,),
+            validation_passed=True,
+            validation_issue_count=0,
+        )
+
+    graph_result = _read_graph_json_payload(
+        nodes_path,
+        edges_path,
+        node_count=validation.node_count,
+        edge_count=validation.edge_count,
+    )
+    if isinstance(graph_result, PreprocessingGraphJsonWriteIssue):
+        return PreprocessingGraphJsonWriteResult(
+            output_path=path,
+            nodes_csv_path=nodes_path,
+            edges_csv_path=edges_path,
+            node_count=validation.node_count,
+            edge_count=validation.edge_count,
+            issues=(graph_result,),
+            validation_passed=True,
+            validation_issue_count=0,
+        )
+
+    write_issue = _write_graph_payload(path, graph_result)
+    if write_issue is not None:
+        return PreprocessingGraphJsonWriteResult(
+            output_path=path,
+            nodes_csv_path=nodes_path,
+            edges_csv_path=edges_path,
+            node_count=validation.node_count,
+            edge_count=validation.edge_count,
+            issues=(write_issue,),
+            validation_passed=True,
+            validation_issue_count=0,
+        )
+
+    return PreprocessingGraphJsonWriteResult(
+        output_path=path,
+        nodes_csv_path=nodes_path,
+        edges_csv_path=edges_path,
+        node_count=validation.node_count,
+        edge_count=validation.edge_count,
+        issues=(),
+        validation_passed=True,
+        validation_issue_count=0,
+    )
+
+
 def _map_condition_result(
     condition_result: PreprocessingConditionContactsResult,
     *,
@@ -1803,6 +2022,179 @@ def _graph_edges_path_write_issue(
             kind="parent_directory_missing",
             field="output_path.parent",
             message="Output parent path is not a directory.",
+        )
+    return None
+
+
+def _coerced_json_input_path(input_path: object) -> Path:
+    if input_path is None:
+        return Path("")
+    if isinstance(input_path, str) and not input_path.strip():
+        return Path("")
+    if not isinstance(input_path, _GRAPH_CSV_PATH_TYPES):
+        return Path("")
+    try:
+        return Path(input_path)
+    except TypeError:
+        return Path("")
+
+
+def _graph_json_output_path(
+    output_path: object,
+) -> tuple[Path, PreprocessingGraphJsonWriteIssue | None]:
+    if output_path is None:
+        return Path(""), PreprocessingGraphJsonWriteIssue(
+            kind="invalid_output_path",
+            field="output_path",
+            message="Output path is required.",
+        )
+    if isinstance(output_path, str) and not output_path.strip():
+        return Path(""), PreprocessingGraphJsonWriteIssue(
+            kind="invalid_output_path",
+            field="output_path",
+            message="Output path is required.",
+        )
+    if not isinstance(output_path, _PATHLIKE_TYPES):
+        return Path(""), PreprocessingGraphJsonWriteIssue(
+            kind="invalid_output_path",
+            field="output_path",
+            message="Output path must be path-like.",
+        )
+    try:
+        return Path(output_path), None
+    except TypeError:
+        return Path(""), PreprocessingGraphJsonWriteIssue(
+            kind="invalid_output_path",
+            field="output_path",
+            message="Output path must be path-like.",
+        )
+
+
+def _graph_json_path_write_issue(
+    output_path: Path,
+) -> PreprocessingGraphJsonWriteIssue | None:
+    if output_path.is_dir():
+        return PreprocessingGraphJsonWriteIssue(
+            kind="output_path_is_directory",
+            field="output_path",
+            message="Output path is a directory.",
+        )
+    if not output_path.parent.exists():
+        return PreprocessingGraphJsonWriteIssue(
+            kind="parent_directory_missing",
+            field="output_path.parent",
+            message="Output parent directory does not exist.",
+        )
+    if not output_path.parent.is_dir():
+        return PreprocessingGraphJsonWriteIssue(
+            kind="parent_directory_missing",
+            field="output_path.parent",
+            message="Output parent path is not a directory.",
+        )
+    return None
+
+
+def _read_graph_json_payload(
+    nodes_path: Path,
+    edges_path: Path,
+    *,
+    node_count: int,
+    edge_count: int,
+) -> dict[str, object] | PreprocessingGraphJsonWriteIssue:
+    nodes_result = _read_graph_json_rows(
+        nodes_path,
+        columns=NODE_COLUMNS,
+        csv_kind="nodes",
+    )
+    if isinstance(nodes_result, PreprocessingGraphJsonWriteIssue):
+        return nodes_result
+    edges_result = _read_graph_json_rows(
+        edges_path,
+        columns=EDGE_COLUMNS,
+        csv_kind="edges",
+    )
+    if isinstance(edges_result, PreprocessingGraphJsonWriteIssue):
+        return edges_result
+
+    nodes = [{"id": row["resid"], **row} for row in nodes_result]
+    edges = [
+        {"source": row["resid_i"], "target": row["resid_j"], **row}
+        for row in edges_result
+    ]
+    return {
+        "condition": _graph_json_condition(nodes_result, edges_result),
+        "n_nodes": node_count,
+        "n_edges": edge_count,
+        "directed": False,
+        "schema_version": SCHEMA_VERSION,
+        "nodes": nodes,
+        "edges": edges,
+    }
+
+
+def _read_graph_json_rows(
+    path: Path,
+    *,
+    columns: tuple[str, ...],
+    csv_kind: str,
+) -> tuple[dict[str, str], ...] | PreprocessingGraphJsonWriteIssue:
+    try:
+        csv_text = path.read_text(encoding="utf-8")
+        reader = csv.DictReader(StringIO(csv_text), strict=True)
+        rows = tuple(
+            {
+                column: value if (value := row.get(column)) is not None else ""
+                for column in columns
+            }
+            for row in reader
+        )
+    except (OSError, UnicodeError, csv.Error):
+        return PreprocessingGraphJsonWriteIssue(
+            kind="read_failed",
+            field="path",
+            csv_kind=csv_kind,
+            message="Graph CSV file could not be read for JSON writing.",
+        )
+    return rows
+
+
+def _graph_json_condition(
+    nodes: tuple[dict[str, str], ...],
+    edges: tuple[dict[str, str], ...],
+) -> str:
+    for row in (*nodes, *edges):
+        condition = row["condition"]
+        if condition.strip() != "":
+            return condition
+    return ""
+
+
+def _write_graph_payload(
+    output_path: Path,
+    graph: dict[str, object],
+) -> PreprocessingGraphJsonWriteIssue | None:
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            newline="",
+            dir=output_path.parent,
+            prefix=f".{output_path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as graph_file:
+            temporary_path = Path(graph_file.name)
+            graph_file.write(_json_dumps(graph, ensure_ascii=False, indent=2))
+            graph_file.write("\n")
+        temporary_path.replace(output_path)
+    except OSError:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+        return PreprocessingGraphJsonWriteIssue(
+            kind="write_failed",
+            field="output_path",
+            message="Backend graph JSON file could not be written.",
         )
     return None
 
@@ -2136,11 +2528,14 @@ __all__ = [
     "PreprocessingGraphEdgesCsvWriteResult",
     "PreprocessingGraphExportMappingIssue",
     "PreprocessingGraphExportMappingResult",
+    "PreprocessingGraphJsonWriteIssue",
+    "PreprocessingGraphJsonWriteResult",
     "PreprocessingGraphNodesCsvWriteIssue",
     "PreprocessingGraphNodesCsvWriteResult",
     "PreprocessingGraphNodeMappingRecord",
     "build_preprocessing_graph_export_mapping",
     "validate_preprocessing_graph_csvs",
     _EDGES_CSV_PUBLIC_WRITER_NAME,
+    "write_preprocessing_graph_json",
     "write_preprocessing_graph_nodes_csv",
 ]

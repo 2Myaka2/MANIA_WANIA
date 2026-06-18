@@ -51,7 +51,8 @@ in-memory graph export mapping only. Stage 14.1b adds the backend graph
 `nodes.csv` writer from that mapping, Stage 14.1c adds the backend graph
 `edges.csv` writer from that same accepted mapping, Stage 14.1c-fix corrects
 the multi-type edge schema, and Stage 14.1d adds the graph CSV validation
-boundary.
+boundary. Stage 14.1e adds the dependency-free `graph.json` writer from
+accepted/validated backend graph nodes.csv + corrected edges.csv.
 
 ## Current implemented capabilities
 
@@ -134,7 +135,9 @@ The current preprocessing layer supports:
 - dependency-free backend graph edges CSV writing through
   `write_preprocessing_graph_edges_csv(...)`;
 - dependency-free backend graph CSV validation through
-  `validate_preprocessing_graph_csvs(...)`.
+  `validate_preprocessing_graph_csvs(...)`;
+- dependency-free backend graph JSON writing through
+  `write_preprocessing_graph_json(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -166,6 +169,7 @@ build_preprocessing_graph_export_mapping(...)
 write_preprocessing_graph_nodes_csv(...)
 write_preprocessing_graph_edges_csv(...)
 validate_preprocessing_graph_csvs(...)
+write_preprocessing_graph_json(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -272,6 +276,33 @@ export remains future scope.
 Stage 14.1d does not write files, does not write `graph.json`, does not build
 a graph export bundle, does not run graph validators or diagnostics, and does
 not add workflow/CLI integration. graph.json remains Stage 14.1e, graph
+export bundle remains Stage 14.1f, and diagnostics remain Stage 14.2a.
+
+## Stage 14.1e graph JSON writer boundary
+
+Stage 14.1e adds the dependency-free `graph.json` writer. It consumes
+accepted/validated nodes.csv + corrected edges.csv backend graph artifacts,
+calls `validate_preprocessing_graph_csvs(...)` before writing, and refuses to
+write `graph.json` when validation fails.
+
+The writer preserves the accepted backend graph JSON structure with top-level
+`condition`, `n_nodes`, `n_edges`, `directed`, `schema_version`, `nodes`, and
+`edges` keys. Node rows preserve fields from `NODE_COLUMNS`; edge rows
+preserve fields from corrected `EDGE_COLUMNS`. graph JSON preserves
+`edge_type`, `all_edge_types`, and `n_edge_types` as row-preserving string
+fields, including the current generic `residue_contact` semantics.
+
+Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv and graph.json are Stage 14 graph artifacts, and Stage 14.1e does
+not treat contact_edges.csv as backend graph edges.csv.
+
+MANIA_analysis_v1_2 remains the current graph reference semantics.
+v1.2 Cell 5 interaction priority is reflected by `EDGE_TYPE_PRIORITY`.
+v1.2 Cell 12 temporal RIN export fix is documented only, and temporal RIN
+export remains future scope.
+
+Stage 14.1e does not build a graph export bundle, does not run graph
+validators or diagnostics, and does not add workflow/CLI integration. graph
 export bundle remains Stage 14.1f, and diagnostics remain Stage 14.2a.
 
 ## Stage 11.1 optional runtime boundary
