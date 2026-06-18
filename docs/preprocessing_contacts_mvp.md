@@ -577,3 +577,27 @@ scope.
 Stage 14.1e does not build a graph export bundle, does not run graph
 validators or diagnostics, and does not add workflow/CLI integration. graph
 export bundle remains Stage 14.1f and diagnostics remain Stage 14.2a.
+
+## Stage 14.1f transition
+
+Stage 13 Contacts MVP remains complete. Stage 14.1f adds a graph export
+bundle boundary for existing Stage 14 graph artifacts. The bundle consumes
+existing nodes.csv, corrected edges.csv, and graph.json artifacts, uses
+Stage 14.1d CSV validation for consistency, and checks lightweight graph JSON
+structure/count consistency.
+
+Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv and graph.json are Stage 14 graph artifacts. Stage 14 graph export
+bundle metadata is also a Stage 14 graph boundary and does not make Stage 13
+contact_edges.csv the backend graph edges.csv.
+
+The bundle preserves corrected multi-type edge fields through the boundary:
+`edge_type`, `all_edge_types`, and `n_edge_types`. MANIA_analysis_v1_2 remains
+the current graph reference semantics. v1.2 Cell 5 interaction priority is
+the accepted display priority, v1.2 Cell 12 temporal RIN export fix is
+documented, and temporal RIN export remains future scope.
+
+Stage 14.1f does not run graph validators or diagnostics, graph comparison,
+local scientific graph smoke tests, temporal RIN export, or workflow/CLI
+integration. The bundle does not run diagnostics; diagnostics remain
+Stage 14.2a.

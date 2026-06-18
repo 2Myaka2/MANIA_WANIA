@@ -7,13 +7,16 @@ import math
 import tempfile
 from dataclasses import dataclass
 from io import StringIO
+from json import JSONDecodeError
 from json import dumps as _json_dumps
+from json import loads as _json_loads
 from os import PathLike
 from pathlib import Path
 
 from mania.constants import (
     EDGE_COLUMNS,
     EDGE_TYPE_PRIORITY,
+    GRAPH_REQUIRED_KEYS,
     NODE_COLUMNS,
     SCHEMA_VERSION,
 )
@@ -77,6 +80,12 @@ _GRAPH_EDGE_INTEGER_COLUMNS = (
     "breakage_count",
     "first_seen_frame",
     "last_seen_frame",
+)
+_GRAPH_JSON_EDGE_REQUIRED_FIELDS = (
+    "condition",
+    "edge_type",
+    "all_edge_types",
+    "n_edge_types",
 )
 
 
@@ -792,6 +801,184 @@ class PreprocessingGraphJsonWriteResult:
             "validation_passed": self.validation_passed,
             "validation_issue_count": self.validation_issue_count,
             "issues": [issue.to_dict() for issue in self.issues],
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphExportBundleArtifact:
+    """Metadata for one existing preprocessing graph bundle artifact."""
+
+    kind: str
+    path: Path
+    exists: bool
+    size_bytes: int | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "kind",
+            _non_empty_string(self.kind, "kind"),
+        )
+        if not isinstance(self.path, Path):
+            raise ValueError("path must be a Path")
+        if not isinstance(self.exists, bool):
+            raise ValueError("exists must be bool")
+        if self.size_bytes is not None:
+            _require_non_negative_int(self.size_bytes, "size_bytes")
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe artifact metadata dictionary."""
+        return {
+            "kind": self.kind,
+            "path": str(self.path),
+            "exists": self.exists,
+            "size_bytes": self.size_bytes,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphExportBundleIssue:
+    """One deterministic preprocessing graph export bundle issue."""
+
+    kind: str
+    message: str
+    artifact_kind: str | None = None
+    field: str | None = None
+    value: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "kind",
+            _non_empty_string(self.kind, "kind"),
+        )
+        object.__setattr__(
+            self,
+            "message",
+            _non_empty_string(self.message, "message"),
+        )
+        object.__setattr__(
+            self,
+            "artifact_kind",
+            _optional_non_empty_string(self.artifact_kind, "artifact_kind"),
+        )
+        object.__setattr__(
+            self,
+            "field",
+            _optional_non_empty_string(self.field, "field"),
+        )
+        if self.value is not None and not isinstance(self.value, str):
+            raise ValueError("value must be a string or None")
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe issue dictionary."""
+        return {
+            "kind": self.kind,
+            "message": self.message,
+            "artifact_kind": self.artifact_kind,
+            "field": self.field,
+            "value": self.value,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphExportBundleResult:
+    """Read-only metadata boundary for existing preprocessing graph artifacts."""
+
+    nodes_csv_path: Path
+    edges_csv_path: Path
+    graph_json_path: Path
+    artifacts: tuple[PreprocessingGraphExportBundleArtifact, ...]
+    node_count: int
+    edge_count: int
+    schema_version: str | None = None
+    condition: str | None = None
+    issues: tuple[PreprocessingGraphExportBundleIssue, ...] = ()
+    csv_validation_passed: bool | None = None
+    csv_validation_issue_count: int | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "nodes_csv_path", Path(self.nodes_csv_path))
+        object.__setattr__(self, "edges_csv_path", Path(self.edges_csv_path))
+        object.__setattr__(self, "graph_json_path", Path(self.graph_json_path))
+        _require_non_negative_int(self.node_count, "node_count")
+        _require_non_negative_int(self.edge_count, "edge_count")
+        if not isinstance(self.artifacts, tuple):
+            raise ValueError(
+                "artifacts must be a tuple of "
+                "PreprocessingGraphExportBundleArtifact"
+            )
+        for artifact in self.artifacts:
+            if not isinstance(artifact, PreprocessingGraphExportBundleArtifact):
+                raise ValueError(
+                    "artifacts must contain "
+                    "PreprocessingGraphExportBundleArtifact"
+                )
+        if self.schema_version is not None:
+            object.__setattr__(
+                self,
+                "schema_version",
+                _non_empty_string(self.schema_version, "schema_version"),
+            )
+        if self.condition is not None:
+            object.__setattr__(
+                self,
+                "condition",
+                _non_empty_string(self.condition, "condition"),
+            )
+        if not isinstance(self.issues, tuple):
+            raise ValueError(
+                "issues must be a tuple of "
+                "PreprocessingGraphExportBundleIssue"
+            )
+        for issue in self.issues:
+            if not isinstance(issue, PreprocessingGraphExportBundleIssue):
+                raise ValueError(
+                    "issues must contain PreprocessingGraphExportBundleIssue"
+                )
+        if self.csv_validation_passed is not None and not isinstance(
+            self.csv_validation_passed,
+            bool,
+        ):
+            raise ValueError("csv_validation_passed must be bool or None")
+        if self.csv_validation_issue_count is not None:
+            _require_non_negative_int(
+                self.csv_validation_issue_count,
+                "csv_validation_issue_count",
+            )
+
+    @property
+    def passed(self) -> bool:
+        """Return whether the bundle boundary found no issues."""
+        return self.issues == ()
+
+    @property
+    def issue_count(self) -> int:
+        """Return the number of bundle issues."""
+        return len(self.issues)
+
+    @property
+    def artifact_count(self) -> int:
+        """Return the number of described bundle artifacts."""
+        return len(self.artifacts)
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe bundle result dictionary."""
+        return {
+            "nodes_csv_path": str(self.nodes_csv_path),
+            "edges_csv_path": str(self.edges_csv_path),
+            "graph_json_path": str(self.graph_json_path),
+            "passed": self.passed,
+            "node_count": self.node_count,
+            "edge_count": self.edge_count,
+            "schema_version": self.schema_version,
+            "condition": self.condition,
+            "artifact_count": self.artifact_count,
+            "artifacts": [artifact.to_dict() for artifact in self.artifacts],
+            "issue_count": self.issue_count,
+            "issues": [issue.to_dict() for issue in self.issues],
+            "csv_validation_passed": self.csv_validation_passed,
+            "csv_validation_issue_count": self.csv_validation_issue_count,
         }
 
 
@@ -1783,6 +1970,598 @@ def write_preprocessing_graph_json(
     )
 
 
+def build_preprocessing_graph_export_bundle(
+    nodes_csv_path: str | Path,
+    edges_csv_path: str | Path,
+    graph_json_path: str | Path,
+) -> PreprocessingGraphExportBundleResult:
+    """Describe existing Stage 14 preprocessing graph artifacts read-only."""
+    nodes_path, nodes_path_issue = _graph_bundle_input_path(
+        nodes_csv_path,
+        artifact_kind="nodes_csv",
+    )
+    edges_path, edges_path_issue = _graph_bundle_input_path(
+        edges_csv_path,
+        artifact_kind="edges_csv",
+    )
+    graph_path, graph_path_issue = _graph_bundle_input_path(
+        graph_json_path,
+        artifact_kind="graph_json",
+    )
+
+    artifacts = (
+        _graph_bundle_artifact(
+            "nodes_csv",
+            nodes_path,
+            path_valid=nodes_path_issue is None,
+        ),
+        _graph_bundle_artifact(
+            "edges_csv",
+            edges_path,
+            path_valid=edges_path_issue is None,
+        ),
+        _graph_bundle_artifact(
+            "graph_json",
+            graph_path,
+            path_valid=graph_path_issue is None,
+        ),
+    )
+
+    issues: list[PreprocessingGraphExportBundleIssue] = []
+    for path_issue in (
+        nodes_path_issue,
+        edges_path_issue,
+        graph_path_issue,
+    ):
+        if path_issue is not None:
+            issues.append(path_issue)
+    _add_graph_bundle_file_issues(artifacts, issues)
+
+    csv_validation = validate_preprocessing_graph_csvs(
+        nodes_csv_path,
+        edges_csv_path,
+    )
+    issues.extend(_graph_bundle_csv_issues(csv_validation))
+
+    graph: dict[str, object] | None = None
+    graph_read_result = _read_graph_bundle_json(graph_path)
+    if isinstance(graph_read_result, PreprocessingGraphExportBundleIssue):
+        if graph_path_issue is None and graph_path.exists() and not graph_path.is_dir():
+            issues.append(graph_read_result)
+    else:
+        graph = graph_read_result
+
+    schema_version: str | None = None
+    condition: str | None = None
+    if graph is not None:
+        schema_version, condition = _check_graph_bundle_json(
+            graph,
+            csv_node_count=csv_validation.node_count,
+            csv_edge_count=csv_validation.edge_count,
+            compare_csv_counts=csv_validation.passed,
+            issues=issues,
+        )
+
+    return PreprocessingGraphExportBundleResult(
+        nodes_csv_path=nodes_path,
+        edges_csv_path=edges_path,
+        graph_json_path=graph_path,
+        artifacts=artifacts,
+        node_count=csv_validation.node_count,
+        edge_count=csv_validation.edge_count,
+        schema_version=schema_version,
+        condition=condition,
+        issues=tuple(issues),
+        csv_validation_passed=csv_validation.passed,
+        csv_validation_issue_count=csv_validation.issue_count,
+    )
+
+
+def _graph_bundle_input_path(
+    input_path: object,
+    *,
+    artifact_kind: str,
+) -> tuple[Path, PreprocessingGraphExportBundleIssue | None]:
+    if input_path is None:
+        return Path(""), _graph_bundle_issue(
+            "invalid_path",
+            artifact_kind=artifact_kind,
+            field="path",
+            message="Graph export bundle artifact path is required.",
+        )
+    if isinstance(input_path, str) and input_path.strip() == "":
+        return Path(""), _graph_bundle_issue(
+            "invalid_path",
+            artifact_kind=artifact_kind,
+            field="path",
+            message="Graph export bundle artifact path is required.",
+        )
+    if not isinstance(input_path, _GRAPH_CSV_PATH_TYPES):
+        return Path(""), _graph_bundle_issue(
+            "invalid_path",
+            artifact_kind=artifact_kind,
+            field="path",
+            value=str(input_path),
+            message="Graph export bundle artifact path must be a string or Path.",
+        )
+    try:
+        return Path(input_path), None
+    except TypeError:
+        return Path(""), _graph_bundle_issue(
+            "invalid_path",
+            artifact_kind=artifact_kind,
+            field="path",
+            value=str(input_path),
+            message="Graph export bundle artifact path must be a string or Path.",
+        )
+
+
+def _graph_bundle_artifact(
+    kind: str,
+    path: Path,
+    *,
+    path_valid: bool,
+) -> PreprocessingGraphExportBundleArtifact:
+    if not path_valid:
+        return PreprocessingGraphExportBundleArtifact(
+            kind=kind,
+            path=path,
+            exists=False,
+            size_bytes=None,
+        )
+
+    exists = path.exists()
+    size_bytes: int | None = None
+    if exists and path.is_file():
+        try:
+            size_bytes = path.stat().st_size
+        except OSError:
+            size_bytes = None
+    return PreprocessingGraphExportBundleArtifact(
+        kind=kind,
+        path=path,
+        exists=exists,
+        size_bytes=size_bytes,
+    )
+
+
+def _add_graph_bundle_file_issues(
+    artifacts: tuple[PreprocessingGraphExportBundleArtifact, ...],
+    issues: list[PreprocessingGraphExportBundleIssue],
+) -> None:
+    for artifact in artifacts:
+        if not artifact.exists:
+            issues.append(
+                _graph_bundle_issue(
+                    "path_missing",
+                    artifact_kind=artifact.kind,
+                    field="path",
+                    value=str(artifact.path),
+                    message="Graph export bundle artifact does not exist.",
+                )
+            )
+            continue
+        if artifact.path.is_dir():
+            issues.append(
+                _graph_bundle_issue(
+                    "path_is_directory",
+                    artifact_kind=artifact.kind,
+                    field="path",
+                    value=str(artifact.path),
+                    message="Graph export bundle artifact path is a directory.",
+                )
+            )
+
+
+def _graph_bundle_csv_issues(
+    validation: PreprocessingGraphCsvValidationResult,
+) -> tuple[PreprocessingGraphExportBundleIssue, ...]:
+    issues: list[PreprocessingGraphExportBundleIssue] = []
+    for issue in validation.issues:
+        artifact_kind = (
+            "nodes_csv" if issue.csv_kind == "nodes" else "edges_csv"
+        )
+        issues.append(
+            _graph_bundle_issue(
+                "csv_validation_failed",
+                artifact_kind=artifact_kind,
+                field=issue.column,
+                value=issue.value,
+                message=f"Graph CSV validation failed: {issue.message}",
+            )
+        )
+    return tuple(issues)
+
+
+def _read_graph_bundle_json(
+    path: Path,
+) -> dict[str, object] | PreprocessingGraphExportBundleIssue:
+    try:
+        payload = _json_loads(path.read_text(encoding="utf-8"))
+    except JSONDecodeError:
+        return _graph_bundle_issue(
+            "graph_json_parse_failed",
+            artifact_kind="graph_json",
+            field="path",
+            value=str(path),
+            message="graph.json could not be parsed as JSON.",
+        )
+    except (OSError, UnicodeError):
+        return _graph_bundle_issue(
+            "graph_json_read_failed",
+            artifact_kind="graph_json",
+            field="path",
+            value=str(path),
+            message="graph.json could not be read as UTF-8 text.",
+        )
+
+    if not isinstance(payload, dict):
+        return _graph_bundle_issue(
+            "graph_json_invalid_field",
+            artifact_kind="graph_json",
+            field="root",
+            message="graph.json top-level value must be an object.",
+        )
+    return payload
+
+
+def _check_graph_bundle_json(
+    graph: dict[str, object],
+    *,
+    csv_node_count: int,
+    csv_edge_count: int,
+    compare_csv_counts: bool,
+    issues: list[PreprocessingGraphExportBundleIssue],
+) -> tuple[str | None, str | None]:
+    for key in GRAPH_REQUIRED_KEYS:
+        if key not in graph:
+            issues.append(
+                _graph_bundle_issue(
+                    "graph_json_missing_key",
+                    artifact_kind="graph_json",
+                    field=key,
+                    message="graph.json is missing a required top-level key.",
+                )
+            )
+
+    schema_version = _graph_bundle_optional_metadata_string(
+        graph,
+        field="schema_version",
+        issues=issues,
+        require_non_empty=True,
+    )
+    n_nodes = _graph_bundle_count_field(graph, "n_nodes", issues)
+    n_edges = _graph_bundle_count_field(graph, "n_edges", issues)
+    nodes = _graph_bundle_list_field(graph, "nodes", issues)
+    edges = _graph_bundle_list_field(graph, "edges", issues)
+    condition = _graph_bundle_condition(graph, n_nodes, n_edges, issues)
+
+    directed = graph.get("directed")
+    if "directed" in graph and not isinstance(directed, bool):
+        issues.append(
+            _graph_bundle_issue(
+                "graph_json_invalid_field",
+                artifact_kind="graph_json",
+                field="directed",
+                value=str(directed),
+                message="graph.json directed must be bool.",
+            )
+        )
+
+    if n_nodes is not None and nodes is not None:
+        _add_graph_bundle_count_mismatch(
+            declared=n_nodes,
+            actual=len(nodes),
+            field="n_nodes",
+            actual_field="nodes",
+            issues=issues,
+        )
+    if n_edges is not None and edges is not None:
+        _add_graph_bundle_count_mismatch(
+            declared=n_edges,
+            actual=len(edges),
+            field="n_edges",
+            actual_field="edges",
+            issues=issues,
+        )
+    if compare_csv_counts:
+        if n_nodes is not None and n_nodes != csv_node_count:
+            issues.append(
+                _graph_bundle_issue(
+                    "graph_json_count_mismatch",
+                    artifact_kind="graph_json",
+                    field="n_nodes",
+                    value=str(n_nodes),
+                    message="graph.json n_nodes does not match nodes.csv count.",
+                )
+            )
+        if n_edges is not None and n_edges != csv_edge_count:
+            issues.append(
+                _graph_bundle_issue(
+                    "graph_json_count_mismatch",
+                    artifact_kind="graph_json",
+                    field="n_edges",
+                    value=str(n_edges),
+                    message="graph.json n_edges does not match edges.csv count.",
+                )
+            )
+
+    if nodes is not None:
+        _check_graph_bundle_nodes(nodes, issues)
+    if edges is not None:
+        _check_graph_bundle_edges(edges, issues)
+
+    return schema_version, condition
+
+
+def _graph_bundle_optional_metadata_string(
+    graph: dict[str, object],
+    *,
+    field: str,
+    issues: list[PreprocessingGraphExportBundleIssue],
+    require_non_empty: bool,
+) -> str | None:
+    if field not in graph:
+        return None
+    value = graph[field]
+    if not isinstance(value, str) or (require_non_empty and value.strip() == ""):
+        issues.append(
+            _graph_bundle_issue(
+                "graph_json_invalid_field",
+                artifact_kind="graph_json",
+                field=field,
+                value=str(value),
+                message=f"graph.json {field} must be a non-empty string.",
+            )
+        )
+        return None
+    if value.strip() == "":
+        return None
+    return value
+
+
+def _graph_bundle_condition(
+    graph: dict[str, object],
+    n_nodes: int | None,
+    n_edges: int | None,
+    issues: list[PreprocessingGraphExportBundleIssue],
+) -> str | None:
+    if "condition" not in graph:
+        return None
+    value = graph["condition"]
+    if not isinstance(value, str):
+        issues.append(
+            _graph_bundle_issue(
+                "graph_json_invalid_field",
+                artifact_kind="graph_json",
+                field="condition",
+                value=str(value),
+                message="graph.json condition must be a string.",
+            )
+        )
+        return None
+
+    if value.strip() != "":
+        return value
+    if n_nodes == 0 and n_edges == 0:
+        return None
+
+    issues.append(
+        _graph_bundle_issue(
+            "graph_json_invalid_field",
+            artifact_kind="graph_json",
+            field="condition",
+            value=value,
+            message="graph.json condition must be non-empty when rows exist.",
+        )
+    )
+    return None
+
+
+def _graph_bundle_count_field(
+    graph: dict[str, object],
+    field: str,
+    issues: list[PreprocessingGraphExportBundleIssue],
+) -> int | None:
+    if field not in graph:
+        return None
+    value = graph[field]
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        issues.append(
+            _graph_bundle_issue(
+                "graph_json_invalid_field",
+                artifact_kind="graph_json",
+                field=field,
+                value=str(value),
+                message=f"graph.json {field} must be a non-negative int.",
+            )
+        )
+        return None
+    return value
+
+
+def _graph_bundle_list_field(
+    graph: dict[str, object],
+    field: str,
+    issues: list[PreprocessingGraphExportBundleIssue],
+) -> list[object] | None:
+    if field not in graph:
+        return None
+    value = graph[field]
+    if not isinstance(value, list):
+        issues.append(
+            _graph_bundle_issue(
+                "graph_json_invalid_field",
+                artifact_kind="graph_json",
+                field=field,
+                value=str(value),
+                message=f"graph.json {field} must be a list.",
+            )
+        )
+        return None
+    return value
+
+
+def _add_graph_bundle_count_mismatch(
+    *,
+    declared: int,
+    actual: int,
+    field: str,
+    actual_field: str,
+    issues: list[PreprocessingGraphExportBundleIssue],
+) -> None:
+    if declared == actual:
+        return
+    issues.append(
+        _graph_bundle_issue(
+            "graph_json_count_mismatch",
+            artifact_kind="graph_json",
+            field=field,
+            value=str(declared),
+            message=(
+                f"graph.json {field} does not match "
+                f"len({actual_field})."
+            ),
+        )
+    )
+
+
+def _check_graph_bundle_nodes(
+    nodes: list[object],
+    issues: list[PreprocessingGraphExportBundleIssue],
+) -> None:
+    for index, node in enumerate(nodes):
+        field_prefix = f"nodes[{index}]"
+        if not isinstance(node, dict):
+            issues.append(
+                _graph_bundle_issue(
+                    "graph_json_invalid_field",
+                    artifact_kind="graph_json",
+                    field=field_prefix,
+                    message="graph.json node entries must be objects.",
+                )
+            )
+            continue
+        if not _has_graph_bundle_non_empty_string_field(node, ("id", "resid")):
+            issues.append(
+                _graph_bundle_issue(
+                    "graph_json_missing_node_field",
+                    artifact_kind="graph_json",
+                    field=f"{field_prefix}.id",
+                    message="graph.json node must preserve id or resid.",
+                )
+            )
+        _require_graph_bundle_string_field(
+            node,
+            f"{field_prefix}.condition",
+            key="condition",
+            issue_kind="graph_json_missing_node_field",
+            issues=issues,
+        )
+
+
+def _check_graph_bundle_edges(
+    edges: list[object],
+    issues: list[PreprocessingGraphExportBundleIssue],
+) -> None:
+    for index, edge in enumerate(edges):
+        field_prefix = f"edges[{index}]"
+        if not isinstance(edge, dict):
+            issues.append(
+                _graph_bundle_issue(
+                    "graph_json_invalid_field",
+                    artifact_kind="graph_json",
+                    field=field_prefix,
+                    message="graph.json edge entries must be objects.",
+                )
+            )
+            continue
+        if not _has_graph_bundle_non_empty_string_field(edge, ("source", "resid_i")):
+            issues.append(
+                _graph_bundle_issue(
+                    "graph_json_missing_edge_field",
+                    artifact_kind="graph_json",
+                    field=f"{field_prefix}.source",
+                    message="graph.json edge must preserve source or resid_i.",
+                )
+            )
+        if not _has_graph_bundle_non_empty_string_field(edge, ("target", "resid_j")):
+            issues.append(
+                _graph_bundle_issue(
+                    "graph_json_missing_edge_field",
+                    artifact_kind="graph_json",
+                    field=f"{field_prefix}.target",
+                    message="graph.json edge must preserve target or resid_j.",
+                )
+            )
+        for key in _GRAPH_JSON_EDGE_REQUIRED_FIELDS:
+            _require_graph_bundle_string_field(
+                edge,
+                f"{field_prefix}.{key}",
+                key=key,
+                issue_kind="graph_json_missing_edge_field",
+                issues=issues,
+            )
+
+
+def _has_graph_bundle_non_empty_string_field(
+    row: dict[object, object],
+    keys: tuple[str, ...],
+) -> bool:
+    return any(
+        isinstance(row.get(key), str) and str(row.get(key)).strip() != ""
+        for key in keys
+    )
+
+
+def _require_graph_bundle_string_field(
+    row: dict[object, object],
+    field: str,
+    *,
+    key: str,
+    issue_kind: str,
+    issues: list[PreprocessingGraphExportBundleIssue],
+) -> None:
+    if key not in row:
+        issues.append(
+            _graph_bundle_issue(
+                issue_kind,
+                artifact_kind="graph_json",
+                field=field,
+                message=f"graph.json row is missing {key}.",
+            )
+        )
+        return
+    value = row[key]
+    if not isinstance(value, str) or value.strip() == "":
+        issues.append(
+            _graph_bundle_issue(
+                "graph_json_invalid_field",
+                artifact_kind="graph_json",
+                field=field,
+                value=str(value),
+                message=f"graph.json row field {key} must be a non-empty string.",
+            )
+        )
+
+
+def _graph_bundle_issue(
+    kind: str,
+    *,
+    message: str,
+    artifact_kind: str | None = None,
+    field: str | None = None,
+    value: str | None = None,
+) -> PreprocessingGraphExportBundleIssue:
+    return PreprocessingGraphExportBundleIssue(
+        kind=kind,
+        message=message,
+        artifact_kind=artifact_kind,
+        field=field,
+        value=value,
+    )
+
+
 def _map_condition_result(
     condition_result: PreprocessingConditionContactsResult,
     *,
@@ -2526,6 +3305,9 @@ __all__ = [
     "PreprocessingGraphEdgeMappingRecord",
     "PreprocessingGraphEdgesCsvWriteIssue",
     "PreprocessingGraphEdgesCsvWriteResult",
+    "PreprocessingGraphExportBundleArtifact",
+    "PreprocessingGraphExportBundleIssue",
+    "PreprocessingGraphExportBundleResult",
     "PreprocessingGraphExportMappingIssue",
     "PreprocessingGraphExportMappingResult",
     "PreprocessingGraphJsonWriteIssue",
@@ -2533,6 +3315,7 @@ __all__ = [
     "PreprocessingGraphNodesCsvWriteIssue",
     "PreprocessingGraphNodesCsvWriteResult",
     "PreprocessingGraphNodeMappingRecord",
+    "build_preprocessing_graph_export_bundle",
     "build_preprocessing_graph_export_mapping",
     "validate_preprocessing_graph_csvs",
     _EDGES_CSV_PUBLIC_WRITER_NAME,

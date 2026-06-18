@@ -52,7 +52,9 @@ in-memory graph export mapping only. Stage 14.1b adds the backend graph
 `edges.csv` writer from that same accepted mapping, Stage 14.1c-fix corrects
 the multi-type edge schema, and Stage 14.1d adds the graph CSV validation
 boundary. Stage 14.1e adds the dependency-free `graph.json` writer from
-accepted/validated backend graph nodes.csv + corrected edges.csv.
+accepted/validated backend graph nodes.csv + corrected edges.csv. Stage 14.1f
+adds the dependency-free graph export bundle boundary for existing Stage 14
+graph artifacts.
 
 ## Current implemented capabilities
 
@@ -137,7 +139,9 @@ The current preprocessing layer supports:
 - dependency-free backend graph CSV validation through
   `validate_preprocessing_graph_csvs(...)`;
 - dependency-free backend graph JSON writing through
-  `write_preprocessing_graph_json(...)`.
+  `write_preprocessing_graph_json(...)`;
+- dependency-free preprocessing graph export bundle metadata through
+  `build_preprocessing_graph_export_bundle(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -170,6 +174,7 @@ write_preprocessing_graph_nodes_csv(...)
 write_preprocessing_graph_edges_csv(...)
 validate_preprocessing_graph_csvs(...)
 write_preprocessing_graph_json(...)
+build_preprocessing_graph_export_bundle(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -304,6 +309,38 @@ export remains future scope.
 Stage 14.1e does not build a graph export bundle, does not run graph
 validators or diagnostics, and does not add workflow/CLI integration. graph
 export bundle remains Stage 14.1f, and diagnostics remain Stage 14.2a.
+
+## Stage 14.1f graph export bundle boundary
+
+Stage 14.1f adds the dependency-free graph export bundle boundary. The bundle
+consumes existing nodes.csv, corrected edges.csv, and graph.json artifacts. It
+does not generate, copy, rewrite, or mutate those files.
+
+The graph export bundle consumes existing nodes.csv, corrected edges.csv, and graph.json artifacts only.
+
+The bundle uses Stage 14.1d validation for CSV consistency, checks lightweight
+graph JSON structure/count consistency, and reports deterministic artifact
+paths, sizes, counts, condition, schema_version, and issues. The accepted graph
+JSON structure remains `condition`, `n_nodes`, `n_edges`, `directed`,
+`schema_version`, `nodes`, and `edges`.
+
+The bundle preserves corrected multi-type edge fields through the boundary:
+`edge_type`, `all_edge_types`, and `n_edge_types`. Current generic
+residue_contact semantics remain valid as row-preserving graph fields.
+
+Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv and graph.json are Stage 14 graph artifacts, and the Stage 14.1f
+bundle does not treat contact_edges.csv as backend graph edges.csv.
+
+MANIA_analysis_v1_2 remains the current graph reference semantics.
+v1.2 Cell 5 interaction priority is reflected by `EDGE_TYPE_PRIORITY`.
+v1.2 Cell 12 temporal RIN export fix is documented only, and temporal RIN
+export remains future scope.
+
+Stage 14.1f does not run graph validators/diagnostics, graph comparison,
+report bundle expansion, local scientific graph smoke tests, temporal RIN
+export, or CLI/workflow integration. The bundle does not run diagnostics;
+diagnostics remain Stage 14.2a.
 
 ## Stage 11.1 optional runtime boundary
 

@@ -630,6 +630,35 @@ diagnostics, does not perform graph comparison, and adds no local scientific
 graph smoke test. graph export bundle remains Stage 14.1f and diagnostics
 remain Stage 14.2a.
 
+## Stage 14.1f preprocessing graph export bundle boundary
+
+Stage 14.1f adds a dependency-free graph export bundle boundary for existing
+Stage 14 graph artifacts. The bundle consumes existing nodes.csv, corrected
+edges.csv, and graph.json artifacts, uses
+`validate_preprocessing_graph_csvs(...)` for CSV consistency, and checks
+lightweight graph JSON structure/count consistency.
+
+The bundle uses only the standard library. It has no MDAnalysis requirement,
+no real MD data requirement, and no dependency configuration change, so
+default CI remains stable. graph diagnostics are not run yet.
+
+Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv and graph.json are Stage 14 graph artifacts, and the Stage 14.1f
+bundle does not treat contact_edges.csv as backend graph edges.csv.
+
+The bundle preserves corrected multi-type edge fields through the boundary:
+`edge_type`, `all_edge_types`, and `n_edge_types`. MANIA_analysis_v1_2 remains
+the current graph reference semantics. v1.2 Cell 5 interaction priority
+defines the accepted graph edge display priority, v1.2 Cell 12 temporal RIN
+export fix remains documented-only here, and temporal RIN export remains
+future scope.
+
+Stage 14.1f does not run graph diagnostics, does not perform graph comparison,
+does not add a report bundle beyond lightweight artifact metadata, and adds no
+local scientific graph smoke test, temporal RIN export, or CLI/workflow
+integration. The bundle does not run diagnostics; diagnostics remain
+Stage 14.2a.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
