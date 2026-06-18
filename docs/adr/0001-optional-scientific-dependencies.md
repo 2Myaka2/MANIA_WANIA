@@ -705,6 +705,32 @@ v1.2 Cell 5 interaction priority defines the accepted graph edge display
 priority, v1.2 Cell 12 temporal RIN export fix remains documented-only here,
 and temporal RIN export remains future scope.
 
+## Stage 14.3a graph reference comparison input contract
+
+Stage 14.3a adds only a dependency-free reference graph comparison input
+contract. It validates generated/reference artifact readiness for explicit
+generated and reference `nodes.csv`, corrected backend graph `edges.csv`, and
+`graph.json` paths. It uses the existing graph export bundle boundary and
+standard-library dataclasses only.
+
+Stage 14.3a has no MDAnalysis requirement, no real MD data requirement, and
+no dependency configuration change. It does not perform comparison; actual
+comparison remains Stage 14.3b. It does not compare node rows, edge rows, or
+full graph JSON contents, and it does not add diagnostics execution, notebook
+artifact comparison, temporal RIN export, CLI/workflow integration, or
+biological interpretation.
+
+MANIA_analysis_v1_2 remains the current graph reference semantics. v1.1
+historical reference artifacts remain historical. v1.2 Cell 5 interaction
+priority defines the accepted graph edge display priority, v1.2 Cell 12
+temporal RIN export fix remains documented-only here, and temporal RIN export
+remains future scope.
+
+Corrected graph edges preserve `edge_type`, `all_edge_types`, and
+`n_edge_types` according to `EDGE_TYPE_PRIORITY`. Stage 13 contact_edges.csv
+is aggregate contacts table output. backend graph edges.csv, graph.json,
+diagnostics, and comparison inputs are Stage 14 graph artifacts.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

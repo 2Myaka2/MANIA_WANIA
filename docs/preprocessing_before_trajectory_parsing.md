@@ -57,7 +57,10 @@ adds the dependency-free graph export bundle boundary for existing Stage 14
 graph artifacts. Stage 14.2a runs existing graph validators/diagnostics on generated graph artifacts.
 It runs after the accepted Stage 14.1f bundle boundary passes. Stage 14.2b
 adds only the dependency-free in-memory diagnostics report shape for an
-already computed Stage 14.2a diagnostics result.
+already computed Stage 14.2a diagnostics result. Stage 14.3a adds the
+reference graph comparison input contract for future generated/reference graph
+comparison. It validates generated/reference artifact readiness only and does
+not perform comparison; actual comparison remains Stage 14.3b.
 
 ## Current implemented capabilities
 
@@ -148,7 +151,9 @@ The current preprocessing layer supports:
 - dependency-free preprocessing graph diagnostics run metadata through
   `run_preprocessing_graph_diagnostics(...)`;
 - dependency-free preprocessing graph diagnostics report shape through
-  `build_preprocessing_graph_diagnostics_report(...)`.
+  `build_preprocessing_graph_diagnostics_report(...)`;
+- dependency-free graph reference comparison input validation through
+  `validate_preprocessing_graph_reference_comparison_input(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -184,6 +189,7 @@ write_preprocessing_graph_json(...)
 build_preprocessing_graph_export_bundle(...)
 run_preprocessing_graph_diagnostics(...)
 build_preprocessing_graph_diagnostics_report(...)
+validate_preprocessing_graph_reference_comparison_input(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -258,6 +264,38 @@ graph `edges.csv` schema has no matching columns for those values.
 Stage 13 contact_edges.csv is aggregate contacts table output.
 backend graph edges.csv is separate from that aggregate contacts table.
 backend graph edges.csv is separate.
+
+## Stage 14.3a graph reference comparison input contract
+
+Stage 14.3a adds only the dependency-free reference graph comparison input
+contract for future generated-vs-reference graph comparison. The contract uses
+explicit paths for generated and reference `nodes.csv`, corrected `edges.csv`,
+and `graph.json` artifacts. Validation reuses the Stage 14.1f graph export
+bundle boundary for each side, records node counts, edge counts, condition,
+and schema version, and validates generated/reference artifact readiness.
+
+Stage 14.3a does not perform comparison. It does not compare node rows, edge
+rows, or full graph JSON contents, does not compute numeric differences or
+mismatch classifications, does not run diagnostics, does not call CLI or
+workflow code, and does not write artifacts. Actual comparison remains Stage
+14.3b.
+
+The current reference graph semantics are
+`data/reference/notebooks_libraries_v1_2/MANIA_analysis_v1_2.ipynb`.
+`MANIA_analysis_v1_2` is required by default. v1.1 historical reference
+artifacts remain historical and must not be modified for Stage 14.3a. v1.2
+Cell 5 interaction priority defines graph edge display priority, and v1.2
+Cell 12 temporal RIN export fix is documented only; temporal RIN export
+remains future scope.
+
+Corrected backend graph edges preserve the multi-type edge fields
+`edge_type`, `all_edge_types`, and `n_edge_types`. The accepted
+`EDGE_TYPE_PRIORITY` context remains `hbond`, `disulfide`, `salt_bridge`,
+`ionic`, `cation_pi`, `aromatic_pi`, `hydrophobic`, then `vdw`. Stage 13
+contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv, graph.json, diagnostics, and comparison inputs are Stage 14 graph
+artifacts.
+
 Stage 14.1c does not write backend graph nodes.csv, does not write
 `graph.json`, does not run graph validators or diagnostics, and does not add
 workflow/CLI integration. graph CSV validation remains Stage 14.1d and

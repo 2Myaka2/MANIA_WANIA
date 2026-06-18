@@ -480,6 +480,28 @@ MANIA_analysis_v1_2 remains the current graph reference semantics. v1.2 Cell
 temporal RIN export fix is documented, and temporal RIN export remains future
 scope. Reference comparison remains Stage 14.3.
 
+Stage 14.3a adds only the dependency-free reference graph comparison input
+contract. It validates generated/reference artifact readiness for explicit
+generated and reference `nodes.csv`, corrected backend graph `edges.csv`, and
+`graph.json` paths. Stage 14.3a does not perform comparison; actual
+comparison remains Stage 14.3b.
+
+The graph comparison input contract records counts and top-level metadata
+through the existing graph export bundle boundary. It does not compare node
+rows, edge rows, full graph JSON contents, numeric tolerances, diagnostics,
+notebook artifacts, temporal RIN export, CLI/workflow outputs, or biological
+interpretation.
+
+MANIA_analysis_v1_2 remains the current graph reference semantics. v1.1
+historical reference artifacts remain historical. v1.2 Cell 5 interaction
+priority and v1.2 Cell 12 temporal RIN export fix remain documented context;
+temporal RIN export remains future scope.
+
+Corrected graph edges preserve `edge_type`, `all_edge_types`, and
+`n_edge_types` according to `EDGE_TYPE_PRIORITY`. Stage 13 contact_edges.csv
+is aggregate contacts table output.
+backend graph edges.csv, graph.json, diagnostics, and comparison inputs are Stage 14 graph artifacts.
+
 ## Future stages
 
 Graph export remains future after contacts MVP.

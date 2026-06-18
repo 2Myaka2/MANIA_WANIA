@@ -649,3 +649,23 @@ diagnostics again, perform reference comparison, add CLI/workflow integration,
 export temporal RIN artifacts, or add biological interpretation. Reference
 comparison remains Stage 14.3, and expected mismatches / semantic differences
 remain Stage 14.4.
+
+## Stage 14.3a transition
+
+Stage 13 Contacts MVP remains complete. Stage 14.3a adds only the
+dependency-free reference graph comparison input contract. It validates
+generated/reference artifact readiness for explicit generated and reference
+`nodes.csv`, corrected backend graph `edges.csv`, and `graph.json` paths.
+Stage 14.3a does not perform comparison; it does not compare node rows, edge
+rows, or graph JSON contents. Actual comparison remains Stage 14.3b.
+
+MANIA_analysis_v1_2 is the current graph reference semantics, and v1.1
+historical reference artifacts remain historical. v1.2 Cell 5 interaction
+priority and v1.2 Cell 12 temporal RIN export fix remain documented context;
+temporal RIN export remains future scope. Corrected graph edges preserve
+`edge_type`, `all_edge_types`, and `n_edge_types` according to
+`EDGE_TYPE_PRIORITY`.
+
+Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv, graph.json, diagnostics, and comparison inputs are Stage 14 graph
+artifacts.
