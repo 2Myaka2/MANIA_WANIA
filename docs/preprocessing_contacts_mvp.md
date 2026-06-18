@@ -528,3 +528,28 @@ Stage 14.1c does not validate graph CSV outputs, does not write `graph.json`,
 does not run graph validators or diagnostics, and does not add workflow/CLI
 integration. graph CSV validation remains Stage 14.1d and graph.json remains
 Stage 14.1e.
+
+## Stage 14.1d transition
+
+Stage 13 Contacts MVP remains complete. Stage 14.1d validates backend graph
+CSV artifacts generated from graph mapping: generated nodes.csv and corrected
+edges.csv. The graph CSV validation boundary consumes existing CSV files only
+and does not recompute contacts or alter contacts semantics.
+
+Stage 13 contact_edges.csv is aggregate contacts table output. backend graph
+edges.csv is separate graph artifact and is validated only as the Stage 14
+backend graph artifact produced from accepted graph mapping. Current generic
+residue_contact remains valid as `edge_type = residue_contact`,
+`all_edge_types = residue_contact`, and `n_edge_types = 1`.
+
+The corrected edges.csv includes all_edge_types and n_edge_types, and
+multi-type edge validation follows the accepted `EDGE_TYPE_PRIORITY` order.
+MANIA_analysis_v1_2 remains the current graph reference semantics: v1.2 Cell
+5 interaction priority is the accepted display priority, v1.2 Cell 12
+temporal RIN export fix is documented, and temporal RIN export remains future
+scope.
+
+Stage 14.1d does not write `graph.json`, does not build a graph export bundle,
+does not run graph validators or diagnostics, and does not add workflow/CLI
+integration. graph.json remains Stage 14.1e and diagnostics remain Stage
+14.2a.

@@ -583,6 +583,28 @@ not run yet.
 
 graph CSV validation remains Stage 14.1d and graph.json remains Stage 14.1e.
 
+## Stage 14.1d preprocessing graph CSV validation boundary
+
+Stage 14.1d adds the graph CSV validation boundary for generated backend graph
+nodes.csv and corrected edges.csv. The validator is dependency-free, requires
+no MDAnalysis, requires no real MD data, and does not change dependency
+configuration, so default CI remains stable.
+
+The validator consumes existing CSV files only. corrected edges.csv includes
+all_edge_types and n_edge_types, and validation uses the accepted
+`EDGE_TYPE_PRIORITY` for multi-type edge ordering. Stage 13 contact_edges.csv
+is aggregate contacts table output, while backend graph edges.csv is separate
+graph artifact.
+
+MANIA_analysis_v1_2 remains the current graph reference semantics. v1.2 Cell
+5 interaction priority defines the accepted graph edge display priority,
+v1.2 Cell 12 temporal RIN export fix remains documented-only here, and
+temporal RIN export remains future scope.
+
+Stage 14.1d does not write `graph.json`, does not build graph export bundles,
+does not run graph diagnostics, and adds no local scientific graph smoke test.
+graph.json remains Stage 14.1e and diagnostics remain Stage 14.2a.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

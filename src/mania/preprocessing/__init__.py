@@ -84,6 +84,8 @@ from mania.preprocessing.trajectory_contacts_reference_comparison import (
     validate_contacts_reference_comparison_input,
 )
 from mania.preprocessing.trajectory_graph_export import (
+    PreprocessingGraphCsvValidationIssue,
+    PreprocessingGraphCsvValidationResult,
     PreprocessingGraphEdgeMappingRecord,
     PreprocessingGraphEdgesCsvWriteIssue,
     PreprocessingGraphEdgesCsvWriteResult,
@@ -93,6 +95,7 @@ from mania.preprocessing.trajectory_graph_export import (
     PreprocessingGraphNodesCsvWriteIssue,
     PreprocessingGraphNodesCsvWriteResult,
     build_preprocessing_graph_export_mapping,
+    validate_preprocessing_graph_csvs,
     write_preprocessing_graph_nodes_csv,
 )
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
@@ -219,6 +222,8 @@ __all__ = [
     "PreprocessingConditionRuntimeInput",
     "PreprocessingConditionRuntimeMetadata",
     "PreprocessingGraphEdgeMappingRecord",
+    "PreprocessingGraphCsvValidationIssue",
+    "PreprocessingGraphCsvValidationResult",
     "PreprocessingGraphEdgesCsvWriteIssue",
     "PreprocessingGraphEdgesCsvWriteResult",
     "PreprocessingGraphExportMappingIssue",
@@ -290,6 +295,7 @@ __all__ = [
     "validate_contact_edges_csv",
     "validate_contacts_perframe_csv",
     "validate_contacts_reference_comparison_input",
+    "validate_preprocessing_graph_csvs",
     "validate_rg_reference_comparison_input",
     "validate_rg_timeseries_csv",
     "validate_residue_library_from_manifest_options",

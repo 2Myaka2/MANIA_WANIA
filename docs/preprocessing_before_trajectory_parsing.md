@@ -48,8 +48,10 @@ Stage 13.5a adds contacts performance boundary documentation only. Stage
 synthetic data only. Stage 13.6 completes the final contacts MVP boundary
 documentation before graph work. Stage 14.1a starts graph export work with
 in-memory graph export mapping only. Stage 14.1b adds the backend graph
-`nodes.csv` writer from that mapping, and Stage 14.1c adds the backend graph
-`edges.csv` writer from that same accepted mapping.
+`nodes.csv` writer from that mapping, Stage 14.1c adds the backend graph
+`edges.csv` writer from that same accepted mapping, Stage 14.1c-fix corrects
+the multi-type edge schema, and Stage 14.1d adds the graph CSV validation
+boundary.
 
 ## Current implemented capabilities
 
@@ -130,7 +132,9 @@ The current preprocessing layer supports:
 - dependency-free backend graph nodes CSV writing through
   `write_preprocessing_graph_nodes_csv(...)`;
 - dependency-free backend graph edges CSV writing through
-  `write_preprocessing_graph_edges_csv(...)`.
+  `write_preprocessing_graph_edges_csv(...)`;
+- dependency-free backend graph CSV validation through
+  `validate_preprocessing_graph_csvs(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -161,6 +165,7 @@ compare_contacts_outputs(...)
 build_preprocessing_graph_export_mapping(...)
 write_preprocessing_graph_nodes_csv(...)
 write_preprocessing_graph_edges_csv(...)
+validate_preprocessing_graph_csvs(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -239,6 +244,35 @@ Stage 14.1c does not write backend graph nodes.csv, does not write
 `graph.json`, does not run graph validators or diagnostics, and does not add
 workflow/CLI integration. graph CSV validation remains Stage 14.1d and
 graph.json remains Stage 14.1e.
+
+## Stage 14.1d graph CSV validation boundary
+
+Stage 14.1d adds the graph CSV validation boundary for generated backend graph
+artifacts. It validates generated nodes.csv and corrected edges.csv only. The
+corrected edges.csv includes all_edge_types and n_edge_types alongside the
+backward-compatible edge_type field.
+
+The validation consumes CSV files only. It checks exact accepted headers, row
+column counts, required graph identity fields, duplicate node IDs, duplicate
+edge keys, edge endpoints, self-edges, required condition values, optional
+finite numeric values, and corrected multi-type edge fields. It uses the
+accepted `NODE_COLUMNS`, corrected `EDGE_COLUMNS`, and `EDGE_TYPE_PRIORITY`
+constants.
+
+Stage 13 contact_edges.csv is aggregate contacts table output.
+backend graph edges.csv is separate graph artifact. Stage 14.1d does not call the
+Stage 13 contacts CSV validators and does not treat contact_edges.csv as
+backend graph edges.csv.
+
+MANIA_analysis_v1_2 remains the current graph reference semantics.
+v1.2 Cell 5 interaction priority is reflected by `EDGE_TYPE_PRIORITY`.
+v1.2 Cell 12 temporal RIN export fix is documented only, and temporal RIN
+export remains future scope.
+
+Stage 14.1d does not write files, does not write `graph.json`, does not build
+a graph export bundle, does not run graph validators or diagnostics, and does
+not add workflow/CLI integration. graph.json remains Stage 14.1e, graph
+export bundle remains Stage 14.1f, and diagnostics remain Stage 14.2a.
 
 ## Stage 11.1 optional runtime boundary
 

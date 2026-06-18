@@ -6,6 +6,7 @@ import csv
 import math
 import tempfile
 from dataclasses import dataclass
+from io import StringIO
 from os import PathLike
 from pathlib import Path
 
@@ -28,6 +29,49 @@ _EDGE_TYPE_PRIORITY_INDEX = {
 }
 _PATHLIKE_TYPES = (str, Path, PathLike)
 _EDGES_CSV_PUBLIC_WRITER_NAME = "write_preprocessing_graph_" + "edges_csv"
+_GRAPH_CSV_PATH_TYPES = (str, Path)
+_GRAPH_NODE_REQUIRED_COLUMNS = ("resid", "resname", "condition")
+_GRAPH_EDGE_REQUIRED_COLUMNS = (
+    "resid_i",
+    "resid_j",
+    "edge_type",
+    "all_edge_types",
+    "n_edge_types",
+    "condition",
+)
+_GRAPH_NODE_FLOAT_COLUMNS = (
+    "x_ca",
+    "y_ca",
+    "z_ca",
+    "tm_relative_z",
+    "rmsf_A",
+    "sasa_A2",
+    "degree",
+    "strength",
+    "betweenness",
+    "closeness",
+    "eigenvector",
+    "pagerank",
+)
+_GRAPH_NODE_INTEGER_COLUMNS = ("kcore", "community_id")
+_GRAPH_EDGE_FLOAT_COLUMNS = (
+    "contact_freq",
+    "mean_dist_A",
+    "std_dist_A",
+    "mean_lifetime_frames",
+    "max_lifetime_frames",
+    "mean_lifetime_ns",
+    "max_lifetime_ns",
+    "window_cv",
+)
+_GRAPH_EDGE_INTEGER_COLUMNS = (
+    "n_edge_types",
+    "n_episodes",
+    "formation_count",
+    "breakage_count",
+    "first_seen_frame",
+    "last_seen_frame",
+)
 
 
 @dataclass(frozen=True)
@@ -529,6 +573,108 @@ class PreprocessingGraphEdgesCsvWriteResult:
 
 
 @dataclass(frozen=True)
+class PreprocessingGraphCsvValidationIssue:
+    """One deterministic backend graph CSV validation issue."""
+
+    kind: str
+    message: str
+    csv_kind: str | None = None
+    row_number: int | None = None
+    column: str | None = None
+    value: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "kind",
+            _non_empty_string(self.kind, "kind"),
+        )
+        object.__setattr__(
+            self,
+            "message",
+            _non_empty_string(self.message, "message"),
+        )
+        object.__setattr__(
+            self,
+            "csv_kind",
+            _optional_non_empty_string(self.csv_kind, "csv_kind"),
+        )
+        if self.row_number is not None and (
+            isinstance(self.row_number, bool)
+            or not isinstance(self.row_number, int)
+            or self.row_number <= 0
+        ):
+            raise ValueError("row_number must be a positive int or None")
+        object.__setattr__(
+            self,
+            "column",
+            _optional_non_empty_string(self.column, "column"),
+        )
+        if self.value is not None and not isinstance(self.value, str):
+            raise ValueError("value must be a string or None")
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe validation issue dictionary."""
+        return {
+            "kind": self.kind,
+            "message": self.message,
+            "csv_kind": self.csv_kind,
+            "row_number": self.row_number,
+            "column": self.column,
+            "value": self.value,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphCsvValidationResult:
+    """Summary of one backend graph CSV validation attempt."""
+
+    nodes_csv_path: Path
+    edges_csv_path: Path
+    node_count: int
+    edge_count: int
+    issues: tuple[PreprocessingGraphCsvValidationIssue, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "nodes_csv_path", Path(self.nodes_csv_path))
+        object.__setattr__(self, "edges_csv_path", Path(self.edges_csv_path))
+        _require_non_negative_int(self.node_count, "node_count")
+        _require_non_negative_int(self.edge_count, "edge_count")
+        if not isinstance(self.issues, tuple):
+            raise ValueError(
+                "issues must be a tuple of "
+                "PreprocessingGraphCsvValidationIssue"
+            )
+        for issue in self.issues:
+            if not isinstance(issue, PreprocessingGraphCsvValidationIssue):
+                raise ValueError(
+                    "issues must contain PreprocessingGraphCsvValidationIssue"
+                )
+
+    @property
+    def passed(self) -> bool:
+        """Return whether the CSV files passed validation."""
+        return self.issues == ()
+
+    @property
+    def issue_count(self) -> int:
+        """Return the number of validation issues."""
+        return len(self.issues)
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe validation result dictionary."""
+        return {
+            "nodes_csv_path": str(self.nodes_csv_path),
+            "edges_csv_path": str(self.edges_csv_path),
+            "passed": self.passed,
+            "node_count": self.node_count,
+            "edge_count": self.edge_count,
+            "issue_count": self.issue_count,
+            "issues": [issue.to_dict() for issue in self.issues],
+        }
+
+
+@dataclass(frozen=True)
 class _ResidueIdentity:
     condition_name: str
     residue_index: int
@@ -765,6 +911,617 @@ def _write_backend_edges_csv(
         output_path=path,
         rows_written=len(rows),
         issues=(),
+    )
+
+
+def validate_preprocessing_graph_csvs(
+    nodes_csv_path: str | Path,
+    edges_csv_path: str | Path,
+) -> PreprocessingGraphCsvValidationResult:
+    """Validate generated backend graph nodes.csv and corrected edges.csv."""
+    nodes_path, nodes_path_issue = _graph_csv_input_path(
+        nodes_csv_path,
+        csv_kind="nodes",
+    )
+    edges_path, edges_path_issue = _graph_csv_input_path(
+        edges_csv_path,
+        csv_kind="edges",
+    )
+
+    issues: list[PreprocessingGraphCsvValidationIssue] = []
+    nodes_rows: _GraphCsvRows | None = None
+    edges_rows: _GraphCsvRows | None = None
+
+    if nodes_path_issue is not None:
+        issues.append(nodes_path_issue)
+    else:
+        nodes_read_result = _read_graph_csv(nodes_path, csv_kind="nodes")
+        if isinstance(nodes_read_result, PreprocessingGraphCsvValidationIssue):
+            issues.append(nodes_read_result)
+        else:
+            nodes_rows = nodes_read_result
+
+    if edges_path_issue is not None:
+        issues.append(edges_path_issue)
+    else:
+        edges_read_result = _read_graph_csv(edges_path, csv_kind="edges")
+        if isinstance(edges_read_result, PreprocessingGraphCsvValidationIssue):
+            issues.append(edges_read_result)
+        else:
+            edges_rows = edges_read_result
+
+    node_ids: set[str] | None = None
+    node_count = 0
+    edge_count = 0
+
+    if nodes_rows is not None:
+        if nodes_rows.header != NODE_COLUMNS:
+            issues.append(
+                _graph_csv_issue(
+                    "invalid_header",
+                    csv_kind="nodes",
+                    column="header",
+                    message="Backend graph nodes CSV header is invalid.",
+                )
+            )
+        else:
+            node_count = len(nodes_rows.rows)
+            node_ids = _check_backend_nodes_rows(nodes_rows.rows, issues)
+
+    if edges_rows is not None:
+        if edges_rows.header != EDGE_COLUMNS:
+            issues.append(
+                _graph_csv_issue(
+                    "invalid_header",
+                    csv_kind="edges",
+                    column="header",
+                    message="Backend graph edges CSV header is invalid.",
+                )
+            )
+        else:
+            edge_count = len(edges_rows.rows)
+            _check_backend_edges_rows(
+                edges_rows.rows,
+                issues,
+                node_ids=node_ids,
+            )
+
+    return PreprocessingGraphCsvValidationResult(
+        nodes_csv_path=nodes_path,
+        edges_csv_path=edges_path,
+        node_count=node_count,
+        edge_count=edge_count,
+        issues=tuple(issues),
+    )
+
+
+@dataclass(frozen=True)
+class _GraphCsvRows:
+    header: tuple[str, ...]
+    rows: tuple[tuple[str, ...], ...]
+
+
+def _graph_csv_input_path(
+    input_path: object,
+    *,
+    csv_kind: str,
+) -> tuple[Path, PreprocessingGraphCsvValidationIssue | None]:
+    if input_path is None:
+        return Path(""), _graph_csv_issue(
+            "invalid_path",
+            csv_kind=csv_kind,
+            column="path",
+            message="Graph CSV path is required.",
+        )
+    if isinstance(input_path, str) and input_path.strip() == "":
+        return Path(""), _graph_csv_issue(
+            "invalid_path",
+            csv_kind=csv_kind,
+            column="path",
+            message="Graph CSV path is required.",
+        )
+    if not isinstance(input_path, _GRAPH_CSV_PATH_TYPES):
+        return Path(""), _graph_csv_issue(
+            "invalid_path",
+            csv_kind=csv_kind,
+            column="path",
+            value=str(input_path),
+            message="Graph CSV path must be a string or Path.",
+        )
+    try:
+        return Path(input_path), None
+    except TypeError:
+        return Path(""), _graph_csv_issue(
+            "invalid_path",
+            csv_kind=csv_kind,
+            column="path",
+            value=str(input_path),
+            message="Graph CSV path must be a string or Path.",
+        )
+
+
+def _read_graph_csv(
+    path: Path,
+    *,
+    csv_kind: str,
+) -> _GraphCsvRows | PreprocessingGraphCsvValidationIssue:
+    if not path.exists():
+        return _graph_csv_issue(
+            "path_missing",
+            csv_kind=csv_kind,
+            column="path",
+            value=str(path),
+            message="Graph CSV file does not exist.",
+        )
+    if path.is_dir():
+        return _graph_csv_issue(
+            "path_is_directory",
+            csv_kind=csv_kind,
+            column="path",
+            value=str(path),
+            message="Graph CSV path is a directory.",
+        )
+
+    try:
+        csv_text = path.read_text(encoding="utf-8")
+        reader = csv.reader(StringIO(csv_text), strict=True)
+        try:
+            header = tuple(next(reader))
+        except StopIteration:
+            return _graph_csv_issue(
+                "invalid_header",
+                csv_kind=csv_kind,
+                column="header",
+                message="Graph CSV file is empty.",
+            )
+        rows = tuple(tuple(row) for row in reader)
+    except (OSError, UnicodeError, csv.Error):
+        return _graph_csv_issue(
+            "read_failed",
+            csv_kind=csv_kind,
+            column="path",
+            value=str(path),
+            message="Graph CSV file could not be read as UTF-8 CSV.",
+        )
+    return _GraphCsvRows(header=header, rows=rows)
+
+
+def _check_backend_nodes_rows(
+    rows: tuple[tuple[str, ...], ...],
+    issues: list[PreprocessingGraphCsvValidationIssue],
+) -> set[str]:
+    node_ids: set[str] = set()
+    for row_number, row in enumerate(rows, start=2):
+        if len(row) != len(NODE_COLUMNS):
+            issues.append(
+                _graph_csv_issue(
+                    "row_column_count_mismatch",
+                    csv_kind="nodes",
+                    row_number=row_number,
+                    column="row",
+                    value=str(len(row)),
+                    message="Node row has the wrong number of columns.",
+                )
+            )
+        fields = _graph_row_fields(row, NODE_COLUMNS)
+        _validate_required_graph_fields(
+            fields,
+            _GRAPH_NODE_REQUIRED_COLUMNS,
+            csv_kind="nodes",
+            row_number=row_number,
+            issues=issues,
+        )
+
+        resid = fields["resid"].strip()
+        if resid != "":
+            if resid in node_ids:
+                issues.append(
+                    _graph_csv_issue(
+                        "duplicate_node_id",
+                        csv_kind="nodes",
+                        row_number=row_number,
+                        column="resid",
+                        value=resid,
+                        message="Node resid values must be unique.",
+                    )
+                )
+            node_ids.add(resid)
+
+        _validate_float_columns(
+            fields,
+            _GRAPH_NODE_FLOAT_COLUMNS,
+            csv_kind="nodes",
+            row_number=row_number,
+            issues=issues,
+        )
+        _validate_integer_columns(
+            fields,
+            _GRAPH_NODE_INTEGER_COLUMNS,
+            csv_kind="nodes",
+            row_number=row_number,
+            issues=issues,
+        )
+    return node_ids
+
+
+def _check_backend_edges_rows(
+    rows: tuple[tuple[str, ...], ...],
+    issues: list[PreprocessingGraphCsvValidationIssue],
+    *,
+    node_ids: set[str] | None,
+) -> None:
+    edge_keys: set[tuple[str, str, str, str]] = set()
+    for row_number, row in enumerate(rows, start=2):
+        if len(row) != len(EDGE_COLUMNS):
+            issues.append(
+                _graph_csv_issue(
+                    "row_column_count_mismatch",
+                    csv_kind="edges",
+                    row_number=row_number,
+                    column="row",
+                    value=str(len(row)),
+                    message="Edge row has the wrong number of columns.",
+                )
+            )
+        fields = _graph_row_fields(row, EDGE_COLUMNS)
+        _validate_required_graph_fields(
+            fields,
+            _GRAPH_EDGE_REQUIRED_COLUMNS,
+            csv_kind="edges",
+            row_number=row_number,
+            issues=issues,
+        )
+
+        resid_i = fields["resid_i"].strip()
+        resid_j = fields["resid_j"].strip()
+        edge_type = fields["edge_type"].strip()
+        condition = fields["condition"].strip()
+
+        if resid_i != "" and resid_j != "" and resid_i == resid_j:
+            issues.append(
+                _graph_csv_issue(
+                    "self_edge",
+                    csv_kind="edges",
+                    row_number=row_number,
+                    column="resid_j",
+                    value=resid_j,
+                    message="Edge endpoints must differ.",
+                )
+            )
+
+        if node_ids is not None:
+            _validate_edge_endpoint(
+                resid_i,
+                node_ids,
+                csv_kind="edges",
+                row_number=row_number,
+                column="resid_i",
+                issues=issues,
+            )
+            _validate_edge_endpoint(
+                resid_j,
+                node_ids,
+                csv_kind="edges",
+                row_number=row_number,
+                column="resid_j",
+                issues=issues,
+            )
+
+        if (
+            resid_i != ""
+            and resid_j != ""
+            and edge_type != ""
+            and condition != ""
+        ):
+            edge_key = (resid_i, resid_j, edge_type, condition)
+            if edge_key in edge_keys:
+                issues.append(
+                    _graph_csv_issue(
+                        "duplicate_edge_key",
+                        csv_kind="edges",
+                        row_number=row_number,
+                        column="edge_type",
+                        value=_EDGE_TYPE_SEPARATOR.join(edge_key),
+                        message="Edge keys must be unique.",
+                    )
+                )
+            edge_keys.add(edge_key)
+
+        _validate_float_columns(
+            fields,
+            _GRAPH_EDGE_FLOAT_COLUMNS,
+            csv_kind="edges",
+            row_number=row_number,
+            issues=issues,
+        )
+        n_edge_types = _validate_integer_columns(
+            fields,
+            _GRAPH_EDGE_INTEGER_COLUMNS,
+            csv_kind="edges",
+            row_number=row_number,
+            issues=issues,
+            positive_integer_columns=("n_edge_types",),
+        )
+        _validate_edge_type_fields(
+            fields,
+            row_number=row_number,
+            issues=issues,
+            n_edge_types=n_edge_types.get("n_edge_types"),
+        )
+
+
+def _validate_edge_endpoint(
+    endpoint: str,
+    node_ids: set[str],
+    *,
+    csv_kind: str,
+    row_number: int,
+    column: str,
+    issues: list[PreprocessingGraphCsvValidationIssue],
+) -> None:
+    if endpoint == "":
+        return
+    if endpoint not in node_ids:
+        issues.append(
+            _graph_csv_issue(
+                "edge_endpoint_missing",
+                csv_kind=csv_kind,
+                row_number=row_number,
+                column=column,
+                value=endpoint,
+                message="Edge endpoint is missing from nodes.csv.",
+            )
+        )
+
+
+def _validate_required_graph_fields(
+    fields: dict[str, str],
+    required_columns: tuple[str, ...],
+    *,
+    csv_kind: str,
+    row_number: int,
+    issues: list[PreprocessingGraphCsvValidationIssue],
+) -> None:
+    for column in required_columns:
+        if fields[column].strip() == "":
+            issues.append(
+                _graph_csv_issue(
+                    "missing_required_value",
+                    csv_kind=csv_kind,
+                    row_number=row_number,
+                    column=column,
+                    value=fields[column],
+                    message="Required graph CSV value is missing.",
+                )
+            )
+
+
+def _validate_float_columns(
+    fields: dict[str, str],
+    columns: tuple[str, ...],
+    *,
+    csv_kind: str,
+    row_number: int,
+    issues: list[PreprocessingGraphCsvValidationIssue],
+) -> None:
+    for column in columns:
+        value = fields[column].strip()
+        if value == "":
+            continue
+        try:
+            parsed_value = float(value)
+        except ValueError:
+            issues.append(
+                _invalid_numeric_issue(csv_kind, row_number, column, value)
+            )
+            continue
+        if not math.isfinite(parsed_value):
+            issues.append(
+                _invalid_numeric_issue(csv_kind, row_number, column, value)
+            )
+
+
+def _validate_integer_columns(
+    fields: dict[str, str],
+    columns: tuple[str, ...],
+    *,
+    csv_kind: str,
+    row_number: int,
+    issues: list[PreprocessingGraphCsvValidationIssue],
+    positive_integer_columns: tuple[str, ...] = (),
+) -> dict[str, int]:
+    parsed_values: dict[str, int] = {}
+    positive_columns = set(positive_integer_columns)
+    for column in columns:
+        value = fields[column].strip()
+        if value == "":
+            continue
+        try:
+            parsed_value = int(value)
+        except ValueError:
+            issues.append(
+                _invalid_integer_issue(csv_kind, row_number, column, value)
+            )
+            continue
+        if column in positive_columns and parsed_value <= 0:
+            issues.append(
+                _invalid_integer_issue(csv_kind, row_number, column, value)
+            )
+            continue
+        parsed_values[column] = parsed_value
+    return parsed_values
+
+
+def _validate_edge_type_fields(
+    fields: dict[str, str],
+    *,
+    row_number: int,
+    issues: list[PreprocessingGraphCsvValidationIssue],
+    n_edge_types: int | None,
+) -> None:
+    edge_type = fields["edge_type"].strip()
+    all_edge_types = fields["all_edge_types"].strip()
+    if edge_type == "" or all_edge_types == "":
+        return
+
+    edge_types = _split_graph_edge_types(
+        all_edge_types,
+        row_number=row_number,
+        issues=issues,
+    )
+    unique_edge_types = tuple(dict.fromkeys(edge_types))
+    if edge_type not in unique_edge_types:
+        issues.append(
+            _graph_csv_issue(
+                "edge_type_not_in_all_edge_types",
+                csv_kind="edges",
+                row_number=row_number,
+                column="edge_type",
+                value=edge_type,
+                message="Primary edge_type must be in all_edge_types.",
+            )
+        )
+
+    expected_order = tuple(sorted(unique_edge_types, key=_edge_type_priority_key))
+    if edge_types == unique_edge_types and edge_types != expected_order:
+        issues.append(
+            _graph_csv_issue(
+                "invalid_edge_type_order",
+                csv_kind="edges",
+                row_number=row_number,
+                column="all_edge_types",
+                value=all_edge_types,
+                message="all_edge_types must follow deterministic priority order.",
+            )
+        )
+
+    if (
+        edge_type in unique_edge_types
+        and expected_order
+        and edge_type != expected_order[0]
+    ):
+        issues.append(
+            _graph_csv_issue(
+                "invalid_primary_edge_type",
+                csv_kind="edges",
+                row_number=row_number,
+                column="edge_type",
+                value=edge_type,
+                message="edge_type must be the highest-priority edge type.",
+            )
+        )
+
+    if n_edge_types is not None and n_edge_types != len(unique_edge_types):
+        issues.append(
+            _graph_csv_issue(
+                "invalid_edge_type_count",
+                csv_kind="edges",
+                row_number=row_number,
+                column="n_edge_types",
+                value=fields["n_edge_types"],
+                message="n_edge_types must match unique all_edge_types count.",
+            )
+        )
+
+
+def _split_graph_edge_types(
+    all_edge_types: str,
+    *,
+    row_number: int,
+    issues: list[PreprocessingGraphCsvValidationIssue],
+) -> tuple[str, ...]:
+    edge_types: list[str] = []
+    seen_edge_types: set[str] = set()
+    duplicate_edge_types: set[str] = set()
+    for edge_type_value in all_edge_types.split(_EDGE_TYPE_SEPARATOR):
+        edge_type = edge_type_value.strip()
+        if edge_type == "":
+            issues.append(
+                _graph_csv_issue(
+                    "empty_edge_type_value",
+                    csv_kind="edges",
+                    row_number=row_number,
+                    column="all_edge_types",
+                    value=edge_type_value,
+                    message="all_edge_types must not contain empty values.",
+                )
+            )
+            continue
+        if edge_type in seen_edge_types and edge_type not in duplicate_edge_types:
+            issues.append(
+                _graph_csv_issue(
+                    "duplicate_edge_type_value",
+                    csv_kind="edges",
+                    row_number=row_number,
+                    column="all_edge_types",
+                    value=edge_type,
+                    message="all_edge_types must not contain duplicate values.",
+                )
+            )
+            duplicate_edge_types.add(edge_type)
+        seen_edge_types.add(edge_type)
+        edge_types.append(edge_type)
+    return tuple(edge_types)
+
+
+def _graph_row_fields(
+    row: tuple[str, ...],
+    columns: tuple[str, ...],
+) -> dict[str, str]:
+    return {
+        column: row[index] if index < len(row) else ""
+        for index, column in enumerate(columns)
+    }
+
+
+def _invalid_numeric_issue(
+    csv_kind: str,
+    row_number: int,
+    column: str,
+    value: str,
+) -> PreprocessingGraphCsvValidationIssue:
+    return _graph_csv_issue(
+        "invalid_numeric_value",
+        csv_kind=csv_kind,
+        row_number=row_number,
+        column=column,
+        value=value,
+        message="Graph CSV numeric value must be finite.",
+    )
+
+
+def _invalid_integer_issue(
+    csv_kind: str,
+    row_number: int,
+    column: str,
+    value: str,
+) -> PreprocessingGraphCsvValidationIssue:
+    return _graph_csv_issue(
+        "invalid_integer_value",
+        csv_kind=csv_kind,
+        row_number=row_number,
+        column=column,
+        value=value,
+        message="Graph CSV integer value is invalid.",
+    )
+
+
+def _graph_csv_issue(
+    kind: str,
+    *,
+    csv_kind: str,
+    message: str,
+    row_number: int | None = None,
+    column: str | None = None,
+    value: str | None = None,
+) -> PreprocessingGraphCsvValidationIssue:
+    return PreprocessingGraphCsvValidationIssue(
+        kind=kind,
+        message=message,
+        csv_kind=csv_kind,
+        row_number=row_number,
+        column=column,
+        value=value,
     )
 
 
@@ -1372,6 +2129,8 @@ def _duplicates(values: tuple[str, ...]) -> tuple[str, ...]:
 globals()[_EDGES_CSV_PUBLIC_WRITER_NAME] = _write_backend_edges_csv
 
 __all__ = [
+    "PreprocessingGraphCsvValidationIssue",
+    "PreprocessingGraphCsvValidationResult",
     "PreprocessingGraphEdgeMappingRecord",
     "PreprocessingGraphEdgesCsvWriteIssue",
     "PreprocessingGraphEdgesCsvWriteResult",
@@ -1381,6 +2140,7 @@ __all__ = [
     "PreprocessingGraphNodesCsvWriteResult",
     "PreprocessingGraphNodeMappingRecord",
     "build_preprocessing_graph_export_mapping",
+    "validate_preprocessing_graph_csvs",
     _EDGES_CSV_PUBLIC_WRITER_NAME,
     "write_preprocessing_graph_nodes_csv",
 ]
