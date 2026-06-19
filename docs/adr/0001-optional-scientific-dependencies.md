@@ -773,6 +773,38 @@ MDAnalysis remains optional and is not required by the Stage 15.1 contract.
 `local_md` remains local-only, local real MD data is not required by default
 CI, and no dependency or CI configuration changes are made by this stage.
 
+## Stage 15.2 local manifest readiness
+
+Stage 15.2 adds local manifest readiness using the existing manifest contract,
+existing manifest loader, and existing manifest path validation. It does not
+define a new Stage 15 manifest format. In short: no new Stage 15 manifest
+format.
+
+The local manifest example is:
+
+```text
+local_md/manifests/napi2b_10ns.yaml
+```
+
+Its semantic relative paths are:
+
+```text
+../normal/topology.tpr
+../normal/trajectory.xtc
+../tumor/topology.tpr
+../tumor/trajectory.xtc
+```
+
+The readiness check does not require MDAnalysis and does not require real MD
+data in default CI. It checks filesystem metadata only and does not load
+trajectories, create runtime objects, compute Rg, compute contacts, export
+graph artifacts, run diagnostics, execute notebooks, or perform reference
+comparison. The notebook is not executed, reference comparison remains
+optional, and temporal RIN remains future scope.
+
+`local_md` remains local-only and not committed. Local MD smoke coverage
+remains Stage 15.9 and skipped by default. Runtime loading remains Stage 15.3.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:

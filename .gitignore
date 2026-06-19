@@ -52,6 +52,7 @@ logs/
 *.log
 
 # Local scientific data directories
+local_md/
 data/*
 
 # Tracked lightweight reference notebook context

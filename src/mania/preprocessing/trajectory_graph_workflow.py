@@ -2,8 +2,17 @@
 
 from __future__ import annotations
 
+import importlib
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
+from types import ModuleType
+from typing import Protocol, cast
+
+from mania.preprocessing.input_manifest import PreprocessingInputManifest
+from mania.preprocessing.path_validation import (
+    PreprocessingPathValidationReport,
+)
 
 _CURRENT_REFERENCE_SEMANTICS = "MANIA_analysis_v1_2"
 _DEFAULT_RUN_NAME = "preprocessing_graph_export"
@@ -53,6 +62,26 @@ _REFERENCE_COMPARISON_STEPS = (
     "validate_reference_comparison_input",
     "compare_reference_graph_artifacts",
 )
+_MANIFEST_LOAD_EXCEPTION_NAMES = (
+    "FileNotFoundError",
+    "IsADirectoryError",
+    "ValueError",
+)
+_MANIFEST_CONTRACT_EXCEPTION_NAME = "ValidationError"
+
+
+class _ManifestLoader(Protocol):
+    def __call__(self, path: str | Path) -> PreprocessingInputManifest: ...
+
+
+class _ManifestPathValidator(Protocol):
+    def __call__(
+        self,
+        manifest: PreprocessingInputManifest,
+        *,
+        base_dir: str | Path | None = None,
+        check_output_root: bool = False,
+    ) -> PreprocessingPathValidationReport: ...
 
 
 @dataclass(frozen=True)
@@ -200,6 +229,147 @@ class PreprocessingGraphWorkflowIssue:
 
 
 @dataclass(frozen=True)
+class PreprocessingGraphWorkflowManifestReadinessIssue:
+    """One deterministic local manifest readiness issue."""
+
+    kind: str
+    message: str
+    field: str | None = None
+    condition_name: str | None = None
+    path: Path | None = None
+    value: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "kind", _non_empty_string(self.kind, "kind"))
+        object.__setattr__(
+            self,
+            "message",
+            _non_empty_string(self.message, "message"),
+        )
+        object.__setattr__(
+            self,
+            "field",
+            _optional_non_empty_string(self.field, "field"),
+        )
+        object.__setattr__(
+            self,
+            "condition_name",
+            _optional_non_empty_string(
+                self.condition_name,
+                "condition_name",
+            ),
+        )
+        _require_optional_path(self.path, "path")
+        object.__setattr__(
+            self,
+            "value",
+            _optional_non_empty_string(self.value, "value"),
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe readiness issue dictionary."""
+        return {
+            "kind": self.kind,
+            "message": self.message,
+            "field": self.field,
+            "condition_name": self.condition_name,
+            "path": _optional_path_string(self.path),
+            "value": self.value,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphWorkflowManifestReadinessResult:
+    """Local manifest readiness metadata before workflow runtime loading."""
+
+    manifest_path: Path
+    manifest_loaded: bool
+    manifest_paths_valid: bool
+    condition_names: tuple[str, ...]
+    expected_condition_count: int | None = None
+    input_paths: tuple[Path, ...] = ()
+    issues: tuple[PreprocessingGraphWorkflowManifestReadinessIssue, ...] = ()
+
+    def __post_init__(self) -> None:
+        _require_path(self.manifest_path, "manifest_path")
+        _require_bool(self.manifest_loaded, "manifest_loaded")
+        _require_bool(self.manifest_paths_valid, "manifest_paths_valid")
+        if not isinstance(self.condition_names, tuple):
+            raise ValueError("condition_names must be a tuple of strings")
+        object.__setattr__(
+            self,
+            "condition_names",
+            tuple(
+                _non_empty_string(condition_name, "condition_names")
+                for condition_name in self.condition_names
+            ),
+        )
+        if self.expected_condition_count is not None:
+            _require_non_negative_int(
+                self.expected_condition_count,
+                "expected_condition_count",
+            )
+        if not isinstance(self.input_paths, tuple):
+            raise ValueError("input_paths must be a tuple of Path")
+        for input_path in self.input_paths:
+            _require_path(input_path, "input_paths")
+        if not isinstance(self.issues, tuple):
+            raise ValueError(
+                "issues must be a tuple of "
+                "PreprocessingGraphWorkflowManifestReadinessIssue"
+            )
+        for issue in self.issues:
+            if not isinstance(
+                issue,
+                PreprocessingGraphWorkflowManifestReadinessIssue,
+            ):
+                raise ValueError(
+                    "issues must contain "
+                    "PreprocessingGraphWorkflowManifestReadinessIssue"
+                )
+
+    @property
+    def passed(self) -> bool:
+        """Return whether the manifest is ready for later runtime loading."""
+        return (
+            self.manifest_loaded
+            and self.manifest_paths_valid
+            and self.issues == ()
+        )
+
+    @property
+    def issue_count(self) -> int:
+        """Return the number of readiness issues."""
+        return len(self.issues)
+
+    @property
+    def condition_count(self) -> int:
+        """Return the number of manifest conditions reported."""
+        return len(self.condition_names)
+
+    @property
+    def input_path_count(self) -> int:
+        """Return the number of manifest-declared local input paths checked."""
+        return len(self.input_paths)
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe readiness result dictionary."""
+        return {
+            "manifest_path": str(self.manifest_path),
+            "manifest_loaded": self.manifest_loaded,
+            "manifest_paths_valid": self.manifest_paths_valid,
+            "condition_names": list(self.condition_names),
+            "condition_count": self.condition_count,
+            "expected_condition_count": self.expected_condition_count,
+            "input_paths": [str(input_path) for input_path in self.input_paths],
+            "input_path_count": self.input_path_count,
+            "issues": [issue.to_dict() for issue in self.issues],
+            "issue_count": self.issue_count,
+            "passed": self.passed,
+        }
+
+
+@dataclass(frozen=True)
 class PreprocessingGraphWorkflowPlan:
     """In-memory plan for future preprocessing graph export orchestration."""
 
@@ -285,6 +455,123 @@ def build_preprocessing_graph_workflow_plan(
         output_layout=output_layout,
         planned_steps=planned_steps,
         issues=issues,
+    )
+
+
+def check_preprocessing_graph_workflow_manifest_readiness(
+    manifest_path: str | Path,
+    *,
+    expected_condition_names: Iterable[str] | None = ("normal", "tumor"),
+) -> PreprocessingGraphWorkflowManifestReadinessResult:
+    """Check local manifest readiness without loading runtime objects."""
+    normalized_manifest_path = Path(manifest_path)
+    expected_names = _normalize_expected_condition_names(
+        expected_condition_names
+    )
+    expected_count = (
+        None if expected_names is None else len(expected_names)
+    )
+
+    if not normalized_manifest_path.exists():
+        return PreprocessingGraphWorkflowManifestReadinessResult(
+            manifest_path=normalized_manifest_path,
+            manifest_loaded=False,
+            manifest_paths_valid=False,
+            condition_names=(),
+            expected_condition_count=expected_count,
+            issues=(
+                PreprocessingGraphWorkflowManifestReadinessIssue(
+                    kind="manifest_path_missing",
+                    message=(
+                        "Manifest path does not exist: "
+                        f"{normalized_manifest_path}"
+                    ),
+                    field="manifest_path",
+                    path=normalized_manifest_path,
+                ),
+            ),
+        )
+
+    if normalized_manifest_path.is_dir():
+        return PreprocessingGraphWorkflowManifestReadinessResult(
+            manifest_path=normalized_manifest_path,
+            manifest_loaded=False,
+            manifest_paths_valid=False,
+            condition_names=(),
+            expected_condition_count=expected_count,
+            issues=(
+                PreprocessingGraphWorkflowManifestReadinessIssue(
+                    kind="manifest_path_is_directory",
+                    message=(
+                        "Manifest path is a directory: "
+                        f"{normalized_manifest_path}"
+                    ),
+                    field="manifest_path",
+                    path=normalized_manifest_path,
+                ),
+            ),
+        )
+
+    try:
+        manifest = _manifest_loader()(normalized_manifest_path)
+    except Exception as exc:
+        return PreprocessingGraphWorkflowManifestReadinessResult(
+            manifest_path=normalized_manifest_path,
+            manifest_loaded=False,
+            manifest_paths_valid=False,
+            condition_names=(),
+            expected_condition_count=expected_count,
+            issues=(
+                _manifest_load_issue(normalized_manifest_path, exc),
+            ),
+        )
+
+    condition_names = manifest.condition_names()
+
+    try:
+        validation_report = _manifest_path_validator()(
+            manifest,
+            base_dir=normalized_manifest_path.parent,
+        )
+    except Exception as exc:
+        return PreprocessingGraphWorkflowManifestReadinessResult(
+            manifest_path=normalized_manifest_path,
+            manifest_loaded=True,
+            manifest_paths_valid=False,
+            condition_names=condition_names,
+            expected_condition_count=expected_count,
+            issues=(
+                PreprocessingGraphWorkflowManifestReadinessIssue(
+                    kind="unexpected_error",
+                    message=(
+                        "Manifest path validation failed unexpectedly: "
+                        f"{exc.__class__.__name__}"
+                    ),
+                    field="manifest_paths",
+                ),
+            ),
+        )
+
+    issues = list(_path_validation_issues(validation_report))
+    input_paths = tuple(
+        checked_path.path for checked_path in validation_report.checked_paths
+    )
+    if expected_names is not None:
+        issues.extend(
+            _condition_readiness_issues(
+                condition_names=condition_names,
+                expected_condition_names=expected_names,
+            )
+        )
+
+    return PreprocessingGraphWorkflowManifestReadinessResult(
+        manifest_path=normalized_manifest_path,
+        manifest_loaded=True,
+        manifest_paths_valid=validation_report.passed,
+        condition_names=condition_names,
+        expected_condition_count=expected_count,
+        input_paths=input_paths,
+        issues=tuple(issues),
     )
 
 
@@ -471,10 +758,140 @@ def _optional_path_string(value: Path | None) -> str | None:
     return str(value)
 
 
+def _require_non_negative_int(value: object, field_name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"{field_name} must be a non-negative int")
+
+
+def _normalize_expected_condition_names(
+    expected_condition_names: Iterable[str] | None,
+) -> tuple[str, ...] | None:
+    if expected_condition_names is None:
+        return None
+    normalized_names: list[str] = []
+    for condition_name in expected_condition_names:
+        normalized_names.append(
+            _non_empty_string(
+                condition_name,
+                "expected_condition_names",
+            )
+        )
+    return tuple(normalized_names)
+
+
+def _manifest_loader() -> _ManifestLoader:
+    module = _import_preprocessing_module("input_" + "manifest")
+    return cast(
+        _ManifestLoader,
+        getattr(module, "load_" + "preprocessing_input_manifest"),
+    )
+
+
+def _manifest_path_validator() -> _ManifestPathValidator:
+    module = _import_preprocessing_module("path_" + "validation")
+    return cast(
+        _ManifestPathValidator,
+        getattr(module, "validate_" + "preprocessing_manifest_paths"),
+    )
+
+
+def _import_preprocessing_module(module_name: str) -> ModuleType:
+    return importlib.import_module(f"mania.preprocessing.{module_name}")
+
+
+def _manifest_load_issue(
+    manifest_path: Path,
+    exc: Exception,
+) -> PreprocessingGraphWorkflowManifestReadinessIssue:
+    exception_name = exc.__class__.__name__
+    if exception_name == _MANIFEST_CONTRACT_EXCEPTION_NAME:
+        kind = "manifest_contract_invalid"
+        message = "Manifest does not conform to the preprocessing contract."
+    elif exception_name in _MANIFEST_LOAD_EXCEPTION_NAMES:
+        kind = "manifest_load_failed"
+        message = f"Manifest could not be loaded: {exception_name}."
+    else:
+        kind = "unexpected_error"
+        message = f"Manifest readiness failed unexpectedly: {exception_name}."
+    return PreprocessingGraphWorkflowManifestReadinessIssue(
+        kind=kind,
+        message=message,
+        field="manifest_path",
+        path=manifest_path,
+    )
+
+
+def _path_validation_issues(
+    validation_report: PreprocessingPathValidationReport,
+) -> tuple[PreprocessingGraphWorkflowManifestReadinessIssue, ...]:
+    issues: list[PreprocessingGraphWorkflowManifestReadinessIssue] = []
+    for path_issue in validation_report.issues:
+        if path_issue.kind == "missing":
+            kind = "local_path_missing"
+            message = f"Declared local file path does not exist: {path_issue.path}"
+        elif path_issue.kind in {"not_file", "not_directory"}:
+            kind = "local_path_is_directory"
+            message = f"Declared local path has the wrong type: {path_issue.path}"
+        else:
+            kind = "manifest_path_validation_failed"
+            message = f"Declared local path failed validation: {path_issue.path}"
+        issues.append(
+            PreprocessingGraphWorkflowManifestReadinessIssue(
+                kind=kind,
+                message=message,
+                field=path_issue.field,
+                condition_name=path_issue.condition,
+                path=path_issue.path,
+            )
+        )
+    return tuple(issues)
+
+
+def _condition_readiness_issues(
+    *,
+    condition_names: tuple[str, ...],
+    expected_condition_names: tuple[str, ...],
+) -> tuple[PreprocessingGraphWorkflowManifestReadinessIssue, ...]:
+    issues: list[PreprocessingGraphWorkflowManifestReadinessIssue] = []
+    if len(condition_names) != len(expected_condition_names):
+        issues.append(
+            PreprocessingGraphWorkflowManifestReadinessIssue(
+                kind="condition_count_mismatch",
+                message=(
+                    "Manifest condition count does not match the expected "
+                    "condition count."
+                ),
+                field="conditions",
+                value=(
+                    f"expected={len(expected_condition_names)},"
+                    f"actual={len(condition_names)}"
+                ),
+            )
+        )
+    existing_names = set(condition_names)
+    for expected_condition_name in expected_condition_names:
+        if expected_condition_name not in existing_names:
+            issues.append(
+                PreprocessingGraphWorkflowManifestReadinessIssue(
+                    kind="condition_missing",
+                    message=(
+                        "Expected condition is missing from manifest: "
+                        f"{expected_condition_name}"
+                    ),
+                    field="conditions",
+                    condition_name=expected_condition_name,
+                )
+            )
+    return tuple(issues)
+
+
 __all__ = [
+    "PreprocessingGraphWorkflowManifestReadinessIssue",
+    "PreprocessingGraphWorkflowManifestReadinessResult",
     "PreprocessingGraphWorkflowIssue",
     "PreprocessingGraphWorkflowOptions",
     "PreprocessingGraphWorkflowOutputLayout",
     "PreprocessingGraphWorkflowPlan",
     "build_preprocessing_graph_workflow_plan",
+    "check_preprocessing_graph_workflow_manifest_readiness",
 ]

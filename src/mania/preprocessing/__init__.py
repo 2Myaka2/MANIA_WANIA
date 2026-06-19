@@ -127,10 +127,13 @@ from mania.preprocessing.trajectory_graph_reference_comparison import (
 )
 from mania.preprocessing.trajectory_graph_workflow import (
     PreprocessingGraphWorkflowIssue,
+    PreprocessingGraphWorkflowManifestReadinessIssue,
+    PreprocessingGraphWorkflowManifestReadinessResult,
     PreprocessingGraphWorkflowOptions,
     PreprocessingGraphWorkflowOutputLayout,
     PreprocessingGraphWorkflowPlan,
     build_preprocessing_graph_workflow_plan,
+    check_preprocessing_graph_workflow_manifest_readiness,
 )
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
 from mania.preprocessing.trajectory_manifest_loader import (
@@ -282,6 +285,8 @@ __all__ = [
     "PreprocessingGraphReferenceComparisonOptions",
     "PreprocessingGraphReferenceComparisonResult",
     "PreprocessingGraphReferenceComparisonTargetResult",
+    "PreprocessingGraphWorkflowManifestReadinessIssue",
+    "PreprocessingGraphWorkflowManifestReadinessResult",
     "PreprocessingGraphWorkflowIssue",
     "PreprocessingGraphWorkflowOptions",
     "PreprocessingGraphWorkflowOutputLayout",
@@ -330,6 +335,7 @@ __all__ = [
     "build_preprocessing_graph_export_mapping",
     "build_preprocessing_graph_workflow_plan",
     "build_rg_report_bundle",
+    "check_preprocessing_graph_workflow_manifest_readiness",
     "collect_condition_runtime_metadata",
     "collect_manifest_runtime_metadata",
     "compare_contacts_outputs",

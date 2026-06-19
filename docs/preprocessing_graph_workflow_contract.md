@@ -27,6 +27,22 @@ The dataclasses are frozen and provide JSON-safe `to_dict()` output. Paths are
 serialized as strings. The builder creates only in-memory objects and does not
 create directories or files.
 
+Stage 15.2 adds the local manifest readiness API, also exported from
+`mania.preprocessing`:
+
+```python
+PreprocessingGraphWorkflowManifestReadinessIssue
+PreprocessingGraphWorkflowManifestReadinessResult
+check_preprocessing_graph_workflow_manifest_readiness(...)
+```
+
+This readiness check is still pre-runtime. It checks whether a manifest path
+exists, is a file, can be loaded with the existing preprocessing manifest
+loader, conforms to the existing manifest contract, and has local input paths
+that pass the existing manifest path validator. Stage 15.2 uses the existing
+preprocessing manifest contract and does not define a new Stage 15 manifest
+format. In short: no new Stage 15 manifest format.
+
 ## Run options
 
 `PreprocessingGraphWorkflowOptions` records:
@@ -169,6 +185,43 @@ local MD paths, require MDAnalysis, or add real-data CI.
 The workflow contract uses only the standard library. It does not add
 dependencies and does not require MDAnalysis, numpy, pandas, pyarrow,
 networkx, or local scientific extras.
+
+## Stage 15.2 local manifest readiness
+
+Stage 15.2 adds local manifest readiness only. The check is intended for local
+manifests such as:
+
+```text
+local_md/manifests/napi2b_10ns.yaml
+```
+
+The example local manifest uses the existing preprocessing manifest contract.
+Its semantic relative paths are expected to point from the manifest directory
+to local inputs, for example:
+
+```text
+../normal/topology.tpr
+../normal/trajectory.xtc
+../tumor/topology.tpr
+../tumor/trajectory.xtc
+```
+
+These paths are examples only and are not a new schema. Stage 15.2 uses the
+existing manifest contract, reports condition names in manifest order, reports
+the local input paths declared by the manifest, and returns deterministic
+JSON-safe readiness metadata.
+
+Stage 15.2 does not load trajectories, does not create runtime objects, does
+not require MDAnalysis, does not compute Rg, does not compute contacts, does
+not export graph artifacts, does not run diagnostics, does not execute
+reference comparison, does not execute notebooks, does not call CLI or
+workflow execution, and does not create files or directories. Stage 15.3 will
+add runtime loading.
+
+`local_md` remains local-only and not committed. Real topology and trajectory
+files are not required by default CI, and real MD smoke coverage remains
+opt-in future scope. The notebook is not executed, reference comparison remains
+optional, and temporal RIN remains future scope.
 
 ## CLI and frontend boundary
 

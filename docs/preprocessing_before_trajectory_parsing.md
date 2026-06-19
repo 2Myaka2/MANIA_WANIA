@@ -70,7 +70,10 @@ before workflow in
 adds the dependency-free preprocessing graph workflow contract in
 `docs/preprocessing_graph_workflow_contract.md`: run options, deterministic
 output layout, planned step names, and planning issues only. Stage 15.1 adds
-no workflow execution and no CLI.
+no workflow execution and no CLI. Stage 15.2 adds local manifest readiness
+using the existing manifest contract, existing manifest loader, and existing
+manifest path validator. It is a pre-runtime check only; runtime loading
+remains Stage 15.3.
 
 ## Current implemented capabilities
 
@@ -169,7 +172,9 @@ The current preprocessing layer supports:
 - Stage 14.4a graph mismatch interpretation documentation in
   `docs/preprocessing_graph_reference_mismatches.md`;
 - Stage 15.1 dependency-free workflow contract planning through
-  `build_preprocessing_graph_workflow_plan(...)`.
+  `build_preprocessing_graph_workflow_plan(...)`;
+- Stage 15.2 local manifest readiness through
+  `check_preprocessing_graph_workflow_manifest_readiness(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -208,10 +213,41 @@ build_preprocessing_graph_diagnostics_report(...)
 validate_preprocessing_graph_reference_comparison_input(...)
 compare_preprocessing_graph_reference_artifacts(...)
 build_preprocessing_graph_workflow_plan(...)
+check_preprocessing_graph_workflow_manifest_readiness(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
 explicit residue-name QC, and condition runtime loading.
+
+## Stage 15.2 local manifest readiness boundary
+
+Stage 15.2 local manifest readiness now exists as a dependency-free
+pre-runtime check only. It uses the existing manifest contract and does not
+define a new Stage 15 manifest format. In short: no new Stage 15 manifest
+format.
+
+The local manifest example is:
+
+```text
+local_md/manifests/napi2b_10ns.yaml
+```
+
+The expected semantic relative paths inside that local manifest are:
+
+```text
+../normal/topology.tpr
+../normal/trajectory.xtc
+../tumor/topology.tpr
+../tumor/trajectory.xtc
+```
+
+`local_md` remains local-only, not committed, and not required by default CI.
+Local MD files remain local-only. Stage 15.2 does not inspect trajectory
+contents, does not require MDAnalysis, and does not load runtime objects.
+Runtime loading remains Stage 15.3.
+
+The notebook is not executed, reference comparison remains optional, and
+temporal RIN remains future scope.
 
 ## Stage 14.1a graph mapping boundary
 
