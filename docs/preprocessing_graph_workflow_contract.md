@@ -218,6 +218,45 @@ reference comparison, does not execute notebooks, does not call CLI or
 workflow execution, and does not create files or directories. Stage 15.3 will
 add runtime loading.
 
+## Stage 15.3 manifest-driven runtime loading
+
+Stage 15.3 adds a narrow manifest-driven runtime loading layer for the local
+two conditions workflow handoff. It exposes runtime loading metadata and the
+raw accepted Stage 11 manifest runtime load result for future orchestration,
+while `to_dict()` exposes only deterministic JSON-safe metadata and never
+serializes raw runtime objects.
+
+Stage 15.3 readiness is called before runtime loading, using the Stage 15.2
+local manifest readiness check. A readiness failure prevents runtime loading.
+Only after readiness passes does Stage 15.3 reuse the existing Stage 11
+runtime/manifest loading APIs, specifically the accepted manifest condition
+runtime loading boundary. It adds no new runtime loader and no new manifest
+format.
+
+The expected local NAPI2B condition names are `normal` and `tumor` by default.
+The expected condition list is configurable, and callers may disable the
+normal/tumor expectation for future workflows. The wrapper reports the
+condition runtime names loaded through the Stage 11 result.
+
+Stage 15.3 is manifest-driven runtime loading only: no
+Rg/contacts/graph/diagnostics/reference/CLI behavior is added. It does not
+compute Rg, compute contacts, export graph artifacts, run diagnostics, build a
+diagnostics report, perform reference comparison, execute notebooks, or add a
+CLI/workflow execution entrypoint.
+
+The Stage 15.3 import/default CI does not require MDAnalysis. The real runtime loading remains optional/local/scientific and may require optional scientific dependencies
+only when executed locally with the accepted Stage 11 boundary. `local_md`
+remains local-only, not committed, and not required by default CI.
+
+`MANIA_analysis_v1_2` remains the current reference semantics. The reference
+notebook is not executed; notebook not executed is part of the workflow
+boundary. The reference comparison remains Stage 15.7 optional mode, disabled by
+default. Temporal RIN remains future scope. WANIA frontend adapter/API payload
+remains future scope.
+
+Stage 15.4 will orchestrate manifest-level Rg + contacts. Stage 15.3 does not
+compute them.
+
 `local_md` remains local-only and not committed. Real topology and trajectory
 files are not required by default CI, and real MD smoke coverage remains
 opt-in future scope. The notebook is not executed, reference comparison remains

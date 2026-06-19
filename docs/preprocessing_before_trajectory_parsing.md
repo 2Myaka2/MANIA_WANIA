@@ -73,7 +73,11 @@ output layout, planned step names, and planning issues only. Stage 15.1 adds
 no workflow execution and no CLI. Stage 15.2 adds local manifest readiness
 using the existing manifest contract, existing manifest loader, and existing
 manifest path validator. It is a pre-runtime check only; runtime loading
-remains Stage 15.3.
+remains Stage 15.3. Stage 15.3 adds manifest-driven runtime loading for two
+conditions. Stage 15.3 readiness is called before runtime loading, and
+readiness failure prevents runtime loading. The wrapper reuses the existing
+Stage 11 runtime/manifest loading APIs, adds no new runtime loader, and keeps
+runtime loading separate from scientific computation.
 
 ## Current implemented capabilities
 
@@ -100,6 +104,9 @@ The current preprocessing layer supports:
 - ordered residue-name extraction through
   `extract_condition_residue_names(...)` and
   `extract_manifest_residue_names(...)`;
+- manifest-driven runtime loading through the Stage 15.3 workflow wrapper,
+  after Stage 15.2 readiness and through the existing Stage 11
+  runtime/manifest loading APIs;
 - frozen frame, condition, manifest, and issue contracts for future Rg
   computation;
 - single-condition Rg computation through `compute_condition_rg(...)`;
@@ -601,6 +608,32 @@ unexpected conversion or wrapper-call failures.
 
 The aggregate result serializes through the existing per-condition
 `to_dict()` boundary, so runtime objects remain opaque and are not serialized.
+
+## Stage 15.3 workflow runtime loading handoff
+
+Stage 15.3 manifest-driven runtime loading is the workflow-level handoff from
+Stage 15.2 readiness to the existing Stage 11 manifest runtime loader. Stage
+15.3 readiness is called before runtime loading, and readiness failure
+prevents runtime loading. The wrapper exists for the local two conditions
+workflow expectation, with `normal` and `tumor` as configurable defaults.
+
+The wrapper stores the raw Stage 11 manifest load result for future Stage 15.4
+orchestration, but its public `to_dict()` output contains only JSON-safe
+metadata. It reports loaded condition names and issue metadata without
+serializing runtime objects.
+
+Stage 15.3 adds no Rg/contacts/graph/diagnostics/reference/CLI behavior. It
+does not compute Rg, compute contacts, export graph artifacts, run
+diagnostics, build diagnostics reports, perform reference comparison, execute
+notebooks, or add workflow/CLI execution. Stage 15.4 will orchestrate
+manifest-level Rg + contacts. Stage 15.3 does not compute them.
+
+The Stage 15.3 import/default CI does not require MDAnalysis. The real runtime loading remains optional/local/scientific through the accepted Stage 11 boundary. `local_md`
+remains local-only, not committed, and not required by default CI.
+
+`MANIA_analysis_v1_2` remains the current reference semantics, the reference
+notebook not executed boundary remains in force, the reference comparison remains Stage 15.7 optional mode, temporal RIN remains future scope, and WANIA
+frontend adapter/API payload remains future scope.
 
 ## Stage 11.6 runtime metadata
 

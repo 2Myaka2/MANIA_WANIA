@@ -132,8 +132,11 @@ from mania.preprocessing.trajectory_graph_workflow import (
     PreprocessingGraphWorkflowOptions,
     PreprocessingGraphWorkflowOutputLayout,
     PreprocessingGraphWorkflowPlan,
+    PreprocessingGraphWorkflowRuntimeLoadingIssue,
+    PreprocessingGraphWorkflowRuntimeLoadingResult,
     build_preprocessing_graph_workflow_plan,
     check_preprocessing_graph_workflow_manifest_readiness,
+    load_preprocessing_graph_workflow_condition_runtimes,
 )
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
 from mania.preprocessing.trajectory_manifest_loader import (
@@ -291,6 +294,8 @@ __all__ = [
     "PreprocessingGraphWorkflowOptions",
     "PreprocessingGraphWorkflowOutputLayout",
     "PreprocessingGraphWorkflowPlan",
+    "PreprocessingGraphWorkflowRuntimeLoadingIssue",
+    "PreprocessingGraphWorkflowRuntimeLoadingResult",
     "PreprocessingInputManifest",
     "PreprocessingManifestLoadIssue",
     "PreprocessingManifestLoadResult",
@@ -350,6 +355,7 @@ __all__ = [
     "get_mdanalysis_status",
     "is_mdanalysis_available",
     "load_manifest_condition_runtimes",
+    "load_preprocessing_graph_workflow_condition_runtimes",
     "load_preprocessing_input_manifest",
     "load_residue_library_from_manifest_options",
     "load_single_condition_runtime",

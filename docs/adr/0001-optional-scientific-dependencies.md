@@ -202,6 +202,27 @@ MDAnalysis remains optional, default CI remains independent from real MD data,
 and Stage 12 Rg work remains future work. See
 `docs/preprocessing_runtime_boundary_before_rg.md`.
 
+## Stage 15.3 manifest-driven workflow runtime loading
+
+Stage 15.3 adds a workflow-level manifest-driven runtime loading wrapper for
+two conditions after Stage 15.2 readiness. Stage 15.3 readiness is called
+before runtime loading, and readiness failure prevents runtime loading. The
+wrapper reuses the existing Stage 11 runtime/manifest loading APIs and adds no
+new runtime loader.
+
+The Stage 15.3 import/default CI does not require MDAnalysis. The real runtime loading remains optional/local/scientific through the accepted Stage 11 boundary and may
+require optional scientific dependencies only when executed locally with
+extras. No MDAnalysis dependency is added to default CI.
+
+`local_md` remains local-only, not committed, and not required by default CI.
+The wrapper adds no Rg/contacts/graph/diagnostics/reference/CLI behavior.
+Stage 15.4 will orchestrate manifest-level Rg + contacts, and Stage 15.3 does
+not compute them.
+
+`MANIA_analysis_v1_2` remains the current reference semantics. The reference
+notebook not executed boundary remains in force; the reference comparison remains Stage 15.7 optional mode. Temporal RIN remains future scope. WANIA frontend
+adapter/API payload remains future scope.
+
 ## Stage 12.1a Rg result contracts
 
 Stage 12.1a adds dependency-free Rg result and report dataclasses. They use

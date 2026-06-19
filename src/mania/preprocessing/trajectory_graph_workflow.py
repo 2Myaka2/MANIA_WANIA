@@ -84,6 +84,15 @@ class _ManifestPathValidator(Protocol):
     ) -> PreprocessingPathValidationReport: ...
 
 
+class _ManifestRuntimeLoader(Protocol):
+    def __call__(
+        self,
+        manifest: PreprocessingInputManifest,
+        *,
+        base_dir: str | Path | None = None,
+    ) -> object: ...
+
+
 @dataclass(frozen=True)
 class PreprocessingGraphWorkflowOptions:
     """Run options for future preprocessing graph export orchestration."""
@@ -370,6 +379,177 @@ class PreprocessingGraphWorkflowManifestReadinessResult:
 
 
 @dataclass(frozen=True)
+class PreprocessingGraphWorkflowRuntimeLoadingIssue:
+    """One deterministic workflow runtime loading issue."""
+
+    kind: str
+    message: str
+    field: str | None = None
+    condition_name: str | None = None
+    path: Path | None = None
+    value: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "kind", _non_empty_string(self.kind, "kind"))
+        object.__setattr__(
+            self,
+            "message",
+            _non_empty_string(self.message, "message"),
+        )
+        object.__setattr__(
+            self,
+            "field",
+            _optional_non_empty_string(self.field, "field"),
+        )
+        object.__setattr__(
+            self,
+            "condition_name",
+            _optional_non_empty_string(
+                self.condition_name,
+                "condition_name",
+            ),
+        )
+        _require_optional_path(self.path, "path")
+        object.__setattr__(
+            self,
+            "value",
+            _optional_non_empty_string(self.value, "value"),
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe runtime loading issue dictionary."""
+        return {
+            "kind": self.kind,
+            "message": self.message,
+            "field": self.field,
+            "condition_name": self.condition_name,
+            "path": _optional_path_string(self.path),
+            "value": self.value,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphWorkflowRuntimeLoadingResult:
+    """Manifest-driven runtime loading metadata for future orchestration."""
+
+    manifest_path: Path
+    manifest_readiness: PreprocessingGraphWorkflowManifestReadinessResult
+    condition_names: tuple[str, ...]
+    expected_condition_names: tuple[str, ...] | None
+    runtime_load_result: object | None = None
+    issues: tuple[PreprocessingGraphWorkflowRuntimeLoadingIssue, ...] = ()
+
+    def __post_init__(self) -> None:
+        _require_path(self.manifest_path, "manifest_path")
+        if not isinstance(
+            self.manifest_readiness,
+            PreprocessingGraphWorkflowManifestReadinessResult,
+        ):
+            raise ValueError(
+                "manifest_readiness must be "
+                "PreprocessingGraphWorkflowManifestReadinessResult"
+            )
+        if not isinstance(self.condition_names, tuple):
+            raise ValueError("condition_names must be a tuple of strings")
+        object.__setattr__(
+            self,
+            "condition_names",
+            tuple(
+                _non_empty_string(condition_name, "condition_names")
+                for condition_name in self.condition_names
+            ),
+        )
+        if self.expected_condition_names is not None:
+            if not isinstance(self.expected_condition_names, tuple):
+                raise ValueError(
+                    "expected_condition_names must be None or a tuple of "
+                    "strings"
+                )
+            object.__setattr__(
+                self,
+                "expected_condition_names",
+                tuple(
+                    _non_empty_string(
+                        condition_name,
+                        "expected_condition_names",
+                    )
+                    for condition_name in self.expected_condition_names
+                ),
+            )
+        if not isinstance(self.issues, tuple):
+            raise ValueError(
+                "issues must be a tuple of "
+                "PreprocessingGraphWorkflowRuntimeLoadingIssue"
+            )
+        for issue in self.issues:
+            if not isinstance(
+                issue,
+                PreprocessingGraphWorkflowRuntimeLoadingIssue,
+            ):
+                raise ValueError(
+                    "issues must contain "
+                    "PreprocessingGraphWorkflowRuntimeLoadingIssue"
+                )
+
+    @property
+    def passed(self) -> bool:
+        """Return whether readiness and runtime loading both passed."""
+        return (
+            self.manifest_readiness.passed
+            and self.runtime_load_result is not None
+            and self._expected_conditions_loaded
+            and self.issues == ()
+        )
+
+    @property
+    def issue_count(self) -> int:
+        """Return the number of wrapper runtime loading issues."""
+        return len(self.issues)
+
+    @property
+    def condition_count(self) -> int:
+        """Return the number of loaded condition runtimes reported."""
+        return len(self.condition_names)
+
+    @property
+    def runtime_loaded(self) -> bool:
+        """Return whether a Stage 11 manifest runtime result is retained."""
+        return self.runtime_load_result is not None
+
+    @property
+    def _expected_conditions_loaded(self) -> bool:
+        expected_names = self.expected_condition_names
+        if expected_names is None:
+            return True
+        loaded_names = set(self.condition_names)
+        return all(
+            expected_condition_name in loaded_names
+            for expected_condition_name in expected_names
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return JSON-safe metadata without serializing runtime objects."""
+        return {
+            "manifest_path": str(self.manifest_path),
+            "manifest_readiness": self.manifest_readiness.to_dict(),
+            "condition_names": list(self.condition_names),
+            "expected_condition_names": (
+                list(self.expected_condition_names)
+                if self.expected_condition_names is not None
+                else None
+            ),
+            "runtime_loaded": self.runtime_loaded,
+            "runtime_load_result_type": _runtime_load_result_type(
+                self.runtime_load_result
+            ),
+            "condition_count": self.condition_count,
+            "issue_count": self.issue_count,
+            "issues": [issue.to_dict() for issue in self.issues],
+            "passed": self.passed,
+        }
+
+
+@dataclass(frozen=True)
 class PreprocessingGraphWorkflowPlan:
     """In-memory plan for future preprocessing graph export orchestration."""
 
@@ -572,6 +752,79 @@ def check_preprocessing_graph_workflow_manifest_readiness(
         expected_condition_count=expected_count,
         input_paths=input_paths,
         issues=tuple(issues),
+    )
+
+
+def load_preprocessing_graph_workflow_condition_runtimes(
+    manifest_path: str | Path,
+    *,
+    expected_condition_names: Iterable[str] | None = ("normal", "tumor"),
+) -> PreprocessingGraphWorkflowRuntimeLoadingResult:
+    """Load manifest condition runtimes after Stage 15.2 readiness passes."""
+    normalized_manifest_path = Path(manifest_path)
+    expected_names = _normalize_expected_condition_names(
+        expected_condition_names
+    )
+    readiness = check_preprocessing_graph_workflow_manifest_readiness(
+        normalized_manifest_path,
+        expected_condition_names=expected_names,
+    )
+
+    if not readiness.passed:
+        return PreprocessingGraphWorkflowRuntimeLoadingResult(
+            manifest_path=normalized_manifest_path,
+            manifest_readiness=readiness,
+            condition_names=(),
+            expected_condition_names=expected_names,
+            issues=(
+                PreprocessingGraphWorkflowRuntimeLoadingIssue(
+                    kind="manifest_readiness_failed",
+                    message=(
+                        "Manifest readiness failed; runtime loading was not "
+                        "attempted."
+                    ),
+                    field="manifest_path",
+                    path=normalized_manifest_path,
+                ),
+            ),
+        )
+
+    try:
+        manifest = _manifest_loader()(normalized_manifest_path)
+        runtime_load_result = _manifest_runtime_loader()(
+            manifest,
+            base_dir=normalized_manifest_path.parent,
+        )
+    except Exception as exc:
+        return PreprocessingGraphWorkflowRuntimeLoadingResult(
+            manifest_path=normalized_manifest_path,
+            manifest_readiness=readiness,
+            condition_names=(),
+            expected_condition_names=expected_names,
+            issues=(
+                PreprocessingGraphWorkflowRuntimeLoadingIssue(
+                    kind="runtime_load_failed",
+                    message=(
+                        "Manifest runtime loading failed unexpectedly: "
+                        f"{exc.__class__.__name__}."
+                    ),
+                    field="condition_runtime",
+                ),
+            ),
+        )
+
+    condition_names, issues = _runtime_loading_metadata_issues(
+        runtime_load_result,
+        expected_names,
+    )
+
+    return PreprocessingGraphWorkflowRuntimeLoadingResult(
+        manifest_path=normalized_manifest_path,
+        manifest_readiness=readiness,
+        condition_names=condition_names,
+        expected_condition_names=expected_names,
+        runtime_load_result=runtime_load_result,
+        issues=issues,
     )
 
 
@@ -795,8 +1048,138 @@ def _manifest_path_validator() -> _ManifestPathValidator:
     )
 
 
+def _manifest_runtime_loader() -> _ManifestRuntimeLoader:
+    module = _import_preprocessing_module("trajectory_" + "manifest_loader")
+    return cast(
+        _ManifestRuntimeLoader,
+        getattr(module, "load_" + "manifest_condition_runtimes"),
+    )
+
+
 def _import_preprocessing_module(module_name: str) -> ModuleType:
     return importlib.import_module(f"mania.preprocessing.{module_name}")
+
+
+def _runtime_loading_metadata_issues(
+    runtime_load_result: object,
+    expected_condition_names: tuple[str, ...] | None,
+) -> tuple[
+    tuple[str, ...],
+    tuple[PreprocessingGraphWorkflowRuntimeLoadingIssue, ...],
+]:
+    issues: list[PreprocessingGraphWorkflowRuntimeLoadingIssue] = []
+    condition_names = _loaded_condition_names(runtime_load_result, issues)
+    _append_runtime_result_status_issue(runtime_load_result, issues)
+
+    if expected_condition_names is not None:
+        if len(condition_names) != len(expected_condition_names):
+            issues.append(
+                PreprocessingGraphWorkflowRuntimeLoadingIssue(
+                    kind="condition_count_mismatch",
+                    message=(
+                        "Loaded condition count does not match the expected "
+                        "condition count."
+                    ),
+                    field="conditions",
+                    value=(
+                        f"expected={len(expected_condition_names)},"
+                        f"actual={len(condition_names)}"
+                    ),
+                )
+            )
+        loaded_names = set(condition_names)
+        for expected_condition_name in expected_condition_names:
+            if expected_condition_name not in loaded_names:
+                issues.append(
+                    PreprocessingGraphWorkflowRuntimeLoadingIssue(
+                        kind="expected_condition_not_loaded",
+                        message=(
+                            "Expected condition runtime was not loaded: "
+                            f"{expected_condition_name}"
+                        ),
+                        field="condition_runtime",
+                        condition_name=expected_condition_name,
+                    )
+                )
+
+    return condition_names, tuple(issues)
+
+
+def _loaded_condition_names(
+    runtime_load_result: object,
+    issues: list[PreprocessingGraphWorkflowRuntimeLoadingIssue],
+) -> tuple[str, ...]:
+    names = getattr(runtime_load_result, "loaded_condition_names", None)
+    if not isinstance(names, tuple):
+        issues.append(
+            PreprocessingGraphWorkflowRuntimeLoadingIssue(
+                kind="runtime_load_result_invalid",
+                message=(
+                    "Stage 11 runtime load result does not expose loaded "
+                    "condition names as a tuple."
+                ),
+                field="loaded_condition_names",
+                value=_runtime_load_result_type(runtime_load_result),
+            )
+        )
+        return ()
+
+    condition_names: list[str] = []
+    for condition_name in names:
+        try:
+            condition_names.append(
+                _non_empty_string(condition_name, "loaded_condition_names")
+            )
+        except ValueError:
+            issues.append(
+                PreprocessingGraphWorkflowRuntimeLoadingIssue(
+                    kind="runtime_load_result_invalid",
+                    message=(
+                        "Stage 11 runtime load result contains an invalid "
+                        "loaded condition name."
+                    ),
+                    field="loaded_condition_names",
+                    value=_runtime_load_result_type(runtime_load_result),
+                )
+            )
+            return ()
+    return tuple(condition_names)
+
+
+def _append_runtime_result_status_issue(
+    runtime_load_result: object,
+    issues: list[PreprocessingGraphWorkflowRuntimeLoadingIssue],
+) -> None:
+    passed = getattr(runtime_load_result, "passed", None)
+    if not isinstance(passed, bool):
+        issues.append(
+            PreprocessingGraphWorkflowRuntimeLoadingIssue(
+                kind="runtime_load_result_invalid",
+                message=(
+                    "Stage 11 runtime load result does not expose a boolean "
+                    "passed status."
+                ),
+                field="passed",
+                value=_runtime_load_result_type(runtime_load_result),
+            )
+        )
+        return
+    if not passed:
+        issues.append(
+            PreprocessingGraphWorkflowRuntimeLoadingIssue(
+                kind="runtime_load_failed",
+                message="Stage 11 manifest runtime loading did not pass.",
+                field="condition_runtime",
+                value=_runtime_load_result_type(runtime_load_result),
+            )
+        )
+
+
+def _runtime_load_result_type(runtime_load_result: object | None) -> str | None:
+    if runtime_load_result is None:
+        return None
+    cls = runtime_load_result.__class__
+    return f"{cls.__module__}.{cls.__qualname__}"
 
 
 def _manifest_load_issue(
@@ -892,6 +1275,9 @@ __all__ = [
     "PreprocessingGraphWorkflowOptions",
     "PreprocessingGraphWorkflowOutputLayout",
     "PreprocessingGraphWorkflowPlan",
+    "PreprocessingGraphWorkflowRuntimeLoadingIssue",
+    "PreprocessingGraphWorkflowRuntimeLoadingResult",
     "build_preprocessing_graph_workflow_plan",
     "check_preprocessing_graph_workflow_manifest_readiness",
+    "load_preprocessing_graph_workflow_condition_runtimes",
 ]
