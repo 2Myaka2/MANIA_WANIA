@@ -729,11 +729,10 @@ def test_source_boundary_does_not_write_or_run_diagnostics() -> None:
         assert forbidden not in source
 
 
-def test_source_boundary_does_not_perform_comparison_or_workflow() -> None:
+def test_source_boundary_does_not_call_workflow_or_forbidden_dependencies() -> None:
     source = MODULE_PATH.read_text(encoding="utf-8")
 
     for forbidden in (
-        "def compare_",
         "RowComparison",
         "contract_subset",
         "notebook_export",

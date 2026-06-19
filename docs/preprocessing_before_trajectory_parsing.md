@@ -296,6 +296,16 @@ contact_edges.csv is aggregate contacts table output. backend graph
 edges.csv, graph.json, diagnostics, and comparison inputs are Stage 14 graph
 artifacts.
 
+## Stage 14.3b graph reference artifact comparison
+
+Stage 14.3b compares generated graph artifacts with notebook reference artifacts v1.2 and uses Stage 14.3a input contract. It compares enabled generated/reference `nodes.csv`, corrected backend graph `edges.csv`, and `graph.json` artifacts after the Stage 14.3a readiness validator passes.
+
+The comparison is dependency-free and read-only. CSV field values compare exactly as strings, and `graph.json` compares structurally rather than byte-for-byte. It identifies mismatches only; expected mismatch documentation remains Stage 14.4a.
+
+MANIA_analysis_v1_2 remains the current graph reference semantics. v1.1 historical reference artifacts remain historical. v1.2 Cell 5 interaction priority defines the accepted graph edge display priority, and v1.2 Cell 12 temporal RIN export fix is documented only; temporal RIN export remains future scope.
+
+Corrected graph comparison includes `edge_type`, `all_edge_types`, and `n_edge_types` according to `EDGE_TYPE_PRIORITY`. Stage 13 contact_edges.csv is aggregate contacts table output. backend graph edges.csv, graph.json, diagnostics, and comparison are Stage 14 graph artifacts.
+
 Stage 14.1c does not write backend graph nodes.csv, does not write
 `graph.json`, does not run graph validators or diagnostics, and does not add
 workflow/CLI integration. graph CSV validation remains Stage 14.1d and
