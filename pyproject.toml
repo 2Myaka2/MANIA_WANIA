@@ -48,6 +48,9 @@ markers = [
 [tool.ruff]
 line-length = 88
 target-version = "py311"
+extend-exclude = [
+    "data/reference/**/*.ipynb",
+]
 
 [tool.ruff.lint]
 select = [
