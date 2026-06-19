@@ -60,7 +60,11 @@ adds only the dependency-free in-memory diagnostics report shape for an
 already computed Stage 14.2a diagnostics result. Stage 14.3a adds the
 reference graph comparison input contract for future generated/reference graph
 comparison. It validates generated/reference artifact readiness only and does
-not perform comparison; actual comparison remains Stage 14.3b.
+not perform comparison; actual comparison remains Stage 14.3b. Stage 14.3b
+adds dependency-free generated/reference graph artifact comparison. Stage
+14.4a documents expected mismatches and known semantic differences in
+`docs/preprocessing_graph_reference_mismatches.md` without changing
+comparison logic.
 
 ## Current implemented capabilities
 
@@ -153,7 +157,11 @@ The current preprocessing layer supports:
 - dependency-free preprocessing graph diagnostics report shape through
   `build_preprocessing_graph_diagnostics_report(...)`;
 - dependency-free graph reference comparison input validation through
-  `validate_preprocessing_graph_reference_comparison_input(...)`.
+  `validate_preprocessing_graph_reference_comparison_input(...)`;
+- dependency-free graph reference artifact comparison through
+  `compare_preprocessing_graph_reference_artifacts(...)`;
+- Stage 14.4a graph mismatch interpretation documentation in
+  `docs/preprocessing_graph_reference_mismatches.md`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -190,6 +198,7 @@ build_preprocessing_graph_export_bundle(...)
 run_preprocessing_graph_diagnostics(...)
 build_preprocessing_graph_diagnostics_report(...)
 validate_preprocessing_graph_reference_comparison_input(...)
+compare_preprocessing_graph_reference_artifacts(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -301,6 +310,12 @@ artifacts.
 Stage 14.3b compares generated graph artifacts with notebook reference artifacts v1.2 and uses Stage 14.3a input contract. It compares enabled generated/reference `nodes.csv`, corrected backend graph `edges.csv`, and `graph.json` artifacts after the Stage 14.3a readiness validator passes.
 
 The comparison is dependency-free and read-only. CSV field values compare exactly as strings, and `graph.json` compares structurally rather than byte-for-byte. It identifies mismatches only; expected mismatch documentation remains Stage 14.4a.
+
+Stage 14.4a documents expected mismatches and known semantic differences in
+`docs/preprocessing_graph_reference_mismatches.md`. It is documentation-only:
+no comparison logic changes, no expected mismatch classification code, no
+semantic-difference classification code, no CLI/workflow integration, no
+real-data CI, and no biological interpretation.
 
 MANIA_analysis_v1_2 remains the current graph reference semantics. v1.1 historical reference artifacts remain historical. v1.2 Cell 5 interaction priority defines the accepted graph edge display priority, and v1.2 Cell 12 temporal RIN export fix is documented only; temporal RIN export remains future scope.
 

@@ -679,3 +679,18 @@ The comparison is read-only and dependency-free. It reports exact generated/refe
 MANIA_analysis_v1_2 remains the current graph reference semantics. v1.1 historical reference artifacts remain historical. v1.2 Cell 5 interaction priority defines graph edge display priority, and v1.2 Cell 12 temporal RIN export fix remains documented context; temporal RIN export remains future scope.
 
 Corrected graph comparison includes `edge_type`, `all_edge_types`, and `n_edge_types` according to `EDGE_TYPE_PRIORITY`. Stage 13 contact_edges.csv is aggregate contacts table output. backend graph edges.csv, graph.json, diagnostics, and comparison are Stage 14 graph artifacts.
+
+## Stage 14.4a transition
+
+Stage 14.4a documents expected mismatches and known semantic differences for
+Stage 14.3b graph comparison in
+`docs/preprocessing_graph_reference_mismatches.md`. It keeps the Stage 13
+boundary intact: contact_edges.csv is an aggregate contacts table from Stage
+13, backend graph edges.csv is a Stage 14 graph artifact, and Stage 14 graph
+comparison compares backend graph edges.csv, not Stage 13 contact_edges.csv.
+
+Stage 14.4a is documentation-only. It adds no comparison logic changes, no
+expected mismatch classification code, no semantic-difference classification
+code, no CLI/workflow integration, no real-data CI, and no biological
+interpretation. Stage 14.4b remains final graph export boundary docs before
+workflow.

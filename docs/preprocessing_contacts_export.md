@@ -512,6 +512,21 @@ MANIA_analysis_v1_2 remains the current graph reference semantics. v1.1 historic
 
 Corrected graph comparison includes `edge_type`, `all_edge_types`, and `n_edge_types` according to `EDGE_TYPE_PRIORITY`. Stage 13 contact_edges.csv is aggregate contacts table output. backend graph edges.csv, graph.json, diagnostics, and comparison are Stage 14 graph artifacts.
 
+## Stage 14.4a graph mismatch interpretation docs
+
+Stage 14.4a documents expected mismatches and known semantic differences for
+Stage 14.3b graph comparison in
+`docs/preprocessing_graph_reference_mismatches.md`. The documentation explains
+why exact string row mismatches, structural `graph.json` value mismatches,
+generic `residue_contact`, missing optional graph metrics, and temporal RIN
+scope boundaries require interpretation instead of automatic acceptance.
+
+Stage 14.4a is documentation-only. It adds no graph comparison logic changes,
+no expected mismatch classification code, no semantic-difference
+classification code, no CLI/workflow integration, no real-data CI, and no
+biological interpretation. Stage 14.4b remains final graph export boundary
+docs before workflow.
+
 ## Future stages
 
 Graph export remains future after contacts MVP.
