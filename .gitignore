@@ -52,7 +52,18 @@ logs/
 *.log
 
 # Local scientific data directories
-data/
+data/*
+
+# Tracked lightweight reference notebook context
+!data/reference/
+data/reference/*
+!data/reference/notebooks_libraries_v1_2/
+data/reference/notebooks_libraries_v1_2/*
+!data/reference/notebooks_libraries_v1_2/MANIA_analysis_v1_2.ipynb
+
+# Keep notebook runtime/cache artifacts out of git
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
 
 # Molecular dynamics trajectory, topology, and large scientific files
 *.xtc
