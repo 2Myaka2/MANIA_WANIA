@@ -77,7 +77,11 @@ remains Stage 15.3. Stage 15.3 adds manifest-driven runtime loading for two
 conditions. Stage 15.3 readiness is called before runtime loading, and
 readiness failure prevents runtime loading. The wrapper reuses the existing
 Stage 11 runtime/manifest loading APIs, adds no new runtime loader, and keeps
-runtime loading separate from scientific computation.
+runtime loading separate from scientific computation. Stage 15.4 adds
+manifest-level Rg + contacts orchestration from the Stage 15.3 runtime loading
+result, reuses accepted Stage 12 Rg APIs and accepted Stage 13 contacts APIs,
+adds no new scientific algorithms, and keeps no CSV export, no graph export,
+no diagnostics, no reference comparison, and no CLI inside this stage.
 
 ## Current implemented capabilities
 
@@ -107,6 +111,8 @@ The current preprocessing layer supports:
 - manifest-driven runtime loading through the Stage 15.3 workflow wrapper,
   after Stage 15.2 readiness and through the existing Stage 11
   runtime/manifest loading APIs;
+- manifest-level Rg + contacts orchestration through the Stage 15.4 workflow
+  wrapper from the Stage 15.3 runtime loading result;
 - frozen frame, condition, manifest, and issue contracts for future Rg
   computation;
 - single-condition Rg computation through `compute_condition_rg(...)`;
@@ -221,10 +227,41 @@ validate_preprocessing_graph_reference_comparison_input(...)
 compare_preprocessing_graph_reference_artifacts(...)
 build_preprocessing_graph_workflow_plan(...)
 check_preprocessing_graph_workflow_manifest_readiness(...)
+compute_preprocessing_graph_workflow_rg_contacts(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
 explicit residue-name QC, and condition runtime loading.
+
+## Stage 15.4 manifest-level Rg + contacts orchestration boundary
+
+The Stage 15.3 runtime loading result feeds Stage 15.4. Stage 15.4 does not
+load runtimes itself, does not load manifests, and does not validate local
+paths. It consumes the raw accepted Stage 11 manifest runtime load result that
+Stage 15.3 already retained.
+
+Stage 15.4 reuses accepted Stage 12 Rg APIs and accepted Stage 13 contacts
+APIs. The wrapper does not implement new scientific algorithms, does not
+manually compute Rg, does not manually compute contacts, and does not inspect
+`.tpr` or `.xtc` contents.
+
+Stage 15.4 is in-memory computation orchestration only: no CSV export, no
+graph export, no diagnostics, no diagnostics report, no reference comparison,
+no CLI, no notebook execution, no file creation, and no local real MD smoke
+test. Stage 15.5 will orchestrate graph export, including mapping, nodes.csv,
+corrected edges.csv, CSV validation, graph.json, and bundle creation. Stage
+15.4 does not build graph artifacts.
+
+Import/default CI does not require MDAnalysis, and `local_md` remains
+local-only, not committed, and not required by default CI. Real computation
+remains optional/local/scientific behind the accepted runtime and computation
+boundaries.
+
+`MANIA_analysis_v1_2` remains the current reference semantics. The reference
+notebook is not executed; notebook not executed remains part of the workflow
+boundary. The reference comparison remains Stage 15.7 optional mode, disabled
+by default. Temporal RIN remains future scope. WANIA frontend adapter/API
+payload remains future scope.
 
 ## Stage 15.2 local manifest readiness boundary
 

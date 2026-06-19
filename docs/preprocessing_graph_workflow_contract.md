@@ -257,10 +257,38 @@ remains future scope.
 Stage 15.4 will orchestrate manifest-level Rg + contacts. Stage 15.3 does not
 compute them.
 
-`local_md` remains local-only and not committed. Real topology and trajectory
-files are not required by default CI, and real MD smoke coverage remains
-opt-in future scope. The notebook is not executed, reference comparison remains
-optional, and temporal RIN remains future scope.
+## Stage 15.4 manifest-level Rg + contacts orchestration
+
+Stage 15.4 adds manifest-level Rg + contacts orchestration as an in-memory
+handoff from Stage 15.3 to later graph export. The Stage 15.3 runtime loading
+result feeds Stage 15.4, and Stage 15.4 does not load runtimes itself. It
+does not call manifest loading, manifest path validation, local readiness, or
+runtime loading APIs.
+
+Stage 15.4 reuses accepted Stage 12 Rg APIs and accepted Stage 13 contacts
+APIs. It calls the accepted manifest-level computation boundaries for Rg and
+contacts when requested, preserves the raw accepted result objects in memory
+for future stages, and exposes only deterministic JSON-safe metadata through
+`to_dict()`. It adds no new scientific algorithms, does not manually compute
+Rg, and does not manually compute contacts.
+
+The Stage 15.4 boundary is computation orchestration only: no CSV export, no
+graph export, no diagnostics, no diagnostics report, no reference comparison,
+no CLI, no notebook execution, no file or directory creation, and no local
+real MD smoke test. Import/default CI does not require MDAnalysis. Real
+computation remains optional/local/scientific through the accepted Stage 11,
+Stage 12, and Stage 13 boundaries.
+
+Stage 15.5 will orchestrate graph export: mapping, nodes.csv, corrected
+edges.csv, CSV validation, graph.json, and bundle creation. Stage 15.4 does
+not build graph artifacts.
+
+`local_md` remains local-only, not committed, and not required by default CI.
+`MANIA_analysis_v1_2` remains the current reference semantics. The reference
+notebook is not executed; notebook not executed remains part of the workflow
+boundary. The reference comparison remains Stage 15.7 optional mode, disabled
+by default. Temporal RIN remains future scope. WANIA frontend adapter/API
+payload remains future scope.
 
 ## CLI and frontend boundary
 

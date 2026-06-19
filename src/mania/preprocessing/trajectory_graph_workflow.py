@@ -7,12 +7,17 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
-from typing import Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 from mania.preprocessing.input_manifest import PreprocessingInputManifest
 from mania.preprocessing.path_validation import (
     PreprocessingPathValidationReport,
 )
+
+if TYPE_CHECKING:
+    from mania.preprocessing.trajectory_contacts import (
+        PreprocessingContactDetectionOptions,
+    )
 
 _CURRENT_REFERENCE_SEMANTICS = "MANIA_analysis_v1_2"
 _DEFAULT_RUN_NAME = "preprocessing_graph_export"
@@ -90,6 +95,19 @@ class _ManifestRuntimeLoader(Protocol):
         manifest: PreprocessingInputManifest,
         *,
         base_dir: str | Path | None = None,
+    ) -> object: ...
+
+
+class _ManifestRgComputer(Protocol):
+    def __call__(self, manifest_result: object) -> object: ...
+
+
+class _ManifestContactsComputer(Protocol):
+    def __call__(
+        self,
+        manifest_result: object,
+        *,
+        options: object | None = None,
     ) -> object: ...
 
 
@@ -550,6 +568,156 @@ class PreprocessingGraphWorkflowRuntimeLoadingResult:
 
 
 @dataclass(frozen=True)
+class PreprocessingGraphWorkflowComputationIssue:
+    """One deterministic workflow computation issue."""
+
+    kind: str
+    message: str
+    stage: str | None = None
+    condition_name: str | None = None
+    field: str | None = None
+    value: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "kind", _non_empty_string(self.kind, "kind"))
+        object.__setattr__(
+            self,
+            "message",
+            _non_empty_string(self.message, "message"),
+        )
+        object.__setattr__(
+            self,
+            "stage",
+            _optional_non_empty_string(self.stage, "stage"),
+        )
+        object.__setattr__(
+            self,
+            "condition_name",
+            _optional_non_empty_string(
+                self.condition_name,
+                "condition_name",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "field",
+            _optional_non_empty_string(self.field, "field"),
+        )
+        object.__setattr__(
+            self,
+            "value",
+            _optional_non_empty_string(self.value, "value"),
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe computation issue dictionary."""
+        return {
+            "kind": self.kind,
+            "message": self.message,
+            "stage": self.stage,
+            "condition_name": self.condition_name,
+            "field": self.field,
+            "value": self.value,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphWorkflowComputationResult:
+    """In-memory Stage 15.4 Rg and contacts orchestration result."""
+
+    runtime_loading: PreprocessingGraphWorkflowRuntimeLoadingResult
+    condition_names: tuple[str, ...]
+    include_rg: bool
+    include_contacts: bool
+    rg_result: object | None = None
+    contacts_result: object | None = None
+    issues: tuple[PreprocessingGraphWorkflowComputationIssue, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(
+            self.runtime_loading,
+            PreprocessingGraphWorkflowRuntimeLoadingResult,
+        ):
+            raise ValueError(
+                "runtime_loading must be "
+                "PreprocessingGraphWorkflowRuntimeLoadingResult"
+            )
+        if not isinstance(self.condition_names, tuple):
+            raise ValueError("condition_names must be a tuple of strings")
+        object.__setattr__(
+            self,
+            "condition_names",
+            tuple(
+                _non_empty_string(condition_name, "condition_names")
+                for condition_name in self.condition_names
+            ),
+        )
+        _require_bool(self.include_rg, "include_rg")
+        _require_bool(self.include_contacts, "include_contacts")
+        if not isinstance(self.issues, tuple):
+            raise ValueError(
+                "issues must be a tuple of "
+                "PreprocessingGraphWorkflowComputationIssue"
+            )
+        for issue in self.issues:
+            if not isinstance(
+                issue,
+                PreprocessingGraphWorkflowComputationIssue,
+            ):
+                raise ValueError(
+                    "issues must contain "
+                    "PreprocessingGraphWorkflowComputationIssue"
+                )
+
+    @property
+    def passed(self) -> bool:
+        """Return whether runtime loading and requested computations passed."""
+        return (
+            self.runtime_loading.passed
+            and (not self.include_rg or self.rg_computed)
+            and (not self.include_contacts or self.contacts_computed)
+            and self.issues == ()
+        )
+
+    @property
+    def issue_count(self) -> int:
+        """Return the number of computation issues."""
+        return len(self.issues)
+
+    @property
+    def condition_count(self) -> int:
+        """Return the number of covered condition names."""
+        return len(self.condition_names)
+
+    @property
+    def rg_computed(self) -> bool:
+        """Return whether an Rg result object is retained."""
+        return self.rg_result is not None
+
+    @property
+    def contacts_computed(self) -> bool:
+        """Return whether a contacts result object is retained."""
+        return self.contacts_result is not None
+
+    def to_dict(self) -> dict[str, object]:
+        """Return JSON-safe metadata without raw runtime or result objects."""
+        return {
+            "runtime_loading": self.runtime_loading.to_dict(),
+            "condition_names": list(self.condition_names),
+            "include_rg": self.include_rg,
+            "include_contacts": self.include_contacts,
+            "rg_computed": self.rg_computed,
+            "contacts_computed": self.contacts_computed,
+            "rg_result_type": _object_type(self.rg_result),
+            "contacts_result_type": _object_type(self.contacts_result),
+            "condition_count": self.condition_count,
+            "issue_count": self.issue_count,
+            "issues": [issue.to_dict() for issue in self.issues],
+            "passed": self.passed,
+        }
+
+
+@dataclass(frozen=True)
 class PreprocessingGraphWorkflowPlan:
     """In-memory plan for future preprocessing graph export orchestration."""
 
@@ -828,6 +996,161 @@ def load_preprocessing_graph_workflow_condition_runtimes(
     )
 
 
+def compute_preprocessing_graph_workflow_rg_contacts(
+    runtime_loading: PreprocessingGraphWorkflowRuntimeLoadingResult,
+    *,
+    include_rg: bool = True,
+    include_contacts: bool = True,
+    contact_options: PreprocessingContactDetectionOptions | None = None,
+) -> PreprocessingGraphWorkflowComputationResult:
+    """Orchestrate accepted manifest-level Rg and contacts computations."""
+    if not isinstance(
+        runtime_loading,
+        PreprocessingGraphWorkflowRuntimeLoadingResult,
+    ):
+        raise ValueError(
+            "runtime_loading must be "
+            "PreprocessingGraphWorkflowRuntimeLoadingResult"
+        )
+    _require_bool(include_rg, "include_rg")
+    _require_bool(include_contacts, "include_contacts")
+
+    condition_names = runtime_loading.condition_names
+    issues: list[PreprocessingGraphWorkflowComputationIssue] = []
+    rg_result: object | None = None
+    contacts_result: object | None = None
+    runtime_result = runtime_loading.runtime_load_result
+
+    if runtime_result is None:
+        if _runtime_loading_metadata_passed_without_raw_result(
+            runtime_loading
+        ):
+            issues.append(
+                PreprocessingGraphWorkflowComputationIssue(
+                    kind="runtime_load_result_missing",
+                    message=(
+                        "Runtime loading metadata passed but no raw runtime "
+                        "result exists."
+                    ),
+                    stage="runtime_loading",
+                    field="runtime_load_result",
+                )
+            )
+        else:
+            issues.append(
+                PreprocessingGraphWorkflowComputationIssue(
+                    kind="runtime_loading_failed",
+                    message=(
+                        "Runtime loading did not pass; computations were not "
+                        "attempted."
+                    ),
+                    stage="runtime_loading",
+                    field="runtime_loading",
+                )
+            )
+        return PreprocessingGraphWorkflowComputationResult(
+            runtime_loading=runtime_loading,
+            condition_names=condition_names,
+            include_rg=include_rg,
+            include_contacts=include_contacts,
+            issues=tuple(issues),
+        )
+
+    if not runtime_loading.passed:
+        issues.append(
+            PreprocessingGraphWorkflowComputationIssue(
+                kind="runtime_loading_failed",
+                message=(
+                    "Runtime loading did not pass; computations were not "
+                    "attempted."
+                ),
+                stage="runtime_loading",
+                field="runtime_loading",
+            )
+        )
+        return PreprocessingGraphWorkflowComputationResult(
+            runtime_loading=runtime_loading,
+            condition_names=condition_names,
+            include_rg=include_rg,
+            include_contacts=include_contacts,
+            issues=tuple(issues),
+        )
+
+    if not include_rg and not include_contacts:
+        issues.append(
+            PreprocessingGraphWorkflowComputationIssue(
+                kind="no_computation_targets_enabled",
+                message="At least one computation target must be enabled.",
+                field="computation_targets",
+            )
+        )
+        return PreprocessingGraphWorkflowComputationResult(
+            runtime_loading=runtime_loading,
+            condition_names=condition_names,
+            include_rg=include_rg,
+            include_contacts=include_contacts,
+            issues=tuple(issues),
+        )
+
+    if include_rg:
+        try:
+            rg_result = _manifest_rg_computer()(runtime_result)
+        except Exception as exc:
+            issues.append(
+                _computation_exception_issue(
+                    kind="rg_computation_failed",
+                    stage="rg",
+                    field="rg_result",
+                    exc=exc,
+                )
+            )
+        else:
+            _append_failed_computation_issue(
+                result=rg_result,
+                kind="rg_computation_failed",
+                stage="rg",
+                field="rg_result",
+                issues=issues,
+            )
+
+    if include_contacts:
+        try:
+            if contact_options is None:
+                contacts_result = _manifest_contacts_computer()(runtime_result)
+            else:
+                contacts_result = _manifest_contacts_computer()(
+                    runtime_result,
+                    options=contact_options,
+                )
+        except Exception as exc:
+            issues.append(
+                _computation_exception_issue(
+                    kind="contacts_computation_failed",
+                    stage="contacts",
+                    field="contacts_result",
+                    exc=exc,
+                )
+            )
+        else:
+            _append_failed_computation_issue(
+                result=contacts_result,
+                kind="contacts_computation_failed",
+                stage="contacts",
+                field="contacts_result",
+                issues=issues,
+            )
+
+    return PreprocessingGraphWorkflowComputationResult(
+        runtime_loading=runtime_loading,
+        condition_names=condition_names,
+        include_rg=include_rg,
+        include_contacts=include_contacts,
+        rg_result=rg_result,
+        contacts_result=contacts_result,
+        issues=tuple(issues),
+    )
+
+
 def _build_output_layout(
     options: PreprocessingGraphWorkflowOptions,
 ) -> PreprocessingGraphWorkflowOutputLayout:
@@ -1056,6 +1379,22 @@ def _manifest_runtime_loader() -> _ManifestRuntimeLoader:
     )
 
 
+def _manifest_rg_computer() -> _ManifestRgComputer:
+    module = _import_preprocessing_module("trajectory_" + "rg")
+    return cast(
+        _ManifestRgComputer,
+        getattr(module, "compute_" + "manifest_rg"),
+    )
+
+
+def _manifest_contacts_computer() -> _ManifestContactsComputer:
+    module = _import_preprocessing_module("trajectory_" + "contacts")
+    return cast(
+        _ManifestContactsComputer,
+        getattr(module, "compute_" + "manifest_contacts"),
+    )
+
+
 def _import_preprocessing_module(module_name: str) -> ModuleType:
     return importlib.import_module(f"mania.preprocessing.{module_name}")
 
@@ -1176,10 +1515,93 @@ def _append_runtime_result_status_issue(
 
 
 def _runtime_load_result_type(runtime_load_result: object | None) -> str | None:
-    if runtime_load_result is None:
+    return _object_type(runtime_load_result)
+
+
+def _runtime_loading_metadata_passed_without_raw_result(
+    runtime_loading: PreprocessingGraphWorkflowRuntimeLoadingResult,
+) -> bool:
+    return (
+        runtime_loading.manifest_readiness.passed
+        and runtime_loading.runtime_load_result is None
+        and runtime_loading._expected_conditions_loaded
+        and runtime_loading.issues == ()
+    )
+
+
+def _object_type(value: object | None) -> str | None:
+    if value is None:
         return None
-    cls = runtime_load_result.__class__
+    cls = value.__class__
     return f"{cls.__module__}.{cls.__qualname__}"
+
+
+def _append_failed_computation_issue(
+    *,
+    result: object | None,
+    kind: str,
+    stage: str,
+    field: str,
+    issues: list[PreprocessingGraphWorkflowComputationIssue],
+) -> None:
+    if result is None:
+        issues.append(
+            PreprocessingGraphWorkflowComputationIssue(
+                kind="computation_result_invalid",
+                message=(
+                    "Computation returned no result object for requested "
+                    f"{stage} stage."
+                ),
+                stage=stage,
+                field=field,
+            )
+        )
+        return
+
+    passed = getattr(result, "passed", None)
+    if not isinstance(passed, bool):
+        issues.append(
+            PreprocessingGraphWorkflowComputationIssue(
+                kind="computation_result_invalid",
+                message=(
+                    "Computation result does not expose a boolean passed "
+                    "status."
+                ),
+                stage=stage,
+                field="passed",
+                value=_object_type(result),
+            )
+        )
+        return
+
+    if not passed:
+        issues.append(
+            PreprocessingGraphWorkflowComputationIssue(
+                kind=kind,
+                message=f"{stage} computation did not pass.",
+                stage=stage,
+                field=field,
+                value=_object_type(result),
+            )
+        )
+
+
+def _computation_exception_issue(
+    *,
+    kind: str,
+    stage: str,
+    field: str,
+    exc: Exception,
+) -> PreprocessingGraphWorkflowComputationIssue:
+    return PreprocessingGraphWorkflowComputationIssue(
+        kind=kind,
+        message=(
+            f"{stage} computation failed unexpectedly: "
+            f"{exc.__class__.__name__}."
+        ),
+        stage=stage,
+        field=field,
+    )
 
 
 def _manifest_load_issue(

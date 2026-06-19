@@ -223,6 +223,33 @@ not compute them.
 notebook not executed boundary remains in force; the reference comparison remains Stage 15.7 optional mode. Temporal RIN remains future scope. WANIA frontend
 adapter/API payload remains future scope.
 
+## Stage 15.4 manifest-level Rg + contacts orchestration
+
+Stage 15.4 adds manifest-level Rg + contacts orchestration after Stage 15.3
+runtime loading. The Stage 15.3 runtime loading result feeds Stage 15.4, and
+Stage 15.4 does not load runtimes itself. It consumes the raw Stage 11
+manifest runtime load result already retained by Stage 15.3.
+
+The wrapper reuses accepted Stage 12 Rg APIs and accepted Stage 13 contacts
+APIs. It adds no new scientific algorithms, does not manually compute Rg, and
+does not manually compute contacts.
+
+The Stage 15.4 boundary is in-memory orchestration only: no CSV export, no
+graph export, no diagnostics, no reference comparison, no CLI, no notebook
+execution, no file creation, and no local real MD smoke test. Stage 15.5 will
+orchestrate graph export, and Stage 15.4 does not build graph artifacts.
+
+Import/default CI does not require MDAnalysis. Real computation remains
+optional/local/scientific through the accepted Stage 11, Stage 12, and Stage
+13 boundaries. `local_md` remains local-only, not committed, and not required
+by default CI.
+
+`MANIA_analysis_v1_2` remains the current reference semantics. The reference
+notebook is not executed; notebook not executed remains part of the workflow
+boundary. The reference comparison remains Stage 15.7 optional mode, disabled
+by default. Temporal RIN remains future scope. WANIA frontend adapter/API
+payload remains future scope.
+
 ## Stage 12.1a Rg result contracts
 
 Stage 12.1a adds dependency-free Rg result and report dataclasses. They use
