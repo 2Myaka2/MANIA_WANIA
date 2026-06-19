@@ -12,6 +12,11 @@ public APIs, workflow/CLI integration, real-data CI, temporal RIN export or
 comparison, biological interpretation, dependency changes, or reference-data
 changes.
 
+Stage 15.1 adds the next dependency-free workflow contract layer in
+`docs/preprocessing_graph_workflow_contract.md`. That contract defines run
+options, deterministic output layout, planned step names, and planning issues
+only. It still does not execute the workflow or add CLI integration.
+
 ## Completed Stage 14 capabilities
 
 Stage 14 now provides these accepted slices:
@@ -431,5 +436,6 @@ The next scoped stage may be:
 Stage 15 - Workflow/CLI integration for preprocessing graph export
 ```
 
-That stage should orchestrate the accepted Stage 14 APIs and artifacts while
-preserving the boundaries frozen here.
+Stage 15.1 begins that work with an in-memory workflow contract only. Later
+Stage 15 slices should orchestrate the accepted Stage 14 APIs and artifacts
+while preserving the boundaries frozen here.

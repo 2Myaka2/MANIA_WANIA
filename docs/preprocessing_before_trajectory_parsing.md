@@ -64,7 +64,13 @@ not perform comparison; actual comparison remains Stage 14.3b. Stage 14.3b
 adds dependency-free generated/reference graph artifact comparison. Stage
 14.4a documents expected mismatches and known semantic differences in
 `docs/preprocessing_graph_reference_mismatches.md` without changing
-comparison logic.
+comparison logic. Stage 14.4b freezes the completed graph export boundary
+before workflow in
+`docs/preprocessing_graph_export_boundary_before_workflow.md`. Stage 15.1
+adds the dependency-free preprocessing graph workflow contract in
+`docs/preprocessing_graph_workflow_contract.md`: run options, deterministic
+output layout, planned step names, and planning issues only. Stage 15.1 adds
+no workflow execution and no CLI.
 
 ## Current implemented capabilities
 
@@ -161,7 +167,9 @@ The current preprocessing layer supports:
 - dependency-free graph reference artifact comparison through
   `compare_preprocessing_graph_reference_artifacts(...)`;
 - Stage 14.4a graph mismatch interpretation documentation in
-  `docs/preprocessing_graph_reference_mismatches.md`.
+  `docs/preprocessing_graph_reference_mismatches.md`;
+- Stage 15.1 dependency-free workflow contract planning through
+  `build_preprocessing_graph_workflow_plan(...)`.
 
 The main public APIs currently exported from `mania.preprocessing` are:
 
@@ -199,6 +207,7 @@ run_preprocessing_graph_diagnostics(...)
 build_preprocessing_graph_diagnostics_report(...)
 validate_preprocessing_graph_reference_comparison_input(...)
 compare_preprocessing_graph_reference_artifacts(...)
+build_preprocessing_graph_workflow_plan(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,

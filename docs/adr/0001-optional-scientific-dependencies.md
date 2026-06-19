@@ -756,6 +756,23 @@ edges.csv is a Stage 14 graph artifact. Stage 14 graph comparison compares
 backend graph edges.csv, not Stage 13 contact_edges.csv. Stage 14.4b remains
 final graph export boundary docs before workflow.
 
+## Stage 15.1 workflow contract
+
+Stage 15.1 adds only the dependency-free preprocessing graph workflow
+contract. It defines run options, deterministic output layout, planned step
+names, and planning issues in memory; see
+`docs/preprocessing_graph_workflow_contract.md`.
+
+The contract uses only the standard library. It does not load manifests,
+validate local MD paths, load runtimes, compute Rg, compute contacts, export
+graph artifacts, run diagnostics, build diagnostics reports, perform
+reference comparison, execute notebooks, add CLI integration, or create
+workflow files.
+
+MDAnalysis remains optional and is not required by the Stage 15.1 contract.
+`local_md` remains local-only, local real MD data is not required by default
+CI, and no dependency or CI configuration changes are made by this stage.
+
 ## Non-goals for Stage 9.1
 
 Stage 9.1 does not:
