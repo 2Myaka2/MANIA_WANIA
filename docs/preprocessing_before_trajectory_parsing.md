@@ -95,7 +95,17 @@ smoke test. Stage 15.6 may write only
 `reports/graph_diagnostics_report.json`; no
 `reports/graph_reference_comparison.json` is written. Stage 15.7 will handle
 optional reference comparison. Stage 15.6 does not perform reference
-comparison.
+comparison. Stage 15.7 adds optional reference comparison orchestration from
+the Stage 15.5 graph export result, Stage 15.1 workflow options, and Stage
+15.1 output layout. It is disabled by default; when disabled it returns
+deterministic skipped success, runs no comparison, and writes no files. When
+enabled it requires explicit reference artifact paths and delegates to the
+accepted Stage 14.3b graph reference comparison API after building the
+accepted Stage 14.3a input. When enabled and successful, it may write only
+`reports/graph_reference_comparison.json`. It adds no new comparison algorithm
+and no programmatic expected mismatch classification. It does not search for
+reference artifacts, execute notebooks, compare temporal RIN, adapt output to
+the WANIA frontend, add CLI, or run a full workflow.
 
 ## Current implemented capabilities
 
@@ -135,6 +145,11 @@ The current preprocessing layer supports:
   workflow wrapper from the Stage 15.5 graph export result, reusing accepted
   Stage 14 diagnostics APIs and optionally writing only
   `reports/graph_diagnostics_report.json`;
+- optional graph reference comparison orchestration through the Stage 15.7
+  workflow wrapper from the Stage 15.5 graph export result and explicit
+  reference artifact paths, reusing accepted Stage 14.3a/14.3b comparison APIs
+  and optionally writing only after successful comparison
+  `reports/graph_reference_comparison.json`;
 - frozen frame, condition, manifest, and issue contracts for future Rg
   computation;
 - single-condition Rg computation through `compute_condition_rg(...)`;

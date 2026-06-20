@@ -59,6 +59,33 @@ and adds no new diagnostics algorithms.
 It may keep the raw Stage 14 diagnostics run and report objects in memory for
 later stages, while `to_dict()` exposes only deterministic JSON-safe metadata.
 
+Stage 15.7 adds optional reference comparison orchestration, also exported
+from `mania.preprocessing`:
+
+```python
+PreprocessingGraphWorkflowReferenceComparisonIssue
+PreprocessingGraphWorkflowReferenceComparisonResult
+compare_preprocessing_graph_workflow_reference_artifacts(...)
+```
+
+The Stage 15.5 graph export result, Stage 15.1 workflow options, and Stage
+15.1 output layout feed Stage 15.7. Reference comparison remains disabled by
+default. When disabled, the wrapper returns deterministic skipped success,
+runs no Stage 14 comparison APIs, and writes no files.
+
+When enabled, Stage 15.7 requires explicit `nodes.csv`, corrected
+`edges.csv`, and `graph.json` reference artifact paths from the workflow
+options. It does not search `data/reference/**` or any local directory for
+reference artifacts; in short, no automatic reference artifact search. It
+builds an accepted Stage 14.3a comparison input and delegates comparison to the
+accepted Stage 14.3b
+`compare_preprocessing_graph_reference_artifacts(...)` API, which validates
+inputs before comparing. It may keep the raw accepted Stage 14 comparison
+result in memory for later stages, while `to_dict()` exposes only deterministic
+JSON-safe workflow metadata and safe comparison counts/status fields.
+Stage 15.7 adds no new comparison algorithm and no programmatic expected
+mismatch classification.
+
 ## Run options
 
 `PreprocessingGraphWorkflowOptions` records:
@@ -115,6 +142,17 @@ when diagnostics report JSON writing is enabled. It may create only that
 `reports/graph_reference_comparison.json`; in short, no
 reports/graph_reference_comparison.json.
 Plainly: no reports/graph_reference_comparison.json.
+
+Stage 15.7 may write only:
+
+```text
+<output_dir>/reports/graph_reference_comparison.json
+```
+
+when reference comparison is enabled, successful, and report JSON writing is
+enabled. It may create only that `reports/` parent directory for this file. It
+does not write graph artifacts, diagnostics reports, Rg outputs, contacts
+outputs, or any reference artifacts.
 
 ## Planned steps
 
@@ -199,11 +237,13 @@ Missing explicit reference artifact paths produce
 artifacts automatically and does not modify `data/reference/**`. The notebook
 is not executed. The reference notebook is not executed.
 
-Stage 15.6 does not perform reference comparison. Stage 15.7 will handle
-optional reference comparison, including any
+Stage 15.6 does not perform reference comparison. Stage 15.7 will handle optional reference comparison.
+Stage 15.7 handles optional reference comparison.
+Stage 15.7 handles optional reference comparison, including any
 `reports/graph_reference_comparison.json` output, behind an explicit optional
-mode.
-Stage 15.7 will handle optional reference comparison.
+mode. Stage 15.7 does not execute notebooks, does not compare temporal RIN,
+does not adapt backend output to the WANIA frontend, and does not add CLI or
+full workflow execution.
 
 `MANIA_analysis_v1_2` is the current graph reference semantics. v1.1 remains
 historical. The v1.2 temporal RIN remains future scope and is not a Stage 15.1

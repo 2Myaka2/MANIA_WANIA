@@ -138,10 +138,13 @@ from mania.preprocessing.trajectory_graph_workflow import (
     PreprocessingGraphWorkflowOptions,
     PreprocessingGraphWorkflowOutputLayout,
     PreprocessingGraphWorkflowPlan,
+    PreprocessingGraphWorkflowReferenceComparisonIssue,  # noqa: F401
+    PreprocessingGraphWorkflowReferenceComparisonResult,  # noqa: F401
     PreprocessingGraphWorkflowRuntimeLoadingIssue,
     PreprocessingGraphWorkflowRuntimeLoadingResult,
     build_preprocessing_graph_workflow_plan,
     check_preprocessing_graph_workflow_manifest_readiness,
+    compare_preprocessing_graph_workflow_reference_artifacts,  # noqa: F401
     compute_preprocessing_graph_workflow_rg_contacts,
     export_preprocessing_graph_workflow_artifacts,
     load_preprocessing_graph_workflow_condition_runtimes,

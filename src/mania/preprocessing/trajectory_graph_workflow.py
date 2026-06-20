@@ -163,6 +163,33 @@ class _GraphDiagnosticsReportBuilder(Protocol):
     def __call__(self, diagnostics_result: object) -> object: ...
 
 
+class _GraphReferenceComparisonOptionsBuilder(Protocol):
+    def __call__(
+        self,
+        *,
+        reference_semantics: str = _CURRENT_REFERENCE_SEMANTICS,
+        condition: str | None = None,
+    ) -> object: ...
+
+
+class _GraphReferenceComparisonInputBuilder(Protocol):
+    def __call__(
+        self,
+        *,
+        generated_nodes_csv_path: Path,
+        generated_edges_csv_path: Path,
+        generated_graph_json_path: Path,
+        reference_nodes_csv_path: Path,
+        reference_edges_csv_path: Path,
+        reference_graph_json_path: Path,
+        options: object,
+    ) -> object: ...
+
+
+class _GraphReferenceComparator(Protocol):
+    def __call__(self, comparison_input: object) -> object: ...
+
+
 @dataclass(frozen=True)
 class PreprocessingGraphWorkflowOptions:
     """Run options for future preprocessing graph export orchestration."""
@@ -1100,6 +1127,205 @@ class PreprocessingGraphWorkflowDiagnosticsResult:
                 self.diagnostics_run_result
             ),
             "diagnostics_report_type": _object_type(self.diagnostics_report),
+            "issue_count": self.issue_count,
+            "issues": [issue.to_dict() for issue in self.issues],
+            "passed": self.passed,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphWorkflowReferenceComparisonIssue:
+    """One deterministic Stage 15.7 reference comparison issue."""
+
+    kind: str
+    message: str
+    stage: str | None = None
+    field: str | None = None
+    path: Path | None = None
+    value: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "kind", _non_empty_string(self.kind, "kind"))
+        object.__setattr__(
+            self,
+            "message",
+            _non_empty_string(self.message, "message"),
+        )
+        object.__setattr__(
+            self,
+            "stage",
+            _optional_non_empty_string(self.stage, "stage"),
+        )
+        object.__setattr__(
+            self,
+            "field",
+            _optional_non_empty_string(self.field, "field"),
+        )
+        _require_optional_path(self.path, "path")
+        object.__setattr__(
+            self,
+            "value",
+            _optional_non_empty_string(self.value, "value"),
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe reference comparison issue dictionary."""
+        return {
+            "kind": self.kind,
+            "message": self.message,
+            "stage": self.stage,
+            "field": self.field,
+            "path": _optional_path_string(self.path),
+            "value": self.value,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphWorkflowReferenceComparisonResult:
+    """In-memory Stage 15.7 reference comparison orchestration result."""
+
+    graph_export: PreprocessingGraphWorkflowGraphExportResult
+    options: PreprocessingGraphWorkflowOptions
+    output_layout: PreprocessingGraphWorkflowOutputLayout
+    reference_comparison_enabled: bool
+    reference_comparison_skipped: bool = False
+    reference_comparison_input: object | None = None
+    reference_comparison_result: object | None = None
+    reference_comparison_json_path: Path | None = None
+    reference_comparison_json_written: bool = False
+    issues: tuple[PreprocessingGraphWorkflowReferenceComparisonIssue, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(
+            self.graph_export,
+            PreprocessingGraphWorkflowGraphExportResult,
+        ):
+            raise ValueError(
+                "graph_export must be "
+                "PreprocessingGraphWorkflowGraphExportResult"
+            )
+        if not isinstance(self.options, PreprocessingGraphWorkflowOptions):
+            raise ValueError(
+                "options must be PreprocessingGraphWorkflowOptions"
+            )
+        if not isinstance(
+            self.output_layout,
+            PreprocessingGraphWorkflowOutputLayout,
+        ):
+            raise ValueError(
+                "output_layout must be "
+                "PreprocessingGraphWorkflowOutputLayout"
+            )
+        _require_bool(
+            self.reference_comparison_enabled,
+            "reference_comparison_enabled",
+        )
+        _require_bool(
+            self.reference_comparison_skipped,
+            "reference_comparison_skipped",
+        )
+        _require_optional_path(
+            self.reference_comparison_json_path,
+            "reference_comparison_json_path",
+        )
+        _require_bool(
+            self.reference_comparison_json_written,
+            "reference_comparison_json_written",
+        )
+        if not isinstance(self.issues, tuple):
+            raise ValueError(
+                "issues must be a tuple of "
+                "PreprocessingGraphWorkflowReferenceComparisonIssue"
+            )
+        for issue in self.issues:
+            if not isinstance(
+                issue,
+                PreprocessingGraphWorkflowReferenceComparisonIssue,
+            ):
+                raise ValueError(
+                    "issues must contain "
+                    "PreprocessingGraphWorkflowReferenceComparisonIssue"
+                )
+
+    @property
+    def graph_export_passed(self) -> bool:
+        """Return whether the Stage 15.5 graph export result passed."""
+        return self.graph_export.passed
+
+    @property
+    def reference_paths_provided(self) -> bool:
+        """Return whether all explicit reference artifact paths are present."""
+        return _missing_reference_path_fields(self.options) == ()
+
+    @property
+    def reference_comparison_ran(self) -> bool:
+        """Return whether the accepted Stage 14 comparison result is retained."""
+        return self.reference_comparison_result is not None
+
+    @property
+    def reference_comparison_passed(self) -> bool:
+        """Return whether the retained Stage 14 comparison result passed."""
+        return _stage_result_passed(self.reference_comparison_result)
+
+    @property
+    def issue_count(self) -> int:
+        """Return the number of reference comparison orchestration issues."""
+        return len(self.issues)
+
+    @property
+    def passed(self) -> bool:
+        """Return whether reference comparison orchestration completed cleanly."""
+        if self.reference_comparison_skipped:
+            return (
+                not self.reference_comparison_enabled
+                and self.reference_comparison_result is None
+                and not self.reference_comparison_json_written
+                and self.issues == ()
+            )
+        return (
+            self.reference_comparison_enabled
+            and self.graph_export_passed
+            and self.reference_paths_provided
+            and self.reference_comparison_ran
+            and self.reference_comparison_passed
+            and (
+                self.reference_comparison_json_path is None
+                or self.reference_comparison_json_written
+            )
+            and self.issues == ()
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return JSON-safe metadata without raw comparison internals."""
+        return {
+            "graph_export": self.graph_export.to_dict(),
+            "options": self.options.to_dict(),
+            "output_layout": self.output_layout.to_dict(),
+            "reference_comparison_enabled": (
+                self.reference_comparison_enabled
+            ),
+            "reference_comparison_skipped": (
+                self.reference_comparison_skipped
+            ),
+            "graph_export_passed": self.graph_export_passed,
+            "reference_paths_provided": self.reference_paths_provided,
+            "reference_comparison_ran": self.reference_comparison_ran,
+            "reference_comparison_passed": self.reference_comparison_passed,
+            "reference_comparison_json_path": _optional_path_string(
+                self.reference_comparison_json_path
+            ),
+            "reference_comparison_json_written": (
+                self.reference_comparison_json_written
+            ),
+            "reference_comparison_input_type": _object_type(
+                self.reference_comparison_input
+            ),
+            "reference_comparison_result_type": _object_type(
+                self.reference_comparison_result
+            ),
+            "comparison_metadata": _reference_comparison_metadata(
+                self.reference_comparison_result
+            ),
             "issue_count": self.issue_count,
             "issues": [issue.to_dict() for issue in self.issues],
             "passed": self.passed,
@@ -2054,6 +2280,250 @@ def run_preprocessing_graph_workflow_diagnostics(
     )
 
 
+def compare_preprocessing_graph_workflow_reference_artifacts(
+    graph_export: PreprocessingGraphWorkflowGraphExportResult,
+    options: PreprocessingGraphWorkflowOptions,
+    output_layout: PreprocessingGraphWorkflowOutputLayout,
+    *,
+    write_report_json: bool = True,
+    create_parent_directories: bool = True,
+) -> PreprocessingGraphWorkflowReferenceComparisonResult:
+    """Optionally orchestrate Stage 14 reference graph comparison."""
+    if not isinstance(
+        graph_export,
+        PreprocessingGraphWorkflowGraphExportResult,
+    ):
+        raise ValueError(
+            "graph_export must be "
+            "PreprocessingGraphWorkflowGraphExportResult"
+        )
+    if not isinstance(options, PreprocessingGraphWorkflowOptions):
+        raise ValueError(
+            "options must be PreprocessingGraphWorkflowOptions"
+        )
+    if not isinstance(output_layout, PreprocessingGraphWorkflowOutputLayout):
+        raise ValueError(
+            "output_layout must be PreprocessingGraphWorkflowOutputLayout"
+        )
+    _require_bool(write_report_json, "write_report_json")
+    _require_bool(create_parent_directories, "create_parent_directories")
+
+    if not options.enable_reference_comparison:
+        return _reference_comparison_result(
+            graph_export,
+            options,
+            output_layout,
+            reference_comparison_enabled=False,
+            reference_comparison_skipped=True,
+        )
+
+    report_path = (
+        output_layout.reference_comparison_json_path
+        if write_report_json
+        else None
+    )
+
+    missing_fields = _missing_reference_path_fields(options)
+    if missing_fields:
+        return _reference_comparison_result(
+            graph_export,
+            options,
+            output_layout,
+            reference_comparison_enabled=True,
+            reference_comparison_json_path=report_path,
+            issues=(
+                PreprocessingGraphWorkflowReferenceComparisonIssue(
+                    kind="reference_paths_required",
+                    message=(
+                        "reference comparison requires explicit reference "
+                        "artifact paths: "
+                        + ", ".join(missing_fields)
+                        + "."
+                    ),
+                    stage="reference_comparison_input",
+                    field="reference_paths",
+                    value=",".join(missing_fields),
+                ),
+            ),
+        )
+
+    if not graph_export.passed:
+        return _reference_comparison_result(
+            graph_export,
+            options,
+            output_layout,
+            reference_comparison_enabled=True,
+            reference_comparison_json_path=report_path,
+            issues=(
+                PreprocessingGraphWorkflowReferenceComparisonIssue(
+                    kind="graph_export_failed",
+                    message=(
+                        "Stage 15.5 graph export did not pass; reference "
+                        "comparison was not attempted."
+                    ),
+                    stage="graph_export",
+                    field="graph_export",
+                ),
+            ),
+        )
+
+    layout_issue = _reference_comparison_output_layout_issue(output_layout)
+    if layout_issue is not None:
+        return _reference_comparison_result(
+            graph_export,
+            options,
+            output_layout,
+            reference_comparison_enabled=True,
+            reference_comparison_json_path=report_path,
+            issues=(layout_issue,),
+        )
+
+    artifact_issue = _reference_graph_artifact_path_issue(graph_export)
+    if artifact_issue is not None:
+        return _reference_comparison_result(
+            graph_export,
+            options,
+            output_layout,
+            reference_comparison_enabled=True,
+            reference_comparison_json_path=report_path,
+            issues=(artifact_issue,),
+        )
+
+    comparison_options = _graph_reference_comparison_options_builder()(
+        reference_semantics=options.reference_semantics
+    )
+    comparison_input = _graph_reference_comparison_input_builder()(
+        generated_nodes_csv_path=graph_export.graph_nodes_csv_path,
+        generated_edges_csv_path=graph_export.graph_edges_csv_path,
+        generated_graph_json_path=graph_export.graph_json_path,
+        reference_nodes_csv_path=cast(Path, options.reference_nodes_csv_path),
+        reference_edges_csv_path=cast(Path, options.reference_edges_csv_path),
+        reference_graph_json_path=cast(Path, options.reference_graph_json_path),
+        options=comparison_options,
+    )
+
+    try:
+        comparison_result = _graph_reference_comparator()(comparison_input)
+    except Exception as exc:
+        return _reference_comparison_result(
+            graph_export,
+            options,
+            output_layout,
+            reference_comparison_enabled=True,
+            reference_comparison_input=comparison_input,
+            reference_comparison_json_path=report_path,
+            issues=(
+                _reference_comparison_exception_issue(
+                    kind="reference_comparison_failed",
+                    stage="reference_comparison",
+                    field="reference_comparison_result",
+                    exc=exc,
+                ),
+            ),
+        )
+
+    result = _reference_comparison_result(
+        graph_export,
+        options,
+        output_layout,
+        reference_comparison_enabled=True,
+        reference_comparison_input=comparison_input,
+        reference_comparison_result=comparison_result,
+        reference_comparison_json_path=report_path,
+        issues=(
+            ()
+            if _stage_result_passed(comparison_result)
+            else (
+                _reference_comparison_failed_issue(
+                    kind="reference_comparison_mismatch",
+                    stage="reference_comparison",
+                    field="reference_comparison_result",
+                    result=comparison_result,
+                ),
+            )
+        ),
+    )
+
+    if result.issues:
+        return result
+
+    if report_path is None:
+        return result
+
+    written_result = _reference_comparison_result(
+        graph_export,
+        options,
+        output_layout,
+        reference_comparison_enabled=True,
+        reference_comparison_input=comparison_input,
+        reference_comparison_result=comparison_result,
+        reference_comparison_json_path=report_path,
+        reference_comparison_json_written=True,
+        issues=result.issues,
+    )
+    try:
+        _write_reference_comparison_report_json(
+            written_result,
+            report_path,
+            create_parent_directories=create_parent_directories,
+        )
+    except Exception as exc:
+        return _reference_comparison_result(
+            graph_export,
+            options,
+            output_layout,
+            reference_comparison_enabled=True,
+            reference_comparison_input=comparison_input,
+            reference_comparison_result=comparison_result,
+            reference_comparison_json_path=report_path,
+            issues=result.issues
+            + (
+                PreprocessingGraphWorkflowReferenceComparisonIssue(
+                    kind="reference_comparison_json_write_failed",
+                    message=(
+                        "Reference comparison JSON could not be written: "
+                        f"{exc.__class__.__name__}."
+                    ),
+                    stage="reference_comparison_json",
+                    field="reference_comparison_json_path",
+                    path=report_path,
+                ),
+            ),
+        )
+
+    return written_result
+
+
+def _reference_comparison_result(
+    graph_export: PreprocessingGraphWorkflowGraphExportResult,
+    options: PreprocessingGraphWorkflowOptions,
+    output_layout: PreprocessingGraphWorkflowOutputLayout,
+    *,
+    reference_comparison_enabled: bool,
+    reference_comparison_skipped: bool = False,
+    reference_comparison_input: object | None = None,
+    reference_comparison_result: object | None = None,
+    reference_comparison_json_path: Path | None = None,
+    reference_comparison_json_written: bool = False,
+    issues: tuple[
+        PreprocessingGraphWorkflowReferenceComparisonIssue,
+        ...,
+    ] = (),
+) -> PreprocessingGraphWorkflowReferenceComparisonResult:
+    return PreprocessingGraphWorkflowReferenceComparisonResult(
+        graph_export=graph_export,
+        options=options,
+        output_layout=output_layout,
+        reference_comparison_enabled=reference_comparison_enabled,
+        reference_comparison_skipped=reference_comparison_skipped,
+        reference_comparison_input=reference_comparison_input,
+        reference_comparison_result=reference_comparison_result,
+        reference_comparison_json_path=reference_comparison_json_path,
+        reference_comparison_json_written=reference_comparison_json_written,
+        issues=issues,
+    )
+
+
 def _diagnostics_result(
     graph_export: PreprocessingGraphWorkflowGraphExportResult,
     *,
@@ -2409,6 +2879,41 @@ def _graph_diagnostics_report_builder() -> _GraphDiagnosticsReportBuilder:
     )
 
 
+def _graph_reference_comparison_options_builder(
+) -> _GraphReferenceComparisonOptionsBuilder:
+    module = _import_preprocessing_module(
+        "trajectory_" + "graph_reference_comparison"
+    )
+    return cast(
+        _GraphReferenceComparisonOptionsBuilder,
+        module.PreprocessingGraphReferenceComparisonOptions,
+    )
+
+
+def _graph_reference_comparison_input_builder(
+) -> _GraphReferenceComparisonInputBuilder:
+    module = _import_preprocessing_module(
+        "trajectory_" + "graph_reference_comparison"
+    )
+    return cast(
+        _GraphReferenceComparisonInputBuilder,
+        module.PreprocessingGraphReferenceComparisonInput,
+    )
+
+
+def _graph_reference_comparator() -> _GraphReferenceComparator:
+    module = _import_preprocessing_module(
+        "trajectory_" + "graph_reference_comparison"
+    )
+    return cast(
+        _GraphReferenceComparator,
+        getattr(
+            module,
+            "compare_" + "preprocessing_graph_reference_artifacts",
+        ),
+    )
+
+
 def _import_preprocessing_module(module_name: str) -> ModuleType:
     return importlib.import_module(f"mania.preprocessing.{module_name}")
 
@@ -2723,6 +3228,178 @@ def _diagnostics_exception_issue(
     )
 
 
+def _reference_comparison_output_layout_issue(
+    output_layout: PreprocessingGraphWorkflowOutputLayout,
+) -> PreprocessingGraphWorkflowReferenceComparisonIssue | None:
+    expected_path = (
+        output_layout.output_dir
+        / "reports"
+        / "graph_reference_comparison.json"
+    )
+    actual_path = output_layout.reference_comparison_json_path
+    if actual_path != expected_path:
+        return PreprocessingGraphWorkflowReferenceComparisonIssue(
+            kind="output_layout_invalid",
+            message=(
+                "Reference comparison output layout does not match the Stage "
+                "15.1 report artifact boundary."
+            ),
+            stage="output_layout",
+            field="reference_comparison_json_path",
+            path=actual_path,
+            value=str(expected_path),
+        )
+    return None
+
+
+def _reference_graph_artifact_path_issue(
+    graph_export: PreprocessingGraphWorkflowGraphExportResult,
+) -> PreprocessingGraphWorkflowReferenceComparisonIssue | None:
+    expected_paths = {
+        "graph_nodes_csv_path": graph_export.output_layout.graph_nodes_csv_path,
+        "graph_edges_csv_path": graph_export.output_layout.graph_edges_csv_path,
+        "graph_json_path": graph_export.output_layout.graph_json_path,
+    }
+    for field_name, expected_path in expected_paths.items():
+        actual_path = getattr(graph_export, field_name)
+        if actual_path != expected_path:
+            return PreprocessingGraphWorkflowReferenceComparisonIssue(
+                kind="graph_artifact_missing",
+                message=(
+                    "Stage 15.5 graph artifact path metadata was not "
+                    "available at the planned output layout path."
+                ),
+                stage="graph_export",
+                field=field_name,
+                path=actual_path,
+                value=str(expected_path),
+            )
+    return None
+
+
+def _reference_comparison_failed_issue(
+    *,
+    kind: str,
+    stage: str,
+    field: str,
+    result: object,
+) -> PreprocessingGraphWorkflowReferenceComparisonIssue:
+    return PreprocessingGraphWorkflowReferenceComparisonIssue(
+        kind=kind,
+        message=f"Stage 14 {stage} step did not pass.",
+        stage=stage,
+        field=field,
+        value=_object_type(result),
+    )
+
+
+def _reference_comparison_exception_issue(
+    *,
+    kind: str,
+    stage: str,
+    field: str,
+    exc: Exception,
+) -> PreprocessingGraphWorkflowReferenceComparisonIssue:
+    return PreprocessingGraphWorkflowReferenceComparisonIssue(
+        kind=kind,
+        message=f"Stage 14 {stage} step failed unexpectedly: {exc.__class__.__name__}.",
+        stage=stage,
+        field=field,
+    )
+
+
+def _reference_comparison_metadata(
+    comparison_result: object | None,
+) -> dict[str, object]:
+    input_validation = getattr(comparison_result, "input_validation", None)
+    return {
+        "reference_semantics": _optional_string_attr(
+            comparison_result,
+            "reference_semantics",
+        ),
+        "generated_condition": _optional_string_attr(
+            comparison_result,
+            "generated_condition",
+        ),
+        "reference_condition": _optional_string_attr(
+            comparison_result,
+            "reference_condition",
+        ),
+        "generated_schema_version": _optional_string_attr(
+            comparison_result,
+            "generated_schema_version",
+        ),
+        "reference_schema_version": _optional_string_attr(
+            comparison_result,
+            "reference_schema_version",
+        ),
+        "target_count": _optional_non_negative_int_attr(
+            comparison_result,
+            "target_count",
+        ),
+        "failed_target_count": _optional_non_negative_int_attr(
+            comparison_result,
+            "failed_target_count",
+        ),
+        "mismatch_count": _optional_non_negative_int_attr(
+            comparison_result,
+            "mismatch_count",
+        ),
+        "input_validation_passed": _optional_bool_attr(
+            input_validation,
+            "passed",
+        ),
+        "input_validation_issue_count": _optional_non_negative_int_attr(
+            input_validation,
+            "issue_count",
+        ),
+        "generated_node_count": _optional_non_negative_int_attr(
+            input_validation,
+            "generated_node_count",
+        ),
+        "generated_edge_count": _optional_non_negative_int_attr(
+            input_validation,
+            "generated_edge_count",
+        ),
+        "reference_node_count": _optional_non_negative_int_attr(
+            input_validation,
+            "reference_node_count",
+        ),
+        "reference_edge_count": _optional_non_negative_int_attr(
+            input_validation,
+            "reference_edge_count",
+        ),
+    }
+
+
+def _optional_string_attr(value: object | None, attr_name: str) -> str | None:
+    attr_value = getattr(value, attr_name, None)
+    if isinstance(attr_value, str):
+        return attr_value
+    return None
+
+
+def _optional_bool_attr(value: object | None, attr_name: str) -> bool | None:
+    attr_value = getattr(value, attr_name, None)
+    if isinstance(attr_value, bool):
+        return attr_value
+    return None
+
+
+def _optional_non_negative_int_attr(
+    value: object | None,
+    attr_name: str,
+) -> int | None:
+    attr_value = getattr(value, attr_name, None)
+    if (
+        not isinstance(attr_value, bool)
+        and isinstance(attr_value, int)
+        and attr_value >= 0
+    ):
+        return attr_value
+    return None
+
+
 def _write_diagnostics_report_json(
     diagnostics_report: object,
     output_path: Path,
@@ -2735,6 +3412,21 @@ def _write_diagnostics_report_json(
     if create_parent_directories:
         output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = to_dict()
+    output_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _write_reference_comparison_report_json(
+    reference_comparison: PreprocessingGraphWorkflowReferenceComparisonResult,
+    output_path: Path,
+    *,
+    create_parent_directories: bool,
+) -> None:
+    if create_parent_directories:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = reference_comparison.to_dict()
     output_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

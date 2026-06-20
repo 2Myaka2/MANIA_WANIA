@@ -219,6 +219,27 @@ The wrapper adds no Rg/contacts/graph/diagnostics/reference/CLI behavior.
 Stage 15.4 will orchestrate manifest-level Rg + contacts, and Stage 15.3 does
 not compute them.
 
+## Stage 15.7 optional reference comparison
+
+Stage 15.7 adds an optional workflow-level reference comparison wrapper around
+accepted graph comparison APIs. It consumes generated graph artifacts from the
+Stage 15.5 graph export result and explicit reference graph artifact paths
+from workflow options. It does not search for reference artifacts
+automatically and does not inspect or modify `data/reference/**`.
+
+Reference comparison remains disabled by default. The disabled path returns
+deterministic skipped success, requires no reference paths, runs no comparison,
+and writes no files. When enabled, Stage 15.7 requires explicit reference
+artifact paths and reuses the accepted Stage 14.3a/14.3b comparison boundary.
+It adds no new comparison algorithm and no programmatic expected mismatch
+classification.
+
+Stage 15.7 remains dependency-free at import/default CI time. Default CI does
+not require MDAnalysis, real MD topology or trajectory data, or local
+reference packages. Stage 15.7 does not execute notebooks and does not add
+notebook execution as a runtime dependency. No MDAnalysis dependency is added
+to default CI.
+
 `MANIA_analysis_v1_2` remains the current reference semantics. The reference
 notebook not executed boundary remains in force; the reference comparison remains Stage 15.7 optional mode. Temporal RIN remains future scope. WANIA frontend
 adapter/API payload remains future scope.

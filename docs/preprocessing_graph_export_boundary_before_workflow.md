@@ -17,6 +17,13 @@ Stage 15.1 adds the next dependency-free workflow contract layer in
 options, deterministic output layout, planned step names, and planning issues
 only. It still does not execute the workflow or add CLI integration.
 
+Stage 15.7 now adds an optional workflow orchestration wrapper around the
+accepted Stage 14.3a/14.3b reference comparison APIs. It remains disabled by
+default, requires explicit reference artifact paths when enabled, does not
+search for reference artifacts, does not execute notebooks, and does not
+compare temporal RIN. Stage 15.7 does not change the Stage 14 comparison
+algorithm or accepted artifact contracts described here.
+
 ## Completed Stage 14 capabilities
 
 Stage 14 now provides these accepted slices:
