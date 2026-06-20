@@ -108,7 +108,9 @@ reference artifacts, execute notebooks, compare temporal RIN, adapt output to
 the WANIA frontend, or run a full workflow. Stage 15.8 adds a narrow opt-in
 CLI command for invoking the accepted Stage 15 sequence from explicit
 `--manifest` and `--output` arguments. This is not default CI, and local MD
-data remains local-only.
+data remains local-only. Stage 15.9 adds a local-only real MD smoke test for
+that accepted CLI workflow, skipped by default and enabled only for local
+developers with local real MD files and optional scientific dependencies.
 
 ## Current implemented capabilities
 
@@ -297,6 +299,21 @@ export, real-data CI, or a local real MD smoke test. Running the command on
 real local MD inputs remains an explicit local action and may require optional
 scientific dependencies only through the accepted runtime/scientific APIs.
 Default CI remains independent from local MD data.
+
+## Stage 15.9 local real MD smoke boundary
+
+Stage 15.9 verifies the accepted Stage 15.8 CLI workflow against local real MD
+data only when explicitly opted in. The smoke uses the existing preprocessing
+manifest contract at `local_md/manifests/napi2b_10ns.yaml`, writes outputs only
+under pytest's temporary directory, and checks the backend graph artifacts and
+diagnostics report produced by the accepted workflow.
+
+Local MD data remains uncommitted and local-only. Default CI does not run the
+smoke, does not require MDAnalysis, and does not require real topology or
+trajectory files. The smoke does not add new preprocessing behavior, execute
+the reference notebook, enable reference comparison, compare temporal RIN, or
+adapt output to a WANIA frontend/API payload. Frontend/API payloads and
+temporal RIN remain future scope.
 
 ## Stage 15.4 manifest-level Rg + contacts orchestration boundary
 

@@ -459,8 +459,30 @@ when it is explicitly enabled.
 Stage 15.8 does not execute notebooks, does not export or compare temporal
 RIN, does not adapt backend output to a WANIA frontend/API payload, does not
 add an interactive mode, and does not add a broad workflow framework. Stage
-15.9 remains the future local-only real MD smoke-test boundary, skipped by
-default.
+15.9 adds only the local-only real MD smoke-test boundary described below.
+
+## Stage 15.9 local-only real MD smoke test
+
+Stage 15.9 adds one local-only smoke test for the accepted Stage 15.8 CLI
+workflow. The test exercises:
+
+```bash
+mania preprocessing run-graph-export \
+  --manifest local_md/manifests/napi2b_10ns.yaml \
+  --output <tmp>/napi2b_10ns_graph_workflow
+```
+
+only when explicitly enabled through the local scientific harness and
+`MANIA_RUN_LOCAL_MD_SMOKE=1`. It is skipped by default, is not part of default
+CI, and does not add real-data CI.
+
+The smoke verifies that the accepted CLI can produce the Stage 15 backend
+graph artifacts and diagnostics report in a pytest temporary directory when
+the local manifest, local raw MD files, and optional scientific dependencies
+are present. It does not add new workflow behavior, broaden CLI behavior,
+auto-discover `local_md`, execute notebooks, enable reference comparison,
+compare temporal RIN, export WANIA/frontend payloads, or write committed
+outputs.
 
 ## CLI and frontend boundary
 

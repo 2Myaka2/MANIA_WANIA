@@ -219,6 +219,65 @@ not write persistent repository artifacts or run in default CI. Generated
 files stay in a pytest temp directory. There is no committed generated CSV
 from local data.
 
+## Stage 15.9 local real MD graph workflow smoke test
+
+Stage 15.9 adds one local-only smoke test for the accepted Stage 15.8 CLI
+workflow over the local NAPI2B manifest:
+
+```text
+local_md/manifests/napi2b_10ns.yaml
+```
+
+The test is skipped by default and is not part of default CI. Because it lives
+under `tests/local_scientific`, the local scientific harness must be enabled;
+the smoke itself also requires the narrower explicit opt-in variable:
+
+```bash
+MANIA_RUN_LOCAL_SCIENTIFIC=1 \
+MANIA_RUN_LOCAL_MD_SMOKE=1 \
+pytest tests/local_scientific/test_preprocessing_graph_workflow_local_md_smoke.py -q
+```
+
+The local manifest must use the existing preprocessing manifest contract and
+declare these relative real-MD input paths from its manifest directory:
+
+```text
+../normal/topology.tpr
+../normal/trajectory.xtc
+../tumor/topology.tpr
+../tumor/trajectory.xtc
+```
+
+The smoke runs only when the manifest exists, those local raw MD files exist,
+and MDAnalysis is available through the optional `md` or `science` extra. It
+uses pytest's temporary directory for output and invokes:
+
+```bash
+mania preprocessing run-graph-export \
+  --manifest local_md/manifests/napi2b_10ns.yaml \
+  --output <tmp>/napi2b_10ns_graph_workflow
+```
+
+When it actually runs, it expects backend graph artifacts and diagnostics:
+
+```text
+graph/nodes.csv
+graph/edges.csv
+graph/graph.json
+reports/graph_diagnostics_report.json
+```
+
+Reference comparison remains disabled, so
+`reports/graph_reference_comparison.json` must not be produced. Stage 15.9
+also does not introduce Rg or contacts CSV export, so
+`rg/rg_timeseries.csv`, `contacts/contacts_perframe.csv`, and
+`contacts/contact_edges.csv` must not be produced by this smoke.
+
+`local_md/` and raw MD files such as `.tpr`, `.xtc`, `.gro`, `.cpt`, `.edr`,
+`.log`, `.dcd`, and `.psf` remain local and must not be committed.
+Default CI does not run this test. It does not install MDAnalysis or
+scientific extras, and does not require real MD data.
+
 ## Final Stage 12 local scientific boundary
 
 Stage 12 includes exactly two Rg-focused local scientific smoke tests:

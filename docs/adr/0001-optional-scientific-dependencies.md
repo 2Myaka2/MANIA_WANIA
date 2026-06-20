@@ -257,6 +257,18 @@ Stage 15.8 does not add MDAnalysis to core runtime dependencies, does not add
 science extras to default CI, and does not add real-data CI. Local MD data
 remains local-only.
 
+## Stage 15.9 local real MD smoke test
+
+Stage 15.9 adds a local-only smoke test for the accepted Stage 15.8 CLI over
+`local_md/manifests/napi2b_10ns.yaml`. The smoke may require MDAnalysis or
+other optional scientific dependencies through the accepted Stage 11-13
+runtime/scientific APIs when a developer explicitly opts in locally.
+
+Default imports, default tests, and default CI remain dependency-free with
+respect to MDAnalysis. Default CI does not install the `md` or `science`
+extras, does not run the local smoke, and does not require real MD topology or
+trajectory data. Local MD data remains uncommitted and local-only.
+
 ## Stage 15.4 manifest-level Rg + contacts orchestration
 
 Stage 15.4 adds manifest-level Rg + contacts orchestration after Stage 15.3
