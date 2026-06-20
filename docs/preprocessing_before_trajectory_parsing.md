@@ -111,6 +111,10 @@ CLI command for invoking the accepted Stage 15 sequence from explicit
 data remains local-only. Stage 15.9 adds a local-only real MD smoke test for
 that accepted CLI workflow, skipped by default and enabled only for local
 developers with local real MD files and optional scientific dependencies.
+Stage 15.10 documents the final backend workflow boundary in
+`docs/preprocessing_graph_workflow_boundary_before_frontend_api.md`.
+Frontend/API remains future scope. Temporal RIN remains future scope. WANIA
+adapter remains future scope.
 
 ## Current implemented capabilities
 

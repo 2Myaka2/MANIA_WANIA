@@ -484,6 +484,20 @@ auto-discover `local_md`, execute notebooks, enable reference comparison,
 compare temporal RIN, export WANIA/frontend payloads, or write committed
 outputs.
 
+## Stage 15.10 final workflow boundary
+
+Stage 15.10 is the final docs/tests-only workflow boundary before future
+frontend/API work. It freezes the accepted backend Stage 15 workflow sequence,
+public workflow APIs, opt-in CLI boundary, produced graph/report artifacts,
+deliberately non-produced outputs, optional reference comparison boundary,
+local real MD smoke boundary, optional dependency/default CI boundary, and
+future frontend/API scope in
+`docs/preprocessing_graph_workflow_boundary_before_frontend_api.md`.
+
+Stage 15.10 adds no runtime behavior, public API, CLI behavior, scientific
+computation behavior, frontend/API schema, WANIA payload mapping, temporal RIN
+export/comparison, real-data CI, or dependency change.
+
 ## CLI and frontend boundary
 
 The only Stage 15 CLI integration is the Stage 15.8 narrow opt-in command

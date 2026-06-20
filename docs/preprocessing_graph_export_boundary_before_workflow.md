@@ -24,6 +24,10 @@ search for reference artifacts, does not execute notebooks, and does not
 compare temporal RIN. Stage 15.7 does not change the Stage 14 comparison
 algorithm or accepted artifact contracts described here.
 
+Stage 15.10 now documents the final backend workflow boundary before future
+frontend/API work in
+`docs/preprocessing_graph_workflow_boundary_before_frontend_api.md`.
+
 ## Completed Stage 14 capabilities
 
 Stage 14 now provides these accepted slices:

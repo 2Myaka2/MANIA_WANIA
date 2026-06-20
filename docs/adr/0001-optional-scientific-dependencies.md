@@ -269,6 +269,18 @@ respect to MDAnalysis. Default CI does not install the `md` or `science`
 extras, does not run the local smoke, and does not require real MD topology or
 trajectory data. Local MD data remains uncommitted and local-only.
 
+## Stage 15.10 final workflow boundary before frontend/API
+
+Stage 15.10 documents the final backend preprocessing graph workflow boundary
+in `docs/preprocessing_graph_workflow_boundary_before_frontend_api.md`. The
+final workflow boundary keeps default import/default CI dependency-free, and
+the local smoke remains opt-in.
+
+Future frontend/API work must preserve the optional dependency boundary unless
+explicitly scoped. It must not make MDAnalysis, local real MD data, `local_md`,
+or science extras part of default imports, default tests, or default CI by
+accident.
+
 ## Stage 15.4 manifest-level Rg + contacts orchestration
 
 Stage 15.4 adds manifest-level Rg + contacts orchestration after Stage 15.3
