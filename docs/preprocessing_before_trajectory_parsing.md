@@ -105,7 +105,10 @@ accepted Stage 14.3a input. When enabled and successful, it may write only
 `reports/graph_reference_comparison.json`. It adds no new comparison algorithm
 and no programmatic expected mismatch classification. It does not search for
 reference artifacts, execute notebooks, compare temporal RIN, adapt output to
-the WANIA frontend, add CLI, or run a full workflow.
+the WANIA frontend, or run a full workflow. Stage 15.8 adds a narrow opt-in
+CLI command for invoking the accepted Stage 15 sequence from explicit
+`--manifest` and `--output` arguments. This is not default CI, and local MD
+data remains local-only.
 
 ## Current implemented capabilities
 
@@ -277,6 +280,23 @@ topology/trajectory files and optional dependency installs. The reference
 notebook remains a specification artifact and is not executed by Stage 15.6.
 Reference comparison and any
 `reports/graph_reference_comparison.json` output remain Stage 15.7 scope.
+
+## Stage 15.8 narrow CLI boundary
+
+Stage 15.8 adds a narrow opt-in CLI command for invoking the accepted
+preprocessing graph workflow sequence:
+
+```bash
+mania preprocessing run-graph-export --manifest <manifest.yaml> --output <output-dir>
+```
+
+The command delegates to accepted Stage 15 APIs. It does not add automatic
+local MD discovery, automatic reference artifact discovery, notebook
+execution, temporal RIN export or comparison, WANIA frontend/API payload
+export, real-data CI, or a local real MD smoke test. Running the command on
+real local MD inputs remains an explicit local action and may require optional
+scientific dependencies only through the accepted runtime/scientific APIs.
+Default CI remains independent from local MD data.
 
 ## Stage 15.4 manifest-level Rg + contacts orchestration boundary
 

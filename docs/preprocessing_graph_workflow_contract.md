@@ -242,8 +242,8 @@ Stage 15.7 handles optional reference comparison.
 Stage 15.7 handles optional reference comparison, including any
 `reports/graph_reference_comparison.json` output, behind an explicit optional
 mode. Stage 15.7 does not execute notebooks, does not compare temporal RIN,
-does not adapt backend output to the WANIA frontend, and does not add CLI or
-full workflow execution.
+does not adapt backend output to the WANIA frontend, and does not add CLI.
+Stage 15.8 adds the narrow opt-in CLI boundary.
 
 `MANIA_analysis_v1_2` is the current graph reference semantics. v1.1 remains
 historical. The v1.2 temporal RIN remains future scope and is not a Stage 15.1
@@ -418,10 +418,54 @@ already computed in-memory results and accepted dependency-free graph export
 APIs. It does not require MDAnalysis, real `local_md` data, or real `.tpr` /
 `.xtc` files in default CI. `local_md` remains local-only and not committed.
 
+## Stage 15.8 CLI boundary
+
+There was no CLI in Stage 15.1. The CLI boundary later belongs to Stage
+15.8. Stage 15.8 adds one narrow opt-in CLI command for the accepted
+preprocessing graph export workflow:
+
+```bash
+mania preprocessing run-graph-export --manifest <manifest.yaml> --output <output-dir>
+```
+
+The command requires explicit `--manifest` and `--output` values. It parses
+CLI options, builds `PreprocessingGraphWorkflowOptions`, and then orchestrates
+the accepted Stage 15 APIs in order:
+
+```text
+build_preprocessing_graph_workflow_plan(...)
+load_preprocessing_graph_workflow_condition_runtimes(...)
+compute_preprocessing_graph_workflow_rg_contacts(...)
+export_preprocessing_graph_workflow_artifacts(...)
+run_preprocessing_graph_workflow_diagnostics(...), unless skipped
+compare_preprocessing_graph_workflow_reference_artifacts(...)
+```
+
+The CLI does not duplicate manifest loading, runtime loading, Rg/contact
+computation, graph export, diagnostics, or reference comparison business
+logic. It prints deterministic JSON-safe summaries and returns non-zero on
+failed workflow stages.
+
+Reference comparison remains disabled by default. When enabled, the command
+requires explicit reference artifact paths for `nodes.csv`, corrected
+`edges.csv`, and `graph.json`. It does not search for reference artifacts
+automatically, does not inspect `data/reference/**`, and does not infer paths
+from notebooks or notebook locations.
+
+When `--skip-diagnostics` is used, graph export still runs and the diagnostics
+wrapper is not called. Reference comparison may still run after graph export
+when it is explicitly enabled.
+
+Stage 15.8 does not execute notebooks, does not export or compare temporal
+RIN, does not adapt backend output to a WANIA frontend/API payload, does not
+add an interactive mode, and does not add a broad workflow framework. Stage
+15.9 remains the future local-only real MD smoke-test boundary, skipped by
+default.
+
 ## CLI and frontend boundary
 
-There is no CLI in Stage 15.1. Stage 15.8 will add the narrow opt-in CLI
-boundary later. The CLI boundary later belongs to Stage 15.8, not Stage 15.1.
+The only Stage 15 CLI integration is the Stage 15.8 narrow opt-in command
+described above.
 
 WANIA frontend adapter/API payload remains future scope. Stage 15.1 does not
 adapt graph export to the WANIA prototype and does not define frontend payload

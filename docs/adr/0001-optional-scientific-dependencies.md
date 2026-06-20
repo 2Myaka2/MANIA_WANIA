@@ -244,6 +244,19 @@ to default CI.
 notebook not executed boundary remains in force; the reference comparison remains Stage 15.7 optional mode. Temporal RIN remains future scope. WANIA frontend
 adapter/API payload remains future scope.
 
+## Stage 15.8 CLI entrypoint boundary
+
+Stage 15.8 adds one narrow opt-in CLI command for the accepted preprocessing
+graph workflow sequence. Importing the CLI and invoking CLI help remain
+dependency-free and do not require MDAnalysis, real topology files, real
+trajectory files, or local MD data.
+
+Running the real command on real local MD inputs may require optional
+scientific dependencies only through the accepted runtime/scientific APIs.
+Stage 15.8 does not add MDAnalysis to core runtime dependencies, does not add
+science extras to default CI, and does not add real-data CI. Local MD data
+remains local-only.
+
 ## Stage 15.4 manifest-level Rg + contacts orchestration
 
 Stage 15.4 adds manifest-level Rg + contacts orchestration after Stage 15.3
