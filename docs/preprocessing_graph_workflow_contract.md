@@ -290,6 +290,55 @@ boundary. The reference comparison remains Stage 15.7 optional mode, disabled
 by default. Temporal RIN remains future scope. WANIA frontend adapter/API
 payload remains future scope.
 
+## Stage 15.5 graph export orchestration
+
+Stage 15.5 adds graph export orchestration only. The Stage 15.4 computation
+result feeds Stage 15.5, and Stage 15.5 does not compute Rg/contacts. The
+wrapper consumes `PreprocessingGraphWorkflowComputationResult` and
+`PreprocessingGraphWorkflowOutputLayout`, requires a passed Stage 15.4
+computation with a retained contacts result, and preserves raw accepted Stage
+14 graph export results in memory for Stage 15.6 while exposing only JSON-safe
+metadata through `to_dict()`.
+
+Stage 15.5 reuses accepted Stage 14 graph export APIs and adds no new graph
+semantics. The orchestration order is mapping, backend graph `nodes.csv`,
+corrected edges.csv, CSV validation, `graph.json`, and graph export bundle.
+The corrected backend graph edge schema remains the accepted Stage 14 schema
+with `edge_type`, `all_edge_types`, and `n_edge_types`.
+
+Stage 13 `contact_edges.csv` is an aggregate contacts table. It is not the
+backend graph edges.csv artifact. Stage 15.5 writes backend graph edges.csv
+through the accepted Stage 14 graph edge writer, not through the Stage 13
+contacts CSV writers.
+
+Stage 15.5 may create only the graph parent directory and may write only:
+
+```text
+<output_dir>/graph/nodes.csv
+<output_dir>/graph/edges.csv
+<output_dir>/graph/graph.json
+```
+
+It does not write Rg CSV files, contacts CSV files, diagnostics report JSON,
+or reference comparison JSON. It performs CSV validation before writing
+`graph.json` and building the bundle; failed CSV validation stops both later
+steps.
+
+Stage 15.5 does not load manifests, validate manifest paths, load runtimes,
+compute Rg, compute contacts, run diagnostics, build diagnostics reports,
+perform reference comparison, execute notebooks, call CLI/workflow execution,
+add a local real MD smoke test, or add real-data CI. In short: no diagnostics,
+no reference comparison, no CLI, and no notebook execution in Stage 15.5.
+
+Stage 15.6 will orchestrate diagnostics + diagnostics report. Stage 15.5 does not run diagnostics. Reference comparison remains Stage 15.7 optional mode,
+disabled by default. Temporal RIN remains future scope. WANIA frontend
+adapter/API payload remains future scope.
+
+Import/default CI remains dependency-free for Stage 15.5. The wrapper consumes
+already computed in-memory results and accepted dependency-free graph export
+APIs. It does not require MDAnalysis, real `local_md` data, or real `.tpr` /
+`.xtc` files in default CI. `local_md` remains local-only and not committed.
+
 ## CLI and frontend boundary
 
 There is no CLI in Stage 15.1. Stage 15.8 will add the narrow opt-in CLI

@@ -250,6 +250,28 @@ boundary. The reference comparison remains Stage 15.7 optional mode, disabled
 by default. Temporal RIN remains future scope. WANIA frontend adapter/API
 payload remains future scope.
 
+## Stage 15.5 graph export orchestration
+
+Stage 15.5 adds graph export orchestration after Stage 15.4. The Stage 15.4
+computation result feeds Stage 15.5, and Stage 15.5 does not compute
+Rg/contacts. The wrapper consumes already computed in-memory results and
+reuses accepted Stage 14 graph export APIs for mapping, backend graph
+nodes.csv, corrected edges.csv, CSV validation, graph.json, and bundle
+creation. It adds no new graph semantics.
+
+Stage 13 `contact_edges.csv` is an aggregate contacts table. backend graph
+edges.csv is a separate backend graph artifact. Stage 15.5 writes backend graph
+edges.csv through the accepted Stage 14 graph edge writer.
+
+Import/default CI remains dependency-free. Stage 15.5 does not require
+MDAnalysis, default CI does not require real MD data, and default CI does not
+require `local_md`. `local_md` remains local-only and not committed.
+
+Stage 15.5 has no diagnostics, no reference comparison, no CLI, and no
+notebook execution. Stage 15.6 will orchestrate diagnostics + diagnostics
+report. Reference comparison remains Stage 15.7 optional mode. Temporal RIN
+remains future scope. WANIA frontend adapter/API payload remains future scope.
+
 ## Stage 12.1a Rg result contracts
 
 Stage 12.1a adds dependency-free Rg result and report dataclasses. They use

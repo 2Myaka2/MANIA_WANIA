@@ -81,7 +81,11 @@ runtime loading separate from scientific computation. Stage 15.4 adds
 manifest-level Rg + contacts orchestration from the Stage 15.3 runtime loading
 result, reuses accepted Stage 12 Rg APIs and accepted Stage 13 contacts APIs,
 adds no new scientific algorithms, and keeps no CSV export, no graph export,
-no diagnostics, no reference comparison, and no CLI inside this stage.
+no diagnostics, no reference comparison, and no CLI inside this stage. Stage
+15.5 adds graph export orchestration from the Stage 15.4 computation result:
+mapping, nodes.csv, corrected edges.csv, CSV validation, graph.json, and
+bundle creation through accepted Stage 14 graph export APIs, with no new graph
+semantics, no diagnostics, no reference comparison, and no CLI.
 
 ## Current implemented capabilities
 
@@ -113,6 +117,10 @@ The current preprocessing layer supports:
   runtime/manifest loading APIs;
 - manifest-level Rg + contacts orchestration through the Stage 15.4 workflow
   wrapper from the Stage 15.3 runtime loading result;
+- graph export orchestration through the Stage 15.5 workflow wrapper from the
+  Stage 15.4 computation result, reusing accepted Stage 14 graph export APIs
+  for mapping, backend graph nodes.csv, corrected backend graph edges.csv,
+  CSV validation, graph.json, and bundle creation;
 - frozen frame, condition, manifest, and issue contracts for future Rg
   computation;
 - single-condition Rg computation through `compute_condition_rg(...)`;
@@ -228,6 +236,7 @@ compare_preprocessing_graph_reference_artifacts(...)
 build_preprocessing_graph_workflow_plan(...)
 check_preprocessing_graph_workflow_manifest_readiness(...)
 compute_preprocessing_graph_workflow_rg_contacts(...)
+export_preprocessing_graph_workflow_artifacts(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
@@ -262,6 +271,38 @@ notebook is not executed; notebook not executed remains part of the workflow
 boundary. The reference comparison remains Stage 15.7 optional mode, disabled
 by default. Temporal RIN remains future scope. WANIA frontend adapter/API
 payload remains future scope.
+
+## Stage 15.5 graph export orchestration boundary
+
+The Stage 15.4 computation result feeds Stage 15.5. Stage 15.5 does not
+compute Rg/contacts, does not load manifests, does not validate local paths,
+and does not load runtimes. It consumes the in-memory contacts result that
+Stage 15.4 already retained.
+
+Stage 15.5 reuses accepted Stage 14 graph export APIs and adds no new graph
+semantics. It orchestrates graph export mapping, backend graph `nodes.csv`,
+corrected edges.csv, CSV validation, `graph.json`, and bundle creation. The
+corrected backend graph edge schema keeps `edge_type`, `all_edge_types`, and
+`n_edge_types`.
+
+Stage 13 `contact_edges.csv` is an aggregate contacts table. backend graph
+edges.csv is a separate backend graph artifact. Stage 15.5 writes backend graph
+edges.csv through the Stage 14 graph edge writer; it does not use or write
+Stage 13 `contact_edges.csv` as backend graph edges.csv.
+
+Stage 15.5 writes only graph artifacts under `<output_dir>/graph/`:
+`nodes.csv`, `edges.csv`, and `graph.json`. It does not write Rg CSV files,
+contacts CSV files, diagnostics report JSON, or reference comparison JSON. It
+does not run diagnostics. Stage 15.6 will orchestrate diagnostics +
+diagnostics report. Reference comparison remains Stage 15.7 optional mode,
+disabled by default. Stage 15.8 remains the CLI boundary.
+
+Import/default CI remains dependency-free. Stage 15.5 consumes already
+computed in-memory results and does not require MDAnalysis, real `local_md`
+data, or real topology/trajectory files in default CI. `local_md` remains
+local-only and not committed. The notebook is not executed, Temporal RIN
+remains future scope, and WANIA frontend adapter/API payload remains future
+scope.
 
 ## Stage 15.2 local manifest readiness boundary
 

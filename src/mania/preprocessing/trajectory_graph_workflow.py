@@ -111,6 +111,44 @@ class _ManifestContactsComputer(Protocol):
     ) -> object: ...
 
 
+class _GraphExportMappingBuilder(Protocol):
+    def __call__(self, contacts_result: object) -> object: ...
+
+
+class _GraphNodesCsvWriter(Protocol):
+    def __call__(self, mapping_result: object, output_path: str | Path) -> object: ...
+
+
+class _GraphEdgesCsvWriter(Protocol):
+    def __call__(self, mapping_result: object, output_path: str | Path) -> object: ...
+
+
+class _GraphCsvValidator(Protocol):
+    def __call__(
+        self,
+        nodes_csv_path: str | Path,
+        edges_csv_path: str | Path,
+    ) -> object: ...
+
+
+class _GraphJsonWriter(Protocol):
+    def __call__(
+        self,
+        nodes_csv_path: str | Path,
+        edges_csv_path: str | Path,
+        output_path: str | Path,
+    ) -> object: ...
+
+
+class _GraphExportBundleBuilder(Protocol):
+    def __call__(
+        self,
+        nodes_csv_path: str | Path,
+        edges_csv_path: str | Path,
+        graph_json_path: str | Path,
+    ) -> object: ...
+
+
 @dataclass(frozen=True)
 class PreprocessingGraphWorkflowOptions:
     """Run options for future preprocessing graph export orchestration."""
@@ -718,6 +756,195 @@ class PreprocessingGraphWorkflowComputationResult:
 
 
 @dataclass(frozen=True)
+class PreprocessingGraphWorkflowGraphExportIssue:
+    """One deterministic Stage 15.5 graph export orchestration issue."""
+
+    kind: str
+    message: str
+    stage: str | None = None
+    field: str | None = None
+    path: Path | None = None
+    value: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "kind", _non_empty_string(self.kind, "kind"))
+        object.__setattr__(
+            self,
+            "message",
+            _non_empty_string(self.message, "message"),
+        )
+        object.__setattr__(
+            self,
+            "stage",
+            _optional_non_empty_string(self.stage, "stage"),
+        )
+        object.__setattr__(
+            self,
+            "field",
+            _optional_non_empty_string(self.field, "field"),
+        )
+        _require_optional_path(self.path, "path")
+        object.__setattr__(
+            self,
+            "value",
+            _optional_non_empty_string(self.value, "value"),
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe graph export issue dictionary."""
+        return {
+            "kind": self.kind,
+            "message": self.message,
+            "stage": self.stage,
+            "field": self.field,
+            "path": _optional_path_string(self.path),
+            "value": self.value,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphWorkflowGraphExportResult:
+    """In-memory Stage 15.5 graph export orchestration result."""
+
+    computation: PreprocessingGraphWorkflowComputationResult
+    output_layout: PreprocessingGraphWorkflowOutputLayout
+    graph_nodes_csv_path: Path
+    graph_edges_csv_path: Path
+    graph_json_path: Path
+    mapping_result: object | None = None
+    nodes_csv_write_result: object | None = None
+    edges_csv_write_result: object | None = None
+    csv_validation_result: object | None = None
+    graph_json_write_result: object | None = None
+    graph_export_bundle_result: object | None = None
+    issues: tuple[PreprocessingGraphWorkflowGraphExportIssue, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(
+            self.computation,
+            PreprocessingGraphWorkflowComputationResult,
+        ):
+            raise ValueError(
+                "computation must be "
+                "PreprocessingGraphWorkflowComputationResult"
+            )
+        if not isinstance(
+            self.output_layout,
+            PreprocessingGraphWorkflowOutputLayout,
+        ):
+            raise ValueError(
+                "output_layout must be "
+                "PreprocessingGraphWorkflowOutputLayout"
+            )
+        _require_path(self.graph_nodes_csv_path, "graph_nodes_csv_path")
+        _require_path(self.graph_edges_csv_path, "graph_edges_csv_path")
+        _require_path(self.graph_json_path, "graph_json_path")
+        if not isinstance(self.issues, tuple):
+            raise ValueError(
+                "issues must be a tuple of "
+                "PreprocessingGraphWorkflowGraphExportIssue"
+            )
+        for issue in self.issues:
+            if not isinstance(
+                issue,
+                PreprocessingGraphWorkflowGraphExportIssue,
+            ):
+                raise ValueError(
+                    "issues must contain "
+                    "PreprocessingGraphWorkflowGraphExportIssue"
+                )
+
+    @property
+    def mapping_built(self) -> bool:
+        """Return whether graph mapping was built successfully."""
+        return _stage_result_passed(self.mapping_result)
+
+    @property
+    def nodes_csv_written(self) -> bool:
+        """Return whether backend graph nodes.csv was written successfully."""
+        return _stage_result_passed(self.nodes_csv_write_result)
+
+    @property
+    def edges_csv_written(self) -> bool:
+        """Return whether backend graph edges.csv was written successfully."""
+        return _stage_result_passed(self.edges_csv_write_result)
+
+    @property
+    def csv_validated(self) -> bool:
+        """Return whether backend graph CSV validation passed."""
+        return _stage_result_passed(self.csv_validation_result)
+
+    @property
+    def graph_json_written(self) -> bool:
+        """Return whether backend graph.json was written successfully."""
+        return _stage_result_passed(self.graph_json_write_result)
+
+    @property
+    def bundle_built(self) -> bool:
+        """Return whether the graph export bundle was built successfully."""
+        return _stage_result_passed(self.graph_export_bundle_result)
+
+    @property
+    def issue_count(self) -> int:
+        """Return the number of graph export orchestration issues."""
+        return len(self.issues)
+
+    @property
+    def passed(self) -> bool:
+        """Return whether graph export orchestration completed cleanly."""
+        return (
+            self.mapping_result is not None
+            and self.mapping_built
+            and self.nodes_csv_write_result is not None
+            and self.nodes_csv_written
+            and self.edges_csv_write_result is not None
+            and self.edges_csv_written
+            and self.csv_validation_result is not None
+            and self.csv_validated
+            and self.graph_json_write_result is not None
+            and self.graph_json_written
+            and self.graph_export_bundle_result is not None
+            and self.bundle_built
+            and self.issues == ()
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return JSON-safe metadata without raw Stage 14 result internals."""
+        return {
+            "computation": self.computation.to_dict(),
+            "output_layout": self.output_layout.to_dict(),
+            "graph_nodes_csv_path": str(self.graph_nodes_csv_path),
+            "graph_edges_csv_path": str(self.graph_edges_csv_path),
+            "graph_json_path": str(self.graph_json_path),
+            "mapping_built": self.mapping_built,
+            "nodes_csv_written": self.nodes_csv_written,
+            "edges_csv_written": self.edges_csv_written,
+            "csv_validated": self.csv_validated,
+            "graph_json_written": self.graph_json_written,
+            "bundle_built": self.bundle_built,
+            "mapping_result_type": _object_type(self.mapping_result),
+            "nodes_csv_write_result_type": _object_type(
+                self.nodes_csv_write_result
+            ),
+            "edges_csv_write_result_type": _object_type(
+                self.edges_csv_write_result
+            ),
+            "csv_validation_result_type": _object_type(
+                self.csv_validation_result
+            ),
+            "graph_json_write_result_type": _object_type(
+                self.graph_json_write_result
+            ),
+            "graph_export_bundle_result_type": _object_type(
+                self.graph_export_bundle_result
+            ),
+            "issue_count": self.issue_count,
+            "issues": [issue.to_dict() for issue in self.issues],
+            "passed": self.passed,
+        }
+
+
+@dataclass(frozen=True)
 class PreprocessingGraphWorkflowPlan:
     """In-memory plan for future preprocessing graph export orchestration."""
 
@@ -1151,6 +1378,373 @@ def compute_preprocessing_graph_workflow_rg_contacts(
     )
 
 
+def export_preprocessing_graph_workflow_artifacts(
+    computation: PreprocessingGraphWorkflowComputationResult,
+    output_layout: PreprocessingGraphWorkflowOutputLayout,
+    *,
+    create_parent_directories: bool = True,
+) -> PreprocessingGraphWorkflowGraphExportResult:
+    """Orchestrate Stage 14 graph export APIs from a Stage 15.4 result."""
+    if not isinstance(
+        computation,
+        PreprocessingGraphWorkflowComputationResult,
+    ):
+        raise ValueError(
+            "computation must be PreprocessingGraphWorkflowComputationResult"
+        )
+    if not isinstance(output_layout, PreprocessingGraphWorkflowOutputLayout):
+        raise ValueError(
+            "output_layout must be PreprocessingGraphWorkflowOutputLayout"
+        )
+    _require_bool(create_parent_directories, "create_parent_directories")
+
+    if not computation.passed:
+        return _graph_export_result(
+            computation,
+            output_layout,
+            issues=(
+                PreprocessingGraphWorkflowGraphExportIssue(
+                    kind="computation_failed",
+                    message=(
+                        "Stage 15.4 computation did not pass; graph export "
+                        "was not attempted."
+                    ),
+                    stage="computation",
+                    field="computation",
+                ),
+            ),
+        )
+
+    if not computation.contacts_computed or computation.contacts_result is None:
+        return _graph_export_result(
+            computation,
+            output_layout,
+            issues=(
+                PreprocessingGraphWorkflowGraphExportIssue(
+                    kind="contacts_result_missing",
+                    message=(
+                        "Stage 15.4 computation did not retain a contacts "
+                        "result for graph export."
+                    ),
+                    stage="contacts",
+                    field="contacts_result",
+                ),
+            ),
+        )
+
+    contacts_issue = _contacts_result_invalid_issue(computation.contacts_result)
+    if contacts_issue is not None:
+        return _graph_export_result(
+            computation,
+            output_layout,
+            issues=(contacts_issue,),
+        )
+
+    layout_issue = _graph_output_layout_issue(output_layout)
+    if layout_issue is not None:
+        return _graph_export_result(
+            computation,
+            output_layout,
+            issues=(layout_issue,),
+        )
+
+    graph_directory = output_layout.graph_nodes_csv_path.parent
+    if create_parent_directories:
+        try:
+            graph_directory.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            return _graph_export_result(
+                computation,
+                output_layout,
+                issues=(
+                    PreprocessingGraphWorkflowGraphExportIssue(
+                        kind="graph_output_directory_failed",
+                        message=(
+                            "Graph output directory could not be created: "
+                            f"{exc.__class__.__name__}."
+                        ),
+                        stage="graph_export",
+                        field="graph_directory",
+                        path=graph_directory,
+                    ),
+                ),
+            )
+
+    try:
+        mapping_result = _graph_export_mapping_builder()(
+            computation.contacts_result
+        )
+    except Exception as exc:
+        return _graph_export_result(
+            computation,
+            output_layout,
+            issues=(
+                _graph_export_exception_issue(
+                    kind="graph_mapping_failed",
+                    stage="graph_mapping",
+                    field="contacts_result",
+                    exc=exc,
+                ),
+            ),
+        )
+    if not _stage_result_passed(mapping_result):
+        return _graph_export_result(
+            computation,
+            output_layout,
+            mapping_result=mapping_result,
+            issues=(
+                _graph_export_failed_issue(
+                    kind="graph_mapping_failed",
+                    stage="graph_mapping",
+                    field="mapping_result",
+                    result=mapping_result,
+                ),
+            ),
+        )
+
+    try:
+        nodes_csv_write_result = _graph_nodes_csv_writer()(
+            mapping_result,
+            output_layout.graph_nodes_csv_path,
+        )
+    except Exception as exc:
+        return _graph_export_result(
+            computation,
+            output_layout,
+            mapping_result=mapping_result,
+            issues=(
+                _graph_export_exception_issue(
+                    kind="graph_nodes_csv_write_failed",
+                    stage="graph_nodes_csv",
+                    field="graph_nodes_csv_path",
+                    path=output_layout.graph_nodes_csv_path,
+                    exc=exc,
+                ),
+            ),
+        )
+    if not _stage_result_passed(nodes_csv_write_result):
+        return _graph_export_result(
+            computation,
+            output_layout,
+            mapping_result=mapping_result,
+            nodes_csv_write_result=nodes_csv_write_result,
+            issues=(
+                _graph_export_failed_issue(
+                    kind="graph_nodes_csv_write_failed",
+                    stage="graph_nodes_csv",
+                    field="nodes_csv_write_result",
+                    path=output_layout.graph_nodes_csv_path,
+                    result=nodes_csv_write_result,
+                ),
+            ),
+        )
+
+    try:
+        edges_csv_write_result = _graph_edges_csv_writer()(
+            mapping_result,
+            output_layout.graph_edges_csv_path,
+        )
+    except Exception as exc:
+        return _graph_export_result(
+            computation,
+            output_layout,
+            mapping_result=mapping_result,
+            nodes_csv_write_result=nodes_csv_write_result,
+            issues=(
+                _graph_export_exception_issue(
+                    kind="graph_edges_csv_write_failed",
+                    stage="graph_edges_csv",
+                    field="graph_edges_csv_path",
+                    path=output_layout.graph_edges_csv_path,
+                    exc=exc,
+                ),
+            ),
+        )
+    if not _stage_result_passed(edges_csv_write_result):
+        return _graph_export_result(
+            computation,
+            output_layout,
+            mapping_result=mapping_result,
+            nodes_csv_write_result=nodes_csv_write_result,
+            edges_csv_write_result=edges_csv_write_result,
+            issues=(
+                _graph_export_failed_issue(
+                    kind="graph_edges_csv_write_failed",
+                    stage="graph_edges_csv",
+                    field="edges_csv_write_result",
+                    path=output_layout.graph_edges_csv_path,
+                    result=edges_csv_write_result,
+                ),
+            ),
+        )
+
+    try:
+        csv_validation_result = _graph_csv_validator()(
+            output_layout.graph_nodes_csv_path,
+            output_layout.graph_edges_csv_path,
+        )
+    except Exception as exc:
+        return _graph_export_result(
+            computation,
+            output_layout,
+            mapping_result=mapping_result,
+            nodes_csv_write_result=nodes_csv_write_result,
+            edges_csv_write_result=edges_csv_write_result,
+            issues=(
+                _graph_export_exception_issue(
+                    kind="graph_csv_validation_failed",
+                    stage="graph_csv_validation",
+                    field="graph_csv_paths",
+                    exc=exc,
+                ),
+            ),
+        )
+    if not _stage_result_passed(csv_validation_result):
+        return _graph_export_result(
+            computation,
+            output_layout,
+            mapping_result=mapping_result,
+            nodes_csv_write_result=nodes_csv_write_result,
+            edges_csv_write_result=edges_csv_write_result,
+            csv_validation_result=csv_validation_result,
+            issues=(
+                _graph_export_failed_issue(
+                    kind="graph_csv_validation_failed",
+                    stage="graph_csv_validation",
+                    field="csv_validation_result",
+                    result=csv_validation_result,
+                ),
+            ),
+        )
+
+    try:
+        graph_json_write_result = _graph_json_writer()(
+            output_layout.graph_nodes_csv_path,
+            output_layout.graph_edges_csv_path,
+            output_layout.graph_json_path,
+        )
+    except Exception as exc:
+        return _graph_export_result(
+            computation,
+            output_layout,
+            mapping_result=mapping_result,
+            nodes_csv_write_result=nodes_csv_write_result,
+            edges_csv_write_result=edges_csv_write_result,
+            csv_validation_result=csv_validation_result,
+            issues=(
+                _graph_export_exception_issue(
+                    kind="graph_json_write_failed",
+                    stage="graph_json",
+                    field="graph_json_path",
+                    path=output_layout.graph_json_path,
+                    exc=exc,
+                ),
+            ),
+        )
+    if not _stage_result_passed(graph_json_write_result):
+        return _graph_export_result(
+            computation,
+            output_layout,
+            mapping_result=mapping_result,
+            nodes_csv_write_result=nodes_csv_write_result,
+            edges_csv_write_result=edges_csv_write_result,
+            csv_validation_result=csv_validation_result,
+            graph_json_write_result=graph_json_write_result,
+            issues=(
+                _graph_export_failed_issue(
+                    kind="graph_json_write_failed",
+                    stage="graph_json",
+                    field="graph_json_write_result",
+                    path=output_layout.graph_json_path,
+                    result=graph_json_write_result,
+                ),
+            ),
+        )
+
+    try:
+        graph_export_bundle_result = _graph_export_bundle_builder()(
+            output_layout.graph_nodes_csv_path,
+            output_layout.graph_edges_csv_path,
+            output_layout.graph_json_path,
+        )
+    except Exception as exc:
+        return _graph_export_result(
+            computation,
+            output_layout,
+            mapping_result=mapping_result,
+            nodes_csv_write_result=nodes_csv_write_result,
+            edges_csv_write_result=edges_csv_write_result,
+            csv_validation_result=csv_validation_result,
+            graph_json_write_result=graph_json_write_result,
+            issues=(
+                _graph_export_exception_issue(
+                    kind="graph_bundle_failed",
+                    stage="graph_export_bundle",
+                    field="graph_export_bundle_result",
+                    exc=exc,
+                ),
+            ),
+        )
+    if not _stage_result_passed(graph_export_bundle_result):
+        return _graph_export_result(
+            computation,
+            output_layout,
+            mapping_result=mapping_result,
+            nodes_csv_write_result=nodes_csv_write_result,
+            edges_csv_write_result=edges_csv_write_result,
+            csv_validation_result=csv_validation_result,
+            graph_json_write_result=graph_json_write_result,
+            graph_export_bundle_result=graph_export_bundle_result,
+            issues=(
+                _graph_export_failed_issue(
+                    kind="graph_bundle_failed",
+                    stage="graph_export_bundle",
+                    field="graph_export_bundle_result",
+                    result=graph_export_bundle_result,
+                ),
+            ),
+        )
+
+    return _graph_export_result(
+        computation,
+        output_layout,
+        mapping_result=mapping_result,
+        nodes_csv_write_result=nodes_csv_write_result,
+        edges_csv_write_result=edges_csv_write_result,
+        csv_validation_result=csv_validation_result,
+        graph_json_write_result=graph_json_write_result,
+        graph_export_bundle_result=graph_export_bundle_result,
+    )
+
+
+def _graph_export_result(
+    computation: PreprocessingGraphWorkflowComputationResult,
+    output_layout: PreprocessingGraphWorkflowOutputLayout,
+    *,
+    mapping_result: object | None = None,
+    nodes_csv_write_result: object | None = None,
+    edges_csv_write_result: object | None = None,
+    csv_validation_result: object | None = None,
+    graph_json_write_result: object | None = None,
+    graph_export_bundle_result: object | None = None,
+    issues: tuple[PreprocessingGraphWorkflowGraphExportIssue, ...] = (),
+) -> PreprocessingGraphWorkflowGraphExportResult:
+    return PreprocessingGraphWorkflowGraphExportResult(
+        computation=computation,
+        output_layout=output_layout,
+        graph_nodes_csv_path=output_layout.graph_nodes_csv_path,
+        graph_edges_csv_path=output_layout.graph_edges_csv_path,
+        graph_json_path=output_layout.graph_json_path,
+        mapping_result=mapping_result,
+        nodes_csv_write_result=nodes_csv_write_result,
+        edges_csv_write_result=edges_csv_write_result,
+        csv_validation_result=csv_validation_result,
+        graph_json_write_result=graph_json_write_result,
+        graph_export_bundle_result=graph_export_bundle_result,
+        issues=issues,
+    )
+
+
 def _build_output_layout(
     options: PreprocessingGraphWorkflowOptions,
 ) -> PreprocessingGraphWorkflowOutputLayout:
@@ -1395,6 +1989,54 @@ def _manifest_contacts_computer() -> _ManifestContactsComputer:
     )
 
 
+def _graph_export_mapping_builder() -> _GraphExportMappingBuilder:
+    module = _import_preprocessing_module("trajectory_" + "graph_export")
+    return cast(
+        _GraphExportMappingBuilder,
+        getattr(module, "build_" + "preprocessing_graph_export_mapping"),
+    )
+
+
+def _graph_nodes_csv_writer() -> _GraphNodesCsvWriter:
+    module = _import_preprocessing_module("trajectory_" + "graph_export")
+    return cast(
+        _GraphNodesCsvWriter,
+        getattr(module, "write_" + "preprocessing_graph_nodes_csv"),
+    )
+
+
+def _graph_edges_csv_writer() -> _GraphEdgesCsvWriter:
+    module = _import_preprocessing_module("trajectory_" + "graph_export")
+    return cast(
+        _GraphEdgesCsvWriter,
+        getattr(module, "write_preprocessing_graph_" + "edges_csv"),
+    )
+
+
+def _graph_csv_validator() -> _GraphCsvValidator:
+    module = _import_preprocessing_module("trajectory_" + "graph_export")
+    return cast(
+        _GraphCsvValidator,
+        getattr(module, "validate_" + "preprocessing_graph_csvs"),
+    )
+
+
+def _graph_json_writer() -> _GraphJsonWriter:
+    module = _import_preprocessing_module("trajectory_" + "graph_export")
+    return cast(
+        _GraphJsonWriter,
+        getattr(module, "write_" + "preprocessing_graph_json"),
+    )
+
+
+def _graph_export_bundle_builder() -> _GraphExportBundleBuilder:
+    module = _import_preprocessing_module("trajectory_" + "graph_export")
+    return cast(
+        _GraphExportBundleBuilder,
+        getattr(module, "build_" + "preprocessing_graph_export_bundle"),
+    )
+
+
 def _import_preprocessing_module(module_name: str) -> ModuleType:
     return importlib.import_module(f"mania.preprocessing.{module_name}")
 
@@ -1534,6 +2176,99 @@ def _object_type(value: object | None) -> str | None:
         return None
     cls = value.__class__
     return f"{cls.__module__}.{cls.__qualname__}"
+
+
+def _stage_result_passed(result: object | None) -> bool:
+    return getattr(result, "passed", None) is True
+
+
+def _contacts_result_invalid_issue(
+    contacts_result: object,
+) -> PreprocessingGraphWorkflowGraphExportIssue | None:
+    passed = getattr(contacts_result, "passed", None)
+    if passed is None:
+        return None
+    if not isinstance(passed, bool):
+        return PreprocessingGraphWorkflowGraphExportIssue(
+            kind="contacts_result_invalid",
+            message=(
+                "Contacts result exposes an invalid passed status for graph "
+                "export."
+            ),
+            stage="contacts",
+            field="contacts_result.passed",
+            value=_object_type(contacts_result),
+        )
+    if not passed:
+        return PreprocessingGraphWorkflowGraphExportIssue(
+            kind="contacts_result_invalid",
+            message="Contacts result did not pass; graph export was not attempted.",
+            stage="contacts",
+            field="contacts_result",
+            value=_object_type(contacts_result),
+        )
+    return None
+
+
+def _graph_output_layout_issue(
+    output_layout: PreprocessingGraphWorkflowOutputLayout,
+) -> PreprocessingGraphWorkflowGraphExportIssue | None:
+    expected_graph_dir = output_layout.output_dir / "graph"
+    expected_paths = {
+        "graph_nodes_csv_path": expected_graph_dir / "nodes.csv",
+        "graph_edges_csv_path": expected_graph_dir / "edges.csv",
+        "graph_json_path": expected_graph_dir / "graph.json",
+    }
+    for field_name, expected_path in expected_paths.items():
+        actual_path = getattr(output_layout, field_name)
+        if actual_path != expected_path:
+            return PreprocessingGraphWorkflowGraphExportIssue(
+                kind="output_layout_invalid",
+                message=(
+                    "Graph export output layout does not match the Stage "
+                    "15.1 graph artifact boundary."
+                ),
+                stage="output_layout",
+                field=field_name,
+                path=actual_path,
+                value=str(expected_path),
+            )
+    return None
+
+
+def _graph_export_failed_issue(
+    *,
+    kind: str,
+    stage: str,
+    field: str,
+    result: object,
+    path: Path | None = None,
+) -> PreprocessingGraphWorkflowGraphExportIssue:
+    return PreprocessingGraphWorkflowGraphExportIssue(
+        kind=kind,
+        message=f"Stage 14 {stage} step did not pass.",
+        stage=stage,
+        field=field,
+        path=path,
+        value=_object_type(result),
+    )
+
+
+def _graph_export_exception_issue(
+    *,
+    kind: str,
+    stage: str,
+    field: str,
+    exc: Exception,
+    path: Path | None = None,
+) -> PreprocessingGraphWorkflowGraphExportIssue:
+    return PreprocessingGraphWorkflowGraphExportIssue(
+        kind=kind,
+        message=f"Stage 14 {stage} step failed unexpectedly: {exc.__class__.__name__}.",
+        stage=stage,
+        field=field,
+        path=path,
+    )
 
 
 def _append_failed_computation_issue(
