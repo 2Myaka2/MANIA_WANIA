@@ -272,6 +272,26 @@ notebook execution. Stage 15.6 will orchestrate diagnostics + diagnostics
 report. Reference comparison remains Stage 15.7 optional mode. Temporal RIN
 remains future scope. WANIA frontend adapter/API payload remains future scope.
 
+## Stage 15.6 diagnostics orchestration
+
+Stage 15.6 adds workflow-level diagnostics + diagnostics report orchestration.
+The Stage 15.5 graph export result feeds Stage 15.6. Stage 15.6 does not
+export graph artifacts and does not compute Rg/contacts. It reuses the
+accepted Stage 14 diagnostics runner and the accepted Stage 14 diagnostics
+report builder, adding no new diagnostics algorithms.
+
+Stage 15.6 may write only `reports/graph_diagnostics_report.json` and may
+create only that report parent directory when report JSON writing is enabled.
+It writes no `reports/graph_reference_comparison.json`. Stage 15.7 will
+handle optional reference comparison, and Stage 15.6 does not perform
+reference comparison.
+
+Stage 15.6 keeps the default CI and import path independent from real MD data
+and optional dependency installs. It does not require MDAnalysis, `local_md`,
+topology files, trajectory files, notebook execution, CLI integration, or
+local real MD smoke tests. `local_md` remains local-only and must not be
+committed.
+
 ## Stage 12.1a Rg result contracts
 
 Stage 12.1a adds dependency-free Rg result and report dataclasses. They use

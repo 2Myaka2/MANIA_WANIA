@@ -85,7 +85,17 @@ no diagnostics, no reference comparison, and no CLI inside this stage. Stage
 15.5 adds graph export orchestration from the Stage 15.4 computation result:
 mapping, nodes.csv, corrected edges.csv, CSV validation, graph.json, and
 bundle creation through accepted Stage 14 graph export APIs, with no new graph
-semantics, no diagnostics, no reference comparison, and no CLI.
+semantics, no diagnostics, no reference comparison, and no CLI. Stage 15.6
+adds diagnostics + diagnostics report orchestration. The Stage 15.5 graph
+export result feeds Stage 15.6, and Stage 15.6 does not export graph
+artifacts. It reuses the accepted Stage 14 diagnostics runner and accepted
+Stage 14 diagnostics report builder, with no new diagnostics algorithms, no
+reference comparison, no CLI, no notebook execution, and no local real MD
+smoke test. Stage 15.6 may write only
+`reports/graph_diagnostics_report.json`; no
+`reports/graph_reference_comparison.json` is written. Stage 15.7 will handle
+optional reference comparison. Stage 15.6 does not perform reference
+comparison.
 
 ## Current implemented capabilities
 
@@ -121,6 +131,10 @@ The current preprocessing layer supports:
   Stage 15.4 computation result, reusing accepted Stage 14 graph export APIs
   for mapping, backend graph nodes.csv, corrected backend graph edges.csv,
   CSV validation, graph.json, and bundle creation;
+- diagnostics + diagnostics report orchestration through the Stage 15.6
+  workflow wrapper from the Stage 15.5 graph export result, reusing accepted
+  Stage 14 diagnostics APIs and optionally writing only
+  `reports/graph_diagnostics_report.json`;
 - frozen frame, condition, manifest, and issue contracts for future Rg
   computation;
 - single-condition Rg computation through `compute_condition_rg(...)`;
@@ -237,10 +251,17 @@ build_preprocessing_graph_workflow_plan(...)
 check_preprocessing_graph_workflow_manifest_readiness(...)
 compute_preprocessing_graph_workflow_rg_contacts(...)
 export_preprocessing_graph_workflow_artifacts(...)
+run_preprocessing_graph_workflow_diagnostics(...)
 ```
 
 These APIs cover contracts, local filesystem checks, residue-library files,
 explicit residue-name QC, and condition runtime loading.
+
+Stage 15.6 keeps `local_md` local-only and default CI independent from real
+topology/trajectory files and optional dependency installs. The reference
+notebook remains a specification artifact and is not executed by Stage 15.6.
+Reference comparison and any
+`reports/graph_reference_comparison.json` output remain Stage 15.7 scope.
 
 ## Stage 15.4 manifest-level Rg + contacts orchestration boundary
 

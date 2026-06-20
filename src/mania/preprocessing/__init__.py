@@ -128,6 +128,8 @@ from mania.preprocessing.trajectory_graph_reference_comparison import (
 from mania.preprocessing.trajectory_graph_workflow import (
     PreprocessingGraphWorkflowComputationIssue,
     PreprocessingGraphWorkflowComputationResult,
+    PreprocessingGraphWorkflowDiagnosticsIssue,
+    PreprocessingGraphWorkflowDiagnosticsResult,
     PreprocessingGraphWorkflowGraphExportIssue,
     PreprocessingGraphWorkflowGraphExportResult,
     PreprocessingGraphWorkflowIssue,
@@ -143,6 +145,7 @@ from mania.preprocessing.trajectory_graph_workflow import (
     compute_preprocessing_graph_workflow_rg_contacts,
     export_preprocessing_graph_workflow_artifacts,
     load_preprocessing_graph_workflow_condition_runtimes,
+    run_preprocessing_graph_workflow_diagnostics,
 )
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
 from mania.preprocessing.trajectory_manifest_loader import (
@@ -296,6 +299,8 @@ __all__ = [
     "PreprocessingGraphReferenceComparisonTargetResult",
     "PreprocessingGraphWorkflowComputationIssue",
     "PreprocessingGraphWorkflowComputationResult",
+    "PreprocessingGraphWorkflowDiagnosticsIssue",
+    "PreprocessingGraphWorkflowDiagnosticsResult",
     "PreprocessingGraphWorkflowGraphExportIssue",
     "PreprocessingGraphWorkflowGraphExportResult",
     "PreprocessingGraphWorkflowManifestReadinessIssue",
@@ -375,6 +380,7 @@ __all__ = [
     "resolve_residue_library_manifest_paths",
     "run_residue_qc_from_manifest_options",
     "run_preprocessing_graph_diagnostics",
+    "run_preprocessing_graph_workflow_diagnostics",
     "validate_preprocessing_manifest_paths",
     "validate_contact_edges_csv",
     "validate_contacts_perframe_csv",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import json
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
@@ -147,6 +148,19 @@ class _GraphExportBundleBuilder(Protocol):
         edges_csv_path: str | Path,
         graph_json_path: str | Path,
     ) -> object: ...
+
+
+class _GraphDiagnosticsRunner(Protocol):
+    def __call__(
+        self,
+        nodes_csv_path: str | Path,
+        edges_csv_path: str | Path,
+        graph_json_path: str | Path,
+    ) -> object: ...
+
+
+class _GraphDiagnosticsReportBuilder(Protocol):
+    def __call__(self, diagnostics_result: object) -> object: ...
 
 
 @dataclass(frozen=True)
@@ -945,6 +959,154 @@ class PreprocessingGraphWorkflowGraphExportResult:
 
 
 @dataclass(frozen=True)
+class PreprocessingGraphWorkflowDiagnosticsIssue:
+    """One deterministic Stage 15.6 diagnostics orchestration issue."""
+
+    kind: str
+    message: str
+    stage: str | None = None
+    field: str | None = None
+    path: Path | None = None
+    value: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "kind", _non_empty_string(self.kind, "kind"))
+        object.__setattr__(
+            self,
+            "message",
+            _non_empty_string(self.message, "message"),
+        )
+        object.__setattr__(
+            self,
+            "stage",
+            _optional_non_empty_string(self.stage, "stage"),
+        )
+        object.__setattr__(
+            self,
+            "field",
+            _optional_non_empty_string(self.field, "field"),
+        )
+        _require_optional_path(self.path, "path")
+        object.__setattr__(
+            self,
+            "value",
+            _optional_non_empty_string(self.value, "value"),
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe diagnostics orchestration issue dictionary."""
+        return {
+            "kind": self.kind,
+            "message": self.message,
+            "stage": self.stage,
+            "field": self.field,
+            "path": _optional_path_string(self.path),
+            "value": self.value,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphWorkflowDiagnosticsResult:
+    """In-memory Stage 15.6 diagnostics orchestration result."""
+
+    graph_export: PreprocessingGraphWorkflowGraphExportResult
+    diagnostics_run_result: object | None = None
+    diagnostics_report: object | None = None
+    diagnostics_report_json_path: Path | None = None
+    diagnostics_report_json_written: bool = False
+    issues: tuple[PreprocessingGraphWorkflowDiagnosticsIssue, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(
+            self.graph_export,
+            PreprocessingGraphWorkflowGraphExportResult,
+        ):
+            raise ValueError(
+                "graph_export must be "
+                "PreprocessingGraphWorkflowGraphExportResult"
+            )
+        _require_optional_path(
+            self.diagnostics_report_json_path,
+            "diagnostics_report_json_path",
+        )
+        _require_bool(
+            self.diagnostics_report_json_written,
+            "diagnostics_report_json_written",
+        )
+        if not isinstance(self.issues, tuple):
+            raise ValueError(
+                "issues must be a tuple of "
+                "PreprocessingGraphWorkflowDiagnosticsIssue"
+            )
+        for issue in self.issues:
+            if not isinstance(
+                issue,
+                PreprocessingGraphWorkflowDiagnosticsIssue,
+            ):
+                raise ValueError(
+                    "issues must contain "
+                    "PreprocessingGraphWorkflowDiagnosticsIssue"
+                )
+
+    @property
+    def diagnostics_ran(self) -> bool:
+        """Return whether a Stage 14 diagnostics run result is retained."""
+        return self.diagnostics_run_result is not None
+
+    @property
+    def diagnostics_passed(self) -> bool:
+        """Return whether the retained diagnostics run result passed."""
+        return _stage_result_passed(self.diagnostics_run_result)
+
+    @property
+    def diagnostics_report_built(self) -> bool:
+        """Return whether an in-memory diagnostics report is retained."""
+        return self.diagnostics_report is not None
+
+    @property
+    def issue_count(self) -> int:
+        """Return the number of diagnostics orchestration issues."""
+        return len(self.issues)
+
+    @property
+    def passed(self) -> bool:
+        """Return whether diagnostics orchestration completed cleanly."""
+        return (
+            self.graph_export.passed
+            and self.diagnostics_ran
+            and self.diagnostics_passed
+            and self.diagnostics_report_built
+            and (
+                self.diagnostics_report_json_path is None
+                or self.diagnostics_report_json_written
+            )
+            and self.issues == ()
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return JSON-safe metadata without raw diagnostics internals."""
+        return {
+            "graph_export": self.graph_export.to_dict(),
+            "diagnostics_ran": self.diagnostics_ran,
+            "diagnostics_passed": self.diagnostics_passed,
+            "diagnostics_report_built": self.diagnostics_report_built,
+            "diagnostics_report_json_path": _optional_path_string(
+                self.diagnostics_report_json_path
+            ),
+            "diagnostics_report_json_written": (
+                self.diagnostics_report_json_written
+            ),
+            "diagnostics_run_result_type": _object_type(
+                self.diagnostics_run_result
+            ),
+            "diagnostics_report_type": _object_type(self.diagnostics_report),
+            "issue_count": self.issue_count,
+            "issues": [issue.to_dict() for issue in self.issues],
+            "passed": self.passed,
+        }
+
+
+@dataclass(frozen=True)
 class PreprocessingGraphWorkflowPlan:
     """In-memory plan for future preprocessing graph export orchestration."""
 
@@ -1717,6 +1879,200 @@ def export_preprocessing_graph_workflow_artifacts(
     )
 
 
+def run_preprocessing_graph_workflow_diagnostics(
+    graph_export: PreprocessingGraphWorkflowGraphExportResult,
+    *,
+    write_report_json: bool = True,
+    create_parent_directories: bool = True,
+) -> PreprocessingGraphWorkflowDiagnosticsResult:
+    """Orchestrate Stage 14 diagnostics APIs from a Stage 15.5 result."""
+    if not isinstance(
+        graph_export,
+        PreprocessingGraphWorkflowGraphExportResult,
+    ):
+        raise ValueError(
+            "graph_export must be "
+            "PreprocessingGraphWorkflowGraphExportResult"
+        )
+    _require_bool(write_report_json, "write_report_json")
+    _require_bool(create_parent_directories, "create_parent_directories")
+
+    if not graph_export.passed:
+        return _diagnostics_result(
+            graph_export,
+            diagnostics_report_json_path=(
+                graph_export.output_layout.diagnostics_report_json_path
+                if write_report_json
+                else None
+            ),
+            issues=(
+                PreprocessingGraphWorkflowDiagnosticsIssue(
+                    kind="graph_export_failed",
+                    message=(
+                        "Stage 15.5 graph export did not pass; diagnostics "
+                        "were not attempted."
+                    ),
+                    stage="graph_export",
+                    field="graph_export",
+                ),
+            ),
+        )
+
+    layout_issue = _diagnostics_output_layout_issue(graph_export.output_layout)
+    if layout_issue is not None:
+        return _diagnostics_result(
+            graph_export,
+            diagnostics_report_json_path=(
+                graph_export.output_layout.diagnostics_report_json_path
+                if write_report_json
+                else None
+            ),
+            issues=(layout_issue,),
+        )
+
+    artifact_issue = _graph_artifact_path_issue(graph_export)
+    if artifact_issue is not None:
+        return _diagnostics_result(
+            graph_export,
+            diagnostics_report_json_path=(
+                graph_export.output_layout.diagnostics_report_json_path
+                if write_report_json
+                else None
+            ),
+            issues=(artifact_issue,),
+        )
+
+    try:
+        diagnostics_run_result = _graph_diagnostics_runner()(
+            graph_export.graph_nodes_csv_path,
+            graph_export.graph_edges_csv_path,
+            graph_export.graph_json_path,
+        )
+    except Exception as exc:
+        return _diagnostics_result(
+            graph_export,
+            diagnostics_report_json_path=(
+                graph_export.output_layout.diagnostics_report_json_path
+                if write_report_json
+                else None
+            ),
+            issues=(
+                _diagnostics_exception_issue(
+                    kind="diagnostics_run_failed",
+                    stage="graph_diagnostics",
+                    field="diagnostics_run_result",
+                    exc=exc,
+                ),
+            ),
+        )
+    if not _stage_result_passed(diagnostics_run_result):
+        return _diagnostics_result(
+            graph_export,
+            diagnostics_run_result=diagnostics_run_result,
+            diagnostics_report_json_path=(
+                graph_export.output_layout.diagnostics_report_json_path
+                if write_report_json
+                else None
+            ),
+            issues=(
+                _diagnostics_failed_issue(
+                    kind="diagnostics_run_failed",
+                    stage="graph_diagnostics",
+                    field="diagnostics_run_result",
+                    result=diagnostics_run_result,
+                ),
+            ),
+        )
+
+    try:
+        diagnostics_report = _graph_diagnostics_report_builder()(
+            diagnostics_run_result
+        )
+    except Exception as exc:
+        return _diagnostics_result(
+            graph_export,
+            diagnostics_run_result=diagnostics_run_result,
+            diagnostics_report_json_path=(
+                graph_export.output_layout.diagnostics_report_json_path
+                if write_report_json
+                else None
+            ),
+            issues=(
+                _diagnostics_exception_issue(
+                    kind="diagnostics_report_failed",
+                    stage="graph_diagnostics_report",
+                    field="diagnostics_report",
+                    exc=exc,
+                ),
+            ),
+        )
+
+    report_path = (
+        graph_export.output_layout.diagnostics_report_json_path
+        if write_report_json
+        else None
+    )
+    if report_path is None:
+        return _diagnostics_result(
+            graph_export,
+            diagnostics_run_result=diagnostics_run_result,
+            diagnostics_report=diagnostics_report,
+        )
+
+    try:
+        _write_diagnostics_report_json(
+            diagnostics_report,
+            report_path,
+            create_parent_directories=create_parent_directories,
+        )
+    except Exception as exc:
+        return _diagnostics_result(
+            graph_export,
+            diagnostics_run_result=diagnostics_run_result,
+            diagnostics_report=diagnostics_report,
+            diagnostics_report_json_path=report_path,
+            issues=(
+                PreprocessingGraphWorkflowDiagnosticsIssue(
+                    kind="diagnostics_report_json_write_failed",
+                    message=(
+                        "Diagnostics report JSON could not be written: "
+                        f"{exc.__class__.__name__}."
+                    ),
+                    stage="diagnostics_report_json",
+                    field="diagnostics_report_json_path",
+                    path=report_path,
+                ),
+            ),
+        )
+
+    return _diagnostics_result(
+        graph_export,
+        diagnostics_run_result=diagnostics_run_result,
+        diagnostics_report=diagnostics_report,
+        diagnostics_report_json_path=report_path,
+        diagnostics_report_json_written=True,
+    )
+
+
+def _diagnostics_result(
+    graph_export: PreprocessingGraphWorkflowGraphExportResult,
+    *,
+    diagnostics_run_result: object | None = None,
+    diagnostics_report: object | None = None,
+    diagnostics_report_json_path: Path | None = None,
+    diagnostics_report_json_written: bool = False,
+    issues: tuple[PreprocessingGraphWorkflowDiagnosticsIssue, ...] = (),
+) -> PreprocessingGraphWorkflowDiagnosticsResult:
+    return PreprocessingGraphWorkflowDiagnosticsResult(
+        graph_export=graph_export,
+        diagnostics_run_result=diagnostics_run_result,
+        diagnostics_report=diagnostics_report,
+        diagnostics_report_json_path=diagnostics_report_json_path,
+        diagnostics_report_json_written=diagnostics_report_json_written,
+        issues=issues,
+    )
+
+
 def _graph_export_result(
     computation: PreprocessingGraphWorkflowComputationResult,
     output_layout: PreprocessingGraphWorkflowOutputLayout,
@@ -2037,6 +2393,22 @@ def _graph_export_bundle_builder() -> _GraphExportBundleBuilder:
     )
 
 
+def _graph_diagnostics_runner() -> _GraphDiagnosticsRunner:
+    module = _import_preprocessing_module("trajectory_" + "graph_diagnostics")
+    return cast(
+        _GraphDiagnosticsRunner,
+        getattr(module, "run_" + "preprocessing_graph_diagnostics"),
+    )
+
+
+def _graph_diagnostics_report_builder() -> _GraphDiagnosticsReportBuilder:
+    module = _import_preprocessing_module("trajectory_" + "graph_diagnostics")
+    return cast(
+        _GraphDiagnosticsReportBuilder,
+        getattr(module, "build_" + "preprocessing_graph_diagnostics_report"),
+    )
+
+
 def _import_preprocessing_module(module_name: str) -> ModuleType:
     return importlib.import_module(f"mania.preprocessing.{module_name}")
 
@@ -2268,6 +2640,104 @@ def _graph_export_exception_issue(
         stage=stage,
         field=field,
         path=path,
+    )
+
+
+def _diagnostics_output_layout_issue(
+    output_layout: PreprocessingGraphWorkflowOutputLayout,
+) -> PreprocessingGraphWorkflowDiagnosticsIssue | None:
+    expected_path = (
+        output_layout.output_dir
+        / "reports"
+        / "graph_diagnostics_report.json"
+    )
+    actual_path = output_layout.diagnostics_report_json_path
+    if actual_path != expected_path:
+        return PreprocessingGraphWorkflowDiagnosticsIssue(
+            kind="output_layout_invalid",
+            message=(
+                "Diagnostics report output layout does not match the Stage "
+                "15.1 report artifact boundary."
+            ),
+            stage="output_layout",
+            field="diagnostics_report_json_path",
+            path=actual_path,
+            value=str(expected_path),
+        )
+    return None
+
+
+def _graph_artifact_path_issue(
+    graph_export: PreprocessingGraphWorkflowGraphExportResult,
+) -> PreprocessingGraphWorkflowDiagnosticsIssue | None:
+    expected_paths = {
+        "graph_nodes_csv_path": graph_export.output_layout.graph_nodes_csv_path,
+        "graph_edges_csv_path": graph_export.output_layout.graph_edges_csv_path,
+        "graph_json_path": graph_export.output_layout.graph_json_path,
+    }
+    for field_name, expected_path in expected_paths.items():
+        actual_path = getattr(graph_export, field_name)
+        if actual_path != expected_path:
+            return PreprocessingGraphWorkflowDiagnosticsIssue(
+                kind="graph_artifact_missing",
+                message=(
+                    "Stage 15.5 graph artifact path metadata was not "
+                    "available at the planned output layout path."
+                ),
+                stage="graph_export",
+                field=field_name,
+                path=actual_path,
+                value=str(expected_path),
+            )
+    return None
+
+
+def _diagnostics_failed_issue(
+    *,
+    kind: str,
+    stage: str,
+    field: str,
+    result: object,
+) -> PreprocessingGraphWorkflowDiagnosticsIssue:
+    return PreprocessingGraphWorkflowDiagnosticsIssue(
+        kind=kind,
+        message=f"Stage 14 {stage} step did not pass.",
+        stage=stage,
+        field=field,
+        value=_object_type(result),
+    )
+
+
+def _diagnostics_exception_issue(
+    *,
+    kind: str,
+    stage: str,
+    field: str,
+    exc: Exception,
+) -> PreprocessingGraphWorkflowDiagnosticsIssue:
+    return PreprocessingGraphWorkflowDiagnosticsIssue(
+        kind=kind,
+        message=f"Stage 14 {stage} step failed unexpectedly: {exc.__class__.__name__}.",
+        stage=stage,
+        field=field,
+    )
+
+
+def _write_diagnostics_report_json(
+    diagnostics_report: object,
+    output_path: Path,
+    *,
+    create_parent_directories: bool,
+) -> None:
+    to_dict = getattr(diagnostics_report, "to_dict", None)
+    if not callable(to_dict):
+        raise ValueError("diagnostics_report must expose to_dict")
+    if create_parent_directories:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = to_dict()
+    output_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
     )
 
 

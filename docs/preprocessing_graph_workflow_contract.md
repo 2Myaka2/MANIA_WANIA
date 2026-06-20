@@ -43,6 +43,22 @@ that pass the existing manifest path validator. Stage 15.2 uses the existing
 preprocessing manifest contract and does not define a new Stage 15 manifest
 format. In short: no new Stage 15 manifest format.
 
+Stage 15.6 adds diagnostics + diagnostics report orchestration, also exported
+from `mania.preprocessing`:
+
+```python
+PreprocessingGraphWorkflowDiagnosticsIssue
+PreprocessingGraphWorkflowDiagnosticsResult
+run_preprocessing_graph_workflow_diagnostics(...)
+```
+
+The Stage 15.5 graph export result feeds Stage 15.6. Stage 15.6 does not export graph artifacts.
+It consumes the graph artifact paths retained by
+Stage 15.5, reuses the accepted Stage 14 diagnostics runner and the accepted Stage 14 diagnostics report builder,
+and adds no new diagnostics algorithms.
+It may keep the raw Stage 14 diagnostics run and report objects in memory for
+later stages, while `to_dict()` exposes only deterministic JSON-safe metadata.
+
 ## Run options
 
 `PreprocessingGraphWorkflowOptions` records:
@@ -87,6 +103,18 @@ The deterministic output layout is:
 The report JSON paths are planned paths for later orchestration. Stage 15.1
 does not write `graph_diagnostics_report.json` or
 `graph_reference_comparison.json`.
+
+Stage 15.6 may write only:
+
+```text
+<output_dir>/reports/graph_diagnostics_report.json
+```
+
+when diagnostics report JSON writing is enabled. It may create only that
+`reports/` parent directory for this file. It writes no
+`reports/graph_reference_comparison.json`; in short, no
+reports/graph_reference_comparison.json.
+Plainly: no reports/graph_reference_comparison.json.
 
 ## Planned steps
 
@@ -171,6 +199,12 @@ Missing explicit reference artifact paths produce
 artifacts automatically and does not modify `data/reference/**`. The notebook
 is not executed. The reference notebook is not executed.
 
+Stage 15.6 does not perform reference comparison. Stage 15.7 will handle
+optional reference comparison, including any
+`reports/graph_reference_comparison.json` output, behind an explicit optional
+mode.
+Stage 15.7 will handle optional reference comparison.
+
 `MANIA_analysis_v1_2` is the current graph reference semantics. v1.1 remains
 historical. The v1.2 temporal RIN remains future scope and is not a Stage 15.1
 artifact.
@@ -185,6 +219,11 @@ local MD paths, require MDAnalysis, or add real-data CI.
 The workflow contract uses only the standard library. It does not add
 dependencies and does not require MDAnalysis, numpy, pandas, pyarrow,
 networkx, or local scientific extras.
+
+Stage 15.6 remains dependency-free at import/default CI time. It operates on
+existing Stage 15.5 graph export metadata and existing graph artifacts through
+accepted Stage 14 diagnostics APIs, so default CI does not require `local_md`,
+real MD files, MDAnalysis, or any optional dependency.
 
 ## Stage 15.2 local manifest readiness
 
