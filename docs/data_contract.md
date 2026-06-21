@@ -18,6 +18,7 @@ mania_output/
 │   ├── centrality.csv
 │   ├── communities.csv
 │   ├── temporal_rin.csv
+│   ├── rg_timeseries.csv
 │   ├── conformational_states.csv
 │   └── contacts_perframe.parquet
 ├── tumor/
@@ -30,6 +31,53 @@ mania_output/
 - `comparison.csv` and `stats.csv` are not inside `normal/` or `tumor/`.
 - Single-condition runs may omit `comparison.csv` and `stats.csv` or mark them
   unavailable later.
+
+## Notebook/Reference Layout vs Backend Contract Layout
+
+Notebook v1.1 outputs are historical reference/intermediate artifacts.
+Notebook v1.2 is the current graph reference semantics for Stage 14 graph
+export and future graph comparison. The backend contract is the stable
+WANIA-facing output, so notebook filenames and layout must not become backend
+contract filenames and layout. Export adapter logic maps notebook-like outputs
+to backend contract outputs.
+
+MANIA_analysis_v1_2 documents two graph-reference changes: Cell 5 selects a
+primary graph display edge type by interaction priority when one residue pair
+has multiple interaction types, and Cell 12 fixes temporal RIN export handling.
+The temporal RIN v1.2 fix is documented here as future temporal/workflow
+artifact scope; it is not implemented by the Stage 14.1c edge-schema
+correction.
+
+Examples:
+
+- `rg_timeseries_{condition}.csv` maps to
+  `{condition}/rg_timeseries.csv`.
+- `residue_table_{condition}.csv` will later contribute to
+  `{condition}/nodes.csv`.
+- `protein_contact_edges_undirected_{condition}.csv` will later contribute to
+  `{condition}/edges.csv`.
+
+## Global Features
+
+Global features are condition-level summary values derived from per-frame
+features. Current v1.1 Rg-derived global features are:
+
+```text
+rg_mean_A
+rg_std_A
+n_rg_frames
+```
+
+`n_rg_frames` is included when available. `rg_timeseries.csv` is the per-frame
+source artifact for these values. Global features may be stored later in run
+metadata or manifest-like outputs, and future heterograph export may use global
+features as graph-level model features.
+
+In notebook v1.1, heterograph logic may use
+`data.global_features = tensor([rg_mean, rg_std])` only when heterograph export
+is enabled. This does not mean the current backend `graph.json` must contain
+`global_features` yet. Global features should not be assumed to exist in current
+per-condition `graph.json` unless the graph contract is explicitly extended.
 
 ## Per-Condition Artifacts
 
@@ -71,6 +119,8 @@ Required columns:
 resid_i
 resid_j
 edge_type
+all_edge_types
+n_edge_types
 condition
 contact_freq
 mean_dist_A
@@ -86,6 +136,29 @@ first_seen_frame
 last_seen_frame
 window_cv
 ```
+
+`edge_type` remains the backward-compatible primary edge type. When a residue
+pair has multiple interaction types, `edge_type` is the priority-selected
+display type, `all_edge_types` is every unique type for the pair joined by
+`|`, and `n_edge_types` is the count of unique types in `all_edge_types`.
+Known graph-display interaction priority is:
+
+```text
+hbond
+disulfide
+salt_bridge
+ionic
+cation_pi
+aromatic_pi
+hydrophobic
+vdw
+```
+
+Unknown edge types, including current preprocessing generic
+`residue_contact`, are not inferred as biochemical classes. They are ordered
+deterministically after the known priority list. Current Stage 13 generic
+contacts therefore map to `edge_type = residue_contact`,
+`all_edge_types = residue_contact`, and `n_edge_types = 1`.
 
 ### centrality.csv
 
@@ -136,6 +209,26 @@ density
 window_cv
 ```
 
+### rg_timeseries.csv
+
+Per-frame radius of gyration time series for one condition.
+
+Required columns:
+
+```text
+frame
+time_ps
+rg_A
+condition
+```
+
+Notebook v1.1 reference files are named
+`rg_timeseries_{condition}.csv`. The backend contract stores the same
+information as `{condition}/rg_timeseries.csv`. The backend contract requires
+`time_ps` for consistency with other time-series artifacts. Adapter logic will
+handle filename/layout conversion later. Deriving or calculating `time_ps` is
+outside this task.
+
 ### conformational_states.csv
 
 Per-frame conformational state assignments for one condition.
@@ -168,6 +261,13 @@ dist_A
 condition
 ```
 
+`condition` is required even when the parquet file is stored inside a
+condition-specific folder. All rows in
+`{condition}/contacts_perframe.parquet` must have `condition` equal to the
+folder condition. Missing or mixed condition values should be treated as
+validation errors by future validators. Do not implement that validator in this
+task.
+
 ## graph.json
 
 `graph.json` is the per-condition graph representation.
@@ -198,12 +298,24 @@ Example shape:
 }
 ```
 
+Per-condition `graph.json` is scoped by its folder condition. If the backend
+later exports a combined graph containing multiple conditions, node IDs must be
+condition-scoped node IDs. The recommended combined node ID format is
+`{condition}:{resid}`, for example `normal:1` and `tumor:1`.
+
+Duplicate node IDs across conditions are not allowed in combined graph outputs.
+Notebook/reference Cytoscape-style `graph.json` is a reference/intermediate
+artifact and should not be treated as the final backend graph contract without
+validation and adaptation.
+
 ## Cross-Condition Artifacts
 
 ### comparison.csv
 
-Cross-condition comparison table. This file is not stored inside a condition
-directory.
+Cross-condition value comparison and delta table. This file is not stored
+inside a condition directory. It represents values such as normal value, tumor
+value, delta, condition specificity, metric name, and residue or edge
+identifier. `comparison.csv` is not primarily the statistical-test results file.
 
 Required columns:
 
@@ -222,8 +334,10 @@ condition_specificity
 
 ### stats.csv
 
-Cross-condition statistics table. This file is not stored inside a condition
-directory.
+Cross-condition statistical-test results table. This file is not stored inside
+a condition directory. It represents values such as test name, statistic,
+p-value, q-value, effect size, and significance flag. `stats.csv` must not be a
+blind duplicate of `comparison.csv`.
 
 Required columns:
 
@@ -237,6 +351,14 @@ q_value
 effect_size
 significant
 ```
+
+## Future Export Adapter Notes
+
+A future export adapter must validate notebook/reference artifacts before
+exporting backend contract outputs. It must not blindly copy notebook
+`graph.json`, notebook `comparison.csv`, notebook `stats.csv`, or notebook
+filenames/layout. The export adapter must produce backend contract-compliant
+WANIA-facing output files.
 
 ## MVP Exclusions
 

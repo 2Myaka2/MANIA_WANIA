@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Upgrade packaging tools
+        run: python -m pip install --upgrade pip setuptools wheel
+
+      - name: Install project
+        run: python -m pip install -e ".[dev]"
+
+      - name: Show version
+        run: mania --version
+
+      - name: Validate example config
+        run: mania validate-config configs/mania.example.yaml
+
+      - name: Run tests
+        run: pytest
+
+      - name: Run Ruff
+        run: ruff check .
+
+      - name: Run mypy
+        run: mypy src

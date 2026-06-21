@@ -9,6 +9,7 @@ PER_CONDITION_ARTIFACTS = (
     "centrality.csv",
     "communities.csv",
     "temporal_rin.csv",
+    "rg_timeseries.csv",
     "conformational_states.csv",
     "contacts_perframe.parquet",
 )
@@ -40,10 +41,23 @@ NODE_COLUMNS = (
     "community_id",
 )
 
+EDGE_TYPE_PRIORITY = (
+    "hbond",
+    "disulfide",
+    "salt_bridge",
+    "ionic",
+    "cation_pi",
+    "aromatic_pi",
+    "hydrophobic",
+    "vdw",
+)
+
 EDGE_COLUMNS = (
     "resid_i",
     "resid_j",
     "edge_type",
+    "all_edge_types",
+    "n_edge_types",
     "condition",
     "contact_freq",
     "mean_dist_A",
@@ -101,6 +115,13 @@ TEMPORAL_RIN_COLUMNS = (
     "window_cv",
 )
 
+RG_TIMESERIES_COLUMNS = (
+    "frame",
+    "time_ps",
+    "rg_A",
+    "condition",
+)
+
 CONFORMATIONAL_STATES_COLUMNS = (
     "frame",
     "time_ps",
@@ -151,6 +172,7 @@ ARTIFACT_COLUMNS = {
     "centrality.csv": CENTRALITY_COLUMNS,
     "communities.csv": COMMUNITIES_COLUMNS,
     "temporal_rin.csv": TEMPORAL_RIN_COLUMNS,
+    "rg_timeseries.csv": RG_TIMESERIES_COLUMNS,
     "conformational_states.csv": CONFORMATIONAL_STATES_COLUMNS,
     "contacts_perframe.parquet": CONTACTS_PERFRAME_COLUMNS,
     "comparison.csv": COMPARISON_COLUMNS,

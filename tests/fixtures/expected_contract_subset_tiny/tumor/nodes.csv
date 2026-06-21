@@ -1,0 +1,3 @@
+resid,resname,region,condition,x_ca,y_ca,z_ca,tm_relative_z,rmsf_A,sasa_A2,ss,degree,strength,betweenness,closeness,eigenvector,pagerank,kcore,community_id
+1,ALA,TM1,tumor,1.2,2.1,3.1,-0.4,0.9,125.0,H,1,0.80,0.00,0.50,0.65,0.58,1,1
+2,NAG,glycan,tumor,4.2,5.1,6.1,0.6,0.5,85.0,C,1,0.80,0.00,0.50,0.35,0.42,1,1

@@ -1,0 +1,1429 @@
+import csv
+import json
+from pathlib import Path
+
+import pytest
+
+from mania.analysis.graph_diagnostics import (
+    ConditionGraphDiagnostics,
+    ConditionGraphDiagnosticsSummary,
+    GraphDiagnosticsError,
+    MultiConditionGraphDiagnostics,
+    MultiConditionGraphDiagnosticsSummary,
+    OutputGraphDiagnosticsReportBundle,
+    OutputGraphDiagnosticsRun,
+    run_and_write_output_graph_diagnostics,
+    run_and_write_output_graph_diagnostics_report_bundle,
+    run_condition_graph_diagnostics,
+    run_multi_condition_graph_diagnostics,
+    run_output_graph_diagnostics,
+    summarize_condition_graph_diagnostics,
+    summarize_multi_condition_graph_diagnostics,
+    write_condition_graph_diagnostics,
+    write_condition_graph_diagnostics_bundle,
+    write_multi_condition_graph_diagnostics,
+    write_multi_condition_graph_diagnostics_bundle,
+    write_multi_condition_graph_diagnostics_summary,
+)
+from mania.constants import EDGE_COLUMNS, NODE_COLUMNS
+
+FIXTURE_ROOT = Path("tests/fixtures/expected_contract_subset_tiny")
+
+
+def write_csv(
+    path: Path,
+    fieldnames: tuple[str, ...],
+    rows: list[dict[str, str]],
+) -> Path:
+    with path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+def node_row(
+    resid: str,
+    *,
+    condition: str = "normal",
+    degree: str = "1",
+    strength: str = "0.5",
+    extra: dict[str, str] | None = None,
+) -> dict[str, str]:
+    row = {column: "" for column in NODE_COLUMNS}
+    row.update(
+        {
+            "resid": resid,
+            "resname": "ALA",
+            "region": "TM1",
+            "condition": condition,
+            "degree": degree,
+            "strength": strength,
+        }
+    )
+    if extra is not None:
+        row.update(extra)
+    return row
+
+
+def edge_row(
+    source: str,
+    target: str,
+    *,
+    edge_type: str = "contact",
+    condition: str = "normal",
+    contact_freq: str = "0.5",
+    mean_dist_a: str = "7.25",
+) -> dict[str, str]:
+    row = {column: "" for column in EDGE_COLUMNS}
+    row.update(
+        {
+            "resid_i": source,
+            "resid_j": target,
+            "edge_type": edge_type,
+            "condition": condition,
+            "contact_freq": contact_freq,
+            "mean_dist_A": mean_dist_a,
+        }
+    )
+    return row
+
+
+def write_condition_dir(
+    tmp_path: Path,
+    *,
+    condition: str = "normal",
+    nodes: list[dict[str, str]],
+    edges: list[dict[str, str]],
+    node_columns: tuple[str, ...] = NODE_COLUMNS,
+) -> Path:
+    condition_dir = tmp_path / condition
+    condition_dir.mkdir()
+    write_csv(condition_dir / "nodes.csv", node_columns, nodes)
+    write_csv(condition_dir / "edges.csv", EDGE_COLUMNS, edges)
+    return condition_dir
+
+
+def write_run_meta(output_root: Path, payload: object) -> None:
+    (output_root / "run_meta.json").write_text(
+        json.dumps(payload),
+        encoding="utf-8",
+    )
+
+
+def expected_bundle_paths(output_dir: Path) -> tuple[Path, ...]:
+    return (
+        output_dir / "multi_condition_graph_diagnostics.json",
+        output_dir / "normal" / "graph_diagnostics.json",
+        output_dir / "normal" / "graph_qc.json",
+        output_dir / "normal" / "graph_topology_metrics.json",
+        output_dir / "normal" / "graph_topology_consistency.json",
+        output_dir / "tumor" / "graph_diagnostics.json",
+        output_dir / "tumor" / "graph_qc.json",
+        output_dir / "tumor" / "graph_topology_metrics.json",
+        output_dir / "tumor" / "graph_topology_consistency.json",
+    )
+
+
+def expected_report_bundle_paths(output_dir: Path) -> tuple[Path, ...]:
+    return (
+        *expected_bundle_paths(output_dir),
+        output_dir / "multi_condition_graph_diagnostics_summary.json",
+    )
+
+
+def test_normal_fixture_diagnostics_document_strength_mismatch() -> None:
+    diagnostics = run_condition_graph_diagnostics(
+        FIXTURE_ROOT / "normal",
+        condition="normal",
+    )
+
+    assert isinstance(diagnostics, ConditionGraphDiagnostics)
+    assert diagnostics.condition == "normal"
+    assert diagnostics.graph.n_nodes == 2
+    assert diagnostics.graph.n_edges == 1
+    assert diagnostics.qc_report.passed_basic_qc is True
+    assert diagnostics.topology_metrics.condition == "normal"
+    assert diagnostics.topology_consistency.condition == "normal"
+    assert diagnostics.passed_basic_qc is True
+    assert diagnostics.passed_topology_consistency is False
+    assert diagnostics.passed is False
+
+
+def test_tumor_fixture_diagnostics_document_strength_mismatch() -> None:
+    diagnostics = run_condition_graph_diagnostics(
+        FIXTURE_ROOT / "tumor",
+        condition="tumor",
+    )
+
+    assert diagnostics.condition == "tumor"
+    assert diagnostics.qc_report.passed_basic_qc is True
+    assert diagnostics.passed_basic_qc is True
+    assert diagnostics.passed_topology_consistency is False
+    assert diagnostics.passed is False
+
+
+def test_synthetic_matching_graph_passes_diagnostics(tmp_path: Path) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2", contact_freq="0.5")],
+    )
+
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+    )
+
+    assert diagnostics.passed_basic_qc is True
+    assert diagnostics.passed_topology_consistency is True
+    assert diagnostics.passed is True
+
+
+def test_isolated_node_fails_basic_qc_without_raising(tmp_path: Path) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[
+            node_row("1"),
+            node_row("2"),
+            node_row("3", degree="0", strength="0.0"),
+        ],
+        edges=[edge_row("1", "2", contact_freq="0.5")],
+    )
+
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+    )
+
+    assert diagnostics.passed_basic_qc is False
+    assert diagnostics.passed is False
+
+
+def test_degree_mismatch_fails_consistency_without_raising(
+    tmp_path: Path,
+) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[node_row("1", degree="0"), node_row("2")],
+        edges=[edge_row("1", "2", contact_freq="0.5")],
+    )
+
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+    )
+
+    assert diagnostics.passed_topology_consistency is False
+    assert diagnostics.passed is False
+    assert "degree" in {
+        mismatch.metric for mismatch in diagnostics.topology_consistency.mismatches
+    }
+
+
+def test_missing_condition_directory_raises(tmp_path: Path) -> None:
+    with pytest.raises(GraphDiagnosticsError, match="Missing condition directory"):
+        run_condition_graph_diagnostics(
+            tmp_path / "missing",
+            condition="normal",
+        )
+
+
+def test_condition_path_that_is_not_directory_raises(tmp_path: Path) -> None:
+    path = tmp_path / "normal"
+    path.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(GraphDiagnosticsError, match="not a directory"):
+        run_condition_graph_diagnostics(path, condition="normal")
+
+
+@pytest.mark.parametrize("condition", ("", " "))
+def test_empty_condition_name_raises(tmp_path: Path, condition: str) -> None:
+    condition_dir = tmp_path / "condition"
+    condition_dir.mkdir()
+
+    with pytest.raises(GraphDiagnosticsError, match="Condition must be non-empty"):
+        run_condition_graph_diagnostics(condition_dir, condition=condition)
+
+
+def test_graph_loading_error_is_translated(tmp_path: Path) -> None:
+    condition_dir = tmp_path / "normal"
+    condition_dir.mkdir()
+
+    with pytest.raises(GraphDiagnosticsError, match="Could not load contract graph"):
+        run_condition_graph_diagnostics(condition_dir, condition="normal")
+
+
+def test_invalid_edge_weight_is_translated(tmp_path: Path) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2", contact_freq="abc")],
+    )
+
+    with pytest.raises(
+        GraphDiagnosticsError,
+        match="Could not compute graph topology metrics",
+    ):
+        run_condition_graph_diagnostics(condition_dir, condition="normal")
+
+
+def test_invalid_tolerance_is_translated(tmp_path: Path) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2", contact_freq="0.5")],
+    )
+
+    with pytest.raises(
+        GraphDiagnosticsError,
+        match="Could not check graph topology consistency",
+    ):
+        run_condition_graph_diagnostics(
+            condition_dir,
+            condition="normal",
+            abs_tol=-1,
+        )
+
+
+def test_custom_weight_column_works(tmp_path: Path) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[node_row("1", strength="7.25"), node_row("2", strength="7.25")],
+        edges=[edge_row("1", "2", contact_freq="0.5", mean_dist_a="7.25")],
+    )
+
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+        weight_column="mean_dist_A",
+    )
+
+    assert diagnostics.passed_topology_consistency is True
+    assert diagnostics.passed is True
+
+
+def test_custom_node_metric_columns_work(tmp_path: Path) -> None:
+    node_columns = (*NODE_COLUMNS, "exported_degree", "exported_strength")
+    condition_dir = write_condition_dir(
+        tmp_path,
+        node_columns=node_columns,
+        nodes=[
+            node_row(
+                "1",
+                degree="99",
+                strength="99",
+                extra={"exported_degree": "1", "exported_strength": "0.5"},
+            ),
+            node_row(
+                "2",
+                degree="99",
+                strength="99",
+                extra={"exported_degree": "1", "exported_strength": "0.5"},
+            ),
+        ],
+        edges=[edge_row("1", "2", contact_freq="0.5")],
+    )
+
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+        degree_column="exported_degree",
+        strength_column="exported_strength",
+    )
+
+    assert diagnostics.passed_topology_consistency is True
+    assert diagnostics.passed is True
+
+
+def test_to_dict_is_json_serializable(tmp_path: Path) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2", contact_freq="0.5")],
+    )
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+    )
+
+    payload = diagnostics.to_dict()
+
+    assert {
+        "condition",
+        "n_nodes",
+        "n_edges",
+        "passed",
+        "passed_basic_qc",
+        "passed_topology_consistency",
+        "qc_report",
+        "topology_metrics",
+        "topology_consistency",
+    }.issubset(payload)
+    assert json.loads(json.dumps(payload))["condition"] == "normal"
+
+
+def test_write_condition_graph_diagnostics_creates_json_file(
+    tmp_path: Path,
+) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2", contact_freq="0.5")],
+    )
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+    )
+
+    path = write_condition_graph_diagnostics(
+        diagnostics,
+        tmp_path / "diagnostics",
+    )
+
+    assert path == tmp_path / "diagnostics" / "graph_diagnostics.json"
+    assert path.exists()
+    loaded = json.loads(path.read_text(encoding="utf-8"))
+    assert loaded["condition"] == diagnostics.condition
+    assert path.read_text(encoding="utf-8").endswith("\n")
+
+
+def test_write_condition_graph_diagnostics_bundle_creates_json_files(
+    tmp_path: Path,
+) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2", contact_freq="0.5")],
+    )
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+    )
+
+    paths = write_condition_graph_diagnostics_bundle(
+        diagnostics,
+        tmp_path / "bundle",
+    )
+
+    assert tuple(path.name for path in paths) == (
+        "graph_diagnostics.json",
+        "graph_qc.json",
+        "graph_topology_metrics.json",
+        "graph_topology_consistency.json",
+    )
+    assert all(path.exists() for path in paths)
+    for path in paths:
+        json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_multi_condition_fixture_diagnostics_document_strength_mismatches() -> None:
+    diagnostics = run_multi_condition_graph_diagnostics(
+        FIXTURE_ROOT,
+        conditions=("normal", "tumor"),
+    )
+
+    assert isinstance(diagnostics, MultiConditionGraphDiagnostics)
+    assert diagnostics.conditions == ("normal", "tumor")
+    assert set(diagnostics.condition_diagnostics) == {"normal", "tumor"}
+    assert diagnostics.passed is False
+    assert diagnostics.failed_conditions == ("normal", "tumor")
+    assert diagnostics.passed_conditions == ()
+
+
+def test_multi_condition_order_is_preserved() -> None:
+    diagnostics = run_multi_condition_graph_diagnostics(
+        FIXTURE_ROOT,
+        conditions=("tumor", "normal"),
+    )
+
+    assert diagnostics.conditions == ("tumor", "normal")
+    assert diagnostics.failed_conditions == ("tumor", "normal")
+
+
+def test_multi_condition_whitespace_is_stripped() -> None:
+    diagnostics = run_multi_condition_graph_diagnostics(
+        FIXTURE_ROOT,
+        conditions=(" normal ", " tumor "),
+    )
+
+    assert diagnostics.conditions == ("normal", "tumor")
+
+
+@pytest.mark.parametrize("conditions", (("normal", ""), ("normal", " ")))
+def test_multi_condition_empty_condition_fails(
+    tmp_path: Path,
+    conditions: tuple[str, str],
+) -> None:
+    with pytest.raises(GraphDiagnosticsError, match="Condition must be non-empty"):
+        run_multi_condition_graph_diagnostics(tmp_path, conditions=conditions)
+
+
+def test_multi_condition_duplicate_condition_fails() -> None:
+    with pytest.raises(GraphDiagnosticsError, match="Duplicate condition"):
+        run_multi_condition_graph_diagnostics(
+            FIXTURE_ROOT,
+            conditions=("normal", " normal "),
+        )
+
+
+def test_multi_condition_string_conditions_input_fails() -> None:
+    with pytest.raises(GraphDiagnosticsError, match="iterable of names"):
+        run_multi_condition_graph_diagnostics(FIXTURE_ROOT, conditions="normal")
+
+
+def test_multi_condition_missing_output_root_fails(tmp_path: Path) -> None:
+    with pytest.raises(GraphDiagnosticsError, match="Missing output root"):
+        run_multi_condition_graph_diagnostics(
+            tmp_path / "missing",
+            conditions=("normal",),
+        )
+
+
+def test_multi_condition_output_root_file_fails(tmp_path: Path) -> None:
+    output_root = tmp_path / "output"
+    output_root.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(GraphDiagnosticsError, match="not a directory"):
+        run_multi_condition_graph_diagnostics(
+            output_root,
+            conditions=("normal",),
+        )
+
+
+def test_multi_condition_missing_condition_directory_fails(tmp_path: Path) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+
+    with pytest.raises(GraphDiagnosticsError, match="Missing condition directory"):
+        run_multi_condition_graph_diagnostics(
+            tmp_path,
+            conditions=("normal", "missing"),
+        )
+
+
+def test_multi_condition_synthetic_matching_output_passes(tmp_path: Path) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[
+            node_row("1", condition="normal"),
+            node_row("2", condition="normal"),
+        ],
+        edges=[edge_row("1", "2", condition="normal")],
+    )
+    write_condition_dir(
+        tmp_path,
+        condition="tumor",
+        nodes=[
+            node_row("1", condition="tumor"),
+            node_row("2", condition="tumor"),
+        ],
+        edges=[edge_row("1", "2", condition="tumor")],
+    )
+
+    diagnostics = run_multi_condition_graph_diagnostics(
+        tmp_path,
+        conditions=("normal", "tumor"),
+    )
+
+    assert diagnostics.passed is True
+    assert diagnostics.passed_conditions == ("normal", "tumor")
+    assert diagnostics.failed_conditions == ()
+
+
+def test_multi_condition_mixed_pass_fail_is_represented(tmp_path: Path) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[
+            node_row("1", condition="normal"),
+            node_row("2", condition="normal"),
+        ],
+        edges=[edge_row("1", "2", condition="normal")],
+    )
+    write_condition_dir(
+        tmp_path,
+        condition="tumor",
+        nodes=[
+            node_row("1", condition="tumor", degree="0"),
+            node_row("2", condition="tumor"),
+        ],
+        edges=[edge_row("1", "2", condition="tumor")],
+    )
+
+    diagnostics = run_multi_condition_graph_diagnostics(
+        tmp_path,
+        conditions=("normal", "tumor"),
+    )
+
+    assert diagnostics.passed is False
+    assert diagnostics.passed_conditions == ("normal",)
+    assert diagnostics.failed_conditions == ("tumor",)
+
+
+def test_multi_condition_invalid_edge_weight_raises(tmp_path: Path) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2", contact_freq="abc")],
+    )
+
+    with pytest.raises(GraphDiagnosticsError, match="topology metrics"):
+        run_multi_condition_graph_diagnostics(tmp_path, conditions=("normal",))
+
+
+def test_multi_condition_custom_weight_column_is_applied_to_all_conditions(
+    tmp_path: Path,
+) -> None:
+    for condition in ("normal", "tumor"):
+        write_condition_dir(
+            tmp_path,
+            condition=condition,
+            nodes=[
+                node_row("1", condition=condition, strength="7.25"),
+                node_row("2", condition=condition, strength="7.25"),
+            ],
+            edges=[
+                edge_row(
+                    "1",
+                    "2",
+                    condition=condition,
+                    contact_freq="0.5",
+                    mean_dist_a="7.25",
+                )
+            ],
+        )
+
+    default_diagnostics = run_multi_condition_graph_diagnostics(
+        tmp_path,
+        conditions=("normal", "tumor"),
+    )
+    custom_diagnostics = run_multi_condition_graph_diagnostics(
+        tmp_path,
+        conditions=("normal", "tumor"),
+        weight_column="mean_dist_A",
+    )
+
+    assert default_diagnostics.passed is False
+    assert custom_diagnostics.passed is True
+
+
+def test_multi_condition_custom_node_metric_columns_apply_to_all_conditions(
+    tmp_path: Path,
+) -> None:
+    node_columns = (*NODE_COLUMNS, "exported_degree", "exported_strength")
+    for condition in ("normal", "tumor"):
+        write_condition_dir(
+            tmp_path,
+            condition=condition,
+            node_columns=node_columns,
+            nodes=[
+                node_row(
+                    "1",
+                    condition=condition,
+                    degree="99",
+                    strength="99",
+                    extra={"exported_degree": "1", "exported_strength": "0.5"},
+                ),
+                node_row(
+                    "2",
+                    condition=condition,
+                    degree="99",
+                    strength="99",
+                    extra={"exported_degree": "1", "exported_strength": "0.5"},
+                ),
+            ],
+            edges=[edge_row("1", "2", condition=condition)],
+        )
+
+    diagnostics = run_multi_condition_graph_diagnostics(
+        tmp_path,
+        conditions=("normal", "tumor"),
+        degree_column="exported_degree",
+        strength_column="exported_strength",
+    )
+
+    assert diagnostics.passed is True
+
+
+def test_multi_condition_to_dict_is_json_serializable(tmp_path: Path) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+    diagnostics = run_multi_condition_graph_diagnostics(
+        tmp_path,
+        conditions=("normal",),
+    )
+
+    payload = diagnostics.to_dict()
+
+    assert {
+        "conditions",
+        "passed",
+        "passed_conditions",
+        "failed_conditions",
+        "condition_diagnostics",
+    }.issubset(payload)
+    assert json.loads(json.dumps(payload))["conditions"] == ["normal"]
+
+
+def test_write_multi_condition_graph_diagnostics_creates_json_file(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+    diagnostics = run_multi_condition_graph_diagnostics(
+        tmp_path,
+        conditions=("normal",),
+    )
+
+    path = write_multi_condition_graph_diagnostics(
+        diagnostics,
+        tmp_path / "diagnostics",
+    )
+
+    assert path == (
+        tmp_path / "diagnostics" / "multi_condition_graph_diagnostics.json"
+    )
+    assert path.exists()
+    loaded = json.loads(path.read_text(encoding="utf-8"))
+    assert loaded["conditions"] == list(diagnostics.conditions)
+    assert path.read_text(encoding="utf-8").endswith("\n")
+
+
+def test_write_multi_condition_graph_diagnostics_bundle_creates_json_files(
+    tmp_path: Path,
+) -> None:
+    for condition in ("normal", "tumor"):
+        write_condition_dir(
+            tmp_path,
+            condition=condition,
+            nodes=[
+                node_row("1", condition=condition),
+                node_row("2", condition=condition),
+            ],
+            edges=[edge_row("1", "2", condition=condition)],
+        )
+    diagnostics = run_multi_condition_graph_diagnostics(
+        tmp_path,
+        conditions=("normal", "tumor"),
+    )
+
+    paths = write_multi_condition_graph_diagnostics_bundle(
+        diagnostics,
+        tmp_path / "bundle",
+    )
+
+    assert paths[0].name == "multi_condition_graph_diagnostics.json"
+    assert (tmp_path / "bundle" / "normal").is_dir()
+    assert (tmp_path / "bundle" / "tumor").is_dir()
+    assert (
+        tmp_path / "bundle" / "normal" / "graph_diagnostics.json"
+    ) in paths
+    assert (
+        tmp_path / "bundle" / "tumor" / "graph_topology_consistency.json"
+    ) in paths
+    assert all(path.exists() for path in paths)
+    for path in paths:
+        json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_summarize_condition_graph_diagnostics_for_normal_fixture() -> None:
+    diagnostics = run_condition_graph_diagnostics(
+        FIXTURE_ROOT / "normal",
+        condition="normal",
+    )
+
+    summary = summarize_condition_graph_diagnostics(diagnostics)
+
+    assert isinstance(summary, ConditionGraphDiagnosticsSummary)
+    assert summary.condition == "normal"
+    assert summary.n_nodes == 2
+    assert summary.n_edges == 1
+    assert summary.n_components == 1
+    assert summary.largest_component_size == 2
+    assert summary.n_isolated_nodes == 0
+    assert summary.n_self_loops == 0
+    assert summary.n_duplicate_undirected_edge_keys == 0
+    assert summary.passed_basic_qc is True
+    assert summary.n_topology_mismatches > 0
+    assert summary.passed_topology_consistency is False
+    assert summary.passed is False
+
+
+def test_summarize_condition_graph_diagnostics_for_passing_condition(
+    tmp_path: Path,
+) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2", contact_freq="0.5")],
+    )
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+    )
+
+    summary = summarize_condition_graph_diagnostics(diagnostics)
+
+    assert summary.passed is True
+    assert summary.n_topology_mismatches == 0
+
+
+def test_summarize_condition_graph_diagnostics_counts_isolated_node(
+    tmp_path: Path,
+) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[
+            node_row("1"),
+            node_row("2"),
+            node_row("3", degree="0", strength="0.0"),
+        ],
+        edges=[edge_row("1", "2", contact_freq="0.5")],
+    )
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+    )
+
+    summary = summarize_condition_graph_diagnostics(diagnostics)
+
+    assert summary.n_isolated_nodes == 1
+    assert summary.passed_basic_qc is False
+    assert summary.passed is False
+
+
+def test_summarize_condition_graph_diagnostics_counts_self_loop_and_duplicate(
+    tmp_path: Path,
+) -> None:
+    condition_dir = write_condition_dir(
+        tmp_path,
+        nodes=[
+            node_row("1", degree="2", strength="1.4"),
+            node_row("2", degree="1", strength="1.2"),
+        ],
+        edges=[
+            edge_row("1", "1", contact_freq="0.2"),
+            edge_row("1", "2", contact_freq="0.5"),
+            edge_row("2", "1", contact_freq="0.7"),
+        ],
+    )
+    diagnostics = run_condition_graph_diagnostics(
+        condition_dir,
+        condition="normal",
+    )
+
+    summary = summarize_condition_graph_diagnostics(diagnostics)
+
+    assert summary.n_self_loops > 0
+    assert summary.n_duplicate_undirected_edge_keys > 0
+    assert summary.passed_basic_qc is False
+
+
+def test_summarize_multi_condition_graph_diagnostics_preserves_order() -> None:
+    diagnostics = run_multi_condition_graph_diagnostics(
+        FIXTURE_ROOT,
+        conditions=("tumor", "normal"),
+    )
+
+    summary = summarize_multi_condition_graph_diagnostics(diagnostics)
+
+    assert isinstance(summary, MultiConditionGraphDiagnosticsSummary)
+    assert summary.conditions == ("tumor", "normal")
+    assert tuple(summary.condition_summaries) == ("tumor", "normal")
+    assert summary.failed_conditions == ("tumor", "normal")
+
+
+def test_summarize_multi_condition_graph_diagnostics_pass_fail_sets(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[
+            node_row("1", condition="normal"),
+            node_row("2", condition="normal"),
+        ],
+        edges=[edge_row("1", "2", condition="normal")],
+    )
+    write_condition_dir(
+        tmp_path,
+        condition="tumor",
+        nodes=[
+            node_row("1", condition="tumor", degree="0"),
+            node_row("2", condition="tumor"),
+        ],
+        edges=[edge_row("1", "2", condition="tumor")],
+    )
+    diagnostics = run_multi_condition_graph_diagnostics(
+        tmp_path,
+        conditions=("normal", "tumor"),
+    )
+
+    summary = summarize_multi_condition_graph_diagnostics(diagnostics)
+
+    assert summary.passed is False
+    assert summary.passed_conditions == ("normal",)
+    assert summary.failed_conditions == ("tumor",)
+
+
+def test_multi_condition_graph_diagnostics_summary_to_dict_is_json_serializable(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+    diagnostics = run_multi_condition_graph_diagnostics(
+        tmp_path,
+        conditions=("normal",),
+    )
+    summary = summarize_multi_condition_graph_diagnostics(diagnostics)
+
+    payload = summary.to_dict()
+    json.dumps(payload)
+
+    assert {
+        "conditions",
+        "passed",
+        "passed_conditions",
+        "failed_conditions",
+        "condition_summaries",
+    }.issubset(payload)
+
+
+def test_write_multi_condition_graph_diagnostics_summary_creates_json_file(
+    tmp_path: Path,
+) -> None:
+    diagnostics = run_multi_condition_graph_diagnostics(
+        FIXTURE_ROOT,
+        conditions=("normal", "tumor"),
+    )
+    summary = summarize_multi_condition_graph_diagnostics(diagnostics)
+
+    path = write_multi_condition_graph_diagnostics_summary(
+        summary,
+        tmp_path / "diagnostics",
+    )
+
+    assert path == (
+        tmp_path
+        / "diagnostics"
+        / "multi_condition_graph_diagnostics_summary.json"
+    )
+    assert path.exists()
+    loaded = json.loads(path.read_text(encoding="utf-8"))
+    assert loaded["conditions"] == list(summary.conditions)
+    assert path.read_text(encoding="utf-8").endswith("\n")
+
+
+def test_run_and_write_output_graph_diagnostics_does_not_write_summary(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    run_and_write_output_graph_diagnostics(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+    )
+
+    assert (
+        diagnostics_output_dir / "multi_condition_graph_diagnostics.json"
+    ).exists()
+    assert not (
+        diagnostics_output_dir / "multi_condition_graph_diagnostics_summary.json"
+    ).exists()
+
+
+def test_write_multi_condition_graph_diagnostics_summary_invalid_path_raises(
+    tmp_path: Path,
+) -> None:
+    diagnostics = run_multi_condition_graph_diagnostics(
+        FIXTURE_ROOT,
+        conditions=("normal", "tumor"),
+    )
+    summary = summarize_multi_condition_graph_diagnostics(diagnostics)
+    output_dir = tmp_path / "diagnostics"
+    output_dir.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(GraphDiagnosticsError, match="Could not write"):
+        write_multi_condition_graph_diagnostics_summary(summary, output_dir)
+
+
+def test_summarize_multi_condition_graph_diagnostics_missing_condition_raises() -> None:
+    diagnostics = MultiConditionGraphDiagnostics(
+        conditions=("normal",),
+        condition_diagnostics={},
+    )
+
+    with pytest.raises(GraphDiagnosticsError, match="Missing condition diagnostics"):
+        summarize_multi_condition_graph_diagnostics(diagnostics)
+
+
+def test_run_and_write_output_graph_diagnostics_report_bundle_works_for_fixture(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    result = run_and_write_output_graph_diagnostics_report_bundle(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+    )
+
+    assert isinstance(result, OutputGraphDiagnosticsReportBundle)
+    assert result.diagnostics.conditions == ("normal", "tumor")
+    assert result.summary.conditions == ("normal", "tumor")
+    assert result.passed is False
+    assert result.summary.passed is False
+    assert result.written_paths
+    assert all(path.exists() for path in result.written_paths)
+    for path in expected_report_bundle_paths(diagnostics_output_dir):
+        assert path.exists()
+
+
+def test_output_graph_diagnostics_report_bundle_summary_matches_diagnostics(
+    tmp_path: Path,
+) -> None:
+    result = run_and_write_output_graph_diagnostics_report_bundle(
+        FIXTURE_ROOT,
+        tmp_path / "diagnostics",
+    )
+
+    assert result.summary.passed == result.diagnostics.passed
+    assert result.summary.failed_conditions == result.diagnostics.failed_conditions
+    assert result.summary.passed_conditions == result.diagnostics.passed_conditions
+    assert result.summary.failed_conditions == ("normal", "tumor")
+
+
+def test_output_graph_diagnostics_report_bundle_supports_explicit_conditions(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    result = run_and_write_output_graph_diagnostics_report_bundle(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+        conditions=("normal",),
+    )
+
+    assert result.diagnostics.conditions == ("normal",)
+    assert result.summary.conditions == ("normal",)
+    assert (
+        diagnostics_output_dir / "normal" / "graph_diagnostics.json"
+    ).exists()
+    assert (
+        diagnostics_output_dir / "multi_condition_graph_diagnostics_summary.json"
+    ).exists()
+    assert not (diagnostics_output_dir / "tumor").exists()
+
+
+def test_output_graph_diagnostics_report_bundle_to_dict_is_json_serializable(
+    tmp_path: Path,
+) -> None:
+    result = run_and_write_output_graph_diagnostics_report_bundle(
+        FIXTURE_ROOT,
+        tmp_path / "diagnostics",
+    )
+
+    payload = result.to_dict()
+    json.dumps(payload)
+
+    assert {"passed", "diagnostics", "summary", "written_paths"}.issubset(payload)
+    assert all(isinstance(path, str) for path in payload["written_paths"])
+
+
+def test_output_graph_diagnostics_report_bundle_path_order_is_deterministic(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    result = run_and_write_output_graph_diagnostics_report_bundle(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+    )
+
+    assert result.written_paths == expected_report_bundle_paths(diagnostics_output_dir)
+    assert result.written_paths[0].name == "multi_condition_graph_diagnostics.json"
+    assert (
+        result.written_paths[-1].name
+        == "multi_condition_graph_diagnostics_summary.json"
+    )
+
+
+def test_output_graph_diagnostics_report_bundle_missing_run_meta_fails_before_writing(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    with pytest.raises(GraphDiagnosticsError, match="Missing run metadata"):
+        run_and_write_output_graph_diagnostics_report_bundle(
+            tmp_path,
+            diagnostics_output_dir,
+        )
+
+    assert not diagnostics_output_dir.exists()
+
+
+def test_output_graph_diagnostics_report_bundle_explicit_conditions_need_no_run_meta(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+
+    result = run_and_write_output_graph_diagnostics_report_bundle(
+        tmp_path,
+        tmp_path / "diagnostics",
+        conditions=("normal",),
+    )
+
+    assert result.diagnostics.conditions == ("normal",)
+    assert (
+        tmp_path / "diagnostics" / "normal" / "graph_diagnostics.json"
+    ).exists()
+    assert (
+        tmp_path / "diagnostics" / "multi_condition_graph_diagnostics_summary.json"
+    ).exists()
+
+
+def test_output_graph_diagnostics_report_bundle_write_failure_is_translated(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output = tmp_path / "diagnostics"
+    diagnostics_output.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(GraphDiagnosticsError):
+        run_and_write_output_graph_diagnostics_report_bundle(
+            FIXTURE_ROOT,
+            diagnostics_output,
+        )
+
+
+def test_run_and_write_output_graph_diagnostics_works_for_expected_fixture(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    result = run_and_write_output_graph_diagnostics(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+    )
+
+    assert isinstance(result, OutputGraphDiagnosticsRun)
+    assert result.diagnostics.conditions == ("normal", "tumor")
+    assert result.passed is False
+    assert result.written_paths
+    assert all(path.exists() for path in result.written_paths)
+    for path in expected_bundle_paths(diagnostics_output_dir):
+        assert path.exists()
+
+
+def test_run_and_write_output_graph_diagnostics_supports_explicit_conditions(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    result = run_and_write_output_graph_diagnostics(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+        conditions=("normal",),
+    )
+
+    assert result.diagnostics.conditions == ("normal",)
+    assert (
+        diagnostics_output_dir / "normal" / "graph_diagnostics.json"
+    ).exists()
+    assert not (diagnostics_output_dir / "tumor").exists()
+    assert not any("tumor" in path.parts for path in result.written_paths)
+
+
+def test_run_and_write_output_graph_diagnostics_missing_run_meta_fails_before_writing(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    with pytest.raises(GraphDiagnosticsError, match="Missing run metadata"):
+        run_and_write_output_graph_diagnostics(tmp_path, diagnostics_output_dir)
+
+    assert not diagnostics_output_dir.exists()
+
+
+def test_run_and_write_output_graph_diagnostics_explicit_conditions_need_no_run_meta(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+
+    result = run_and_write_output_graph_diagnostics(
+        tmp_path,
+        tmp_path / "diagnostics",
+        conditions=("normal",),
+    )
+
+    assert result.diagnostics.conditions == ("normal",)
+    assert (tmp_path / "diagnostics" / "normal" / "graph_diagnostics.json").exists()
+
+
+def test_run_and_write_output_graph_diagnostics_write_failure_is_translated(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output = tmp_path / "diagnostics"
+    diagnostics_output.write_text("not a directory", encoding="utf-8")
+
+    with pytest.raises(
+        GraphDiagnosticsError,
+        match="Could not write graph diagnostics bundle",
+    ):
+        run_and_write_output_graph_diagnostics(FIXTURE_ROOT, diagnostics_output)
+
+
+def test_output_graph_diagnostics_run_to_dict_is_json_serializable(
+    tmp_path: Path,
+) -> None:
+    result = run_and_write_output_graph_diagnostics(
+        FIXTURE_ROOT,
+        tmp_path / "diagnostics",
+    )
+
+    payload = result.to_dict()
+    json.dumps(payload)
+
+    assert {"passed", "diagnostics", "written_paths"}.issubset(payload)
+    assert all(isinstance(path, str) for path in payload["written_paths"])
+
+
+def test_run_and_write_output_graph_diagnostics_path_order_is_deterministic(
+    tmp_path: Path,
+) -> None:
+    diagnostics_output_dir = tmp_path / "diagnostics"
+
+    result = run_and_write_output_graph_diagnostics(
+        FIXTURE_ROOT,
+        diagnostics_output_dir,
+    )
+
+    assert result.written_paths == expected_bundle_paths(diagnostics_output_dir)
+    assert result.written_paths[0].name == "multi_condition_graph_diagnostics.json"
+    assert result.written_paths.index(
+        diagnostics_output_dir / "normal" / "graph_diagnostics.json"
+    ) < result.written_paths.index(
+        diagnostics_output_dir / "tumor" / "graph_diagnostics.json"
+    )
+
+
+def test_output_graph_diagnostics_infers_conditions_from_run_meta() -> None:
+    diagnostics = run_output_graph_diagnostics(FIXTURE_ROOT)
+
+    assert isinstance(diagnostics, MultiConditionGraphDiagnostics)
+    assert diagnostics.conditions == ("normal", "tumor")
+    assert diagnostics.passed is False
+    assert diagnostics.failed_conditions == ("normal", "tumor")
+
+
+def test_output_graph_diagnostics_explicit_conditions_override_run_meta() -> None:
+    diagnostics = run_output_graph_diagnostics(
+        FIXTURE_ROOT,
+        conditions=("normal",),
+    )
+
+    assert diagnostics.conditions == ("normal",)
+    assert set(diagnostics.condition_diagnostics) == {"normal"}
+
+
+def test_output_graph_diagnostics_preserves_explicit_condition_order() -> None:
+    diagnostics = run_output_graph_diagnostics(
+        FIXTURE_ROOT,
+        conditions=("tumor", "normal"),
+    )
+
+    assert diagnostics.conditions == ("tumor", "normal")
+
+
+def test_output_graph_diagnostics_missing_run_meta_fails(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+
+    with pytest.raises(GraphDiagnosticsError, match="Missing run metadata"):
+        run_output_graph_diagnostics(tmp_path)
+
+
+def test_output_graph_diagnostics_explicit_conditions_do_not_need_run_meta(
+    tmp_path: Path,
+) -> None:
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+
+    diagnostics = run_output_graph_diagnostics(tmp_path, conditions=("normal",))
+
+    assert diagnostics.conditions == ("normal",)
+
+
+def test_output_graph_diagnostics_invalid_run_meta_json_fails(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "run_meta.json").write_text("{", encoding="utf-8")
+
+    with pytest.raises(GraphDiagnosticsError, match="Invalid run metadata JSON"):
+        run_output_graph_diagnostics(tmp_path)
+
+
+def test_output_graph_diagnostics_missing_conditions_key_fails(
+    tmp_path: Path,
+) -> None:
+    write_run_meta(tmp_path, {})
+
+    with pytest.raises(GraphDiagnosticsError, match="missing conditions"):
+        run_output_graph_diagnostics(tmp_path)
+
+
+def test_output_graph_diagnostics_conditions_not_list_fails(
+    tmp_path: Path,
+) -> None:
+    write_run_meta(tmp_path, {"conditions": "normal"})
+
+    with pytest.raises(GraphDiagnosticsError, match="conditions must be a list"):
+        run_output_graph_diagnostics(tmp_path)
+
+
+def test_output_graph_diagnostics_non_string_condition_item_fails(
+    tmp_path: Path,
+) -> None:
+    write_run_meta(tmp_path, {"conditions": ["normal", 123]})
+
+    with pytest.raises(GraphDiagnosticsError, match="must be strings"):
+        run_output_graph_diagnostics(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    (
+        {"conditions": ["normal", ""]},
+        {"conditions": ["normal", " "]},
+    ),
+)
+def test_output_graph_diagnostics_empty_run_meta_condition_fails(
+    tmp_path: Path,
+    payload: dict[str, list[str]],
+) -> None:
+    write_run_meta(tmp_path, payload)
+
+    with pytest.raises(GraphDiagnosticsError, match="Condition must be non-empty"):
+        run_output_graph_diagnostics(tmp_path)
+
+
+def test_output_graph_diagnostics_duplicate_run_meta_condition_fails(
+    tmp_path: Path,
+) -> None:
+    write_run_meta(tmp_path, {"conditions": ["normal", " normal "]})
+
+    with pytest.raises(GraphDiagnosticsError, match="Duplicate condition"):
+        run_output_graph_diagnostics(tmp_path)
+
+
+def test_output_graph_diagnostics_missing_run_meta_condition_directory_fails(
+    tmp_path: Path,
+) -> None:
+    write_run_meta(tmp_path, {"conditions": ["normal", "missing"]})
+    write_condition_dir(
+        tmp_path,
+        condition="normal",
+        nodes=[node_row("1"), node_row("2")],
+        edges=[edge_row("1", "2")],
+    )
+
+    with pytest.raises(GraphDiagnosticsError, match="Missing condition directory"):
+        run_output_graph_diagnostics(tmp_path)
+
+
+def test_output_graph_diagnostics_custom_weight_and_metric_columns_work(
+    tmp_path: Path,
+) -> None:
+    write_run_meta(tmp_path, {"conditions": ["normal", "tumor"]})
+    node_columns = (*NODE_COLUMNS, "exported_degree", "exported_strength")
+    for condition in ("normal", "tumor"):
+        write_condition_dir(
+            tmp_path,
+            condition=condition,
+            node_columns=node_columns,
+            nodes=[
+                node_row(
+                    "1",
+                    condition=condition,
+                    degree="99",
+                    strength="99",
+                    extra={"exported_degree": "1", "exported_strength": "7.25"},
+                ),
+                node_row(
+                    "2",
+                    condition=condition,
+                    degree="99",
+                    strength="99",
+                    extra={"exported_degree": "1", "exported_strength": "7.25"},
+                ),
+            ],
+            edges=[
+                edge_row(
+                    "1",
+                    "2",
+                    condition=condition,
+                    contact_freq="0.5",
+                    mean_dist_a="7.25",
+                )
+            ],
+        )
+
+    diagnostics = run_output_graph_diagnostics(
+        tmp_path,
+        weight_column="mean_dist_A",
+        degree_column="exported_degree",
+        strength_column="exported_strength",
+    )
+
+    assert diagnostics.passed is True
+    assert diagnostics.passed_conditions == ("normal", "tumor")
+    assert diagnostics.failed_conditions == ()

@@ -1,0 +1,30 @@
+output_root: tmp/mania_preprocessing_output
+frame_time_ps: 100.0
+
+residue_library:
+  library_path: residue_library/mania_residue_library.json
+  custom_residues_path: residue_library/custom_residues.json
+  skip_resnames:
+    - CLA
+    - SOD
+    - TIP3
+  allow_user_overrides: false
+
+conditions:
+  - condition: normal
+    topology_path: data/example/normal/topology.tpr
+    trajectory_paths:
+      - data/example/normal/trajectory_part1.xtc
+      - data/example/normal/trajectory_part2.xtc
+    reference_structure_path: data/example/normal/reference.pdb
+    metadata:
+      replicate: rep1
+      source: placeholder-example
+
+  - condition: tumor
+    topology_path: data/example/tumor/topology.tpr
+    trajectory_paths:
+      - data/example/tumor/trajectory.xtc
+    metadata:
+      replicate: rep1
+      source: placeholder-example

@@ -1,0 +1,2 @@
+condition_name,source_residue_index,target_residue_index,source_residue_id,target_residue_id,source_resname,target_resname,source_segid,target_segid,contact_frame_count,total_frame_count,contact_frequency,minimum_distance,mean_minimum_distance,distance_unit,atom_filter
+demo_condition,0,1,10,11A,ALA,GLY,PROA,PROA,2,2,1.0,3.0,3.5,angstrom,heavy

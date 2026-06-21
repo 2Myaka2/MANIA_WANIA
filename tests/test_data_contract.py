@@ -7,9 +7,11 @@ from mania.constants import (
     CONTACTS_PERFRAME_COLUMNS,
     CROSS_CONDITION_ARTIFACTS,
     EDGE_COLUMNS,
+    EDGE_TYPE_PRIORITY,
     GRAPH_REQUIRED_KEYS,
     NODE_COLUMNS,
     PER_CONDITION_ARTIFACTS,
+    RG_TIMESERIES_COLUMNS,
     SCHEMA_VERSION,
     STATS_COLUMNS,
     TEMPORAL_RIN_COLUMNS,
@@ -22,6 +24,7 @@ EXPECTED_PER_CONDITION_ARTIFACTS = (
     "centrality.csv",
     "communities.csv",
     "temporal_rin.csv",
+    "rg_timeseries.csv",
     "conformational_states.csv",
     "contacts_perframe.parquet",
 )
@@ -29,6 +32,17 @@ EXPECTED_PER_CONDITION_ARTIFACTS = (
 EXPECTED_CROSS_CONDITION_ARTIFACTS = (
     "comparison.csv",
     "stats.csv",
+)
+
+EXPECTED_EDGE_TYPE_PRIORITY = (
+    "hbond",
+    "disulfide",
+    "salt_bridge",
+    "ionic",
+    "cation_pi",
+    "aromatic_pi",
+    "hydrophobic",
+    "vdw",
 )
 
 EXPECTED_COLUMN_SCHEMAS = {
@@ -57,6 +71,8 @@ EXPECTED_COLUMN_SCHEMAS = {
         "resid_i",
         "resid_j",
         "edge_type",
+        "all_edge_types",
+        "n_edge_types",
         "condition",
         "contact_freq",
         "mean_dist_A",
@@ -99,6 +115,12 @@ EXPECTED_COLUMN_SCHEMAS = {
         "n_nodes_active",
         "density",
         "window_cv",
+    ),
+    "RG_TIMESERIES_COLUMNS": (
+        "frame",
+        "time_ps",
+        "rg_A",
+        "condition",
     ),
     "CONFORMATIONAL_STATES_COLUMNS": (
         "frame",
@@ -148,6 +170,7 @@ COLUMN_SCHEMAS = {
     "CENTRALITY_COLUMNS": CENTRALITY_COLUMNS,
     "COMMUNITIES_COLUMNS": COMMUNITIES_COLUMNS,
     "TEMPORAL_RIN_COLUMNS": TEMPORAL_RIN_COLUMNS,
+    "RG_TIMESERIES_COLUMNS": RG_TIMESERIES_COLUMNS,
     "CONFORMATIONAL_STATES_COLUMNS": CONFORMATIONAL_STATES_COLUMNS,
     "CONTACTS_PERFRAME_COLUMNS": CONTACTS_PERFRAME_COLUMNS,
     "COMPARISON_COLUMNS": COMPARISON_COLUMNS,
@@ -167,6 +190,10 @@ def test_artifact_constants_are_tuples() -> None:
 def test_artifact_order() -> None:
     assert PER_CONDITION_ARTIFACTS == EXPECTED_PER_CONDITION_ARTIFACTS
     assert CROSS_CONDITION_ARTIFACTS == EXPECTED_CROSS_CONDITION_ARTIFACTS
+
+
+def test_edge_type_priority_order() -> None:
+    assert EDGE_TYPE_PRIORITY == EXPECTED_EDGE_TYPE_PRIORITY
 
 
 def test_cross_condition_artifacts_are_not_per_condition() -> None:

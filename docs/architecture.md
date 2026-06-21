@@ -49,6 +49,11 @@ supports config validation and a skeleton `run` command. As the project grows,
 the CLI should stay thin and delegate real work to `config.py`, `pipeline.py`,
 and specialized modules.
 
+### `__main__.py`
+
+`__main__.py` allows `python -m mania` to call the same CLI entry point as the
+installed `mania` command.
+
 ### `constants.py`
 
 `constants.py` contains lightweight constants for the v0.1 data contract, such
@@ -58,9 +63,10 @@ logic.
 
 ### `pipeline.py`
 
-`pipeline.py` is the future orchestration layer. It is currently a placeholder.
-Its responsibility is to connect validated configuration to preprocessing,
-analysis, export, QC, and report generation without embedding heavy scientific
+`pipeline.py` is the future orchestration layer. It currently builds and formats
+a lightweight `PipelinePlan` placeholder without executing pipeline stages. Its
+responsibility is to connect validated configuration to preprocessing, analysis,
+export, QC, and report generation without embedding heavy scientific
 implementation directly.
 
 ### `residues.py`
@@ -96,11 +102,20 @@ prepared suitable inputs.
 WANIA. It should follow `docs/data_contract.md` and the constants in
 `src/mania/constants.py`. It is not the place for analysis algorithms.
 
+`export/manifest.py` prepares the future `manifest.json` structure as typed
+skeleton data and summaries. It does not write files yet.
+
+`export/run_meta.py` prepares the future `run_meta.json` metadata as typed
+skeleton data and summaries. It does not write files yet.
+
 ### `qc/`
 
 `qc/` is reserved for deterministic quality-control checks. It should validate
 facts about configuration, inputs, and outputs without producing biological
-interpretation. The current module is a skeleton for later QC implementation.
+interpretation.
+
+`qc/runner.py` defines `QCMessage`, `QCReport`, and skeleton QC summaries. It
+does not run real QC checks yet.
 
 ### `report/`
 
@@ -108,6 +123,9 @@ interpretation. The current module is a skeleton for later QC implementation.
 should summarize produced artifacts and QC results. They should not introduce
 biological interpretation unless that is explicitly requested and designed
 later.
+
+`report/runner.py` defines `ReportSummary` and report summary formatting. It
+does not generate HTML yet.
 
 ## Config Layer
 
@@ -125,7 +143,9 @@ Pydantic config layer.
 ## Pipeline Layer
 
 `pipeline.py` is the future orchestration layer. It should decide how to run the
-configured workflow and route work to specialized modules.
+configured workflow and route work to specialized modules. The current code only
+builds a placeholder `PipelinePlan` from validated config and formats it for the
+skeleton `run` command.
 
 The supported run modes are:
 
@@ -177,17 +197,21 @@ edge-dynamics fields are already part of the v0.1 data contract.
 
 ## Export Layer
 
-`export/` prepares final MANIA/WANIA artifacts. It should follow
+`export/` is intended to prepare final MANIA/WANIA artifacts. It should follow
 `docs/data_contract.md` and `src/mania/constants.py`.
 
-Per-condition artifacts are written under condition directories such as
+The current export skeleton prepares in-memory manifest and run metadata
+structures only. It does not write `manifest.json`, `run_meta.json`, or final
+WANIA artifact files yet.
+
+Per-condition artifacts are planned under condition directories such as
 `normal/` and `tumor/`. These include artifacts such as `nodes.csv`,
 `edges.csv`, `graph.json`, `centrality.csv`, `communities.csv`,
 `temporal_rin.csv`, `conformational_states.csv`, and
 `contacts_perframe.parquet`.
 
-`comparison.csv` and `stats.csv` are cross-condition artifacts. They should not
-be placed inside condition directories.
+`comparison.csv` and `stats.csv` are planned cross-condition artifacts. They
+should not be placed inside condition directories.
 
 ## QC Layer
 
@@ -204,6 +228,9 @@ may include:
 Physical input checks are future work. They are not part of current config
 validation.
 
+The current QC skeleton can build typed QC messages and summaries, but it does
+not write `qc_report.json` or `qc_report.md` yet.
+
 ## Report Layer
 
 `report/` is for deterministic report generation. A future output may include
@@ -212,6 +239,9 @@ validation.
 The report should summarize generated artifacts and QC results. It should not
 generate biological interpretation unless that capability is explicitly
 requested and designed later.
+
+The current report skeleton builds an in-memory `ReportSummary` and formatted
+text summary only. It does not write `analysis_report.html` yet.
 
 ## Residue Registry
 
