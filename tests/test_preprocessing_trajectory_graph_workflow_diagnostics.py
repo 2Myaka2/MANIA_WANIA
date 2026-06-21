@@ -55,6 +55,16 @@ class FakeStageResult:
 
 
 @dataclass(frozen=True)
+class FakeDiagnosticsRunResult:
+    passed: bool
+    payload: dict[str, object]
+    internal: object | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        return dict(self.payload)
+
+
+@dataclass(frozen=True)
 class FakeDiagnosticsReport:
     passed: bool = True
     internal: object | None = None
@@ -282,7 +292,20 @@ def test_diagnostics_issue_rejects_invalid_values(
 
 
 def test_diagnostics_result_validates_and_serializes(tmp_path: Path) -> None:
-    run_result = FakeStageResult("diagnostics", internal={"raw": object()})
+    run_result = FakeDiagnosticsRunResult(
+        passed=True,
+        payload={
+            "passed": True,
+            "node_count": 123,
+            "edge_count": 456,
+            "check_count": 1,
+            "failed_check_count": 0,
+            "checks": [],
+            "issues": [],
+            "raw_internal": "RAW_SENTINEL_SHOULD_NOT_APPEAR",
+        },
+        internal={"raw": object()},
+    )
     report = FakeDiagnosticsReport(internal={"raw": object()})
     result = PreprocessingGraphWorkflowDiagnosticsResult(
         graph_export=graph_export_result(tmp_path / "out"),
@@ -300,10 +323,78 @@ def test_diagnostics_result_validates_and_serializes(tmp_path: Path) -> None:
     assert result.diagnostics_ran
     assert result.diagnostics_passed
     assert result.diagnostics_report_built
-    assert payload["diagnostics_run_result_type"].endswith("FakeStageResult")
+    assert payload["diagnostics_run"] == {
+        "passed": True,
+        "node_count": 123,
+        "edge_count": 456,
+        "check_count": 1,
+        "failed_check_count": 0,
+        "checks": [],
+        "issues": [],
+    }
+    assert payload["diagnostics_run_result_type"].endswith(
+        "FakeDiagnosticsRunResult"
+    )
     assert payload["diagnostics_report_type"].endswith("FakeDiagnosticsReport")
     assert_json_safe(payload)
     assert "raw" not in json.dumps(payload)
+
+
+def test_diagnostics_result_to_dict_includes_failed_run_details(
+    tmp_path: Path,
+) -> None:
+    run_payload = {
+        "passed": False,
+        "node_count": 123,
+        "edge_count": 456,
+        "check_count": 3,
+        "failed_check_count": 1,
+        "checks": [
+            {
+                "name": "edge_count_nonzero",
+                "passed": False,
+                "summary": "No graph edges passed diagnostics.",
+                "issues": [
+                    {
+                        "kind": "empty_edges",
+                        "message": "No edges found.",
+                    }
+                ],
+            }
+        ],
+        "issues": [],
+        "internal": "RAW_SENTINEL_SHOULD_NOT_APPEAR",
+    }
+    result = PreprocessingGraphWorkflowDiagnosticsResult(
+        graph_export=graph_export_result(tmp_path / "out"),
+        diagnostics_run_result=FakeDiagnosticsRunResult(
+            passed=False,
+            payload=run_payload,
+        ),
+        diagnostics_report=FakeDiagnosticsReport(passed=False),
+        diagnostics_report_json_path=(
+            tmp_path / "out" / "reports" / "graph_diagnostics_report.json"
+        ),
+        diagnostics_report_json_written=True,
+        issues=(
+            PreprocessingGraphWorkflowDiagnosticsIssue(
+                kind="diagnostics_checks_failed",
+                message="Stage 14 graph_diagnostics step did not pass.",
+            ),
+        ),
+    )
+
+    payload = result.to_dict()
+    diagnostics_run = payload["diagnostics_run"]
+    encoded = json.dumps(payload, allow_nan=False)
+
+    assert not result.passed
+    assert isinstance(diagnostics_run, dict)
+    assert diagnostics_run["node_count"] == 123
+    assert diagnostics_run["edge_count"] == 456
+    assert diagnostics_run["failed_check_count"] == 1
+    assert diagnostics_run["checks"] == run_payload["checks"]
+    assert "RAW_SENTINEL_SHOULD_NOT_APPEAR" not in encoded
 
 
 @pytest.mark.parametrize(
@@ -383,23 +474,103 @@ def test_diagnostics_runner_receives_graph_artifact_paths(
     assert received["graph_json_path"] == export.graph_json_path
 
 
-@pytest.mark.parametrize(
-    ("run_result", "run_raises"),
-    (
-        (FakeStageResult("diagnostics", passed=False), None),
-        (None, RuntimeError("boom")),
-    ),
-)
-def test_diagnostics_runner_failure_is_reported_deterministically(
+def test_failed_diagnostics_run_still_builds_report(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    run_result: object | None,
-    run_raises: Exception | None,
 ) -> None:
+    run_payload = {
+        "passed": False,
+        "node_count": 123,
+        "edge_count": 456,
+        "check_count": 3,
+        "failed_check_count": 1,
+        "checks": [
+            {
+                "name": "edge_count_nonzero",
+                "passed": False,
+                "summary": "No graph edges passed diagnostics.",
+                "issues": [
+                    {
+                        "kind": "empty_edges",
+                        "message": "No edges found.",
+                    }
+                ],
+            }
+        ],
+        "issues": [],
+    }
+    run_result = FakeDiagnosticsRunResult(
+        passed=False,
+        payload=run_payload,
+    )
     calls, _ = patch_stage_14_diagnostics(
         monkeypatch,
         run_result=run_result,
-        run_raises=run_raises,
+    )
+    result = run_preprocessing_graph_workflow_diagnostics(
+        graph_export_result(tmp_path / "out")
+    )
+    payload = result.to_dict()
+
+    assert not result.passed
+    assert issue_kinds(result) == {"diagnostics_checks_failed"}
+    assert calls == [
+        "run_preprocessing_graph_diagnostics",
+        "build_preprocessing_graph_diagnostics_report",
+    ]
+    assert result.diagnostics_run_result is run_result
+    assert result.diagnostics_report is not None
+    assert result.diagnostics_report_built is True
+    assert payload["diagnostics_run"] == run_payload
+
+
+def test_failed_diagnostics_run_still_writes_report_json(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run_result = FakeDiagnosticsRunResult(
+        passed=False,
+        payload={
+            "passed": False,
+            "node_count": 2,
+            "edge_count": 0,
+            "check_count": 1,
+            "failed_check_count": 1,
+            "checks": [],
+            "issues": [],
+        },
+    )
+    patch_stage_14_diagnostics(
+        monkeypatch,
+        run_result=run_result,
+        report=FakeDiagnosticsReport(passed=False),
+    )
+    export = graph_export_result(tmp_path / "out")
+
+    result = run_preprocessing_graph_workflow_diagnostics(
+        export,
+        write_report_json=True,
+    )
+    report_payload = json.loads(
+        export.output_layout.diagnostics_report_json_path.read_text()
+    )
+
+    assert not result.passed
+    assert result.diagnostics_report_json_written is True
+    assert report_payload == {
+        "passed": False,
+        "sections": [{"status": "passed", "title": "overview"}],
+    }
+    assert result.to_dict()["diagnostics_run"] == run_result.to_dict()
+
+
+def test_diagnostics_runner_exception_is_hard_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls, _ = patch_stage_14_diagnostics(
+        monkeypatch,
+        run_raises=RuntimeError("boom"),
     )
     result = run_preprocessing_graph_workflow_diagnostics(
         graph_export_result(tmp_path / "out")
@@ -409,6 +580,7 @@ def test_diagnostics_runner_failure_is_reported_deterministically(
     assert issue_kinds(result) == {"diagnostics_run_failed"}
     assert calls == ["run_preprocessing_graph_diagnostics"]
     assert not result.diagnostics_report_json_path.exists()
+    assert result.to_dict()["diagnostics_run"] is None
 
 
 def test_diagnostics_report_builder_failure_is_reported_deterministically(

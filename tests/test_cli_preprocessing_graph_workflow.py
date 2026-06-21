@@ -76,6 +76,28 @@ class FakeComputationResult(FakeResult):
         return payload
 
 
+@dataclass(frozen=True)
+class FakeDiagnosticsWorkflowResult:
+    passed: bool
+    diagnostics_run: dict[str, object]
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "passed": self.passed,
+            "diagnostics_ran": True,
+            "diagnostics_passed": False,
+            "diagnostics_report_built": True,
+            "diagnostics_report_json_written": True,
+            "diagnostics_run": self.diagnostics_run,
+            "issues": [
+                {
+                    "kind": "diagnostics_checks_failed",
+                    "message": "Stage 14 graph_diagnostics step did not pass.",
+                }
+            ],
+        }
+
+
 def run_python_module(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, "-m", "mania", *args],
@@ -116,6 +138,7 @@ def install_fake_stage15(
     monkeypatch: pytest.MonkeyPatch,
     *,
     failing_stage: str | None = None,
+    diagnostics_result: object | None = None,
 ) -> tuple[list[str], dict[str, Any]]:
     calls: list[str] = []
     received: dict[str, Any] = {}
@@ -172,13 +195,15 @@ def install_fake_stage15(
         *,
         write_report_json: bool,
         create_parent_directories: bool = True,
-    ) -> FakeResult:
+    ) -> object:
         calls.append("run_preprocessing_graph_workflow_diagnostics")
         received["diagnostics_graph_export"] = graph_export
         received["diagnostics_kwargs"] = {
             "write_report_json": write_report_json,
             "create_parent_directories": create_parent_directories,
         }
+        if diagnostics_result is not None:
+            return diagnostics_result
         return FakeResult(
             "diagnostics",
             passed=failing_stage != "diagnostics",
@@ -330,6 +355,60 @@ def test_stage15_failure_stops_at_failed_stage(
     assert payload["stage"] == failing_stage
     assert payload["passed"] is False
     assert calls == list(expected_calls)
+
+
+def test_cli_diagnostics_failure_summary_includes_run_details(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    diagnostics_run = {
+        "passed": False,
+        "node_count": 123,
+        "edge_count": 456,
+        "check_count": 3,
+        "failed_check_count": 1,
+        "checks": [
+            {
+                "name": "edge_count_nonzero",
+                "passed": False,
+                "summary": "No graph edges passed diagnostics.",
+                "issues": [
+                    {
+                        "kind": "empty_edges",
+                        "message": "No edges found.",
+                    }
+                ],
+            }
+        ],
+        "issues": [],
+    }
+    install_fake_stage15(
+        monkeypatch,
+        diagnostics_result=FakeDiagnosticsWorkflowResult(
+            passed=False,
+            diagnostics_run=diagnostics_run,
+        ),
+    )
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        expected_exit_code=1,
+    )
+    payload = stdout_json(stdout)
+    diagnostics = payload["diagnostics"]
+
+    assert payload["stage"] == "diagnostics"
+    assert payload["passed"] is False
+    assert stderr == ""
+    assert stdout.strip() == json.dumps(payload, sort_keys=True)
+    assert isinstance(diagnostics, dict)
+    assert diagnostics["diagnostics_run"] == diagnostics_run
+    assert diagnostics_run["node_count"] == 123
+    assert diagnostics_run["edge_count"] == 456
+    assert diagnostics_run["failed_check_count"] == 1
+    assert "object at 0x" not in stdout
 
 
 def test_reference_comparison_disabled_by_default_is_called_as_skipped_success(

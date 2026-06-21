@@ -1123,6 +1123,9 @@ class PreprocessingGraphWorkflowDiagnosticsResult:
             "diagnostics_report_json_written": (
                 self.diagnostics_report_json_written
             ),
+            "diagnostics_run": _diagnostics_run_payload(
+                self.diagnostics_run_result
+            ),
             "diagnostics_run_result_type": _object_type(
                 self.diagnostics_run_result
             ),
@@ -2191,7 +2194,10 @@ def run_preprocessing_graph_workflow_diagnostics(
                 ),
             ),
         )
-    if not _stage_result_passed(diagnostics_run_result):
+    diagnostics_run_passed = _stage_result_passed_status(
+        diagnostics_run_result
+    )
+    if diagnostics_run_passed is None:
         return _diagnostics_result(
             graph_export,
             diagnostics_run_result=diagnostics_run_result,
@@ -2209,6 +2215,16 @@ def run_preprocessing_graph_workflow_diagnostics(
                 ),
             ),
         )
+    issues: tuple[PreprocessingGraphWorkflowDiagnosticsIssue, ...] = ()
+    if not diagnostics_run_passed:
+        issues = (
+            _diagnostics_failed_issue(
+                kind="diagnostics_checks_failed",
+                stage="graph_diagnostics",
+                field="diagnostics_run_result",
+                result=diagnostics_run_result,
+            ),
+        )
 
     try:
         diagnostics_report = _graph_diagnostics_report_builder()(
@@ -2224,6 +2240,7 @@ def run_preprocessing_graph_workflow_diagnostics(
                 else None
             ),
             issues=(
+                *issues,
                 _diagnostics_exception_issue(
                     kind="diagnostics_report_failed",
                     stage="graph_diagnostics_report",
@@ -2243,6 +2260,7 @@ def run_preprocessing_graph_workflow_diagnostics(
             graph_export,
             diagnostics_run_result=diagnostics_run_result,
             diagnostics_report=diagnostics_report,
+            issues=issues,
         )
 
     try:
@@ -2258,6 +2276,7 @@ def run_preprocessing_graph_workflow_diagnostics(
             diagnostics_report=diagnostics_report,
             diagnostics_report_json_path=report_path,
             issues=(
+                *issues,
                 PreprocessingGraphWorkflowDiagnosticsIssue(
                     kind="diagnostics_report_json_write_failed",
                     message=(
@@ -2277,6 +2296,7 @@ def run_preprocessing_graph_workflow_diagnostics(
         diagnostics_report=diagnostics_report,
         diagnostics_report_json_path=report_path,
         diagnostics_report_json_written=True,
+        issues=issues,
     )
 
 
@@ -3057,6 +3077,44 @@ def _object_type(value: object | None) -> str | None:
 
 def _stage_result_passed(result: object | None) -> bool:
     return getattr(result, "passed", None) is True
+
+
+def _stage_result_passed_status(result: object | None) -> bool | None:
+    passed = getattr(result, "passed", None)
+    if isinstance(passed, bool):
+        return passed
+    return None
+
+
+def _diagnostics_run_payload(
+    diagnostics_run_result: object | None,
+) -> dict[str, object] | None:
+    if diagnostics_run_result is None:
+        return None
+    to_dict = getattr(diagnostics_run_result, "to_dict", None)
+    if not callable(to_dict):
+        return None
+    payload = to_dict()
+    if not isinstance(payload, dict):
+        return None
+    allowed_keys = {
+        "nodes_csv_path",
+        "edges_csv_path",
+        "graph_json_path",
+        "passed",
+        "node_count",
+        "edge_count",
+        "check_count",
+        "failed_check_count",
+        "issue_count",
+        "checks",
+        "issues",
+    }
+    return {
+        str(key): value
+        for key, value in payload.items()
+        if isinstance(key, str) and key in allowed_keys
+    }
 
 
 def _contacts_result_invalid_issue(
