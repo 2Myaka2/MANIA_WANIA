@@ -50,6 +50,10 @@ or dependency change.
 - Pre-16.4 optional scientific CSV exports: may write Rg/contact CSV side
   artifacts only when explicit flags are provided; it must not be confused
   with backend graph export artifacts, WANIA/API payloads, or temporal RIN.
+- Pre-16.5 condition-aware diagnostics: Stage 15 graph artifacts may contain
+  multiple conditions, and diagnostics handles combined artifacts
+  condition-by-condition without changing graph export schema, `graph.json`,
+  WANIA API payloads, or frontend/API scope.
 
 ## Accepted public workflow APIs
 

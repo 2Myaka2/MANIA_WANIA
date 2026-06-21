@@ -3960,6 +3960,7 @@ def _diagnostics_run_payload(
         "passed",
         "node_count",
         "edge_count",
+        "detected_conditions",
         "check_count",
         "failed_check_count",
         "issue_count",

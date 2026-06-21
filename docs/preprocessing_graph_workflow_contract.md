@@ -59,6 +59,11 @@ and adds no new diagnostics algorithms.
 It may keep the raw Stage 14 diagnostics run and report objects in memory for
 later stages, while `to_dict()` exposes only deterministic JSON-safe metadata.
 
+Pre-16.5 keeps whole-artifact bundle and `graph.json` validation on the full
+generated artifact set, then runs contract graph loading and structure QC per
+detected condition for combined multi-condition Stage 15 graph artifacts.
+Diagnostics failures remain workflow failures.
+
 Stage 15.7 adds optional reference comparison orchestration, also exported
 from `mania.preprocessing`:
 

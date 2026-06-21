@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import csv
 import math
+import tempfile
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -24,6 +26,7 @@ from mania.validation.graph import GraphValidationError, validate_graph_json
 _SUMMARY_VALUE_TYPES = (str, int, float, bool, type(None))
 _GRAPH_EXPORT_BUNDLE_CHECK = "graph_export_bundle"
 _GRAPH_JSON_VALIDATION_CHECK = "graph_json_validation"
+_CONDITION_DETECTION_CHECK = "condition_detection"
 _CONTRACT_GRAPH_LOAD_CHECK = "contract_graph_load"
 _GRAPH_STRUCTURE_DIAGNOSTICS_CHECK = "graph_structure_diagnostics"
 _REPORT_SECTION_STATUSES = frozenset(
@@ -124,6 +127,7 @@ class PreprocessingGraphDiagnosticsRunResult:
     edge_count: int
     checks: tuple[PreprocessingGraphDiagnosticsCheckResult, ...]
     issues: tuple[PreprocessingGraphDiagnosticsRunIssue, ...] = ()
+    detected_conditions: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "nodes_csv_path", Path(self.nodes_csv_path))
@@ -153,6 +157,16 @@ class PreprocessingGraphDiagnosticsRunResult:
                     "issues must contain "
                     "PreprocessingGraphDiagnosticsRunIssue"
                 )
+        if not isinstance(self.detected_conditions, tuple):
+            raise ValueError("detected_conditions must be a tuple of strings")
+        object.__setattr__(
+            self,
+            "detected_conditions",
+            tuple(
+                _non_empty_string(condition, "detected_conditions")
+                for condition in self.detected_conditions
+            ),
+        )
 
     @property
     def passed(self) -> bool:
@@ -183,6 +197,7 @@ class PreprocessingGraphDiagnosticsRunResult:
             "passed": self.passed,
             "node_count": self.node_count,
             "edge_count": self.edge_count,
+            "detected_conditions": list(self.detected_conditions),
             "check_count": self.check_count,
             "failed_check_count": self.failed_check_count,
             "issue_count": self.issue_count,
@@ -306,6 +321,12 @@ class PreprocessingGraphDiagnosticsReport:
         }
 
 
+@dataclass(frozen=True)
+class _DetectedGraphCsvConditions:
+    conditions: tuple[str, ...]
+    issues: tuple[PreprocessingGraphDiagnosticsRunIssue, ...] = ()
+
+
 def build_preprocessing_graph_diagnostics_report(
     diagnostics_result: PreprocessingGraphDiagnosticsRunResult,
 ) -> PreprocessingGraphDiagnosticsReport:
@@ -396,12 +417,40 @@ def run_preprocessing_graph_diagnostics(
     graph_condition, graph_json_check = _run_graph_json_validation(bundle)
     checks.append(graph_json_check)
 
-    condition = graph_condition or bundle.condition
-    graph, load_check = _run_contract_graph_load(bundle, condition)
-    checks.append(load_check)
+    condition_detection = _detect_graph_csv_conditions(
+        bundle.nodes_csv_path,
+        bundle.edges_csv_path,
+    )
+    if condition_detection.issues:
+        checks.append(_condition_detection_check(condition_detection))
+        return PreprocessingGraphDiagnosticsRunResult(
+            nodes_csv_path=bundle.nodes_csv_path,
+            edges_csv_path=bundle.edges_csv_path,
+            graph_json_path=bundle.graph_json_path,
+            node_count=bundle.node_count,
+            edge_count=bundle.edge_count,
+            checks=tuple(checks),
+            detected_conditions=condition_detection.conditions,
+        )
 
-    structure_check = _run_graph_structure_diagnostics(graph)
-    checks.append(structure_check)
+    conditions = condition_detection.conditions
+    if not conditions:
+        condition = graph_condition or bundle.condition
+        graph, load_check = _run_contract_graph_load(bundle, condition)
+        checks.append(load_check)
+
+        structure_check = _run_graph_structure_diagnostics(graph)
+        checks.append(structure_check)
+    elif len(conditions) == 1:
+        graph, load_check = _run_contract_graph_load(bundle, conditions[0])
+        checks.append(load_check)
+
+        structure_check = _run_graph_structure_diagnostics(graph)
+        checks.append(structure_check)
+    else:
+        checks.extend(
+            _run_multi_condition_contract_graph_diagnostics(bundle, conditions)
+        )
 
     return PreprocessingGraphDiagnosticsRunResult(
         nodes_csv_path=bundle.nodes_csv_path,
@@ -411,6 +460,7 @@ def run_preprocessing_graph_diagnostics(
         edge_count=bundle.edge_count,
         checks=tuple(checks),
         issues=(),
+        detected_conditions=conditions,
     )
 
 
@@ -444,6 +494,157 @@ def _bundle_issue_to_run_issue(
         check_name=_GRAPH_EXPORT_BUNDLE_CHECK,
         field=issue.field,
         value=issue.value,
+    )
+
+
+def _detect_graph_csv_conditions(
+    nodes_csv_path: Path,
+    edges_csv_path: Path,
+) -> _DetectedGraphCsvConditions:
+    node_conditions, node_issues = _read_graph_csv_conditions(
+        nodes_csv_path,
+        csv_kind="nodes",
+    )
+    edge_conditions, edge_issues = _read_graph_csv_conditions(
+        edges_csv_path,
+        csv_kind="edges",
+    )
+    issues = [*node_issues, *edge_issues]
+
+    node_condition_set = set(node_conditions)
+    edge_condition_set = set(edge_conditions)
+    if not issues and node_condition_set != edge_condition_set:
+        missing_from_edges = tuple(
+            condition
+            for condition in node_conditions
+            if condition not in edge_condition_set
+        )
+        missing_from_nodes = tuple(
+            condition
+            for condition in edge_conditions
+            if condition not in node_condition_set
+        )
+        parts: list[str] = []
+        if missing_from_edges:
+            parts.append(
+                "missing from edges.csv: " + ", ".join(missing_from_edges)
+            )
+        if missing_from_nodes:
+            parts.append(
+                "missing from nodes.csv: " + ", ".join(missing_from_nodes)
+            )
+        issues.append(
+            PreprocessingGraphDiagnosticsRunIssue(
+                kind="node_edge_condition_mismatch",
+                message=(
+                    "nodes.csv and edges.csv condition sets do not match"
+                    f" ({'; '.join(parts)})."
+                ),
+                check_name=_CONDITION_DETECTION_CHECK,
+                field="condition",
+                value="|".join((*node_conditions, *edge_conditions)),
+            )
+        )
+
+    return _DetectedGraphCsvConditions(
+        conditions=_merge_condition_order(node_conditions, edge_conditions),
+        issues=tuple(issues),
+    )
+
+
+def _read_graph_csv_conditions(
+    csv_path: Path,
+    *,
+    csv_kind: str,
+) -> tuple[tuple[str, ...], tuple[PreprocessingGraphDiagnosticsRunIssue, ...]]:
+    conditions: list[str] = []
+    seen: set[str] = set()
+    issues: list[PreprocessingGraphDiagnosticsRunIssue] = []
+
+    try:
+        with csv_path.open(encoding="utf-8", newline="") as csv_file:
+            reader = csv.DictReader(csv_file)
+            if reader.fieldnames is None:
+                return (), (
+                    PreprocessingGraphDiagnosticsRunIssue(
+                        kind="condition_detection_failed",
+                        message=f"{csv_kind}.csv is missing a header.",
+                        check_name=_CONDITION_DETECTION_CHECK,
+                        field=f"{csv_kind}.condition",
+                    ),
+                )
+            if "condition" not in reader.fieldnames:
+                return (), (
+                    PreprocessingGraphDiagnosticsRunIssue(
+                        kind="condition_detection_failed",
+                        message=(
+                            f"{csv_kind}.csv is missing the condition column."
+                        ),
+                        check_name=_CONDITION_DETECTION_CHECK,
+                        field=f"{csv_kind}.condition",
+                    ),
+                )
+            for row_number, row in enumerate(reader, start=2):
+                condition = (row.get("condition") or "").strip()
+                if condition == "":
+                    issues.append(
+                        PreprocessingGraphDiagnosticsRunIssue(
+                            kind="empty_condition_value",
+                            message=(
+                                f"{csv_kind}.csv has an empty condition value "
+                                f"at row {row_number}."
+                            ),
+                            check_name=_CONDITION_DETECTION_CHECK,
+                            field=f"{csv_kind}.condition",
+                            value=str(row_number),
+                        )
+                    )
+                    continue
+                if condition not in seen:
+                    conditions.append(condition)
+                    seen.add(condition)
+    except (OSError, csv.Error) as exc:
+        return (), (
+            PreprocessingGraphDiagnosticsRunIssue(
+                kind="condition_detection_failed",
+                message=(
+                    f"{csv_kind}.csv condition detection failed: {exc}"
+                ),
+                check_name=_CONDITION_DETECTION_CHECK,
+                field=f"{csv_kind}.path",
+                value=str(csv_path),
+            ),
+        )
+
+    return tuple(conditions), tuple(issues)
+
+
+def _merge_condition_order(
+    node_conditions: tuple[str, ...],
+    edge_conditions: tuple[str, ...],
+) -> tuple[str, ...]:
+    conditions: list[str] = []
+    seen: set[str] = set()
+    for condition in (*node_conditions, *edge_conditions):
+        if condition in seen:
+            continue
+        conditions.append(condition)
+        seen.add(condition)
+    return tuple(conditions)
+
+
+def _condition_detection_check(
+    detection: _DetectedGraphCsvConditions,
+) -> PreprocessingGraphDiagnosticsCheckResult:
+    return PreprocessingGraphDiagnosticsCheckResult(
+        name=_CONDITION_DETECTION_CHECK,
+        passed=False,
+        summary={
+            "detected_condition_count": len(detection.conditions),
+            "detected_conditions": "|".join(detection.conditions),
+            "issue_count": len(detection.issues),
+        },
+        issues=detection.issues,
     )
 
 
@@ -488,16 +689,31 @@ def _run_contract_graph_load(
     bundle: PreprocessingGraphExportBundleResult,
     condition: str | None,
 ) -> tuple[ContractGraph | None, PreprocessingGraphDiagnosticsCheckResult]:
+    return _run_contract_graph_load_from_paths(
+        bundle.nodes_csv_path,
+        bundle.edges_csv_path,
+        condition,
+        check_name=_CONTRACT_GRAPH_LOAD_CHECK,
+    )
+
+
+def _run_contract_graph_load_from_paths(
+    nodes_csv_path: Path,
+    edges_csv_path: Path,
+    condition: str | None,
+    *,
+    check_name: str,
+) -> tuple[ContractGraph | None, PreprocessingGraphDiagnosticsCheckResult]:
     if condition is None or condition.strip() == "":
         issue = PreprocessingGraphDiagnosticsRunIssue(
             kind="diagnostic_unavailable",
             message="Contract graph loading requires a non-empty condition.",
-            check_name=_CONTRACT_GRAPH_LOAD_CHECK,
+            check_name=check_name,
             field="condition",
             value=condition,
         )
         return None, PreprocessingGraphDiagnosticsCheckResult(
-            name=_CONTRACT_GRAPH_LOAD_CHECK,
+            name=check_name,
             passed=False,
             summary={
                 "loaded": False,
@@ -509,19 +725,19 @@ def _run_contract_graph_load(
 
     try:
         graph = load_contract_graph(
-            bundle.nodes_csv_path,
-            bundle.edges_csv_path,
+            nodes_csv_path,
+            edges_csv_path,
             condition=condition,
         )
     except ContractGraphError as exc:
         issue = PreprocessingGraphDiagnosticsRunIssue(
             kind="graph_load_failed",
             message=str(exc),
-            check_name=_CONTRACT_GRAPH_LOAD_CHECK,
+            check_name=check_name,
             field="graph_csv_paths",
         )
         return None, PreprocessingGraphDiagnosticsCheckResult(
-            name=_CONTRACT_GRAPH_LOAD_CHECK,
+            name=check_name,
             passed=False,
             summary={
                 "loaded": False,
@@ -533,7 +749,7 @@ def _run_contract_graph_load(
         )
 
     return graph, PreprocessingGraphDiagnosticsCheckResult(
-        name=_CONTRACT_GRAPH_LOAD_CHECK,
+        name=check_name,
         passed=True,
         summary={
             "loaded": True,
@@ -547,16 +763,18 @@ def _run_contract_graph_load(
 
 def _run_graph_structure_diagnostics(
     graph: ContractGraph | None,
+    *,
+    check_name: str = _GRAPH_STRUCTURE_DIAGNOSTICS_CHECK,
 ) -> PreprocessingGraphDiagnosticsCheckResult:
     if graph is None:
         issue = PreprocessingGraphDiagnosticsRunIssue(
             kind="diagnostic_unavailable",
             message="Graph structure diagnostics require a loaded contract graph.",
-            check_name=_GRAPH_STRUCTURE_DIAGNOSTICS_CHECK,
+            check_name=check_name,
             field="contract_graph",
         )
         return PreprocessingGraphDiagnosticsCheckResult(
-            name=_GRAPH_STRUCTURE_DIAGNOSTICS_CHECK,
+            name=check_name,
             passed=False,
             summary={"diagnostic_available": False, "issue_count": 1},
             issues=(issue,),
@@ -568,11 +786,11 @@ def _run_graph_structure_diagnostics(
         issue = PreprocessingGraphDiagnosticsRunIssue(
             kind="diagnostic_failed",
             message=str(exc),
-            check_name=_GRAPH_STRUCTURE_DIAGNOSTICS_CHECK,
+            check_name=check_name,
             field="graph",
         )
         return PreprocessingGraphDiagnosticsCheckResult(
-            name=_GRAPH_STRUCTURE_DIAGNOSTICS_CHECK,
+            name=check_name,
             passed=False,
             summary={
                 "diagnostic_available": True,
@@ -584,8 +802,27 @@ def _run_graph_structure_diagnostics(
             issues=(issue,),
         )
 
+    issues: tuple[PreprocessingGraphDiagnosticsRunIssue, ...] = ()
+    if not qc_report.passed_basic_qc:
+        issues = (
+            PreprocessingGraphDiagnosticsRunIssue(
+                kind="graph_qc_failed",
+                message=(
+                    "Graph structure QC failed for condition "
+                    f"{graph.condition!r}: isolated nodes="
+                    f"{qc_report.n_isolated_nodes}, self loops="
+                    f"{len(qc_report.self_loop_edges)}, duplicate "
+                    "undirected edge keys="
+                    f"{len(qc_report.duplicate_undirected_edge_keys)}."
+                ),
+                check_name=check_name,
+                field="graph_qc",
+                value=graph.condition,
+            ),
+        )
+
     return PreprocessingGraphDiagnosticsCheckResult(
-        name=_GRAPH_STRUCTURE_DIAGNOSTICS_CHECK,
+        name=check_name,
         passed=qc_report.passed_basic_qc,
         summary={
             "diagnostic_available": True,
@@ -601,7 +838,89 @@ def _run_graph_structure_diagnostics(
             ),
             "passed_basic_qc": qc_report.passed_basic_qc,
         },
+        issues=issues,
     )
+
+
+def _run_multi_condition_contract_graph_diagnostics(
+    bundle: PreprocessingGraphExportBundleResult,
+    conditions: tuple[str, ...],
+) -> tuple[PreprocessingGraphDiagnosticsCheckResult, ...]:
+    checks: list[PreprocessingGraphDiagnosticsCheckResult] = []
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        root = Path(temporary_directory)
+        for condition_index, condition in enumerate(conditions, start=1):
+            condition_dir = root / f"condition_{condition_index}"
+            condition_dir.mkdir()
+            filtered_nodes_path, filtered_edges_path = (
+                _write_condition_filtered_graph_csvs(
+                    bundle.nodes_csv_path,
+                    bundle.edges_csv_path,
+                    condition=condition,
+                    output_dir=condition_dir,
+                )
+            )
+            graph, load_check = _run_contract_graph_load_from_paths(
+                filtered_nodes_path,
+                filtered_edges_path,
+                condition,
+                check_name=f"{_CONTRACT_GRAPH_LOAD_CHECK}:{condition}",
+            )
+            checks.append(load_check)
+            checks.append(
+                _run_graph_structure_diagnostics(
+                    graph,
+                    check_name=(
+                        f"{_GRAPH_STRUCTURE_DIAGNOSTICS_CHECK}:{condition}"
+                    ),
+                )
+            )
+    return tuple(checks)
+
+
+def _write_condition_filtered_graph_csvs(
+    nodes_csv_path: Path,
+    edges_csv_path: Path,
+    *,
+    condition: str,
+    output_dir: Path,
+) -> tuple[Path, Path]:
+    filtered_nodes_path = output_dir / "nodes.csv"
+    filtered_edges_path = output_dir / "edges.csv"
+    _write_condition_filtered_csv(
+        nodes_csv_path,
+        filtered_nodes_path,
+        condition=condition,
+    )
+    _write_condition_filtered_csv(
+        edges_csv_path,
+        filtered_edges_path,
+        condition=condition,
+    )
+    return filtered_nodes_path, filtered_edges_path
+
+
+def _write_condition_filtered_csv(
+    source_path: Path,
+    output_path: Path,
+    *,
+    condition: str,
+) -> None:
+    with source_path.open(encoding="utf-8", newline="") as source_csv:
+        reader = csv.DictReader(source_csv)
+        fieldnames = reader.fieldnames
+        if fieldnames is None:
+            raise ValueError(f"{source_path} is missing a header")
+        with output_path.open("w", encoding="utf-8", newline="") as output_csv:
+            writer = csv.DictWriter(
+                output_csv,
+                fieldnames=fieldnames,
+                lineterminator="\n",
+            )
+            writer.writeheader()
+            for row in reader:
+                if (row.get("condition") or "") == condition:
+                    writer.writerow(row)
 
 
 def _build_overview_report_section(

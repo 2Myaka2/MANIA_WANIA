@@ -155,6 +155,7 @@ def valid_graph_payload(
 def write_valid_bundle_files(
     tmp_path: Path,
     *,
+    node_rows: list[list[str]] | None = None,
     edge_rows: list[list[str]] | None = None,
     graph: dict[str, object] | None = None,
 ) -> tuple[Path, Path, Path]:
@@ -164,7 +165,8 @@ def write_valid_bundle_files(
     write_csv(
         nodes_path,
         NODE_COLUMNS,
-        [
+        node_rows
+        or [
             node_row(resid="n1", resname="ALA"),
             node_row(resid="n2", resname="GLY"),
         ],
@@ -172,6 +174,122 @@ def write_valid_bundle_files(
     write_csv(edges_path, EDGE_COLUMNS, edge_rows or [edge_row()])
     write_json(graph_path, graph or valid_graph_payload())
     return nodes_path, edges_path, graph_path
+
+
+def multi_condition_graph_payload(
+    *,
+    extra_tumor_nodes: list[str] | None = None,
+    tumor_edge_target: str = "t2",
+) -> dict[str, object]:
+    nodes = [
+        {
+            **{column: "" for column in NODE_COLUMNS},
+            "id": "n1",
+            "resid": "n1",
+            "resname": "ALA",
+            "condition": "normal",
+        },
+        {
+            **{column: "" for column in NODE_COLUMNS},
+            "id": "n2",
+            "resid": "n2",
+            "resname": "GLY",
+            "condition": "normal",
+        },
+        {
+            **{column: "" for column in NODE_COLUMNS},
+            "id": "t1",
+            "resid": "t1",
+            "resname": "SER",
+            "condition": "tumor",
+        },
+        {
+            **{column: "" for column in NODE_COLUMNS},
+            "id": "t2",
+            "resid": "t2",
+            "resname": "THR",
+            "condition": "tumor",
+        },
+    ]
+    for node_id in extra_tumor_nodes or []:
+        nodes.append(
+            {
+                **{column: "" for column in NODE_COLUMNS},
+                "id": node_id,
+                "resid": node_id,
+                "resname": "VAL",
+                "condition": "tumor",
+            }
+        )
+    edges = [
+        {
+            **{column: "" for column in EDGE_COLUMNS},
+            "source": "n1",
+            "target": "n2",
+            "resid_i": "n1",
+            "resid_j": "n2",
+            "edge_type": "residue_contact",
+            "all_edge_types": "residue_contact",
+            "n_edge_types": "1",
+            "condition": "normal",
+        },
+        {
+            **{column: "" for column in EDGE_COLUMNS},
+            "source": "t1",
+            "target": tumor_edge_target,
+            "resid_i": "t1",
+            "resid_j": tumor_edge_target,
+            "edge_type": "residue_contact",
+            "all_edge_types": "residue_contact",
+            "n_edge_types": "1",
+            "condition": "tumor",
+        },
+    ]
+    return {
+        "condition": "normal",
+        "n_nodes": len(nodes),
+        "n_edges": len(edges),
+        "directed": False,
+        "schema_version": "0.1",
+        "nodes": nodes,
+        "edges": edges,
+    }
+
+
+def write_multi_condition_bundle_files(
+    tmp_path: Path,
+    *,
+    extra_tumor_nodes: list[str] | None = None,
+    tumor_edge_target: str = "t2",
+) -> tuple[Path, Path, Path]:
+    graph = multi_condition_graph_payload(
+        extra_tumor_nodes=extra_tumor_nodes,
+        tumor_edge_target=tumor_edge_target,
+    )
+    node_rows = [
+        node_row(resid="n1", resname="ALA", condition="normal"),
+        node_row(resid="n2", resname="GLY", condition="normal"),
+        node_row(resid="t1", resname="SER", condition="tumor"),
+        node_row(resid="t2", resname="THR", condition="tumor"),
+    ]
+    for node_id in extra_tumor_nodes or []:
+        node_rows.append(
+            node_row(resid=node_id, resname="VAL", condition="tumor")
+        )
+    edge_rows = [
+        edge_row(resid_i="n1", resid_j="n2", condition="normal"),
+        edge_row(
+            resid_i="t1",
+            resid_j=tumor_edge_target,
+            condition="tumor",
+        ),
+    ]
+    return write_valid_bundle_files(
+        tmp_path,
+        node_rows=node_rows,
+        edge_rows=edge_rows,
+        graph=graph,
+    )
 
 
 def writer_generated_bundle_files(tmp_path: Path) -> tuple[Path, Path, Path]:
@@ -376,6 +494,119 @@ def test_valid_writer_generated_artifacts_run_diagnostics(
     ]
     assert all(check.passed for check in result.checks)
     assert_json_safe(result.to_dict())
+
+
+def test_multi_condition_graph_artifacts_run_diagnostics_per_condition(
+    tmp_path: Path,
+) -> None:
+    nodes_path, edges_path, graph_path = write_multi_condition_bundle_files(tmp_path)
+
+    result = run_preprocessing_graph_diagnostics(
+        nodes_path,
+        edges_path,
+        graph_path,
+    )
+
+    assert result.passed is True
+    assert result.to_dict()["detected_conditions"] == ["normal", "tumor"]
+    assert check_names(result) == [
+        "graph_export_bundle",
+        "graph_json_validation",
+        "contract_graph_load:normal",
+        "graph_structure_diagnostics:normal",
+        "contract_graph_load:tumor",
+        "graph_structure_diagnostics:tumor",
+    ]
+    assert all(check.passed for check in result.checks)
+    assert_json_safe(result.to_dict())
+
+
+def test_multi_condition_graph_diagnostics_avoids_single_condition_false_failure(
+    tmp_path: Path,
+) -> None:
+    nodes_path, edges_path, graph_path = write_multi_condition_bundle_files(tmp_path)
+
+    result = run_preprocessing_graph_diagnostics(
+        nodes_path,
+        edges_path,
+        graph_path,
+    )
+    encoded = json.dumps(result.to_dict(), allow_nan=False)
+
+    assert result.passed is True
+    assert "Node condition mismatch" not in encoded
+    assert "expected 'normal', got 'tumor'" not in encoded
+
+
+def test_multi_condition_graph_qc_failure_is_condition_specific(
+    tmp_path: Path,
+) -> None:
+    nodes_path, edges_path, graph_path = write_multi_condition_bundle_files(
+        tmp_path,
+        extra_tumor_nodes=["t3"],
+    )
+
+    result = run_preprocessing_graph_diagnostics(
+        nodes_path,
+        edges_path,
+        graph_path,
+    )
+
+    assert result.passed is False
+    failed_checks = [check for check in result.checks if not check.passed]
+    assert [check.name for check in failed_checks] == [
+        "graph_structure_diagnostics:tumor"
+    ]
+    assert failed_checks[0].summary["condition"] == "tumor"
+    assert failed_checks[0].issues[0].kind == "graph_qc_failed"
+    assert "isolated nodes=1" in failed_checks[0].issues[0].message
+
+
+def test_multi_condition_contract_graph_load_failure_is_condition_specific(
+    tmp_path: Path,
+) -> None:
+    nodes_path, edges_path, graph_path = write_multi_condition_bundle_files(
+        tmp_path,
+        tumor_edge_target="n1",
+    )
+
+    result = run_preprocessing_graph_diagnostics(
+        nodes_path,
+        edges_path,
+        graph_path,
+    )
+
+    assert result.passed is False
+    failed_checks = [check for check in result.checks if not check.passed]
+    assert [check.name for check in failed_checks] == [
+        "contract_graph_load:tumor",
+        "graph_structure_diagnostics:tumor",
+    ]
+    assert failed_checks[0].issues[0].kind == "graph_load_failed"
+    assert "references missing node: n1" in failed_checks[0].issues[0].message
+
+
+def test_empty_condition_values_fail_deterministically(tmp_path: Path) -> None:
+    nodes_path, edges_path, graph_path = write_valid_bundle_files(
+        tmp_path,
+        node_rows=[
+            node_row(resid="n1", resname="ALA", condition=""),
+            node_row(resid="n2", resname="GLY"),
+        ],
+    )
+
+    result = run_preprocessing_graph_diagnostics(
+        nodes_path,
+        edges_path,
+        graph_path,
+    )
+    encoded = json.dumps(result.to_dict(), allow_nan=False)
+
+    assert result.passed is False
+    assert issue_kinds(result) == ["bundle_failed"]
+    assert "Graph CSV validation failed" in encoded
+    assert "Required graph CSV value is missing" in encoded
+    assert "Traceback" not in encoded
 
 
 def test_header_only_graph_artifacts_are_deterministic(tmp_path: Path) -> None:

@@ -458,6 +458,51 @@ def test_successful_diagnostics_calls_stage_14_apis_in_order(
     assert_json_safe(result.to_dict())
 
 
+def test_workflow_to_dict_preserves_condition_aware_diagnostics_details(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run_payload = {
+        "passed": True,
+        "node_count": 4,
+        "edge_count": 2,
+        "check_count": 6,
+        "failed_check_count": 0,
+        "detected_conditions": ["normal", "tumor"],
+        "checks": [
+            {"name": "graph_export_bundle", "passed": True},
+            {"name": "graph_json_validation", "passed": True},
+            {"name": "contract_graph_load:normal", "passed": True},
+            {"name": "graph_structure_diagnostics:normal", "passed": True},
+            {"name": "contract_graph_load:tumor", "passed": True},
+            {"name": "graph_structure_diagnostics:tumor", "passed": True},
+        ],
+        "issues": [],
+    }
+    patch_stage_14_diagnostics(
+        monkeypatch,
+        run_result=FakeDiagnosticsRunResult(
+            passed=True,
+            payload=run_payload,
+        ),
+    )
+
+    result = run_preprocessing_graph_workflow_diagnostics(
+        graph_export_result(tmp_path / "out")
+    )
+    diagnostics_run = result.to_dict()["diagnostics_run"]
+
+    assert result.passed
+    assert isinstance(diagnostics_run, dict)
+    assert diagnostics_run["detected_conditions"] == ["normal", "tumor"]
+    assert diagnostics_run["checks"] == run_payload["checks"]
+    checks = diagnostics_run["checks"]
+    assert isinstance(checks, list)
+    assert "contract_graph_load:tumor" in {
+        check["name"] for check in checks if isinstance(check, dict)
+    }
+
+
 def test_diagnostics_runner_receives_graph_artifact_paths(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
