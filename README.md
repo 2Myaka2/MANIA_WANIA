@@ -1,106 +1,213 @@
 # MANIA/WANIA
 
-MANIA is a Python package for preparing molecular dynamics analysis artifacts.
-WANIA is a future web interface that consumes MANIA outputs.
+MANIA currently provides a backend preprocessing graph workflow for molecular
+dynamics (MD) data. WANIA is the future web/API layer that will consume MANIA
+outputs after a separate Stage 16+ contract is accepted.
 
-This repository is currently at the engineering skeleton stage: package layout,
-config validation, CLI, documentation, and tests. It is not yet performing real
-scientific trajectory analysis.
+The current practical workflow starts from a preprocessing manifest and local
+raw MD files, loads runtimes, computes Rg and contacts in memory, exports
+backend graph artifacts, writes diagnostics when report writing succeeds, and
+can optionally compare generated graph artifacts against explicit reference
+artifacts.
 
-## Current Status
+## Current Backend Workflow
 
-The current skeleton supports:
-
-- Editable install with `pip install -e ".[dev]"`.
-- Importing the package as `mania`.
-- Checking the package version with `mania --version`.
-- Running the CLI module with `python -m mania`.
-- Validating the example YAML config with
-  `mania validate-config configs/mania.example.yaml`.
-- Building a placeholder pipeline plan with
-  `mania run --config configs/mania.example.yaml`.
-- Preparing skeleton manifest and run metadata summaries without writing files.
-- Preparing skeleton QC and report summaries without running scientific checks or
-  generating HTML.
-- Running the test suite with `pytest`.
-- Running lint checks with `ruff check .`.
-- Running type checks with `mypy src`.
-
-## Current Non-Goals
-
-The current stage does not include:
-
-- MDAnalysis integration.
-- GROMACS execution.
-- FastAPI.
-- Yandex Disk integration.
-- Final residue registries.
-- Real scientific trajectory analysis.
-
-## Repository Structure
+Accepted Stage 15 workflow:
 
 ```text
-configs/     Example MANIA YAML configuration files.
-docs/        Project decisions, data contract, and supporting documentation.
-src/mania/   Python package source code.
-tests/       Minimal tests for the skeleton package and data contract.
+raw MD files + preprocessing manifest
+-> runtime loading
+-> in-memory Rg + contacts
+-> graph/nodes.csv
+-> graph/edges.csv
+-> graph/graph.json
+-> diagnostics report when diagnostics report writing succeeds
 ```
 
-## Quick Start
+Reference comparison is optional and disabled by default. When enabled, it
+requires explicit reference artifact paths; the CLI does not auto-search
+`data/reference/**`.
+
+The main command is:
 
 ```bash
-python3 -m venv .venv
+mania preprocessing run-graph-export \
+  --manifest PATH \
+  --output PATH
+```
+
+## Install For Local Development
+
+For local development and scientific workflow use, install the development and
+optional MD extras:
+
+```bash
+python -m venv .venv
 source .venv/bin/activate
-python -m pip install -U pip setuptools wheel
-python -m pip install -e ".[dev]"
-
-mania --version
-mania validate-config configs/mania.example.yaml
-mania run --config configs/mania.example.yaml
-
-python -m mania --version
-python -m mania validate-config configs/mania.example.yaml
-python -m mania run --config configs/mania.example.yaml
-
-pytest
-ruff check .
-mypy src
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -e ".[dev,md]"
 ```
 
-## Config Validation
+The `md` extra is for local scientific/runtime work. It is not a new core
+dependency boundary, and default CI does not require real MD data.
 
-The example configuration lives at `configs/mania.example.yaml`. It defines the
-project metadata, one or two systems, runtime options, and feature flags for the
-current skeleton.
+## Local MD Data Layout
 
-Validate it with:
+Keep local raw MD data outside version control. A typical local layout is:
+
+```text
+local_md/
+|-- manifests/
+|   `-- napi2b_10ns.yaml
+|-- normal/
+|   |-- topology.tpr
+|   `-- trajectory.xtc
+`-- tumor/
+    |-- topology.tpr
+    `-- trajectory.xtc
+```
+
+`local_md/` is local-only. Raw MD files must not be committed. Use `.tpr`
+topology by default. A `.gro` topology may be used only when supported by the
+current MDAnalysis/runtime loading path.
+
+## Manifest Example
+
+Example `local_md/manifests/napi2b_10ns.yaml`:
+
+```yaml
+output_root: ../outputs
+
+conditions:
+  - condition: normal
+    topology_path: ../normal/topology.tpr
+    trajectory_paths:
+      - ../normal/trajectory.xtc
+
+  - condition: tumor
+    topology_path: ../tumor/topology.tpr
+    trajectory_paths:
+      - ../tumor/trajectory.xtc
+```
+
+## Manifest Readiness Check
+
+Before running the workflow, check that the manifest can be loaded and that its
+declared local input paths are ready:
 
 ```bash
-mania validate-config configs/mania.example.yaml
+python - <<'PY'
+import json
+from mania.preprocessing import check_preprocessing_graph_workflow_manifest_readiness
+
+result = check_preprocessing_graph_workflow_manifest_readiness(
+    "local_md/manifests/napi2b_10ns.yaml"
+)
+print(json.dumps(result.to_dict(), indent=2, ensure_ascii=False))
+PY
 ```
 
-Config validation checks the YAML structure and Pydantic model constraints. It
-does not check whether trajectory or topology files exist yet.
+## Run Graph Export Workflow
+
+Run the accepted Stage 15 backend graph export workflow with explicit manifest
+and output paths:
+
+```bash
+mania preprocessing run-graph-export \
+  --manifest local_md/manifests/napi2b_10ns.yaml \
+  --output mania_output/napi2b_10ns \
+  --verbose
+```
+
+`--verbose` sends progress messages to stderr. Stdout remains the final
+machine-readable JSON result. The command exits non-zero when a workflow stage
+fails. The CLI does not execute notebooks, auto-discover `local_md`, or produce
+WANIA frontend/API payloads.
+
+## Outputs
+
+Expected output tree:
+
+```text
+mania_output/napi2b_10ns/
+|-- graph/
+|   |-- nodes.csv
+|   |-- edges.csv
+|   `-- graph.json
+`-- reports/
+    `-- graph_diagnostics_report.json
+```
+
+Expected Stage 15 graph output paths:
+
+```text
+graph/nodes.csv
+graph/edges.csv
+graph/graph.json
+reports/graph_diagnostics_report.json
+```
+
+`reports/graph_reference_comparison.json` is produced only when reference
+comparison is explicitly enabled and successful. Graph artifacts may exist even
+if diagnostics fail. Inspect diagnostics failure details in the final JSON and,
+when written, `reports/graph_diagnostics_report.json`.
+
+## What Is Not Produced Yet
+
+The Stage 15 workflow CLI does not currently export:
+
+```text
+rg/rg_timeseries.csv
+contacts/contacts_perframe.csv
+contacts/contact_edges.csv
+temporal RIN artifacts
+WANIA/frontend API payloads
+```
+
+Rg and contacts are computed in memory for graph export. Stage 13
+`contact_edges.csv` is an aggregate contacts table; it is not backend graph
+`graph/edges.csv`. Backend graph `edges.csv` is produced under
+`graph/edges.csv`.
+
+## Data And Git Boundaries
+
+Local raw data and generated outputs must remain local and must not be
+committed:
+
+```text
+local_md/
+local_md_protein/
+mania_output/
+*.tpr
+*.xtc
+*.gro
+*.cpt
+*.edr
+*.log
+*.dcd
+*.psf
+```
+
+Generated local outputs should not be committed. This README documents the
+boundary only; it does not change `.gitignore`.
+
+## Future Scope
+
+Stage 15 output is backend graph workflow output. It is not yet the final WANIA
+API/frontend contract, and `graph.json` should not be assumed to be
+frontend-ready.
+
+Future Stage 16+ scope includes the FastAPI upload/job API, WANIA frontend
+adapter/API payloads, and any temporal RIN workflow. This future scope should
+be specified separately before implementation.
 
 ## Documentation
 
-- `docs/decisions.md`: accepted MANIA/WANIA v0.1 project decisions.
-- `docs/data_contract.md`: MANIA v0.1 output artifact contract for WANIA.
-- `docs/architecture.md`: current skeleton and intended module
-  responsibilities.
-- `docs/git_workflow.md`: Git workflow for small reviewable tasks.
+- `docs/preprocessing_graph_workflow_boundary_before_frontend_api.md`: accepted
+  Stage 15 backend workflow boundary.
+- `docs/preprocessing_graph_workflow_contract.md`: workflow APIs, options, and
+  output layout.
+- `docs/local_scientific_integration_tests.md`: local-only real MD smoke test
+  boundary.
+- `docs/architecture.md`: intended package architecture.
 - `AGENTS.md`: working rules for Codex, coding agents, and assistants.
-
-## Development Workflow
-
-1. Create a feature branch.
-2. Make a small focused change.
-3. Run checks:
-
-   ```bash
-   pytest
-   ruff check .
-   mypy src
-   ```
-
-4. Commit with a clear message.
