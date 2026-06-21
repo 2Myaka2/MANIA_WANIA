@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any, NoReturn, cast
 
@@ -26,6 +27,15 @@ from mania.preprocessing.trajectory_graph_workflow import (
 
 _DEFAULT_EXPECTED_CONDITION_NAMES = ("normal", "tumor")
 _DEFAULT_REFERENCE_SEMANTICS = "MANIA_analysis_v1_2"
+_PREPROCESSING_GRAPH_EXPORT_VERBOSE_STAGES = {
+    1: "Building workflow plan",
+    2: "Loading manifest and condition runtimes",
+    3: "Computing Rg and contacts",
+    4: "Exporting graph artifacts",
+    5: "Running graph diagnostics",
+    6: "Running/skipping reference comparison",
+    7: "Writing final summary",
+}
 
 
 def _exit_with_error(message: str) -> NoReturn:
@@ -175,6 +185,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Do not write the reference comparison JSON.",
     )
+    graph_export_parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print stage-by-stage progress messages to stderr.",
+    )
 
     return parser
 
@@ -277,10 +292,37 @@ def _print_preprocessing_graph_export_summary(
     print(json.dumps(payload, sort_keys=True))
 
 
+def _verbose_enabled(args: argparse.Namespace) -> bool:
+    return bool(getattr(args, "verbose", False))
+
+
+def _print_preprocessing_graph_export_progress(
+    args: argparse.Namespace,
+    stage_number: int,
+) -> None:
+    if not _verbose_enabled(args):
+        return
+    message = _PREPROCESSING_GRAPH_EXPORT_VERBOSE_STAGES[stage_number]
+    print(f"[{stage_number}/7] {message}...", file=sys.stderr)
+
+
+def _print_preprocessing_graph_export_failure(
+    args: argparse.Namespace,
+    stage_number: int,
+) -> None:
+    if not _verbose_enabled(args):
+        return
+    message = _PREPROCESSING_GRAPH_EXPORT_VERBOSE_STAGES[stage_number]
+    print(f"[{stage_number}/7] Failed: {message}.", file=sys.stderr)
+
+
 def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     options = _build_preprocessing_graph_workflow_options(args)
+    _print_preprocessing_graph_export_progress(args, 1)
     plan = build_preprocessing_graph_workflow_plan(options)
     if not plan.passed:
+        _print_preprocessing_graph_export_failure(args, 1)
+        _print_preprocessing_graph_export_progress(args, 7)
         _print_preprocessing_graph_export_summary(
             _build_preprocessing_graph_export_summary(
                 "plan",
@@ -290,11 +332,14 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         )
         return 1
 
+    _print_preprocessing_graph_export_progress(args, 2)
     runtime_loading = load_preprocessing_graph_workflow_condition_runtimes(
         options.manifest_path,
         expected_condition_names=_expected_condition_names(args),
     )
     if not runtime_loading.passed:
+        _print_preprocessing_graph_export_failure(args, 2)
+        _print_preprocessing_graph_export_progress(args, 7)
         _print_preprocessing_graph_export_summary(
             _build_preprocessing_graph_export_summary(
                 "runtime_loading",
@@ -305,12 +350,15 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         )
         return 1
 
+    _print_preprocessing_graph_export_progress(args, 3)
     computation = compute_preprocessing_graph_workflow_rg_contacts(
         runtime_loading,
         include_rg=options.include_rg,
         include_contacts=options.include_contacts,
     )
     if not computation.passed:
+        _print_preprocessing_graph_export_failure(args, 3)
+        _print_preprocessing_graph_export_progress(args, 7)
         _print_preprocessing_graph_export_summary(
             _build_preprocessing_graph_export_summary(
                 "computation",
@@ -322,11 +370,14 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         )
         return 1
 
+    _print_preprocessing_graph_export_progress(args, 4)
     graph_export = export_preprocessing_graph_workflow_artifacts(
         computation,
         plan.output_layout,
     )
     if not graph_export.passed:
+        _print_preprocessing_graph_export_failure(args, 4)
+        _print_preprocessing_graph_export_progress(args, 7)
         _print_preprocessing_graph_export_summary(
             _build_preprocessing_graph_export_summary(
                 "graph_export",
@@ -340,6 +391,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         return 1
 
     diagnostics: object | None
+    _print_preprocessing_graph_export_progress(args, 5)
     if args.skip_diagnostics:
         diagnostics = {"passed": True, "skipped": True}
     else:
@@ -348,6 +400,8 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             write_report_json=not args.no_write_diagnostics_report,
         )
         if not _workflow_result_passed(diagnostics):
+            _print_preprocessing_graph_export_failure(args, 5)
+            _print_preprocessing_graph_export_progress(args, 7)
             _print_preprocessing_graph_export_summary(
                 _build_preprocessing_graph_export_summary(
                     "diagnostics",
@@ -361,6 +415,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             )
             return 1
 
+    _print_preprocessing_graph_export_progress(args, 6)
     reference_comparison = (
         compare_preprocessing_graph_workflow_reference_artifacts(
             graph_export,
@@ -370,6 +425,8 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         )
     )
     if not reference_comparison.passed:
+        _print_preprocessing_graph_export_failure(args, 6)
+        _print_preprocessing_graph_export_progress(args, 7)
         _print_preprocessing_graph_export_summary(
             _build_preprocessing_graph_export_summary(
                 "reference_comparison",
@@ -384,6 +441,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         )
         return 1
 
+    _print_preprocessing_graph_export_progress(args, 7)
     _print_preprocessing_graph_export_summary(
         _build_preprocessing_graph_export_summary(
             "preprocessing_graph_export",

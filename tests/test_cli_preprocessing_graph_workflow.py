@@ -27,6 +27,15 @@ STAGE15_ORDER = (
     "run_preprocessing_graph_workflow_diagnostics",
     "compare_preprocessing_graph_workflow_reference_artifacts",
 )
+VERBOSE_STAGE_MESSAGES = (
+    "[1/7] Building workflow plan",
+    "[2/7] Loading manifest and condition runtimes",
+    "[3/7] Computing Rg and contacts",
+    "[4/7] Exporting graph artifacts",
+    "[5/7] Running graph diagnostics",
+    "[6/7] Running/skipping reference comparison",
+    "[7/7] Writing final summary",
+)
 
 
 @dataclass(frozen=True)
@@ -132,6 +141,11 @@ def stdout_json(stdout: str) -> dict[str, object]:
     payload = json.loads(stdout)
     assert isinstance(payload, dict)
     return payload
+
+
+def assert_no_verbose_stage_messages(text: str) -> None:
+    for message in VERBOSE_STAGE_MESSAGES:
+        assert message not in text
 
 
 def install_fake_stage15(
@@ -271,6 +285,14 @@ def test_cli_help_works_without_mdanalysis() -> None:
     assert "MDAnalysis" not in result.stderr
 
 
+def test_graph_export_help_mentions_verbose_without_mdanalysis() -> None:
+    result = run_python_module("preprocessing", "run-graph-export", "--help")
+
+    assert result.returncode == 0
+    assert "--verbose" in result.stdout
+    assert "MDAnalysis" not in result.stderr
+
+
 @pytest.mark.parametrize(
     "args",
     (
@@ -325,6 +347,66 @@ def test_default_command_builds_options_and_calls_stage15_in_order(
     assert received["expected_condition_names"] == ("normal", "tumor")
 
 
+def test_verbose_command_parses_and_calls_stage15_in_order(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    calls, _ = install_fake_stage15(monkeypatch)
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--verbose",
+    )
+
+    assert stdout_json(stdout)["passed"] is True
+    assert calls == list(STAGE15_ORDER)
+    assert VERBOSE_STAGE_MESSAGES[0] in stderr
+
+
+def test_non_verbose_graph_export_stdout_remains_final_json_only(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    install_fake_stage15(monkeypatch)
+
+    _, stdout, stderr = invoke_cli(monkeypatch, capsys, *BASE_COMMAND)
+    payload = stdout_json(stdout)
+
+    assert payload["passed"] is True
+    assert stdout.strip() == json.dumps(payload, sort_keys=True)
+    assert stderr == ""
+    assert_no_verbose_stage_messages(stdout)
+    assert_no_verbose_stage_messages(stderr)
+
+
+def test_verbose_graph_export_progress_goes_to_stderr_only(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    install_fake_stage15(monkeypatch)
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--verbose",
+    )
+    payload = stdout_json(stdout)
+    reference_payload = payload["reference_comparison"]
+
+    assert payload["passed"] is True
+    assert isinstance(reference_payload, dict)
+    assert reference_payload["skipped"] is True
+    assert stdout.strip() == json.dumps(payload, sort_keys=True)
+    for message in VERBOSE_STAGE_MESSAGES:
+        assert message in stderr
+        assert message not in stdout
+    for forbidden in ("%", "ETA", "remaining"):
+        assert forbidden not in stderr
+
+
 @pytest.mark.parametrize(
     ("failing_stage", "expected_calls"),
     (
@@ -355,6 +437,61 @@ def test_stage15_failure_stops_at_failed_stage(
     assert payload["stage"] == failing_stage
     assert payload["passed"] is False
     assert calls == list(expected_calls)
+
+
+@pytest.mark.parametrize(
+    ("failing_stage", "expected_stage_number", "expected_calls", "extra_args"),
+    (
+        ("plan", 1, STAGE15_ORDER[:1], ()),
+        ("runtime_loading", 2, STAGE15_ORDER[:2], ()),
+        ("computation", 3, STAGE15_ORDER[:3], ()),
+        ("graph_export", 4, STAGE15_ORDER[:4], ()),
+        ("diagnostics", 5, STAGE15_ORDER[:5], ()),
+        (
+            "reference_comparison",
+            6,
+            STAGE15_ORDER,
+            (
+                "--enable-reference-comparison",
+                "--reference-nodes",
+                "ref/nodes.csv",
+                "--reference-edges",
+                "ref/edges.csv",
+                "--reference-graph-json",
+                "ref/graph.json",
+            ),
+        ),
+    ),
+)
+def test_verbose_stage_failure_prints_stderr_failure_and_json_stdout(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    failing_stage: str,
+    expected_stage_number: int,
+    expected_calls: tuple[str, ...],
+    extra_args: tuple[str, ...],
+) -> None:
+    calls, _ = install_fake_stage15(monkeypatch, failing_stage=failing_stage)
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        *extra_args,
+        "--verbose",
+        expected_exit_code=1,
+    )
+    payload = stdout_json(stdout)
+    stage_message = VERBOSE_STAGE_MESSAGES[expected_stage_number - 1]
+
+    assert payload["stage"] == failing_stage
+    assert payload["passed"] is False
+    assert calls == list(expected_calls)
+    assert stage_message in stderr
+    assert f"[{expected_stage_number}/7] Failed:" in stderr
+    assert VERBOSE_STAGE_MESSAGES[6] in stderr
+    assert_no_verbose_stage_messages(stdout)
+    assert "object at 0x" not in stderr
 
 
 def test_cli_diagnostics_failure_summary_includes_run_details(
@@ -409,6 +546,50 @@ def test_cli_diagnostics_failure_summary_includes_run_details(
     assert diagnostics_run["edge_count"] == 456
     assert diagnostics_run["failed_check_count"] == 1
     assert "object at 0x" not in stdout
+
+
+def test_verbose_diagnostics_failure_keeps_diagnostics_details_in_stdout(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    diagnostics_run = {
+        "passed": False,
+        "node_count": 123,
+        "edge_count": 456,
+        "check_count": 3,
+        "failed_check_count": 1,
+        "checks": [
+            {
+                "name": "edge_count_nonzero",
+                "passed": False,
+                "summary": "No graph edges passed diagnostics.",
+                "issues": [],
+            }
+        ],
+        "issues": [],
+    }
+    install_fake_stage15(
+        monkeypatch,
+        diagnostics_result=FakeDiagnosticsWorkflowResult(
+            passed=False,
+            diagnostics_run=diagnostics_run,
+        ),
+    )
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--verbose",
+        expected_exit_code=1,
+    )
+    payload = stdout_json(stdout)
+    diagnostics = payload["diagnostics"]
+
+    assert "[5/7] Failed:" in stderr
+    assert isinstance(diagnostics, dict)
+    assert diagnostics["diagnostics_run"] == diagnostics_run
+    assert_no_verbose_stage_messages(stdout)
 
 
 def test_reference_comparison_disabled_by_default_is_called_as_skipped_success(
