@@ -37,6 +37,24 @@ mania preprocessing run-graph-export \
   --output PATH
 ```
 
+## Protein-Agnostic Boundary
+
+The current backend workflow is protein-agnostic and is not NaPi2b-specific.
+NaPi2b is only the current local sample dataset used in examples and tests.
+Future Stage 16 API work must not hardcode NaPi2b.
+
+One uploaded package/job should represent one protein run. Future API/job
+metadata should carry `protein_id`, `protein_name`, `run_name`, and
+`condition_names`. Conditions are states/groups within a protein run, not the
+protein identity.
+
+Full multi-protein dashboard/catalog/comparison is future product scope.
+Cross-protein comparison is future scope and may require residue, sequence,
+or structure mapping or alignment. The current Stage 15 backend graph workflow
+must not imply cross-protein comparability by default.
+
+See `docs/wania_api_protein_agnostic_boundary.md`.
+
 ## Install For Local Development
 
 For local development and scientific workflow use, install the development and
@@ -268,6 +286,8 @@ be specified separately before implementation.
 
 - `docs/preprocessing_graph_workflow_boundary_before_frontend_api.md`: accepted
   Stage 15 backend workflow boundary.
+- `docs/wania_api_protein_agnostic_boundary.md`: protein-agnostic Stage 16+
+  API/run boundary.
 - `docs/preprocessing_graph_workflow_contract.md`: workflow APIs, options, and
   output layout.
 - `docs/local_scientific_integration_tests.md`: local-only real MD smoke test

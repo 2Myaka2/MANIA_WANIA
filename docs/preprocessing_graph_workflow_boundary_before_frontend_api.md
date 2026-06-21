@@ -265,6 +265,25 @@ APIs.
 Stage 15 output is not yet a frontend/API contract. It is backend graph/export
 workflow output, not a WANIA frontend/API payload.
 
+Stage 16+ API should be designed around generic protein runs, not
+NaPi2b-specific assumptions. This is the protein-agnostic future API boundary:
+one job = one protein run, and one uploaded package = one protein run.
+Future Stage 16 API/job metadata should include `protein_id`, `protein_name`,
+`run_name`, and `condition_names`.
+
+Conditions are not protein identity. Conditions are states/groups within a
+protein run, such as `normal` and `tumor`, not different proteins such as
+NaPi2b and EGFR. There must be no NaPi2b hardcoding in future API routes, job
+metadata, output storage, or frontend payload assumptions. NaPi2b examples are
+examples only.
+
+Output artifacts remain backend artifacts for a run. Future graph/scientific
+artifacts should be stored under job/run paths, not protein-specific
+hardcoded paths. Temporal RIN, if later added, should also be generic per
+protein run. WANIA frontend/API payload design remains future scope.
+
+See `docs/wania_api_protein_agnostic_boundary.md`.
+
 Future frontend/API work must decide separately:
 
 - whether to expose `nodes.csv`, `edges.csv`, `graph.json`, report JSONs, or
@@ -304,4 +323,6 @@ reference comparison is required for normal workflow success.
 - do not assume `graph.json` is already frontend-ready;
 - do not treat Stage 13 `contact_edges.csv` as backend graph edges.csv;
 - do not make reference comparison required for normal workflow success;
+- do not derive protein identity from condition names or path names;
+- do not hardcode NaPi2b in future Stage 16 API/storage/frontend design;
 - do not add temporal RIN unless explicitly scoped.

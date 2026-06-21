@@ -128,6 +128,20 @@ The options validate types only. They do not check whether `manifest_path` or
 `output_dir` exists, do not load YAML, do not inspect `local_md`, and do not
 validate topology or trajectory paths.
 
+## Protein run boundary
+
+Stage 15 backend workflow consumes generic preprocessing manifests and should
+not assume NaPi2b. NaPi2b is only the current local sample/test dataset.
+
+Stage 15 output layout is run/output-root based, not hardcoded to a protein.
+Future Stage 16 API must add generic protein run metadata as future API scope
+rather than deriving protein identity from `condition_names` or path names.
+That future metadata should include `protein_id`, `protein_name`, `run_name`,
+and `condition_names`.
+
+`condition_names` describe states/groups within a run. Conditions are not
+protein identity.
+
 ## Output layout
 
 The deterministic output layout is:

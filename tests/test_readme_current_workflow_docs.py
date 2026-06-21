@@ -117,3 +117,20 @@ def test_readme_documents_frontend_api_future_scope() -> None:
         "future scope",
     ):
         assert phrase in text
+
+
+def test_readme_documents_protein_agnostic_boundary() -> None:
+    text = readme_text()
+
+    for phrase in (
+        "protein-agnostic",
+        "NaPi2b is only the current local sample dataset",
+        "protein_id",
+        "protein_name",
+        "run_name",
+        "condition_names",
+        "Stage 16",
+        "future scope",
+        "docs/wania_api_protein_agnostic_boundary.md",
+    ):
+        assert phrase in text

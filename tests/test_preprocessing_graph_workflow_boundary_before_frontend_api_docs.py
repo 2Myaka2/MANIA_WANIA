@@ -184,6 +184,20 @@ def test_future_frontend_api_boundary_is_documented() -> None:
         assert phrase in text
 
 
+def test_protein_agnostic_future_api_boundary_is_documented() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "protein-agnostic future API boundary",
+        "one protein run",
+        "Conditions are not protein identity",
+        "no NaPi2b hardcoding",
+        "Future Stage 16",
+        "docs/wania_api_protein_agnostic_boundary.md",
+    ):
+        assert phrase in text
+
+
 def test_temporal_rin_future_scope_is_documented() -> None:
     text = doc_text()
 
