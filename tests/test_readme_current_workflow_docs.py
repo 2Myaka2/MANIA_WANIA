@@ -66,11 +66,28 @@ def test_readme_documents_non_produced_outputs() -> None:
     text = readme_text()
 
     for phrase in (
-        "rg/rg_timeseries.csv",
-        "contacts/contacts_perframe.csv",
-        "contacts/contact_edges.csv",
         "temporal RIN",
         "WANIA",
+    ):
+        assert phrase in text
+
+
+def test_readme_documents_optional_scientific_csv_exports() -> None:
+    text = readme_text()
+
+    for phrase in (
+        "--export-scientific-csvs",
+        "--export-rg-timeseries",
+        "--export-contact-edges",
+        "--export-contacts-perframe",
+        "rg/rg_timeseries.csv",
+        "contacts/contact_edges.csv",
+        "contacts/contacts_perframe.csv",
+        "contacts_perframe.csv requires --export-contacts-perframe",
+        "Stage 13 `contact_edges.csv`",
+        "aggregate contacts table",
+        "graph/edges.csv",
+        "backend graph edge table",
     ):
         assert phrase in text
 

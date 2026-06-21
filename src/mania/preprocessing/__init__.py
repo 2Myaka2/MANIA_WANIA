@@ -142,11 +142,14 @@ from mania.preprocessing.trajectory_graph_workflow import (
     PreprocessingGraphWorkflowReferenceComparisonResult,  # noqa: F401
     PreprocessingGraphWorkflowRuntimeLoadingIssue,
     PreprocessingGraphWorkflowRuntimeLoadingResult,
+    PreprocessingGraphWorkflowScientificCsvExportIssue,
+    PreprocessingGraphWorkflowScientificCsvExportResult,
     build_preprocessing_graph_workflow_plan,
     check_preprocessing_graph_workflow_manifest_readiness,
     compare_preprocessing_graph_workflow_reference_artifacts,  # noqa: F401
     compute_preprocessing_graph_workflow_rg_contacts,
     export_preprocessing_graph_workflow_artifacts,
+    export_preprocessing_graph_workflow_scientific_csvs,
     load_preprocessing_graph_workflow_condition_runtimes,
     run_preprocessing_graph_workflow_diagnostics,
 )
@@ -314,6 +317,8 @@ __all__ = [
     "PreprocessingGraphWorkflowPlan",
     "PreprocessingGraphWorkflowRuntimeLoadingIssue",
     "PreprocessingGraphWorkflowRuntimeLoadingResult",
+    "PreprocessingGraphWorkflowScientificCsvExportIssue",
+    "PreprocessingGraphWorkflowScientificCsvExportResult",
     "PreprocessingInputManifest",
     "PreprocessingManifestLoadIssue",
     "PreprocessingManifestLoadResult",
@@ -370,6 +375,7 @@ __all__ = [
     "compute_manifest_rg",
     "compute_preprocessing_graph_workflow_rg_contacts",
     "export_preprocessing_graph_workflow_artifacts",
+    "export_preprocessing_graph_workflow_scientific_csvs",
     "extract_condition_residue_names",
     "extract_manifest_residue_names",
     "get_mdanalysis_status",

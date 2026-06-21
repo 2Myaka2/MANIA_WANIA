@@ -21,6 +21,7 @@ from mania.preprocessing.trajectory_graph_workflow import (
     compare_preprocessing_graph_workflow_reference_artifacts,
     compute_preprocessing_graph_workflow_rg_contacts,
     export_preprocessing_graph_workflow_artifacts,
+    export_preprocessing_graph_workflow_scientific_csvs,
     load_preprocessing_graph_workflow_condition_runtimes,
     run_preprocessing_graph_workflow_diagnostics,
 )
@@ -35,6 +36,16 @@ _PREPROCESSING_GRAPH_EXPORT_VERBOSE_STAGES = {
     5: "Running graph diagnostics",
     6: "Running/skipping reference comparison",
     7: "Writing final summary",
+}
+_PREPROCESSING_GRAPH_EXPORT_WITH_SCIENTIFIC_VERBOSE_STAGES = {
+    1: "Building workflow plan",
+    2: "Loading manifest and condition runtimes",
+    3: "Computing Rg and contacts",
+    4: "Exporting graph artifacts",
+    5: "Exporting optional scientific CSVs",
+    6: "Running graph diagnostics",
+    7: "Running/skipping reference comparison",
+    8: "Writing final summary",
 }
 
 
@@ -186,6 +197,32 @@ def build_parser() -> argparse.ArgumentParser:
         help="Do not write the reference comparison JSON.",
     )
     graph_export_parser.add_argument(
+        "--export-rg-timeseries",
+        action="store_true",
+        help="Export optional rg/rg_timeseries.csv after graph export.",
+    )
+    graph_export_parser.add_argument(
+        "--export-contact-edges",
+        action="store_true",
+        help="Export optional contacts/contact_edges.csv after graph export.",
+    )
+    graph_export_parser.add_argument(
+        "--export-contacts-perframe",
+        action="store_true",
+        help=(
+            "Export optional contacts/contacts_perframe.csv after graph "
+            "export. This can be large and is never included in the shortcut."
+        ),
+    )
+    graph_export_parser.add_argument(
+        "--export-scientific-csvs",
+        action="store_true",
+        help=(
+            "Export the safe optional scientific CSV subset: "
+            "rg/rg_timeseries.csv and contacts/contact_edges.csv."
+        ),
+    )
+    graph_export_parser.add_argument(
         "--verbose",
         action="store_true",
         help="Print stage-by-stage progress messages to stderr.",
@@ -271,6 +308,7 @@ def _build_preprocessing_graph_export_summary(
     runtime_loading: object | None = None,
     computation: object | None = None,
     graph_export: object | None = None,
+    scientific_csv_export: object | None = None,
     diagnostics: object | None = None,
     reference_comparison: object | None = None,
 ) -> dict[str, object]:
@@ -281,6 +319,7 @@ def _build_preprocessing_graph_export_summary(
         "runtime_loading": _json_safe_result(runtime_loading),
         "computation": _json_safe_result(computation),
         "graph_export": _json_safe_result(graph_export),
+        "scientific_csv_export": _json_safe_result(scientific_csv_export),
         "diagnostics": _json_safe_result(diagnostics),
         "reference_comparison": _json_safe_result(reference_comparison),
     }
@@ -296,14 +335,66 @@ def _verbose_enabled(args: argparse.Namespace) -> bool:
     return bool(getattr(args, "verbose", False))
 
 
+def _scientific_csv_export_requested(args: argparse.Namespace) -> bool:
+    return any(
+        (
+            bool(getattr(args, "export_scientific_csvs", False)),
+            bool(getattr(args, "export_rg_timeseries", False)),
+            bool(getattr(args, "export_contact_edges", False)),
+            bool(getattr(args, "export_contacts_perframe", False)),
+        )
+    )
+
+
+def _scientific_export_flags(args: argparse.Namespace) -> dict[str, bool]:
+    shortcut = bool(getattr(args, "export_scientific_csvs", False))
+    return {
+        "export_rg_timeseries": (
+            shortcut or bool(getattr(args, "export_rg_timeseries", False))
+        ),
+        "export_contact_edges": (
+            shortcut or bool(getattr(args, "export_contact_edges", False))
+        ),
+        "export_contacts_perframe": bool(
+            getattr(args, "export_contacts_perframe", False)
+        ),
+    }
+
+
+def _preprocessing_graph_export_verbose_stages(
+    args: argparse.Namespace,
+) -> dict[int, str]:
+    if _scientific_csv_export_requested(args):
+        return _PREPROCESSING_GRAPH_EXPORT_WITH_SCIENTIFIC_VERBOSE_STAGES
+    return _PREPROCESSING_GRAPH_EXPORT_VERBOSE_STAGES
+
+
+def _preprocessing_graph_export_stage_count(args: argparse.Namespace) -> int:
+    return len(_preprocessing_graph_export_verbose_stages(args))
+
+
+def _diagnostics_stage_number(args: argparse.Namespace) -> int:
+    return 6 if _scientific_csv_export_requested(args) else 5
+
+
+def _reference_comparison_stage_number(args: argparse.Namespace) -> int:
+    return 7 if _scientific_csv_export_requested(args) else 6
+
+
+def _summary_stage_number(args: argparse.Namespace) -> int:
+    return _preprocessing_graph_export_stage_count(args)
+
+
 def _print_preprocessing_graph_export_progress(
     args: argparse.Namespace,
     stage_number: int,
 ) -> None:
     if not _verbose_enabled(args):
         return
-    message = _PREPROCESSING_GRAPH_EXPORT_VERBOSE_STAGES[stage_number]
-    print(f"[{stage_number}/7] {message}...", file=sys.stderr)
+    stages = _preprocessing_graph_export_verbose_stages(args)
+    message = stages[stage_number]
+    stage_count = _preprocessing_graph_export_stage_count(args)
+    print(f"[{stage_number}/{stage_count}] {message}...", file=sys.stderr)
 
 
 def _print_preprocessing_graph_export_failure(
@@ -312,22 +403,60 @@ def _print_preprocessing_graph_export_failure(
 ) -> None:
     if not _verbose_enabled(args):
         return
-    message = _PREPROCESSING_GRAPH_EXPORT_VERBOSE_STAGES[stage_number]
-    print(f"[{stage_number}/7] Failed: {message}.", file=sys.stderr)
+    stages = _preprocessing_graph_export_verbose_stages(args)
+    message = stages[stage_number]
+    stage_count = _preprocessing_graph_export_stage_count(args)
+    print(
+        f"[{stage_number}/{stage_count}] Failed: {message}.",
+        file=sys.stderr,
+    )
+
+
+def _skipped_scientific_csv_export_summary() -> dict[str, object]:
+    return {
+        "stage": "scientific_csv_export",
+        "passed": True,
+        "skipped": True,
+        "requested_exports": {
+            "rg_timeseries": False,
+            "contact_edges": False,
+            "contacts_perframe": False,
+        },
+        "rg_timeseries_written": False,
+        "contact_edges_written": False,
+        "contacts_perframe_written": False,
+        "paths": {},
+        "validation": {
+            "rg_timeseries": None,
+            "contact_edges": None,
+            "contacts_perframe": None,
+        },
+        "issues": [],
+        "issue_count": 0,
+    }
 
 
 def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     options = _build_preprocessing_graph_workflow_options(args)
+    scientific_csv_export: object | None = (
+        None
+        if _scientific_csv_export_requested(args)
+        else _skipped_scientific_csv_export_summary()
+    )
     _print_preprocessing_graph_export_progress(args, 1)
     plan = build_preprocessing_graph_workflow_plan(options)
     if not plan.passed:
         _print_preprocessing_graph_export_failure(args, 1)
-        _print_preprocessing_graph_export_progress(args, 7)
+        _print_preprocessing_graph_export_progress(
+            args,
+            _summary_stage_number(args),
+        )
         _print_preprocessing_graph_export_summary(
             _build_preprocessing_graph_export_summary(
                 "plan",
                 passed=False,
                 plan=plan,
+                scientific_csv_export=scientific_csv_export,
             )
         )
         return 1
@@ -339,13 +468,17 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     )
     if not runtime_loading.passed:
         _print_preprocessing_graph_export_failure(args, 2)
-        _print_preprocessing_graph_export_progress(args, 7)
+        _print_preprocessing_graph_export_progress(
+            args,
+            _summary_stage_number(args),
+        )
         _print_preprocessing_graph_export_summary(
             _build_preprocessing_graph_export_summary(
                 "runtime_loading",
                 passed=False,
                 plan=plan,
                 runtime_loading=runtime_loading,
+                scientific_csv_export=scientific_csv_export,
             )
         )
         return 1
@@ -358,7 +491,10 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     )
     if not computation.passed:
         _print_preprocessing_graph_export_failure(args, 3)
-        _print_preprocessing_graph_export_progress(args, 7)
+        _print_preprocessing_graph_export_progress(
+            args,
+            _summary_stage_number(args),
+        )
         _print_preprocessing_graph_export_summary(
             _build_preprocessing_graph_export_summary(
                 "computation",
@@ -366,6 +502,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 plan=plan,
                 runtime_loading=runtime_loading,
                 computation=computation,
+                scientific_csv_export=scientific_csv_export,
             )
         )
         return 1
@@ -377,7 +514,10 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     )
     if not graph_export.passed:
         _print_preprocessing_graph_export_failure(args, 4)
-        _print_preprocessing_graph_export_progress(args, 7)
+        _print_preprocessing_graph_export_progress(
+            args,
+            _summary_stage_number(args),
+        )
         _print_preprocessing_graph_export_summary(
             _build_preprocessing_graph_export_summary(
                 "graph_export",
@@ -386,12 +526,51 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 runtime_loading=runtime_loading,
                 computation=computation,
                 graph_export=graph_export,
+                scientific_csv_export=scientific_csv_export,
             )
         )
         return 1
 
+    if _scientific_csv_export_requested(args):
+        _print_preprocessing_graph_export_progress(args, 5)
+        scientific_export_flags = _scientific_export_flags(args)
+        scientific_csv_export = (
+            export_preprocessing_graph_workflow_scientific_csvs(
+                computation,
+                plan.output_layout,
+                export_rg_timeseries=scientific_export_flags[
+                    "export_rg_timeseries"
+                ],
+                export_contact_edges=scientific_export_flags[
+                    "export_contact_edges"
+                ],
+                export_contacts_perframe=scientific_export_flags[
+                    "export_contacts_perframe"
+                ],
+            )
+        )
+        if not _workflow_result_passed(scientific_csv_export):
+            _print_preprocessing_graph_export_failure(args, 5)
+            _print_preprocessing_graph_export_progress(
+                args,
+                _summary_stage_number(args),
+            )
+            _print_preprocessing_graph_export_summary(
+                _build_preprocessing_graph_export_summary(
+                    "scientific_csv_export",
+                    passed=False,
+                    plan=plan,
+                    runtime_loading=runtime_loading,
+                    computation=computation,
+                    graph_export=graph_export,
+                    scientific_csv_export=scientific_csv_export,
+                )
+            )
+            return 1
+
     diagnostics: object | None
-    _print_preprocessing_graph_export_progress(args, 5)
+    diagnostics_stage = _diagnostics_stage_number(args)
+    _print_preprocessing_graph_export_progress(args, diagnostics_stage)
     if args.skip_diagnostics:
         diagnostics = {"passed": True, "skipped": True}
     else:
@@ -400,8 +579,14 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             write_report_json=not args.no_write_diagnostics_report,
         )
         if not _workflow_result_passed(diagnostics):
-            _print_preprocessing_graph_export_failure(args, 5)
-            _print_preprocessing_graph_export_progress(args, 7)
+            _print_preprocessing_graph_export_failure(
+                args,
+                diagnostics_stage,
+            )
+            _print_preprocessing_graph_export_progress(
+                args,
+                _summary_stage_number(args),
+            )
             _print_preprocessing_graph_export_summary(
                 _build_preprocessing_graph_export_summary(
                     "diagnostics",
@@ -410,12 +595,17 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                     runtime_loading=runtime_loading,
                     computation=computation,
                     graph_export=graph_export,
+                    scientific_csv_export=scientific_csv_export,
                     diagnostics=diagnostics,
                 )
             )
             return 1
 
-    _print_preprocessing_graph_export_progress(args, 6)
+    reference_comparison_stage = _reference_comparison_stage_number(args)
+    _print_preprocessing_graph_export_progress(
+        args,
+        reference_comparison_stage,
+    )
     reference_comparison = (
         compare_preprocessing_graph_workflow_reference_artifacts(
             graph_export,
@@ -425,8 +615,14 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         )
     )
     if not reference_comparison.passed:
-        _print_preprocessing_graph_export_failure(args, 6)
-        _print_preprocessing_graph_export_progress(args, 7)
+        _print_preprocessing_graph_export_failure(
+            args,
+            reference_comparison_stage,
+        )
+        _print_preprocessing_graph_export_progress(
+            args,
+            _summary_stage_number(args),
+        )
         _print_preprocessing_graph_export_summary(
             _build_preprocessing_graph_export_summary(
                 "reference_comparison",
@@ -435,13 +631,17 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 runtime_loading=runtime_loading,
                 computation=computation,
                 graph_export=graph_export,
+                scientific_csv_export=scientific_csv_export,
                 diagnostics=diagnostics,
                 reference_comparison=reference_comparison,
             )
         )
         return 1
 
-    _print_preprocessing_graph_export_progress(args, 7)
+    _print_preprocessing_graph_export_progress(
+        args,
+        _summary_stage_number(args),
+    )
     _print_preprocessing_graph_export_summary(
         _build_preprocessing_graph_export_summary(
             "preprocessing_graph_export",
@@ -450,6 +650,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             runtime_loading=runtime_loading,
             computation=computation,
             graph_export=graph_export,
+            scientific_csv_export=scientific_csv_export,
             diagnostics=diagnostics,
             reference_comparison=reference_comparison,
         )

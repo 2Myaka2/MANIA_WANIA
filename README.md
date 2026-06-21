@@ -21,6 +21,7 @@ raw MD files + preprocessing manifest
 -> graph/nodes.csv
 -> graph/edges.csv
 -> graph/graph.json
+-> optional scientific CSV exports when explicitly requested
 -> diagnostics report when diagnostics report writing succeeds
 ```
 
@@ -124,9 +125,56 @@ machine-readable JSON result. The command exits non-zero when a workflow stage
 fails. The CLI does not execute notebooks, auto-discover `local_md`, or produce
 WANIA frontend/API payloads.
 
+## Optional Scientific CSV Exports
+
+By default, the Stage 15 CLI does not export Rg/contacts CSVs. They can be
+exported with explicit optional flags after graph export succeeds.
+
+Recommended safe shortcut:
+
+```bash
+mania preprocessing run-graph-export \
+  --manifest local_md/manifests/napi2b_10ns.yaml \
+  --output mania_output/napi2b_10ns \
+  --verbose \
+  --export-scientific-csvs
+```
+
+`--export-scientific-csvs` exports:
+
+```text
+rg/rg_timeseries.csv
+contacts/contact_edges.csv
+```
+
+The shortcut does not export per-frame contacts.
+contacts/contacts_perframe.csv is exported only when explicitly requested.
+contacts_perframe.csv requires --export-contacts-perframe because it can be
+large:
+
+```bash
+mania preprocessing run-graph-export \
+  --manifest local_md/manifests/napi2b_10ns.yaml \
+  --output mania_output/napi2b_10ns \
+  --verbose \
+  --export-scientific-csvs \
+  --export-contacts-perframe
+```
+
+Granular flags are also available:
+
+```text
+--export-rg-timeseries
+--export-contact-edges
+--export-contacts-perframe
+```
+
+Stage 13 `contact_edges.csv` is an aggregate contacts table. It is not the
+backend graph edge table at `graph/edges.csv`.
+
 ## Outputs
 
-Expected output tree:
+Default output tree:
 
 ```text
 mania_output/napi2b_10ns/
@@ -152,22 +200,37 @@ comparison is explicitly enabled and successful. Graph artifacts may exist even
 if diagnostics fail. Inspect diagnostics failure details in the final JSON and,
 when written, `reports/graph_diagnostics_report.json`.
 
-## What Is Not Produced Yet
-
-The Stage 15 workflow CLI does not currently export:
+Optional scientific CSV output tree when requested:
 
 ```text
-rg/rg_timeseries.csv
-contacts/contacts_perframe.csv
-contacts/contact_edges.csv
+mania_output/napi2b_10ns/
+|-- graph/
+|   |-- nodes.csv
+|   |-- edges.csv
+|   `-- graph.json
+|-- rg/
+|   `-- rg_timeseries.csv
+|-- contacts/
+|   |-- contact_edges.csv
+|   `-- contacts_perframe.csv
+`-- reports/
+    `-- graph_diagnostics_report.json
+```
+
+`rg/` and `contacts/` appear only when the corresponding optional CSV export
+flags are requested.
+
+## What Is Not Produced Yet
+
+The Stage 15 workflow CLI still does not produce:
+
+```text
 temporal RIN artifacts
 WANIA/frontend API payloads
 ```
 
-Rg and contacts are computed in memory for graph export. Stage 13
-`contact_edges.csv` is an aggregate contacts table; it is not backend graph
-`graph/edges.csv`. Backend graph `edges.csv` is produced under
-`graph/edges.csv`.
+Rg and contacts are computed in memory for graph export. Optional Rg/contact
+CSVs are side-effect scientific exports, not WANIA/frontend API payloads.
 
 ## Data And Git Boundaries
 

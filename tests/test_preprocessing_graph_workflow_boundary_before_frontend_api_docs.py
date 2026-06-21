@@ -83,13 +83,26 @@ def test_accepted_graph_artifacts_are_documented() -> None:
         assert phrase in text
 
 
-def test_non_produced_outputs_are_documented() -> None:
+def test_optional_scientific_csv_outputs_are_documented() -> None:
     text = doc_text()
 
     for phrase in (
         "rg/rg_timeseries.csv",
         "contacts/contacts_perframe.csv",
         "contacts/contact_edges.csv",
+        "optional opt-in outputs",
+        "--export-scientific-csvs",
+        "--export-contacts-perframe",
+    ):
+        assert phrase in text
+
+
+def test_non_produced_outputs_are_documented() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "temporal RIN artifacts",
+        "WANIA/frontend API payloads",
         "not produced by Stage 15 workflow CLI",
     ):
         assert phrase in text

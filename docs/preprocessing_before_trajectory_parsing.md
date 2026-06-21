@@ -150,6 +150,10 @@ The current preprocessing layer supports:
   Stage 15.4 computation result, reusing accepted Stage 14 graph export APIs
   for mapping, backend graph nodes.csv, corrected backend graph edges.csv,
   CSV validation, graph.json, and bundle creation;
+- optional scientific CSV export orchestration through the Pre-16.4 workflow
+  wrapper from the Stage 15.4 computation result, reusing accepted Stage 12/13
+  Rg/contact CSV writers and validators without changing runtime loading or
+  computation;
 - diagnostics + diagnostics report orchestration through the Stage 15.6
   workflow wrapper from the Stage 15.5 graph export result, reusing accepted
   Stage 14 diagnostics APIs and optionally writing only
@@ -275,6 +279,7 @@ build_preprocessing_graph_workflow_plan(...)
 check_preprocessing_graph_workflow_manifest_readiness(...)
 compute_preprocessing_graph_workflow_rg_contacts(...)
 export_preprocessing_graph_workflow_artifacts(...)
+export_preprocessing_graph_workflow_scientific_csvs(...)
 run_preprocessing_graph_workflow_diagnostics(...)
 ```
 
@@ -303,6 +308,11 @@ export, real-data CI, or a local real MD smoke test. Running the command on
 real local MD inputs remains an explicit local action and may require optional
 scientific dependencies only through the accepted runtime/scientific APIs.
 Default CI remains independent from local MD data.
+
+Pre-16.4 adds optional scientific CSV export flags after graph export. The
+exports are available only from already computed Stage 12/13-compatible Rg and
+contacts results, and do not change runtime loading, Rg computation, contacts
+computation, graph export, temporal RIN scope, or WANIA/frontend API scope.
 
 ## Stage 15.9 local real MD smoke boundary
 

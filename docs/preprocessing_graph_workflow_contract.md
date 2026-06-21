@@ -86,6 +86,22 @@ JSON-safe workflow metadata and safe comparison counts/status fields.
 Stage 15.7 adds no new comparison algorithm and no programmatic expected
 mismatch classification.
 
+Pre-16.4 adds optional scientific CSV export orchestration, also exported from
+`mania.preprocessing`:
+
+```python
+PreprocessingGraphWorkflowScientificCsvExportIssue
+PreprocessingGraphWorkflowScientificCsvExportResult
+export_preprocessing_graph_workflow_scientific_csvs(...)
+```
+
+This API exports side-effect scientific CSV artifacts from already computed
+Stage 15.4 in-memory Rg/contact results. It reuses the accepted Stage 12/13
+CSV writers and validators. It does not change Rg computation, contact
+computation, graph export, graph schema, diagnostics, or reference comparison.
+When no export flags are enabled, it returns a skipped successful result and
+writes no `rg/` or `contacts/` directories.
+
 ## Run options
 
 `PreprocessingGraphWorkflowOptions` records:
@@ -441,10 +457,47 @@ run_preprocessing_graph_workflow_diagnostics(...), unless skipped
 compare_preprocessing_graph_workflow_reference_artifacts(...)
 ```
 
+Without optional scientific CSV flags, this accepted order remains unchanged.
+When optional scientific CSV export is requested, the CLI inserts
+`export_preprocessing_graph_workflow_scientific_csvs(...)` after graph export
+and before diagnostics:
+
+```text
+build_preprocessing_graph_workflow_plan(...)
+load_preprocessing_graph_workflow_condition_runtimes(...)
+compute_preprocessing_graph_workflow_rg_contacts(...)
+export_preprocessing_graph_workflow_artifacts(...)
+export_preprocessing_graph_workflow_scientific_csvs(...)
+run_preprocessing_graph_workflow_diagnostics(...), unless skipped
+compare_preprocessing_graph_workflow_reference_artifacts(...)
+```
+
 The CLI does not duplicate manifest loading, runtime loading, Rg/contact
 computation, graph export, diagnostics, or reference comparison business
 logic. It prints deterministic JSON-safe summaries and returns non-zero on
 failed workflow stages.
+
+Optional scientific CSV flags are:
+
+```text
+--export-rg-timeseries
+--export-contact-edges
+--export-contacts-perframe
+--export-scientific-csvs
+```
+
+`--export-scientific-csvs` is the safe shortcut for `--export-rg-timeseries`
+plus `--export-contact-edges`. It deliberately does not include
+`--export-contacts-perframe`; per-frame contacts require the explicit
+`--export-contacts-perframe` flag.
+
+The optional scientific CSV export result is included in the final JSON under
+`scientific_csv_export`. Without flags it is a skipped success. If a requested
+CSV write or validation fails, `scientific_csv_export.passed` is false, the
+final workflow result is false, and the CLI exits non-zero. Requested exports
+are attempted in deterministic order: Rg timeseries, aggregate contact edges,
+then contacts per-frame. A failed optional export does not retroactively remove
+already written graph artifacts.
 
 Reference comparison remains disabled by default. When enabled, the command
 requires explicit reference artifact paths for `nodes.csv`, corrected

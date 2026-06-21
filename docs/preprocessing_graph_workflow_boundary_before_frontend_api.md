@@ -10,10 +10,11 @@ manifest -> runtime loading -> in-memory Rg/contacts -> backend graph export
 -> local-only smoke test
 ```
 
-Stage 15.10 freezes that backend workflow boundary before future frontend/API
-work. This document adds no new runtime behavior, public API, CLI behavior,
-scientific computation behavior, frontend/API schema, WANIA payload mapping,
-temporal RIN export, real-data CI, or dependency change.
+Stage 15.10 froze that backend workflow boundary before future frontend/API
+work. Pre-16.4 adds optional scientific CSV side exports from already computed
+Rg/contact results. It adds no new scientific computation behavior,
+frontend/API schema, WANIA payload mapping, temporal RIN export, real-data CI,
+or dependency change.
 
 ## Accepted Stage 15 sequence
 
@@ -46,11 +47,13 @@ temporal RIN export, real-data CI, or dependency change.
 - 15.10 final boundary docs: records final docs/tests-only workflow
   limitations before frontend/API; it must not be confused with runtime,
   source, CLI, or scientific behavior.
+- Pre-16.4 optional scientific CSV exports: may write Rg/contact CSV side
+  artifacts only when explicit flags are provided; it must not be confused
+  with backend graph export artifacts, WANIA/API payloads, or temporal RIN.
 
 ## Accepted public workflow APIs
 
-These accepted workflow APIs are available from `mania.preprocessing`. Stage
-15.10 does not introduce new APIs.
+These accepted workflow APIs are available from `mania.preprocessing`.
 
 Stage 15.1:
 
@@ -110,6 +113,14 @@ PreprocessingGraphWorkflowReferenceComparisonResult
 compare_preprocessing_graph_workflow_reference_artifacts(...)
 ```
 
+Pre-16.4:
+
+```python
+PreprocessingGraphWorkflowScientificCsvExportIssue
+PreprocessingGraphWorkflowScientificCsvExportResult
+export_preprocessing_graph_workflow_scientific_csvs(...)
+```
+
 ## Accepted CLI boundary
 
 The accepted Stage 15.8 CLI command is:
@@ -127,6 +138,21 @@ notebooks, and does not generate frontend/API payloads.
 Reference comparison is disabled by default. Enabled reference comparison
 requires explicit reference artifact paths for reference `nodes.csv`,
 corrected `edges.csv`, and `graph.json`.
+
+Optional scientific CSV export is disabled by default. The CLI accepts:
+
+```text
+--export-rg-timeseries
+--export-contact-edges
+--export-contacts-perframe
+--export-scientific-csvs
+```
+
+`--export-scientific-csvs` exports only the safe subset:
+`rg/rg_timeseries.csv` and `contacts/contact_edges.csv`.
+`contacts/contacts_perframe.csv` requires `--export-contacts-perframe`.
+When requested, optional scientific CSV export runs after graph export and
+before diagnostics.
 
 ## Accepted output artifacts
 
@@ -148,6 +174,18 @@ writing is enabled.
 an aggregate contacts table. Stage 13 `contact_edges.csv` is not backend graph
 edges.csv.
 
+Pre-16.4 may also produce these optional opt-in outputs:
+
+```text
+rg/rg_timeseries.csv
+contacts/contact_edges.csv
+contacts/contacts_perframe.csv
+```
+
+`contacts/contact_edges.csv` is the Stage 13 aggregate contacts table.
+`graph/edges.csv` remains the backend graph edge table. These optional
+scientific CSVs are not WANIA/frontend API payloads.
+
 The corrected backend graph edge schema includes:
 
 ```text
@@ -158,22 +196,19 @@ n_edge_types
 
 ## Outputs deliberately not produced by Stage 15
 
-The accepted Stage 15 workflow CLI does not produce these outputs; they are
-not produced by Stage 15 workflow CLI:
+The accepted Stage 15 workflow CLI still does not produce these outputs; they
+are not produced by Stage 15 workflow CLI:
 
 ```text
-rg/rg_timeseries.csv
-contacts/contacts_perframe.csv
-contacts/contact_edges.csv
 temporal RIN artifacts
 WANIA/frontend API payloads
 notebook-derived runtime artifacts
 ```
 
-Stage 15.4 computes Rg and contacts in memory for graph export. Rg/contacts
-CSV export exists as standalone accepted functionality from earlier stages,
-but the Stage 15 workflow CLI does not export those CSVs. Temporal RIN remains
-future scope. WANIA frontend/API payload remains future scope.
+Stage 15.4 computes Rg and contacts in memory for graph export. Optional
+Rg/contact CSVs can now be exported only with explicit Pre-16.4 flags.
+Temporal RIN remains future scope. WANIA frontend/API payload remains future
+scope.
 
 ## Reference comparison boundary
 
@@ -243,16 +278,14 @@ payload mapping in Stage 15.10.
 
 Future frontend/API integration must not assume `graph.json` is already
 frontend-ready, must not assume Stage 15 artifacts are a WANIA payload, must
-not assume Rg/contacts CSVs are emitted by the workflow CLI, and must not
-assume reference comparison is required for normal workflow success.
+not assume Rg/contacts CSVs are emitted by default, and must not assume
+reference comparison is required for normal workflow success.
 
 ## Future scope checklist
 
 - frontend/API adapter and payload contract;
 - WANIA frontend integration;
 - temporal RIN export/comparison;
-- optional Rg/contacts CSV export integration into workflow, if later
-  accepted;
 - production workflow runner, if later accepted;
 - default CI with synthetic-only workflow checks, if later accepted;
 - real-data CI, if ever accepted separately;

@@ -27,6 +27,15 @@ STAGE15_ORDER = (
     "run_preprocessing_graph_workflow_diagnostics",
     "compare_preprocessing_graph_workflow_reference_artifacts",
 )
+STAGE15_ORDER_WITH_SCIENTIFIC = (
+    "build_preprocessing_graph_workflow_plan",
+    "load_preprocessing_graph_workflow_condition_runtimes",
+    "compute_preprocessing_graph_workflow_rg_contacts",
+    "export_preprocessing_graph_workflow_artifacts",
+    "export_preprocessing_graph_workflow_scientific_csvs",
+    "run_preprocessing_graph_workflow_diagnostics",
+    "compare_preprocessing_graph_workflow_reference_artifacts",
+)
 VERBOSE_STAGE_MESSAGES = (
     "[1/7] Building workflow plan",
     "[2/7] Loading manifest and condition runtimes",
@@ -35,6 +44,16 @@ VERBOSE_STAGE_MESSAGES = (
     "[5/7] Running graph diagnostics",
     "[6/7] Running/skipping reference comparison",
     "[7/7] Writing final summary",
+)
+VERBOSE_STAGE_MESSAGES_WITH_SCIENTIFIC = (
+    "[1/8] Building workflow plan",
+    "[2/8] Loading manifest and condition runtimes",
+    "[3/8] Computing Rg and contacts",
+    "[4/8] Exporting graph artifacts",
+    "[5/8] Exporting optional scientific CSVs",
+    "[6/8] Running graph diagnostics",
+    "[7/8] Running/skipping reference comparison",
+    "[8/8] Writing final summary",
 )
 
 
@@ -83,6 +102,71 @@ class FakeComputationResult(FakeResult):
         payload["include_rg"] = self.include_rg
         payload["include_contacts"] = self.include_contacts
         return payload
+
+
+@dataclass(frozen=True)
+class FakeScientificCsvExportResult:
+    export_rg_timeseries: bool
+    export_contact_edges: bool
+    export_contacts_perframe: bool
+    passed: bool = True
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "stage": "scientific_csv_export",
+            "passed": self.passed,
+            "skipped": False,
+            "requested_exports": {
+                "rg_timeseries": self.export_rg_timeseries,
+                "contact_edges": self.export_contact_edges,
+                "contacts_perframe": self.export_contacts_perframe,
+            },
+            "rg_timeseries_written": self.export_rg_timeseries and self.passed,
+            "contact_edges_written": self.export_contact_edges and self.passed,
+            "contacts_perframe_written": (
+                self.export_contacts_perframe and self.passed
+            ),
+            "paths": {
+                "rg_timeseries_csv": (
+                    "out/rg/rg_timeseries.csv"
+                    if self.export_rg_timeseries
+                    else None
+                ),
+                "contact_edges_csv": (
+                    "out/contacts/contact_edges.csv"
+                    if self.export_contact_edges
+                    else None
+                ),
+                "contacts_perframe_csv": (
+                    "out/contacts/contacts_perframe.csv"
+                    if self.export_contacts_perframe
+                    else None
+                ),
+            },
+            "validation": {
+                "rg_timeseries": (
+                    {"passed": True} if self.export_rg_timeseries else None
+                ),
+                "contact_edges": (
+                    {"passed": True} if self.export_contact_edges else None
+                ),
+                "contacts_perframe": (
+                    {"passed": True}
+                    if self.export_contacts_perframe
+                    else None
+                ),
+            },
+            "issues": (
+                []
+                if self.passed
+                else [
+                    {
+                        "kind": "forced_scientific_csv_export_failure",
+                        "message": "Forced scientific CSV export failure.",
+                    }
+                ]
+            ),
+        }
 
 
 @dataclass(frozen=True)
@@ -153,6 +237,7 @@ def install_fake_stage15(
     *,
     failing_stage: str | None = None,
     diagnostics_result: object | None = None,
+    scientific_result: object | None = None,
 ) -> tuple[list[str], dict[str, Any]]:
     calls: list[str] = []
     received: dict[str, Any] = {}
@@ -203,6 +288,31 @@ def install_fake_stage15(
         received["output_layout"] = output_layout
         passed = failing_stage != "graph_export" and computation.include_contacts
         return FakeResult("graph_export", passed=passed, raw=object())
+
+    def fake_scientific_csv_export(
+        computation: object,
+        output_layout: object,
+        *,
+        export_rg_timeseries: bool,
+        export_contact_edges: bool,
+        export_contacts_perframe: bool,
+    ) -> object:
+        calls.append("export_preprocessing_graph_workflow_scientific_csvs")
+        received["scientific_computation"] = computation
+        received["scientific_output_layout"] = output_layout
+        received["scientific_export_flags"] = {
+            "export_rg_timeseries": export_rg_timeseries,
+            "export_contact_edges": export_contact_edges,
+            "export_contacts_perframe": export_contacts_perframe,
+        }
+        if scientific_result is not None:
+            return scientific_result
+        return FakeScientificCsvExportResult(
+            export_rg_timeseries=export_rg_timeseries,
+            export_contact_edges=export_contact_edges,
+            export_contacts_perframe=export_contacts_perframe,
+            passed=failing_stage != "scientific_csv_export",
+        )
 
     def fake_diagnostics(
         graph_export: object,
@@ -266,6 +376,11 @@ def install_fake_stage15(
     )
     monkeypatch.setattr(
         cli,
+        "export_preprocessing_graph_workflow_scientific_csvs",
+        fake_scientific_csv_export,
+    )
+    monkeypatch.setattr(
+        cli,
         "run_preprocessing_graph_workflow_diagnostics",
         fake_diagnostics,
     )
@@ -290,7 +405,28 @@ def test_graph_export_help_mentions_verbose_without_mdanalysis() -> None:
 
     assert result.returncode == 0
     assert "--verbose" in result.stdout
+    assert "--export-scientific-csvs" in result.stdout
+    assert "--export-rg-timeseries" in result.stdout
+    assert "--export-contact-edges" in result.stdout
+    assert "--export-contacts-perframe" in result.stdout
     assert "MDAnalysis" not in result.stderr
+
+
+def test_graph_export_accepts_scientific_csv_flags() -> None:
+    args = cli.build_parser().parse_args(
+        [
+            *BASE_COMMAND,
+            "--export-scientific-csvs",
+            "--export-rg-timeseries",
+            "--export-contact-edges",
+            "--export-contacts-perframe",
+        ]
+    )
+
+    assert args.export_scientific_csvs is True
+    assert args.export_rg_timeseries is True
+    assert args.export_contact_edges is True
+    assert args.export_contacts_perframe is True
 
 
 @pytest.mark.parametrize(
@@ -333,9 +469,13 @@ def test_default_command_builds_options_and_calls_stage15_in_order(
 
     _, stdout, _ = invoke_cli(monkeypatch, capsys, *BASE_COMMAND)
     payload = stdout_json(stdout)
+    scientific_payload = payload["scientific_csv_export"]
     options = received["options"]
 
     assert payload["passed"] is True
+    assert isinstance(scientific_payload, dict)
+    assert scientific_payload["passed"] is True
+    assert scientific_payload["skipped"] is True
     assert calls == list(STAGE15_ORDER)
     assert options.manifest_path == Path("manifest.yaml")
     assert options.output_dir == Path("out")
@@ -363,6 +503,7 @@ def test_verbose_command_parses_and_calls_stage15_in_order(
     assert stdout_json(stdout)["passed"] is True
     assert calls == list(STAGE15_ORDER)
     assert VERBOSE_STAGE_MESSAGES[0] in stderr
+    assert "[1/8]" not in stderr
 
 
 def test_non_verbose_graph_export_stdout_remains_final_json_only(
@@ -379,6 +520,146 @@ def test_non_verbose_graph_export_stdout_remains_final_json_only(
     assert stderr == ""
     assert_no_verbose_stage_messages(stdout)
     assert_no_verbose_stage_messages(stderr)
+
+
+def test_default_command_does_not_write_scientific_csvs(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
+    calls, _ = install_fake_stage15(monkeypatch)
+    output_dir = tmp_path / "out"
+
+    _, stdout, _ = invoke_cli(
+        monkeypatch,
+        capsys,
+        "preprocessing",
+        "run-graph-export",
+        "--manifest",
+        "manifest.yaml",
+        "--output",
+        str(output_dir),
+    )
+    payload = stdout_json(stdout)
+    scientific_payload = payload["scientific_csv_export"]
+
+    assert "export_preprocessing_graph_workflow_scientific_csvs" not in calls
+    assert isinstance(scientific_payload, dict)
+    assert scientific_payload["skipped"] is True
+    assert not (output_dir / "rg" / "rg_timeseries.csv").exists()
+    assert not (output_dir / "contacts" / "contact_edges.csv").exists()
+    assert not (output_dir / "contacts" / "contacts_perframe.csv").exists()
+
+
+def test_scientific_csv_shortcut_exports_safe_subset_only(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    calls, received = install_fake_stage15(monkeypatch)
+
+    _, stdout, _ = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--export-scientific-csvs",
+    )
+    payload = stdout_json(stdout)
+    scientific_payload = payload["scientific_csv_export"]
+
+    assert calls == list(STAGE15_ORDER_WITH_SCIENTIFIC)
+    assert received["scientific_export_flags"] == {
+        "export_rg_timeseries": True,
+        "export_contact_edges": True,
+        "export_contacts_perframe": False,
+    }
+    assert isinstance(scientific_payload, dict)
+    assert scientific_payload["rg_timeseries_written"] is True
+    assert scientific_payload["contact_edges_written"] is True
+    assert scientific_payload["contacts_perframe_written"] is False
+    assert scientific_payload["requested_exports"]["contacts_perframe"] is False
+
+
+def test_scientific_csv_granular_flags_export_expected_outputs(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _, received = install_fake_stage15(monkeypatch)
+
+    _, stdout, _ = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--export-rg-timeseries",
+        "--export-contact-edges",
+        "--export-contacts-perframe",
+    )
+    payload = stdout_json(stdout)
+    scientific_payload = payload["scientific_csv_export"]
+
+    assert received["scientific_export_flags"] == {
+        "export_rg_timeseries": True,
+        "export_contact_edges": True,
+        "export_contacts_perframe": True,
+    }
+    assert isinstance(scientific_payload, dict)
+    assert scientific_payload["rg_timeseries_written"] is True
+    assert scientific_payload["contact_edges_written"] is True
+    assert scientific_payload["contacts_perframe_written"] is True
+
+
+def test_requested_scientific_csv_failure_makes_cli_nonzero(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    calls, _ = install_fake_stage15(
+        monkeypatch,
+        failing_stage="scientific_csv_export",
+    )
+
+    _, stdout, _ = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--export-rg-timeseries",
+        expected_exit_code=1,
+    )
+    payload = stdout_json(stdout)
+    scientific_payload = payload["scientific_csv_export"]
+    graph_payload = payload["graph_export"]
+
+    assert calls == list(STAGE15_ORDER_WITH_SCIENTIFIC[:5])
+    assert payload["stage"] == "scientific_csv_export"
+    assert payload["passed"] is False
+    assert isinstance(graph_payload, dict)
+    assert graph_payload["passed"] is True
+    assert isinstance(scientific_payload, dict)
+    assert scientific_payload["passed"] is False
+    assert "forced_scientific_csv_export_failure" in json.dumps(
+        scientific_payload
+    )
+
+
+def test_verbose_scientific_csv_export_progress_stays_stderr_only(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    install_fake_stage15(monkeypatch)
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--verbose",
+        "--export-scientific-csvs",
+    )
+    payload = stdout_json(stdout)
+
+    assert payload["passed"] is True
+    assert stdout.strip() == json.dumps(payload, sort_keys=True)
+    for message in VERBOSE_STAGE_MESSAGES_WITH_SCIENTIFIC:
+        assert message in stderr
+        assert message not in stdout
+    assert "{" not in stderr
 
 
 def test_verbose_graph_export_progress_goes_to_stderr_only(

@@ -112,6 +112,50 @@ class _ManifestContactsComputer(Protocol):
     ) -> object: ...
 
 
+class _RgTimeseriesCsvWriter(Protocol):
+    def __call__(self, rg_result: object, output_path: str | Path) -> object: ...
+
+
+class _ContactEdgesCsvWriter(Protocol):
+    def __call__(
+        self,
+        contacts_result: object,
+        output_path: str | Path,
+    ) -> object: ...
+
+
+class _ContactsPerframeCsvWriter(Protocol):
+    def __call__(
+        self,
+        contacts_result: object,
+        output_path: str | Path,
+    ) -> object: ...
+
+
+class _RgTimeseriesCsvValidator(Protocol):
+    def __call__(self, csv_path: str | Path) -> object: ...
+
+
+class _ContactEdgesCsvValidator(Protocol):
+    def __call__(self, csv_path: str | Path) -> object: ...
+
+
+class _ContactsPerframeCsvValidator(Protocol):
+    def __call__(self, csv_path: str | Path) -> object: ...
+
+
+class _ScientificCsvWriter(Protocol):
+    def __call__(
+        self,
+        source_result: object,
+        output_path: str | Path,
+    ) -> object: ...
+
+
+class _ScientificCsvValidator(Protocol):
+    def __call__(self, csv_path: str | Path) -> object: ...
+
+
 class _GraphExportMappingBuilder(Protocol):
     def __call__(self, contacts_result: object) -> object: ...
 
@@ -982,6 +1026,234 @@ class PreprocessingGraphWorkflowGraphExportResult:
             "issue_count": self.issue_count,
             "issues": [issue.to_dict() for issue in self.issues],
             "passed": self.passed,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphWorkflowScientificCsvExportIssue:
+    """One deterministic optional scientific CSV export issue."""
+
+    kind: str
+    message: str
+    export_name: str | None = None
+    stage: str | None = None
+    field: str | None = None
+    path: Path | None = None
+    value: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "kind", _non_empty_string(self.kind, "kind"))
+        object.__setattr__(
+            self,
+            "message",
+            _non_empty_string(self.message, "message"),
+        )
+        object.__setattr__(
+            self,
+            "export_name",
+            _optional_non_empty_string(self.export_name, "export_name"),
+        )
+        object.__setattr__(
+            self,
+            "stage",
+            _optional_non_empty_string(self.stage, "stage"),
+        )
+        object.__setattr__(
+            self,
+            "field",
+            _optional_non_empty_string(self.field, "field"),
+        )
+        _require_optional_path(self.path, "path")
+        object.__setattr__(
+            self,
+            "value",
+            _optional_non_empty_string(self.value, "value"),
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe scientific CSV export issue dictionary."""
+        return {
+            "kind": self.kind,
+            "message": self.message,
+            "export_name": self.export_name,
+            "stage": self.stage,
+            "field": self.field,
+            "path": _optional_path_string(self.path),
+            "value": self.value,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphWorkflowScientificCsvExportResult:
+    """Optional scientific CSV side-effect export result."""
+
+    computation: PreprocessingGraphWorkflowComputationResult
+    output_layout: PreprocessingGraphWorkflowOutputLayout
+    export_rg_timeseries: bool
+    export_contact_edges: bool
+    export_contacts_perframe: bool
+    rg_timeseries_csv_path: Path | None = None
+    contact_edges_csv_path: Path | None = None
+    contacts_perframe_csv_path: Path | None = None
+    rg_timeseries_write_result: object | None = None
+    contact_edges_write_result: object | None = None
+    contacts_perframe_write_result: object | None = None
+    rg_timeseries_validation_result: object | None = None
+    contact_edges_validation_result: object | None = None
+    contacts_perframe_validation_result: object | None = None
+    issues: tuple[
+        PreprocessingGraphWorkflowScientificCsvExportIssue,
+        ...,
+    ] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(
+            self.computation,
+            PreprocessingGraphWorkflowComputationResult,
+        ):
+            raise ValueError(
+                "computation must be PreprocessingGraphWorkflowComputationResult"
+            )
+        if not isinstance(
+            self.output_layout,
+            PreprocessingGraphWorkflowOutputLayout,
+        ):
+            raise ValueError(
+                "output_layout must be PreprocessingGraphWorkflowOutputLayout"
+            )
+        for field_name in (
+            "export_rg_timeseries",
+            "export_contact_edges",
+            "export_contacts_perframe",
+        ):
+            _require_bool(getattr(self, field_name), field_name)
+        for field_name in (
+            "rg_timeseries_csv_path",
+            "contact_edges_csv_path",
+            "contacts_perframe_csv_path",
+        ):
+            _require_optional_path(getattr(self, field_name), field_name)
+        if not isinstance(self.issues, tuple):
+            raise ValueError(
+                "issues must be a tuple of "
+                "PreprocessingGraphWorkflowScientificCsvExportIssue"
+            )
+        for issue in self.issues:
+            if not isinstance(
+                issue,
+                PreprocessingGraphWorkflowScientificCsvExportIssue,
+            ):
+                raise ValueError(
+                    "issues must contain "
+                    "PreprocessingGraphWorkflowScientificCsvExportIssue"
+                )
+
+    @property
+    def skipped(self) -> bool:
+        """Return whether no optional scientific CSV export was requested."""
+        return not any(self.requested_exports.values())
+
+    @property
+    def requested_exports(self) -> dict[str, bool]:
+        """Return the requested optional scientific CSV export switches."""
+        return {
+            "rg_timeseries": self.export_rg_timeseries,
+            "contact_edges": self.export_contact_edges,
+            "contacts_perframe": self.export_contacts_perframe,
+        }
+
+    @property
+    def rg_timeseries_written(self) -> bool:
+        """Return whether the Rg timeseries CSV writer passed."""
+        return _stage_result_passed(self.rg_timeseries_write_result)
+
+    @property
+    def contact_edges_written(self) -> bool:
+        """Return whether the aggregate contact edges CSV writer passed."""
+        return _stage_result_passed(self.contact_edges_write_result)
+
+    @property
+    def contacts_perframe_written(self) -> bool:
+        """Return whether the contacts per-frame CSV writer passed."""
+        return _stage_result_passed(self.contacts_perframe_write_result)
+
+    @property
+    def issue_count(self) -> int:
+        """Return the number of scientific CSV export issues."""
+        return len(self.issues)
+
+    @property
+    def passed(self) -> bool:
+        """Return whether requested optional scientific CSV exports passed."""
+        if self.skipped:
+            return self.issues == ()
+        return (
+            self.issues == ()
+            and (
+                not self.export_rg_timeseries
+                or (
+                    self.rg_timeseries_written
+                    and _stage_result_passed(
+                        self.rg_timeseries_validation_result
+                    )
+                )
+            )
+            and (
+                not self.export_contact_edges
+                or (
+                    self.contact_edges_written
+                    and _stage_result_passed(
+                        self.contact_edges_validation_result
+                    )
+                )
+            )
+            and (
+                not self.export_contacts_perframe
+                or (
+                    self.contacts_perframe_written
+                    and _stage_result_passed(
+                        self.contacts_perframe_validation_result
+                    )
+                )
+            )
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return JSON-safe optional scientific CSV export metadata."""
+        return {
+            "stage": "scientific_csv_export",
+            "passed": self.passed,
+            "skipped": self.skipped,
+            "requested_exports": self.requested_exports,
+            "rg_timeseries_written": self.rg_timeseries_written,
+            "contact_edges_written": self.contact_edges_written,
+            "contacts_perframe_written": self.contacts_perframe_written,
+            "paths": _scientific_csv_export_paths_payload(self),
+            "validation": {
+                "rg_timeseries": (
+                    _scientific_validation_payload(
+                        self.rg_timeseries_validation_result
+                    )
+                    if self.export_rg_timeseries
+                    else None
+                ),
+                "contact_edges": (
+                    _scientific_validation_payload(
+                        self.contact_edges_validation_result
+                    )
+                    if self.export_contact_edges
+                    else None
+                ),
+                "contacts_perframe": (
+                    _scientific_validation_payload(
+                        self.contacts_perframe_validation_result
+                    )
+                    if self.export_contacts_perframe
+                    else None
+                ),
+            },
+            "issues": [issue.to_dict() for issue in self.issues],
+            "issue_count": self.issue_count,
         }
 
 
@@ -2108,6 +2380,107 @@ def export_preprocessing_graph_workflow_artifacts(
     )
 
 
+def export_preprocessing_graph_workflow_scientific_csvs(
+    computation_result: PreprocessingGraphWorkflowComputationResult,
+    output_layout: PreprocessingGraphWorkflowOutputLayout,
+    *,
+    export_rg_timeseries: bool = False,
+    export_contact_edges: bool = False,
+    export_contacts_perframe: bool = False,
+) -> PreprocessingGraphWorkflowScientificCsvExportResult:
+    """Export requested scientific CSV side artifacts from Stage 15.4 results."""
+    if not isinstance(
+        computation_result,
+        PreprocessingGraphWorkflowComputationResult,
+    ):
+        raise ValueError(
+            "computation_result must be "
+            "PreprocessingGraphWorkflowComputationResult"
+        )
+    if not isinstance(output_layout, PreprocessingGraphWorkflowOutputLayout):
+        raise ValueError(
+            "output_layout must be PreprocessingGraphWorkflowOutputLayout"
+        )
+    for field_name, value in (
+        ("export_rg_timeseries", export_rg_timeseries),
+        ("export_contact_edges", export_contact_edges),
+        ("export_contacts_perframe", export_contacts_perframe),
+    ):
+        _require_bool(value, field_name)
+
+    if not any(
+        (
+            export_rg_timeseries,
+            export_contact_edges,
+            export_contacts_perframe,
+        )
+    ):
+        return _scientific_csv_export_result(
+            computation_result,
+            output_layout,
+            export_rg_timeseries=export_rg_timeseries,
+            export_contact_edges=export_contact_edges,
+            export_contacts_perframe=export_contacts_perframe,
+        )
+
+    issues: list[PreprocessingGraphWorkflowScientificCsvExportIssue] = []
+    rg_timeseries_write_result: object | None = None
+    contact_edges_write_result: object | None = None
+    contacts_perframe_write_result: object | None = None
+    rg_timeseries_validation_result: object | None = None
+    contact_edges_validation_result: object | None = None
+    contacts_perframe_validation_result: object | None = None
+
+    if export_rg_timeseries:
+        rg_timeseries_write_result, rg_timeseries_validation_result = (
+            _export_rg_timeseries_scientific_csv(
+                computation_result,
+                output_layout,
+                issues,
+            )
+        )
+
+    if export_contact_edges or export_contacts_perframe:
+        contacts_result_issue = _contacts_scientific_source_result_issue(
+            computation_result.contacts_result
+        )
+        if contacts_result_issue is not None:
+            issues.append(contacts_result_issue)
+        else:
+            if export_contact_edges:
+                contact_edges_write_result, contact_edges_validation_result = (
+                    _export_contact_edges_scientific_csv(
+                        computation_result,
+                        output_layout,
+                        issues,
+                    )
+                )
+            if export_contacts_perframe:
+                (
+                    contacts_perframe_write_result,
+                    contacts_perframe_validation_result,
+                ) = _export_contacts_perframe_scientific_csv(
+                    computation_result,
+                    output_layout,
+                    issues,
+                )
+
+    return _scientific_csv_export_result(
+        computation_result,
+        output_layout,
+        export_rg_timeseries=export_rg_timeseries,
+        export_contact_edges=export_contact_edges,
+        export_contacts_perframe=export_contacts_perframe,
+        rg_timeseries_write_result=rg_timeseries_write_result,
+        contact_edges_write_result=contact_edges_write_result,
+        contacts_perframe_write_result=contacts_perframe_write_result,
+        rg_timeseries_validation_result=rg_timeseries_validation_result,
+        contact_edges_validation_result=contact_edges_validation_result,
+        contacts_perframe_validation_result=contacts_perframe_validation_result,
+        issues=tuple(issues),
+    )
+
+
 def run_preprocessing_graph_workflow_diagnostics(
     graph_export: PreprocessingGraphWorkflowGraphExportResult,
     *,
@@ -2591,6 +2964,55 @@ def _graph_export_result(
     )
 
 
+def _scientific_csv_export_result(
+    computation: PreprocessingGraphWorkflowComputationResult,
+    output_layout: PreprocessingGraphWorkflowOutputLayout,
+    *,
+    export_rg_timeseries: bool,
+    export_contact_edges: bool,
+    export_contacts_perframe: bool,
+    rg_timeseries_write_result: object | None = None,
+    contact_edges_write_result: object | None = None,
+    contacts_perframe_write_result: object | None = None,
+    rg_timeseries_validation_result: object | None = None,
+    contact_edges_validation_result: object | None = None,
+    contacts_perframe_validation_result: object | None = None,
+    issues: tuple[
+        PreprocessingGraphWorkflowScientificCsvExportIssue,
+        ...,
+    ] = (),
+) -> PreprocessingGraphWorkflowScientificCsvExportResult:
+    return PreprocessingGraphWorkflowScientificCsvExportResult(
+        computation=computation,
+        output_layout=output_layout,
+        export_rg_timeseries=export_rg_timeseries,
+        export_contact_edges=export_contact_edges,
+        export_contacts_perframe=export_contacts_perframe,
+        rg_timeseries_csv_path=(
+            output_layout.rg_timeseries_csv_path
+            if export_rg_timeseries
+            else None
+        ),
+        contact_edges_csv_path=(
+            output_layout.contact_edges_csv_path
+            if export_contact_edges
+            else None
+        ),
+        contacts_perframe_csv_path=(
+            output_layout.contacts_perframe_csv_path
+            if export_contacts_perframe
+            else None
+        ),
+        rg_timeseries_write_result=rg_timeseries_write_result,
+        contact_edges_write_result=contact_edges_write_result,
+        contacts_perframe_write_result=contacts_perframe_write_result,
+        rg_timeseries_validation_result=rg_timeseries_validation_result,
+        contact_edges_validation_result=contact_edges_validation_result,
+        contacts_perframe_validation_result=contacts_perframe_validation_result,
+        issues=issues,
+    )
+
+
 def _build_output_layout(
     options: PreprocessingGraphWorkflowOptions,
 ) -> PreprocessingGraphWorkflowOutputLayout:
@@ -2832,6 +3254,60 @@ def _manifest_contacts_computer() -> _ManifestContactsComputer:
     return cast(
         _ManifestContactsComputer,
         getattr(module, "compute_" + "manifest_contacts"),
+    )
+
+
+def _rg_timeseries_csv_writer() -> _RgTimeseriesCsvWriter:
+    module = _import_preprocessing_module("trajectory_" + "rg_export")
+    return cast(
+        _RgTimeseriesCsvWriter,
+        module.write_rg_timeseries_csv,
+    )
+
+
+def _contact_edges_csv_writer() -> _ContactEdgesCsvWriter:
+    module = _import_preprocessing_module("trajectory_" + "contacts_export")
+    return cast(
+        _ContactEdgesCsvWriter,
+        getattr(module, "write_contact_" + "edges_csv"),
+    )
+
+
+def _contacts_perframe_csv_writer() -> _ContactsPerframeCsvWriter:
+    module = _import_preprocessing_module("trajectory_" + "contacts_export")
+    return cast(
+        _ContactsPerframeCsvWriter,
+        module.write_contacts_perframe_csv,
+    )
+
+
+def _rg_timeseries_csv_validator() -> _RgTimeseriesCsvValidator:
+    module = _import_preprocessing_module(
+        "trajectory_" + "rg_export_validation"
+    )
+    return cast(
+        _RgTimeseriesCsvValidator,
+        module.validate_rg_timeseries_csv,
+    )
+
+
+def _contact_edges_csv_validator() -> _ContactEdgesCsvValidator:
+    module = _import_preprocessing_module(
+        "trajectory_" + "contacts_export_validation"
+    )
+    return cast(
+        _ContactEdgesCsvValidator,
+        module.validate_contact_edges_csv,
+    )
+
+
+def _contacts_perframe_csv_validator() -> _ContactsPerframeCsvValidator:
+    module = _import_preprocessing_module(
+        "trajectory_" + "contacts_export_validation"
+    )
+    return cast(
+        _ContactsPerframeCsvValidator,
+        module.validate_contacts_perframe_csv,
     )
 
 
@@ -3084,6 +3560,386 @@ def _stage_result_passed_status(result: object | None) -> bool | None:
     if isinstance(passed, bool):
         return passed
     return None
+
+
+def _export_rg_timeseries_scientific_csv(
+    computation_result: PreprocessingGraphWorkflowComputationResult,
+    output_layout: PreprocessingGraphWorkflowOutputLayout,
+    issues: list[PreprocessingGraphWorkflowScientificCsvExportIssue],
+) -> tuple[object | None, object | None]:
+    path = output_layout.rg_timeseries_csv_path
+    layout_issue = _scientific_output_layout_issue(
+        output_layout,
+        field_name="rg_timeseries_csv_path",
+        actual_path=path,
+        expected_path=output_layout.output_dir / "rg" / "rg_timeseries.csv",
+        export_name="rg_timeseries",
+    )
+    if layout_issue is not None:
+        issues.append(layout_issue)
+        return None, None
+
+    source_issue = _scientific_source_result_issue(
+        computation_result.rg_result,
+        export_name="rg_timeseries",
+        field="rg_result",
+        missing_kind="rg_result_missing",
+        failed_kind="rg_result_failed",
+        invalid_kind="rg_result_invalid",
+    )
+    if source_issue is not None:
+        issues.append(source_issue)
+        return None, None
+
+    return _write_and_validate_scientific_csv(
+        computation_result.rg_result,
+        path,
+        export_name="rg_timeseries",
+        writer=_rg_timeseries_csv_writer(),
+        validator=_rg_timeseries_csv_validator(),
+        write_failed_kind="rg_timeseries_write_failed",
+        validation_failed_kind="rg_timeseries_validation_failed",
+        issues=issues,
+    )
+
+
+def _export_contact_edges_scientific_csv(
+    computation_result: PreprocessingGraphWorkflowComputationResult,
+    output_layout: PreprocessingGraphWorkflowOutputLayout,
+    issues: list[PreprocessingGraphWorkflowScientificCsvExportIssue],
+) -> tuple[object | None, object | None]:
+    path = output_layout.contact_edges_csv_path
+    layout_issue = _scientific_output_layout_issue(
+        output_layout,
+        field_name="contact_edges_csv_path",
+        actual_path=path,
+        expected_path=output_layout.output_dir / "contacts" / "contact_edges.csv",
+        export_name="contact_edges",
+    )
+    if layout_issue is not None:
+        issues.append(layout_issue)
+        return None, None
+
+    return _write_and_validate_scientific_csv(
+        computation_result.contacts_result,
+        path,
+        export_name="contact_edges",
+        writer=_contact_edges_csv_writer(),
+        validator=_contact_edges_csv_validator(),
+        write_failed_kind="contact_edges_write_failed",
+        validation_failed_kind="contact_edges_validation_failed",
+        issues=issues,
+    )
+
+
+def _export_contacts_perframe_scientific_csv(
+    computation_result: PreprocessingGraphWorkflowComputationResult,
+    output_layout: PreprocessingGraphWorkflowOutputLayout,
+    issues: list[PreprocessingGraphWorkflowScientificCsvExportIssue],
+) -> tuple[object | None, object | None]:
+    path = output_layout.contacts_perframe_csv_path
+    layout_issue = _scientific_output_layout_issue(
+        output_layout,
+        field_name="contacts_perframe_csv_path",
+        actual_path=path,
+        expected_path=(
+            output_layout.output_dir / "contacts" / "contacts_perframe.csv"
+        ),
+        export_name="contacts_perframe",
+    )
+    if layout_issue is not None:
+        issues.append(layout_issue)
+        return None, None
+
+    return _write_and_validate_scientific_csv(
+        computation_result.contacts_result,
+        path,
+        export_name="contacts_perframe",
+        writer=_contacts_perframe_csv_writer(),
+        validator=_contacts_perframe_csv_validator(),
+        write_failed_kind="contacts_perframe_write_failed",
+        validation_failed_kind="contacts_perframe_validation_failed",
+        issues=issues,
+    )
+
+
+def _write_and_validate_scientific_csv(
+    source_result: object,
+    output_path: Path,
+    *,
+    export_name: str,
+    writer: object,
+    validator: object,
+    write_failed_kind: str,
+    validation_failed_kind: str,
+    issues: list[PreprocessingGraphWorkflowScientificCsvExportIssue],
+) -> tuple[object | None, object | None]:
+    parent_issue = _scientific_parent_directory_issue(
+        output_path,
+        export_name=export_name,
+    )
+    if parent_issue is not None:
+        issues.append(parent_issue)
+        return None, None
+
+    csv_writer = cast(_ScientificCsvWriter, writer)
+    try:
+        write_result = csv_writer(source_result, output_path)
+    except Exception as exc:
+        issues.append(
+            _scientific_exception_issue(
+                kind=write_failed_kind,
+                export_name=export_name,
+                stage="write",
+                field="write_result",
+                path=output_path,
+                exc=exc,
+            )
+        )
+        return None, None
+
+    if not _stage_result_passed(write_result):
+        issues.append(
+            _scientific_failed_issue(
+                kind=write_failed_kind,
+                export_name=export_name,
+                stage="write",
+                field="write_result",
+                path=output_path,
+                result=write_result,
+            )
+        )
+        return write_result, None
+
+    csv_validator = cast(_ScientificCsvValidator, validator)
+    try:
+        validation_result = csv_validator(output_path)
+    except Exception as exc:
+        issues.append(
+            _scientific_exception_issue(
+                kind=validation_failed_kind,
+                export_name=export_name,
+                stage="validation",
+                field="validation_result",
+                path=output_path,
+                exc=exc,
+            )
+        )
+        return write_result, None
+
+    if not _stage_result_passed(validation_result):
+        issues.append(
+            _scientific_failed_issue(
+                kind=validation_failed_kind,
+                export_name=export_name,
+                stage="validation",
+                field="validation_result",
+                path=output_path,
+                result=validation_result,
+            )
+        )
+
+    return write_result, validation_result
+
+
+def _contacts_scientific_source_result_issue(
+    contacts_result: object | None,
+) -> PreprocessingGraphWorkflowScientificCsvExportIssue | None:
+    return _scientific_source_result_issue(
+        contacts_result,
+        export_name="contacts",
+        field="contacts_result",
+        missing_kind="contacts_result_missing",
+        failed_kind="contacts_result_failed",
+        invalid_kind="contacts_result_invalid",
+    )
+
+
+def _scientific_source_result_issue(
+    source_result: object | None,
+    *,
+    export_name: str,
+    field: str,
+    missing_kind: str,
+    failed_kind: str,
+    invalid_kind: str,
+) -> PreprocessingGraphWorkflowScientificCsvExportIssue | None:
+    if source_result is None:
+        return PreprocessingGraphWorkflowScientificCsvExportIssue(
+            kind=missing_kind,
+            message=(
+                "Stage 15.4 computation did not retain the required result "
+                f"for optional {export_name} CSV export."
+            ),
+            export_name=export_name,
+            stage="computation",
+            field=field,
+        )
+
+    passed = getattr(source_result, "passed", None)
+    if not isinstance(passed, bool):
+        return PreprocessingGraphWorkflowScientificCsvExportIssue(
+            kind=invalid_kind,
+            message=(
+                "Stage 15.4 computation result does not expose a boolean "
+                "passed status for optional scientific CSV export."
+            ),
+            export_name=export_name,
+            stage="computation",
+            field=f"{field}.passed",
+            value=_object_type(source_result),
+        )
+    if not passed:
+        return PreprocessingGraphWorkflowScientificCsvExportIssue(
+            kind=failed_kind,
+            message=(
+                "Stage 15.4 computation result did not pass; optional "
+                f"{export_name} CSV export was not attempted."
+            ),
+            export_name=export_name,
+            stage="computation",
+            field=field,
+            value=_object_type(source_result),
+        )
+    return None
+
+
+def _scientific_output_layout_issue(
+    output_layout: PreprocessingGraphWorkflowOutputLayout,
+    *,
+    field_name: str,
+    actual_path: Path,
+    expected_path: Path,
+    export_name: str,
+) -> PreprocessingGraphWorkflowScientificCsvExportIssue | None:
+    if actual_path == expected_path:
+        return None
+    return PreprocessingGraphWorkflowScientificCsvExportIssue(
+        kind="output_layout_invalid",
+        message=(
+            "Scientific CSV export output layout does not match the Stage "
+            "15.1 optional scientific artifact boundary."
+        ),
+        export_name=export_name,
+        stage="output_layout",
+        field=field_name,
+        path=actual_path,
+        value=str(expected_path),
+    )
+
+
+def _scientific_parent_directory_issue(
+    output_path: Path,
+    *,
+    export_name: str,
+) -> PreprocessingGraphWorkflowScientificCsvExportIssue | None:
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        return PreprocessingGraphWorkflowScientificCsvExportIssue(
+            kind=f"{export_name}_output_directory_failed",
+            message=(
+                "Scientific CSV output parent directory could not be created: "
+                f"{exc.__class__.__name__}."
+            ),
+            export_name=export_name,
+            stage="write",
+            field="output_path.parent",
+            path=output_path.parent,
+        )
+    return None
+
+
+def _scientific_failed_issue(
+    *,
+    kind: str,
+    export_name: str,
+    stage: str,
+    field: str,
+    result: object,
+    path: Path,
+) -> PreprocessingGraphWorkflowScientificCsvExportIssue:
+    return PreprocessingGraphWorkflowScientificCsvExportIssue(
+        kind=kind,
+        message=f"Scientific CSV {export_name} {stage} step did not pass.",
+        export_name=export_name,
+        stage=stage,
+        field=field,
+        path=path,
+        value=_object_type(result),
+    )
+
+
+def _scientific_exception_issue(
+    *,
+    kind: str,
+    export_name: str,
+    stage: str,
+    field: str,
+    exc: Exception,
+    path: Path,
+) -> PreprocessingGraphWorkflowScientificCsvExportIssue:
+    return PreprocessingGraphWorkflowScientificCsvExportIssue(
+        kind=kind,
+        message=(
+            f"Scientific CSV {export_name} {stage} step failed unexpectedly: "
+            f"{exc.__class__.__name__}."
+        ),
+        export_name=export_name,
+        stage=stage,
+        field=field,
+        path=path,
+    )
+
+
+def _scientific_csv_export_paths_payload(
+    result: PreprocessingGraphWorkflowScientificCsvExportResult,
+) -> dict[str, object]:
+    if result.skipped:
+        return {}
+    return {
+        "rg_timeseries_csv": _optional_path_string(
+            result.rg_timeseries_csv_path
+        ),
+        "contact_edges_csv": _optional_path_string(
+            result.contact_edges_csv_path
+        ),
+        "contacts_perframe_csv": _optional_path_string(
+            result.contacts_perframe_csv_path
+        ),
+    }
+
+
+def _scientific_validation_payload(
+    validation_result: object | None,
+) -> dict[str, object] | None:
+    if validation_result is None:
+        return None
+    to_dict = getattr(validation_result, "to_dict", None)
+    if not callable(to_dict):
+        return {"passed": _stage_result_passed(validation_result)}
+    payload = to_dict()
+    if not isinstance(payload, dict):
+        return {"passed": _stage_result_passed(validation_result)}
+    safe_payload = _json_safe_value(payload)
+    if isinstance(safe_payload, dict):
+        return cast(dict[str, object], safe_payload)
+    return {"passed": _stage_result_passed(validation_result)}
+
+
+def _json_safe_value(value: object) -> object:
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {
+            str(key): _json_safe_value(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_json_safe_value(item) for item in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
 
 
 def _diagnostics_run_payload(
