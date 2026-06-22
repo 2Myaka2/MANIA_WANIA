@@ -1,0 +1,35 @@
+{
+  "condition": "normal",
+  "n_nodes": 2,
+  "n_edges": 1,
+  "directed": false,
+  "schema_version": "0.1",
+  "nodes": [
+    {
+      "id": "normal|A|123|123|LYS",
+      "resid": "normal|A|123|123|LYS",
+      "resname": "LYS",
+      "condition": "normal"
+    },
+    {
+      "id": "normal|A|150|150|ASP",
+      "resid": "normal|A|150|150|ASP",
+      "resname": "ASP",
+      "condition": "normal"
+    }
+  ],
+  "edges": [
+    {
+      "source": "normal|A|123|123|LYS",
+      "target": "normal|A|150|150|ASP",
+      "resid_i": "normal|A|123|123|LYS",
+      "resid_j": "normal|A|150|150|ASP",
+      "edge_type": "residue_contact",
+      "all_edge_types": "residue_contact",
+      "n_edge_types": "1",
+      "condition": "normal",
+      "contact_freq": "0.74",
+      "mean_dist_A": "3.8"
+    }
+  ]
+}

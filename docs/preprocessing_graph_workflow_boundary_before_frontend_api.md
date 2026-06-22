@@ -59,6 +59,9 @@ or dependency change.
   WANIA payload is future adapter/API output, and no runtime adapter is
   implemented in Stage 16.0.
   In short, no runtime adapter is implemented in Stage 16.0.
+- Stage 16.1 WANIA adapter: can build the future WANIA object JSON payload
+  from accepted Stage 15 artifacts and explicit protein/run metadata. Backend
+  graph artifacts remain unchanged, and FastAPI/API remains future scope.
 
 ## Accepted public workflow APIs
 
@@ -291,6 +294,10 @@ Stage 16.0 documents the future WANIA object JSON payload contract in
 `docs/wania_object_json_payload_contract.md`. It does not implement a runtime
 adapter, does not change backend `graph/graph.json`, and does not make backend
 `graph/graph.json` a frontend/API payload.
+
+Stage 16.1 adds a separate `mania.wania` Python adapter that can build the
+future WANIA payload from Stage 15 artifacts. Backend graph artifacts remain
+unchanged. FastAPI/API remains future scope.
 
 See `docs/wania_api_protein_agnostic_boundary.md`.
 

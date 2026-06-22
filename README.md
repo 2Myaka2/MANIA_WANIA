@@ -244,11 +244,17 @@ The Stage 15 workflow CLI still does not produce:
 
 ```text
 temporal RIN artifacts
-WANIA/frontend API payloads
+WANIA/frontend API payloads through the workflow CLI
 ```
 
 Rg and contacts are computed in memory for graph export. Optional Rg/contact
 CSVs are side-effect scientific exports, not WANIA/frontend API payloads.
+
+Stage 16.1 adds a Python adapter that can build a WANIA object JSON payload
+from existing Stage 15 artifacts and explicit protein/run metadata. The
+adapter can write `wania_graph_payload.json` when called directly from Python.
+It does not add FastAPI, an upload/job API, frontend implementation, or CLI
+integration.
 
 ## Data And Git Boundaries
 
@@ -282,9 +288,13 @@ Stage 16.0 documents the future WANIA object JSON payload contract. The
 contract is object JSON, protein-agnostic, and separate from backend
 `graph/graph.json`.
 
+Stage 16.1 adds a Python adapter for that WANIA object JSON payload. The
+adapter consumes accepted Stage 15 artifacts and does not change backend
+`graph/graph.json`.
+
 Future Stage 16+ implementation scope includes the FastAPI upload/job API,
-WANIA frontend adapter/API payloads, and any temporal RIN workflow. This future
-scope should be specified separately before implementation.
+WANIA API serving, frontend integration, and any temporal RIN workflow. This
+future scope should be specified separately before implementation.
 
 ## Documentation
 

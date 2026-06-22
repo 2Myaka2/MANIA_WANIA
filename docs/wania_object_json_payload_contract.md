@@ -52,6 +52,37 @@ equivalent output is the future frontend/API payload.
 Stage 16.0 does not change current `graph/graph.json`, does not change graph
 export, and does not implement adapter or runtime writer code.
 
+## Stage 16.1 Python adapter
+
+Stage 16.1 introduces a WANIA object JSON adapter as Python runtime code. The
+adapter consumes accepted Stage 15 artifacts, uses backend `graph/graph.json`
+as the primary graph input, builds the object JSON payload described here, and
+can write `wania_graph_payload.json` when explicitly called.
+
+Public adapter API:
+
+```python
+build_wania_graph_payload_from_artifacts(...)
+write_wania_graph_payload_json(...)
+```
+
+The adapter requires explicit protein/run metadata: `protein_id`,
+`protein_name`, `run_name`, and `condition_names`. It does not infer protein
+identity from output paths, file names, or condition names.
+
+Stage 16.1 is not FastAPI and is not upload/job API. It does not implement an
+API server, upload flow, database model, background worker, or frontend. It
+does not change backend graph/graph.json, does not change graph export, and
+does not change Stage 15 workflow semantics.
+
+Stage 16.1 does not compute typed RIN, temporal RIN, centrality/community
+metrics, node structural metrics, conformational states, cross-condition
+statistics, inter-component interaction analysis, or cross-protein comparison.
+
+Large Stage 15 CSV artifacts remain referenced by path in the `artifacts`
+block. The adapter does not inline large CSVs such as `rg_timeseries.csv`,
+`contact_edges.csv`, or `contacts_perframe.csv`.
+
 ## Protein-agnostic run metadata
 
 The payload is protein-agnostic. The `run` block identifies which protein run
@@ -391,10 +422,9 @@ Current backend `graph/graph.json` is not the final frontend/API payload.
 
 ## Future scope
 
-Future work may implement a WANIA object JSON adapter, API output, frontend
-integration, typed RIN, temporal RIN, centrality metrics, community detection,
-node structural metrics, inter-component interactions, and broader product
-features.
+Future work may implement API output, frontend integration, typed RIN,
+temporal RIN, centrality metrics, community detection, node structural
+metrics, inter-component interactions, and broader product features.
 
 Cross-protein comparison remains future scope and may require sequence
 alignment, structure alignment, residue mapping, or domain mapping. The

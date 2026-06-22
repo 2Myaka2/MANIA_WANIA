@@ -99,6 +99,24 @@ def test_wania_object_json_payload_contract_doc_keeps_stage_16_scope() -> None:
         assert phrase in text
 
 
+def test_wania_object_json_payload_contract_doc_mentions_stage_16_1_adapter() -> None:
+    text = normalized(doc_text())
+
+    for phrase in (
+        "Stage 16.1",
+        "WANIA object JSON adapter",
+        "build_wania_graph_payload_from_artifacts",
+        "write_wania_graph_payload_json",
+        "not FastAPI",
+        "not upload/job API",
+        "does not change backend graph/graph.json",
+        "does not compute typed RIN",
+        "does not compute temporal RIN",
+        "does not inline large CSVs",
+    ):
+        assert phrase in text
+
+
 def test_wania_payload_sample_is_valid_object_json() -> None:
     payload = load_payload()
 

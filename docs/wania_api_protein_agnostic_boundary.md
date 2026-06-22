@@ -15,6 +15,10 @@ Stage 16.0 documents the future WANIA object JSON payload contract in
 protein-agnostic, uses object JSON, and stays separate from backend
 `graph/graph.json`.
 
+Stage 16.1 introduces a Python adapter for the WANIA object JSON payload. The
+adapter requires explicit protein/run metadata and does not infer protein
+identity from paths, output directory names, file names, or `condition_names`.
+
 ## Protein run metadata
 
 Future Stage 16 API/job metadata should include:
