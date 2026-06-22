@@ -38,6 +38,19 @@ def test_doc_contains_future_metadata_fields() -> None:
         assert phrase in text
 
 
+def test_doc_links_wania_object_json_payload_contract() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "Stage 16.0",
+        "docs/wania_object_json_payload_contract.md",
+        "object JSON",
+        "protein-agnostic",
+        "graph/graph.json",
+    ):
+        assert phrase in text
+
+
 def test_doc_distinguishes_conditions_from_protein_identity() -> None:
     text = normalized_lower(doc_text())
 

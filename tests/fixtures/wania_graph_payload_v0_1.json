@@ -1,0 +1,110 @@
+{
+  "schema_version": "wania_graph.v0.1",
+  "run": {
+    "job_id": "job_001",
+    "run_name": "napi2b_10ns_protein",
+    "protein_id": "napi2b",
+    "protein_name": "NaPi2b",
+    "condition_names": [
+      "normal",
+      "tumor"
+    ]
+  },
+  "capabilities": {
+    "static_contact_graph": true,
+    "rg_timeseries": true,
+    "aggregate_contacts": true,
+    "contacts_perframe": true,
+    "typed_rin_interactions": false,
+    "centrality_metrics": false,
+    "community_detection": false,
+    "node_structural_metrics": false,
+    "conformational_states": false,
+    "cross_condition_statistics": false,
+    "temporal_rin": false,
+    "inter_component_interactions": false,
+    "cross_protein_comparison": false
+  },
+  "graph": {
+    "directed": false,
+    "node_count": 2,
+    "edge_count": 1,
+    "conditions": [
+      {
+        "id": "normal",
+        "label": "normal"
+      },
+      {
+        "id": "tumor",
+        "label": "tumor"
+      }
+    ],
+    "components": [],
+    "nodes": [
+      {
+        "id": "normal|A|123|123|LYS",
+        "label": "LYS123",
+        "condition": "normal",
+        "component_id": null,
+        "residue": {
+          "index": 123,
+          "id": "123",
+          "name": "LYS",
+          "chain_id": "A"
+        },
+        "metrics": {}
+      },
+      {
+        "id": "normal|A|150|150|ASP",
+        "label": "ASP150",
+        "condition": "normal",
+        "component_id": null,
+        "residue": {
+          "index": 150,
+          "id": "150",
+          "name": "ASP",
+          "chain_id": "A"
+        },
+        "metrics": {}
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge_001",
+        "source": "normal|A|123|123|LYS",
+        "target": "normal|A|150|150|ASP",
+        "condition": "normal",
+        "source_component_id": null,
+        "target_component_id": null,
+        "is_inter_component": false,
+        "interaction": {
+          "primary_type": "residue_contact",
+          "all_types": [
+            "residue_contact"
+          ]
+        },
+        "metrics": {
+          "contact_frequency": 0.74,
+          "mean_distance_A": 3.8
+        }
+      }
+    ]
+  },
+  "temporal": {
+    "available": false,
+    "windows": []
+  },
+  "artifacts": {
+    "backend_graph_json": "graph/graph.json",
+    "nodes_csv": "graph/nodes.csv",
+    "edges_csv": "graph/edges.csv",
+    "rg_timeseries_csv": "rg/rg_timeseries.csv",
+    "contact_edges_csv": "contacts/contact_edges.csv",
+    "contacts_perframe_csv": "contacts/contacts_perframe.csv",
+    "diagnostics_report_json": "reports/graph_diagnostics_report.json"
+  },
+  "diagnostics": {
+    "passed": true,
+    "report_path": "reports/graph_diagnostics_report.json"
+  }
+}

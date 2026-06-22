@@ -278,9 +278,13 @@ Stage 15 output is backend graph workflow output. It is not yet the final WANIA
 API/frontend contract, and `graph.json` should not be assumed to be
 frontend-ready.
 
-Future Stage 16+ scope includes the FastAPI upload/job API, WANIA frontend
-adapter/API payloads, and any temporal RIN workflow. This future scope should
-be specified separately before implementation.
+Stage 16.0 documents the future WANIA object JSON payload contract. The
+contract is object JSON, protein-agnostic, and separate from backend
+`graph/graph.json`.
+
+Future Stage 16+ implementation scope includes the FastAPI upload/job API,
+WANIA frontend adapter/API payloads, and any temporal RIN workflow. This future
+scope should be specified separately before implementation.
 
 ## Documentation
 
@@ -288,6 +292,8 @@ be specified separately before implementation.
   Stage 15 backend workflow boundary.
 - `docs/wania_api_protein_agnostic_boundary.md`: protein-agnostic Stage 16+
   API/run boundary.
+- `docs/wania_object_json_payload_contract.md`: future WANIA object JSON
+  payload contract, separate from backend `graph/graph.json`.
 - `docs/preprocessing_graph_workflow_contract.md`: workflow APIs, options, and
   output layout.
 - `docs/local_scientific_integration_tests.md`: local-only real MD smoke test

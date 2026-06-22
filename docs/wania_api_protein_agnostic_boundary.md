@@ -10,6 +10,11 @@ This document records a documentation and testing boundary for future Stage
 16 API/storage/frontend design. It does not implement FastAPI, API schemas,
 database models, frontend payloads, or any runtime behavior.
 
+Stage 16.0 documents the future WANIA object JSON payload contract in
+`docs/wania_object_json_payload_contract.md`. That contract is
+protein-agnostic, uses object JSON, and stays separate from backend
+`graph/graph.json`.
+
 ## Protein run metadata
 
 Future Stage 16 API/job metadata should include:

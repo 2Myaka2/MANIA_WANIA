@@ -119,6 +119,19 @@ def test_readme_documents_frontend_api_future_scope() -> None:
         assert phrase in text
 
 
+def test_readme_links_wania_object_json_payload_contract() -> None:
+    text = readme_text()
+
+    for phrase in (
+        "Stage 16.0 documents the future WANIA object JSON payload contract",
+        "object JSON",
+        "protein-agnostic",
+        "graph/graph.json",
+        "docs/wania_object_json_payload_contract.md",
+    ):
+        assert phrase in text
+
+
 def test_readme_documents_protein_agnostic_boundary() -> None:
     text = readme_text()
 

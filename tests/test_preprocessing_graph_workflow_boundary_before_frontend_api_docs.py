@@ -184,6 +184,20 @@ def test_future_frontend_api_boundary_is_documented() -> None:
         assert phrase in text
 
 
+def test_stage_16_wania_object_json_payload_contract_boundary_is_documented() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "Stage 16.0",
+        "WANIA object JSON payload contract",
+        "Backend `graph/graph.json` remains a backend artifact",
+        "future adapter/API output",
+        "no runtime adapter is implemented in Stage 16.0",
+        "docs/wania_object_json_payload_contract.md",
+    ):
+        assert phrase in text
+
+
 def test_protein_agnostic_future_api_boundary_is_documented() -> None:
     text = doc_text()
 

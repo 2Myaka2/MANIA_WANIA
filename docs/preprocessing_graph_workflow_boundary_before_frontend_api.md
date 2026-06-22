@@ -54,6 +54,11 @@ or dependency change.
   multiple conditions, and diagnostics handles combined artifacts
   condition-by-condition without changing graph export schema, `graph.json`,
   WANIA API payloads, or frontend/API scope.
+- Stage 16.0 WANIA payload contract: documents the future WANIA object JSON
+  payload contract. Backend `graph/graph.json` remains a backend artifact, the
+  WANIA payload is future adapter/API output, and no runtime adapter is
+  implemented in Stage 16.0.
+  In short, no runtime adapter is implemented in Stage 16.0.
 
 ## Accepted public workflow APIs
 
@@ -281,6 +286,11 @@ Output artifacts remain backend artifacts for a run. Future graph/scientific
 artifacts should be stored under job/run paths, not protein-specific
 hardcoded paths. Temporal RIN, if later added, should also be generic per
 protein run. WANIA frontend/API payload design remains future scope.
+
+Stage 16.0 documents the future WANIA object JSON payload contract in
+`docs/wania_object_json_payload_contract.md`. It does not implement a runtime
+adapter, does not change backend `graph/graph.json`, and does not make backend
+`graph/graph.json` a frontend/API payload.
 
 See `docs/wania_api_protein_agnostic_boundary.md`.
 
