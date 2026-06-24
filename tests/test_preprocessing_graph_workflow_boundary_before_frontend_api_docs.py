@@ -97,6 +97,26 @@ def test_optional_scientific_csv_outputs_are_documented() -> None:
         assert phrase in text
 
 
+def test_frame_sampling_boundary_is_documented() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "Stage 16.2 frame sampling",
+        "--frame-start",
+        "--frame-stop",
+        "--frame-stride",
+        "--max-frames",
+        "Default behavior computes every frame",
+        "frame_stop",
+        "max_frames",
+        "frame_time_ps",
+        "not stride",
+        "graph edges",
+        "WANIA object JSON payload schemas remain unchanged",
+    ):
+        assert phrase in text
+
+
 def test_non_produced_outputs_are_documented() -> None:
     text = doc_text()
 

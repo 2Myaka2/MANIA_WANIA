@@ -8,13 +8,20 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, TypeAlias, cast
 
-from mania.preprocessing import trajectory_manifest_loader, trajectory_runtime
+from mania.preprocessing import (
+    trajectory_frame_sampling,
+    trajectory_manifest_loader,
+    trajectory_runtime,
+)
 
 PreprocessingConditionLoadResult: TypeAlias = (
     trajectory_runtime.PreprocessingConditionLoadResult
 )
 PreprocessingManifestLoadResult: TypeAlias = (
     trajectory_manifest_loader.PreprocessingManifestLoadResult
+)
+PreprocessingFrameSamplingOptions: TypeAlias = (
+    trajectory_frame_sampling.PreprocessingFrameSamplingOptions
 )
 
 _RG_METHOD_NAME = "radius_of_" + "gyration"
@@ -307,8 +314,10 @@ def compute_condition_rg(
     condition_result: PreprocessingConditionLoadResult,
     *,
     rg_unit: str = "angstrom",
+    frame_sampling: PreprocessingFrameSamplingOptions | None = None,
 ) -> PreprocessingConditionRgResult:
     """Compute per-frame Rg from one already loaded condition runtime."""
+    selected_frame_sampling = _frame_sampling_options(frame_sampling)
     runtime = condition_result.runtime
     runtime_type = runtime.runtime_type if runtime is not None else None
     frame_time_ps = _normalized_frame_time(
@@ -419,7 +428,12 @@ def compute_condition_rg(
     frame_results: list[PreprocessingRgFrameResult] = []
     condition_issues: list[PreprocessingRgComputationIssue] = []
     try:
-        trajectory_iterator = iter(cast(Iterable[object], trajectory))
+        trajectory_iterator = iter(
+            trajectory_frame_sampling.iter_sampled_trajectory_frames(
+                cast(Iterable[object], trajectory),
+                selected_frame_sampling,
+            )
+        )
     except Exception:
         condition_issues.append(
             _frame_iteration_issue(
@@ -428,10 +442,9 @@ def compute_condition_rg(
             )
         )
     else:
-        frame_index = 0
         while True:
             try:
-                timestep = next(trajectory_iterator)
+                frame_index, timestep = next(trajectory_iterator)
             except StopIteration:
                 break
             except Exception:
@@ -453,7 +466,6 @@ def compute_condition_rg(
                     rg_method=rg_callable,
                 )
             )
-            frame_index += 1
 
     if not frame_results and not condition_issues:
         condition_issues.append(
@@ -487,15 +499,24 @@ def _aggregate_manifest_rg(
     manifest_result: PreprocessingManifestLoadResult,
     *,
     rg_unit: str = "angstrom",
+    frame_sampling: PreprocessingFrameSamplingOptions | None = None,
 ) -> PreprocessingManifestRgResult:
     """Compose condition Rg results across one manifest load result."""
+    selected_frame_sampling = _frame_sampling_options(frame_sampling)
     condition_results: list[PreprocessingConditionRgResult] = []
     for condition_result in manifest_result.condition_results:
         try:
-            rg_result = compute_condition_rg(
-                condition_result,
-                rg_unit=rg_unit,
-            )
+            if frame_sampling is None:
+                rg_result = compute_condition_rg(
+                    condition_result,
+                    rg_unit=rg_unit,
+                )
+            else:
+                rg_result = compute_condition_rg(
+                    condition_result,
+                    rg_unit=rg_unit,
+                    frame_sampling=selected_frame_sampling,
+                )
         except Exception:
             rg_result = _unexpected_condition_rg_result(
                 condition_result,
@@ -721,6 +742,18 @@ def _normalized_frame_time(value: object) -> float | None:
     return _non_negative_finite_float(value)
 
 
+def _frame_sampling_options(
+    value: PreprocessingFrameSamplingOptions | None,
+) -> PreprocessingFrameSamplingOptions:
+    if value is None:
+        return PreprocessingFrameSamplingOptions()
+    if not isinstance(value, PreprocessingFrameSamplingOptions):
+        raise ValueError(
+            "frame_sampling must be PreprocessingFrameSamplingOptions or None"
+        )
+    return value
+
+
 def _non_negative_finite_float(value: object) -> float | None:
     if isinstance(value, bool):
         return None
@@ -753,5 +786,6 @@ __all__ = [
     "PreprocessingRgComputationIssue",
     "PreprocessingRgFrameResult",
     "compute_condition_rg",
+    "PreprocessingFrameSamplingOptions",
     _MANIFEST_RG_API_NAME,
 ]

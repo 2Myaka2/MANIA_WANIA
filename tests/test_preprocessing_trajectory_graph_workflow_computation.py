@@ -8,6 +8,7 @@ import pytest
 import mania.preprocessing
 from mania.preprocessing import (
     PreprocessingContactDetectionOptions,
+    PreprocessingFrameSamplingOptions,
     PreprocessingGraphWorkflowComputationIssue,
     PreprocessingGraphWorkflowComputationResult,
     PreprocessingGraphWorkflowIssue,
@@ -132,7 +133,8 @@ def patch_computers(
     rg_calls: list[object] = []
     contacts_calls: list[tuple[object, dict[str, object]]] = []
 
-    def fake_rg(runtime_result: object) -> object:
+    def fake_rg(runtime_result: object, **kwargs: object) -> object:
+        del kwargs
         rg_calls.append(runtime_result)
         if rg_raises is not None:
             raise rg_raises
@@ -257,6 +259,7 @@ def test_computation_result_validates_and_serializes() -> None:
         ("condition_names", ("",)),
         ("include_rg", 1),
         ("include_contacts", 0),
+        ("frame_sampling", object()),
         ("issues", [PreprocessingGraphWorkflowComputationIssue("x", "y")]),
         ("issues", (object(),)),
     ),
@@ -444,6 +447,44 @@ def test_contact_options_are_passed_through(
 
     assert result.passed is True
     assert contacts_calls[0][1]["options"] is options
+
+
+def test_frame_sampling_is_passed_to_rg_and_contacts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    raw_runtime = FakeRuntimeLoadResult(("normal", "tumor"), internal=object())
+    frame_sampling = PreprocessingFrameSamplingOptions(frame_stride=2)
+    rg_kwargs: list[dict[str, object]] = []
+    contacts_kwargs: list[dict[str, object]] = []
+
+    def fake_rg(runtime_result: object, **kwargs: object) -> object:
+        assert runtime_result is raw_runtime
+        rg_kwargs.append(kwargs)
+        return FakeComputationResult(passed=True)
+
+    def fake_contacts(runtime_result: object, **kwargs: object) -> object:
+        assert runtime_result is raw_runtime
+        contacts_kwargs.append(kwargs)
+        return FakeComputationResult(passed=True)
+
+    monkeypatch.setattr(workflow, "_manifest_rg_computer", lambda: fake_rg)
+    monkeypatch.setattr(
+        workflow,
+        "_manifest_contacts_computer",
+        lambda: fake_contacts,
+    )
+
+    result = compute_preprocessing_graph_workflow_rg_contacts(
+        runtime_loading_result(runtime_load_result=raw_runtime),
+        frame_sampling=frame_sampling,
+    )
+    payload = result.to_dict()
+
+    assert result.passed is True
+    assert result.frame_sampling is frame_sampling
+    assert rg_kwargs == [{"frame_sampling": frame_sampling}]
+    assert contacts_kwargs == [{"frame_sampling": frame_sampling}]
+    assert payload["frame_sampling"] == frame_sampling.to_dict()
 
 
 def test_condition_names_are_preserved_from_runtime_loading(

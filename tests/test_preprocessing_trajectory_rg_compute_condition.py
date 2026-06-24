@@ -12,6 +12,7 @@ from mania.preprocessing import (
     PreprocessingConditionRgResult,
     PreprocessingConditionRuntime,
     PreprocessingConditionRuntimeInput,
+    PreprocessingFrameSamplingOptions,
     PreprocessingTrajectoryLoadIssue,
     compute_condition_rg,
 )
@@ -203,6 +204,32 @@ def test_successful_runtime_computes_per_frame_rg() -> None:
     ]
     assert atoms.call_count == 3
     assert json.loads(json.dumps(result.to_dict())) == result.to_dict()
+
+
+def test_frame_stride_computes_sampled_source_frames_only() -> None:
+    atoms = FakeAtoms([10.0, 12.0])
+    runtime = FakeRuntime(
+        atoms,
+        [
+            FakeTimestep(has_time=False),
+            FakeTimestep(has_time=False),
+            FakeTimestep(has_time=False),
+            FakeTimestep(has_time=False),
+        ],
+    )
+
+    result = compute_condition_rg(
+        make_loaded_result(runtime, frame_time_ps=2.5),
+        frame_sampling=PreprocessingFrameSamplingOptions(frame_stride=2),
+    )
+
+    assert result.status == "computed"
+    assert result.passed is True
+    assert result.frame_count == 2
+    assert [frame.frame_index for frame in result.frame_results] == [0, 2]
+    assert [frame.time_ps for frame in result.frame_results] == [0.0, 5.0]
+    assert [frame.rg_value for frame in result.frame_results] == [10.0, 12.0]
+    assert atoms.call_count == 2
 
 
 def test_frame_time_ps_sets_deterministic_times() -> None:

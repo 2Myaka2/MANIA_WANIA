@@ -83,6 +83,17 @@ Large Stage 15 CSV artifacts remain referenced by path in the `artifacts`
 block. The adapter does not inline large CSVs such as `rg_timeseries.csv`,
 `contact_edges.csv`, or `contacts_perframe.csv`.
 
+## Stage 16.2 frame sampling
+
+Stage 16.2 adds controlled preprocessing frame sampling before FastAPI/upload
+or job API work. It affects Rg computation, contacts computation, graph outputs
+derived from sampled contacts, optional scientific CSV exports, and JSON-safe
+workflow provenance metadata.
+
+The WANIA object JSON contract is not changed by Stage 16.2. A WANIA payload
+can be regenerated from sampled Stage 15 artifacts without changing the
+payload schema or the Stage 16.1 adapter payload schema.
+
 ## Protein-agnostic run metadata
 
 The payload is protein-agnostic. The `run` block identifies which protein run

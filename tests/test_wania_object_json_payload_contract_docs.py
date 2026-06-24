@@ -117,6 +117,22 @@ def test_wania_object_json_payload_contract_doc_mentions_stage_16_1_adapter() ->
         assert phrase in text
 
 
+def test_wania_contract_doc_mentions_stage_16_2_sampling_without_schema_change(
+) -> None:
+    text = normalized(doc_text())
+
+    for phrase in (
+        "Stage 16.2 frame sampling",
+        "controlled preprocessing frame sampling",
+        "graph outputs derived from sampled contacts",
+        "JSON-safe workflow provenance metadata",
+        "WANIA object JSON contract is not changed by Stage 16.2",
+        "without changing the payload schema",
+        "Stage 16.1 adapter payload schema",
+    ):
+        assert phrase in text
+
+
 def test_wania_payload_sample_is_valid_object_json() -> None:
     payload = load_payload()
 

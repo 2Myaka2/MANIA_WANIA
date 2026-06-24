@@ -8,13 +8,20 @@ from dataclasses import dataclass
 from numbers import Integral
 from typing import Any, TypeAlias, cast
 
-from mania.preprocessing import trajectory_manifest_loader, trajectory_runtime
+from mania.preprocessing import (
+    trajectory_frame_sampling,
+    trajectory_manifest_loader,
+    trajectory_runtime,
+)
 
 PreprocessingConditionLoadResult: TypeAlias = (
     trajectory_runtime.PreprocessingConditionLoadResult
 )
 PreprocessingManifestLoadResult: TypeAlias = (
     trajectory_manifest_loader.PreprocessingManifestLoadResult
+)
+PreprocessingFrameSamplingOptions: TypeAlias = (
+    trajectory_frame_sampling.PreprocessingFrameSamplingOptions
 )
 
 _ATOM_FILTERS = ("heavy", "all")
@@ -647,9 +654,11 @@ def compute_condition_contacts(
     condition_load_result: PreprocessingConditionLoadResult,
     *,
     options: PreprocessingContactDetectionOptions | None = None,
+    frame_sampling: PreprocessingFrameSamplingOptions | None = None,
 ) -> PreprocessingConditionContactsResult:
     """Compute per-frame contacts from one already loaded condition."""
     selected_options = options or PreprocessingContactDetectionOptions()
+    selected_frame_sampling = _frame_sampling_options(frame_sampling)
     option_issue = _unsupported_options_issue(selected_options)
     if option_issue is not None:
         return _condition_contacts_result(
@@ -742,14 +751,18 @@ def compute_condition_contacts(
     frame_results: list[PreprocessingContactFrameResult] = []
     condition_issues: list[PreprocessingContactComputationIssue] = []
     try:
-        trajectory_iterator = iter(cast(Iterable[object], trajectory))
+        trajectory_iterator = iter(
+            trajectory_frame_sampling.iter_sampled_trajectory_frames(
+                cast(Iterable[object], trajectory),
+                selected_frame_sampling,
+            )
+        )
     except Exception:
         condition_issues.append(_frame_iteration_issue())
     else:
-        frame_index = 0
         while True:
             try:
-                timestep = next(trajectory_iterator)
+                frame_index, timestep = next(trajectory_iterator)
             except StopIteration:
                 break
             except Exception:
@@ -786,7 +799,6 @@ def compute_condition_contacts(
                     ),
                 )
             frame_results.append(frame_result)
-            frame_index += 1
 
     if not frame_results and not condition_issues:
         condition_issues.append(
@@ -819,16 +831,25 @@ def _aggregate_manifest_contacts(
     manifest_load_result: PreprocessingManifestLoadResult,
     *,
     options: PreprocessingContactDetectionOptions | None = None,
+    frame_sampling: PreprocessingFrameSamplingOptions | None = None,
 ) -> PreprocessingManifestContactsResult:
     """Compose condition contact results across one manifest load result."""
     selected_options = options or PreprocessingContactDetectionOptions()
+    selected_frame_sampling = _frame_sampling_options(frame_sampling)
     condition_results: list[PreprocessingConditionContactsResult] = []
     for condition_load_result in manifest_load_result.condition_results:
         try:
-            contact_result = compute_condition_contacts(
-                condition_load_result,
-                options=selected_options,
-            )
+            if frame_sampling is None:
+                contact_result = compute_condition_contacts(
+                    condition_load_result,
+                    options=selected_options,
+                )
+            else:
+                contact_result = compute_condition_contacts(
+                    condition_load_result,
+                    options=selected_options,
+                    frame_sampling=selected_frame_sampling,
+                )
         except Exception:
             contact_result = _unexpected_condition_contacts_result(
                 condition_load_result,
@@ -1182,6 +1203,18 @@ def _usable_non_negative_float(value: object) -> float | None:
     return converted
 
 
+def _frame_sampling_options(
+    value: PreprocessingFrameSamplingOptions | None,
+) -> PreprocessingFrameSamplingOptions:
+    if value is None:
+        return PreprocessingFrameSamplingOptions()
+    if not isinstance(value, PreprocessingFrameSamplingOptions):
+        raise ValueError(
+            "frame_sampling must be PreprocessingFrameSamplingOptions or None"
+        )
+    return value
+
+
 def _read_attribute(value: object, name: str) -> tuple[object | None, bool]:
     try:
         return getattr(cast(Any, value), name), True
@@ -1274,6 +1307,7 @@ __all__ = [
     "PreprocessingContactDetectionOptions",
     "PreprocessingContactFrameResult",
     "PreprocessingContactPairResult",
+    "PreprocessingFrameSamplingOptions",
     "PreprocessingManifestContactsResult",
     "compute_condition_contacts",
     _MANIFEST_CONTACTS_API_NAME,

@@ -143,6 +143,25 @@ machine-readable JSON result. The command exits non-zero when a workflow stage
 fails. The CLI does not execute notebooks, auto-discover `local_md`, or produce
 WANIA frontend/API payloads.
 
+### Frame Sampling
+
+By default, preprocessing computes every trajectory frame. Stage 16.2 adds
+optional source-frame sampling for larger trajectories:
+
+```text
+--frame-start
+--frame-stop
+--frame-stride
+--max-frames
+```
+
+`frame_stop` is exclusive, `max_frames` caps sampled frames after
+start/stop/stride filtering, and sampled frame indexes preserve original source
+frame indexes. `frame_time_ps` remains timing metadata/fallback between source
+frames; it is not stride. Sampling affects Rg, contacts, graph outputs, and
+optional scientific CSV exports. It does not change the WANIA object JSON
+contract.
+
 ## Optional Scientific CSV Exports
 
 By default, the Stage 15 CLI does not export Rg/contacts CSVs. They can be

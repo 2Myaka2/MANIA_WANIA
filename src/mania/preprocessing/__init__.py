@@ -8,6 +8,9 @@ from mania.preprocessing import (
     trajectory_contacts_reference_comparison as contacts_reference_comparison,
 )
 from mania.preprocessing import (
+    trajectory_frame_sampling as trajectory_frame_sampling,
+)
+from mania.preprocessing import (
     trajectory_graph_export as trajectory_graph_export,
 )
 from mania.preprocessing import trajectory_rg as trajectory_rg
@@ -82,6 +85,12 @@ from mania.preprocessing.trajectory_contacts_reference_comparison import (
     PreprocessingContactsReferenceComparisonIssue,
     PreprocessingContactsReferenceComparisonOptions,
     validate_contacts_reference_comparison_input,
+)
+from mania.preprocessing.trajectory_frame_sampling import (
+    PreprocessingFrameSamplingOptions as PreprocessingFrameSamplingOptions,
+)
+from mania.preprocessing.trajectory_frame_sampling import (
+    iter_sampled_trajectory_frames as iter_sampled_trajectory_frames,
 )
 from mania.preprocessing.trajectory_graph_diagnostics import (
     PreprocessingGraphDiagnosticsCheckResult,

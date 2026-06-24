@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 import mania.cli as cli
+from mania.preprocessing import PreprocessingFrameSamplingOptions
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CLI_SOURCE_PATH = PROJECT_ROOT / "src" / "mania" / "cli.py"
@@ -96,11 +97,13 @@ class FakeResult:
 class FakeComputationResult(FakeResult):
     include_rg: bool = True
     include_contacts: bool = True
+    frame_sampling: dict[str, object] | None = None
 
     def to_dict(self) -> dict[str, object]:
         payload = super().to_dict()
         payload["include_rg"] = self.include_rg
         payload["include_contacts"] = self.include_contacts
+        payload["frame_sampling"] = self.frame_sampling
         return payload
 
 
@@ -266,16 +269,19 @@ def install_fake_stage15(
         *,
         include_rg: bool,
         include_contacts: bool,
+        frame_sampling: PreprocessingFrameSamplingOptions,
     ) -> FakeComputationResult:
         calls.append("compute_preprocessing_graph_workflow_rg_contacts")
         received["runtime_loading"] = runtime_loading
         received["include_rg"] = include_rg
         received["include_contacts"] = include_contacts
+        received["frame_sampling"] = frame_sampling
         return FakeComputationResult(
             "computation",
             passed=failing_stage != "computation",
             include_rg=include_rg,
             include_contacts=include_contacts,
+            frame_sampling=frame_sampling.to_dict(),
             raw=object(),
         )
 
@@ -409,6 +415,10 @@ def test_graph_export_help_mentions_verbose_without_mdanalysis() -> None:
     assert "--export-rg-timeseries" in result.stdout
     assert "--export-contact-edges" in result.stdout
     assert "--export-contacts-perframe" in result.stdout
+    assert "--frame-start" in result.stdout
+    assert "--frame-stop" in result.stdout
+    assert "--frame-stride" in result.stdout
+    assert "--max-frames" in result.stdout
     assert "MDAnalysis" not in result.stderr
 
 
@@ -427,6 +437,27 @@ def test_graph_export_accepts_scientific_csv_flags() -> None:
     assert args.export_rg_timeseries is True
     assert args.export_contact_edges is True
     assert args.export_contacts_perframe is True
+
+
+def test_graph_export_accepts_frame_sampling_flags() -> None:
+    args = cli.build_parser().parse_args(
+        [
+            *BASE_COMMAND,
+            "--frame-start",
+            "100",
+            "--frame-stop",
+            "500",
+            "--frame-stride",
+            "5",
+            "--max-frames",
+            "100",
+        ]
+    )
+
+    assert args.frame_start == 100
+    assert args.frame_stop == 500
+    assert args.frame_stride == 5
+    assert args.max_frames == 100
 
 
 @pytest.mark.parametrize(
@@ -484,7 +515,107 @@ def test_default_command_builds_options_and_calls_stage15_in_order(
     assert options.reference_nodes_csv_path is None
     assert options.reference_edges_csv_path is None
     assert options.reference_graph_json_path is None
+    assert options.frame_sampling == PreprocessingFrameSamplingOptions()
+    assert received["frame_sampling"] == PreprocessingFrameSamplingOptions()
     assert received["expected_condition_names"] == ("normal", "tumor")
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "expected_sampling"),
+    (
+        (
+            ("--frame-stride", "2"),
+            PreprocessingFrameSamplingOptions(frame_stride=2),
+        ),
+        (
+            ("--frame-start", "3"),
+            PreprocessingFrameSamplingOptions(frame_start=3),
+        ),
+        (
+            ("--frame-stop", "7"),
+            PreprocessingFrameSamplingOptions(frame_stop=7),
+        ),
+        (
+            ("--max-frames", "4"),
+            PreprocessingFrameSamplingOptions(max_frames=4),
+        ),
+        (
+            (
+                "--frame-start",
+                "100",
+                "--frame-stop",
+                "500",
+                "--frame-stride",
+                "5",
+                "--max-frames",
+                "100",
+            ),
+            PreprocessingFrameSamplingOptions(
+                frame_start=100,
+                frame_stop=500,
+                frame_stride=5,
+                max_frames=100,
+            ),
+        ),
+    ),
+)
+def test_frame_sampling_flags_are_forwarded(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    extra_args: tuple[str, ...],
+    expected_sampling: PreprocessingFrameSamplingOptions,
+) -> None:
+    _, received = install_fake_stage15(monkeypatch)
+
+    _, stdout, _ = invoke_cli(monkeypatch, capsys, *BASE_COMMAND, *extra_args)
+    payload = stdout_json(stdout)
+    computation = payload["computation"]
+
+    assert payload["passed"] is True
+    assert received["frame_sampling"] == expected_sampling
+    assert isinstance(computation, dict)
+    assert computation["frame_sampling"] == expected_sampling.to_dict()
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "expected_message"),
+    (
+        (("--frame-start", "-1"), "frame_start"),
+        (("--frame-stride", "0"), "frame_stride"),
+        (
+            ("--frame-start", "5", "--frame-stop", "5"),
+            "frame_stop",
+        ),
+        (("--max-frames", "0"), "max_frames"),
+    ),
+)
+def test_invalid_frame_sampling_flags_fail_clearly(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    extra_args: tuple[str, ...],
+    expected_message: str,
+) -> None:
+    called = False
+
+    def fake_build(options: object) -> object:
+        nonlocal called
+        called = True
+        return object()
+
+    monkeypatch.setattr(cli, "build_preprocessing_graph_workflow_plan", fake_build)
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        *extra_args,
+        expected_exit_code=2,
+    )
+
+    assert stdout == ""
+    assert "Invalid frame sampling options" in stderr
+    assert expected_message in stderr
+    assert called is False
 
 
 def test_verbose_command_parses_and_calls_stage15_in_order(

@@ -1,3 +1,4 @@
+import csv
 import json
 import math
 import re
@@ -14,9 +15,12 @@ from mania.preprocessing import (
     PreprocessingContactDetectionOptions,
     PreprocessingContactFrameResult,
     PreprocessingContactPairResult,
+    PreprocessingFrameSamplingOptions,
     PreprocessingManifestContactsResult,
     PreprocessingTrajectoryLoadIssue,
     compute_condition_contacts,
+    write_contact_edges_csv,
+    write_contacts_perframe_csv,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -527,6 +531,58 @@ def test_multiple_frames_use_trajectory_order_and_positions() -> None:
     assert [frame.frame_index for frame in result.frame_results] == [0, 1]
     assert [frame.time_ps for frame in result.frame_results] == [7.0, 9.0]
     assert [frame.contact_count for frame in result.frame_results] == [1, 0]
+
+
+def test_frame_stride_computes_sampled_source_frames_and_exports(
+    tmp_path: Path,
+) -> None:
+    source = FakeAtom(position=(0.0, 0.0, 0.0))
+    target = FakeAtom(position=(10.0, 0.0, 0.0))
+    residues = [
+        FakeResidue("ALA", 1, [source]),
+        FakeResidue("GLY", 2, [target]),
+    ]
+    frames = [
+        FakeTimestep(positions=((0.0, 0.0, 0.0), (3.0, 0.0, 0.0))),
+        FakeTimestep(positions=((0.0, 0.0, 0.0), (3.0, 0.0, 0.0))),
+        FakeTimestep(positions=((0.0, 0.0, 0.0), (8.0, 0.0, 0.0))),
+        FakeTimestep(positions=((0.0, 0.0, 0.0), (3.0, 0.0, 0.0))),
+    ]
+
+    result = compute_condition_contacts(
+        make_loaded_result(
+            make_runtime(residues, frames),
+            frame_time_ps=2.5,
+        ),
+        frame_sampling=PreprocessingFrameSamplingOptions(frame_stride=2),
+    )
+
+    assert result.status == "computed"
+    assert result.passed is True
+    assert result.frame_count == 2
+    assert result.contact_count == 1
+    assert [frame.frame_index for frame in result.frame_results] == [0, 2]
+    assert [frame.time_ps for frame in result.frame_results] == [0.0, 5.0]
+    assert [frame.contact_count for frame in result.frame_results] == [1, 0]
+
+    perframe_path = tmp_path / "contacts_perframe.csv"
+    edges_path = tmp_path / "contact_edges.csv"
+    perframe_result = write_contacts_perframe_csv(result, perframe_path)
+    edges_result = write_contact_edges_csv(result, edges_path)
+
+    assert perframe_result.passed is True
+    assert edges_result.passed is True
+    with perframe_path.open(encoding="utf-8", newline="") as csv_file:
+        perframe_rows = list(csv.DictReader(csv_file))
+    with edges_path.open(encoding="utf-8", newline="") as csv_file:
+        edge_rows = list(csv.DictReader(csv_file))
+
+    assert [row["frame_index"] for row in perframe_rows] == ["0"]
+    assert {row["frame_index"] for row in perframe_rows} == {"0"}
+    assert len(edge_rows) == 1
+    assert edge_rows[0]["contact_frame_count"] == "1"
+    assert edge_rows[0]["total_frame_count"] == "2"
+    assert float(edge_rows[0]["contact_frequency"]) == 0.5
 
 
 def test_time_falls_back_to_declared_frame_interval() -> None:

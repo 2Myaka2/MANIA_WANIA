@@ -107,6 +107,20 @@ computation, graph export, graph schema, diagnostics, or reference comparison.
 When no export flags are enabled, it returns a skipped successful result and
 writes no `rg/` or `contacts/` directories.
 
+Stage 16.2 adds controlled preprocessing frame sampling, also exported from
+`mania.preprocessing`:
+
+```python
+PreprocessingFrameSamplingOptions
+iter_sampled_trajectory_frames(...)
+```
+
+The default sampling contract is `frame_start=0`, `frame_stop=None`,
+`frame_stride=1`, and `max_frames=None`, which computes every trajectory frame
+as before. `frame_stop` is exclusive, `max_frames` caps sampled frames after
+start/stop/stride filtering, and sampled frame indexes preserve original
+source frame indexes. Boolean values are rejected for integer sampling fields.
+
 ## Run options
 
 `PreprocessingGraphWorkflowOptions` records:
@@ -118,11 +132,18 @@ writes no `rg/` or `contacts/` directories.
 - toggles for Rg, contacts, graph export, diagnostics, and reference
   comparison;
 - optional explicit reference artifact paths;
-- `reference_semantics`.
+- `reference_semantics`;
+- `frame_sampling`.
 
 `reference_semantics` defaults to `MANIA_analysis_v1_2`. v1.1 remains
 historical and is not the default. Reference comparison is disabled by
 default.
+
+`frame_sampling` is JSON-safe workflow provenance metadata and is passed
+consistently to Rg and contacts computation. Sampling affects Rg, contacts,
+graph outputs derived from sampled contacts, and optional scientific CSV
+exports. `frame_time_ps` remains timing metadata/fallback between source frames;
+it is not stride.
 
 The options validate types only. They do not check whether `manifest_path` or
 `output_dir` exists, do not load YAML, do not inspect `local_md`, and do not
@@ -504,6 +525,18 @@ Optional scientific CSV flags are:
 --export-contacts-perframe
 --export-scientific-csvs
 ```
+
+Stage 16.2 also adds frame sampling flags to the same narrow command:
+
+```text
+--frame-start
+--frame-stop
+--frame-stride
+--max-frames
+```
+
+Without these flags, default CLI behavior remains unchanged and every frame is
+computed.
 
 `--export-scientific-csvs` is the safe shortcut for `--export-rg-timeseries`
 plus `--export-contact-edges`. It deliberately does not include

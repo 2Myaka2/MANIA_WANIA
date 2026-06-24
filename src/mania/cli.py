@@ -15,6 +15,9 @@ from mania.pipeline_steps import (
     NotebookExportGraphDiagnosticsPipelineResult,
     run_notebook_export_graph_diagnostics_pipeline_from_config_file,
 )
+from mania.preprocessing.trajectory_frame_sampling import (
+    PreprocessingFrameSamplingOptions,
+)
 from mania.preprocessing.trajectory_graph_workflow import (
     PreprocessingGraphWorkflowOptions,
     build_preprocessing_graph_workflow_plan,
@@ -223,6 +226,30 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     graph_export_parser.add_argument(
+        "--frame-start",
+        type=int,
+        default=0,
+        help="First source trajectory frame index to include. Defaults to 0.",
+    )
+    graph_export_parser.add_argument(
+        "--frame-stop",
+        type=int,
+        default=None,
+        help="Exclusive source trajectory frame stop index.",
+    )
+    graph_export_parser.add_argument(
+        "--frame-stride",
+        type=int,
+        default=1,
+        help="Source trajectory frame sampling stride. Defaults to 1.",
+    )
+    graph_export_parser.add_argument(
+        "--max-frames",
+        type=int,
+        default=None,
+        help="Maximum sampled frame count after filtering.",
+    )
+    graph_export_parser.add_argument(
         "--verbose",
         action="store_true",
         help="Print stage-by-stage progress messages to stderr.",
@@ -270,6 +297,12 @@ def _build_preprocessing_graph_workflow_options(
         "reference_edges_csv_path": args.reference_edges,
         "reference_graph_json_path": args.reference_graph_json,
         "reference_semantics": args.reference_semantics,
+        "frame_sampling": PreprocessingFrameSamplingOptions(
+            frame_start=args.frame_start,
+            frame_stop=args.frame_stop,
+            frame_stride=args.frame_stride,
+            max_frames=args.max_frames,
+        ),
     }
     if args.run_name is not None:
         option_kwargs["run_name"] = args.run_name
@@ -437,7 +470,11 @@ def _skipped_scientific_csv_export_summary() -> dict[str, object]:
 
 
 def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
-    options = _build_preprocessing_graph_workflow_options(args)
+    try:
+        options = _build_preprocessing_graph_workflow_options(args)
+    except ValueError as exc:
+        print(f"Invalid frame sampling options: {exc}", file=sys.stderr)
+        return 2
     scientific_csv_export: object | None = (
         None
         if _scientific_csv_export_requested(args)
@@ -488,6 +525,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         runtime_loading,
         include_rg=options.include_rg,
         include_contacts=options.include_contacts,
+        frame_sampling=options.frame_sampling,
     )
     if not computation.passed:
         _print_preprocessing_graph_export_failure(args, 3)

@@ -62,6 +62,10 @@ or dependency change.
 - Stage 16.1 WANIA adapter: can build the future WANIA object JSON payload
   from accepted Stage 15 artifacts and explicit protein/run metadata. Backend
   graph artifacts remain unchanged, and FastAPI/API remains future scope.
+- Stage 16.2 frame sampling: adds controlled preprocessing source-frame
+  sampling for Rg, contacts, graph outputs derived from contacts, optional
+  scientific CSVs, and JSON-safe workflow provenance. It must not be confused
+  with FastAPI/upload/job API work or a WANIA payload schema change.
 
 ## Accepted public workflow APIs
 
@@ -166,6 +170,20 @@ Optional scientific CSV export is disabled by default. The CLI accepts:
 When requested, optional scientific CSV export runs after graph export and
 before diagnostics.
 
+Frame sampling is optional and disabled by default. The CLI accepts:
+
+```text
+--frame-start
+--frame-stop
+--frame-stride
+--max-frames
+```
+
+Default behavior computes every frame. `frame_stop` is exclusive, `max_frames`
+caps sampled frames after start/stop/stride filtering, and sampled frame
+indexes preserve original source frame indexes. `frame_time_ps` remains timing
+metadata/fallback between source frames; it is not stride.
+
 ## Accepted output artifacts
 
 Stage 15 may produce these artifacts under the selected output directory:
@@ -197,6 +215,10 @@ contacts/contacts_perframe.csv
 `contacts/contact_edges.csv` is the Stage 13 aggregate contacts table.
 `graph/edges.csv` remains the backend graph edge table. These optional
 scientific CSVs are not WANIA/frontend API payloads.
+
+When Stage 16.2 frame sampling is used, Rg, contacts, contact aggregate
+frequencies, graph edges, and optional scientific CSVs reflect sampled frames.
+Backend graph schemas and WANIA object JSON payload schemas remain unchanged.
 
 The corrected backend graph edge schema includes:
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib
 import json
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, Protocol, cast
@@ -13,6 +13,9 @@ from typing import TYPE_CHECKING, Protocol, cast
 from mania.preprocessing.input_manifest import PreprocessingInputManifest
 from mania.preprocessing.path_validation import (
     PreprocessingPathValidationReport,
+)
+from mania.preprocessing.trajectory_frame_sampling import (
+    PreprocessingFrameSamplingOptions,
 )
 
 if TYPE_CHECKING:
@@ -100,7 +103,12 @@ class _ManifestRuntimeLoader(Protocol):
 
 
 class _ManifestRgComputer(Protocol):
-    def __call__(self, manifest_result: object) -> object: ...
+    def __call__(
+        self,
+        manifest_result: object,
+        *,
+        frame_sampling: object | None = None,
+    ) -> object: ...
 
 
 class _ManifestContactsComputer(Protocol):
@@ -109,6 +117,7 @@ class _ManifestContactsComputer(Protocol):
         manifest_result: object,
         *,
         options: object | None = None,
+        frame_sampling: object | None = None,
     ) -> object: ...
 
 
@@ -251,6 +260,9 @@ class PreprocessingGraphWorkflowOptions:
     reference_edges_csv_path: Path | None = None
     reference_graph_json_path: Path | None = None
     reference_semantics: str = _CURRENT_REFERENCE_SEMANTICS
+    frame_sampling: PreprocessingFrameSamplingOptions = field(
+        default_factory=PreprocessingFrameSamplingOptions
+    )
 
     def __post_init__(self) -> None:
         _require_path(self.manifest_path, "manifest_path")
@@ -269,6 +281,7 @@ class PreprocessingGraphWorkflowOptions:
             "reference_semantics",
             _non_empty_string(self.reference_semantics, "reference_semantics"),
         )
+        _require_frame_sampling(self.frame_sampling, "frame_sampling")
 
     def to_dict(self) -> dict[str, object]:
         """Return JSON-safe workflow options."""
@@ -292,6 +305,7 @@ class PreprocessingGraphWorkflowOptions:
                 self.reference_graph_json_path
             ),
             "reference_semantics": self.reference_semantics,
+            "frame_sampling": self.frame_sampling.to_dict(),
         }
 
 
@@ -752,6 +766,9 @@ class PreprocessingGraphWorkflowComputationResult:
     condition_names: tuple[str, ...]
     include_rg: bool
     include_contacts: bool
+    frame_sampling: PreprocessingFrameSamplingOptions = field(
+        default_factory=PreprocessingFrameSamplingOptions
+    )
     rg_result: object | None = None
     contacts_result: object | None = None
     issues: tuple[PreprocessingGraphWorkflowComputationIssue, ...] = ()
@@ -777,6 +794,7 @@ class PreprocessingGraphWorkflowComputationResult:
         )
         _require_bool(self.include_rg, "include_rg")
         _require_bool(self.include_contacts, "include_contacts")
+        _require_frame_sampling(self.frame_sampling, "frame_sampling")
         if not isinstance(self.issues, tuple):
             raise ValueError(
                 "issues must be a tuple of "
@@ -829,6 +847,7 @@ class PreprocessingGraphWorkflowComputationResult:
             "condition_names": list(self.condition_names),
             "include_rg": self.include_rg,
             "include_contacts": self.include_contacts,
+            "frame_sampling": self.frame_sampling.to_dict(),
             "rg_computed": self.rg_computed,
             "contacts_computed": self.contacts_computed,
             "rg_result_type": _object_type(self.rg_result),
@@ -1892,6 +1911,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
     include_rg: bool = True,
     include_contacts: bool = True,
     contact_options: PreprocessingContactDetectionOptions | None = None,
+    frame_sampling: PreprocessingFrameSamplingOptions | None = None,
 ) -> PreprocessingGraphWorkflowComputationResult:
     """Orchestrate accepted manifest-level Rg and contacts computations."""
     if not isinstance(
@@ -1904,6 +1924,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
         )
     _require_bool(include_rg, "include_rg")
     _require_bool(include_contacts, "include_contacts")
+    selected_frame_sampling = _frame_sampling_options(frame_sampling)
 
     condition_names = runtime_loading.condition_names
     issues: list[PreprocessingGraphWorkflowComputationIssue] = []
@@ -1943,6 +1964,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
             condition_names=condition_names,
             include_rg=include_rg,
             include_contacts=include_contacts,
+            frame_sampling=selected_frame_sampling,
             issues=tuple(issues),
         )
 
@@ -1963,6 +1985,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
             condition_names=condition_names,
             include_rg=include_rg,
             include_contacts=include_contacts,
+            frame_sampling=selected_frame_sampling,
             issues=tuple(issues),
         )
 
@@ -1979,12 +2002,19 @@ def compute_preprocessing_graph_workflow_rg_contacts(
             condition_names=condition_names,
             include_rg=include_rg,
             include_contacts=include_contacts,
+            frame_sampling=selected_frame_sampling,
             issues=tuple(issues),
         )
 
     if include_rg:
         try:
-            rg_result = _manifest_rg_computer()(runtime_result)
+            if frame_sampling is None:
+                rg_result = _manifest_rg_computer()(runtime_result)
+            else:
+                rg_result = _manifest_rg_computer()(
+                    runtime_result,
+                    frame_sampling=selected_frame_sampling,
+                )
         except Exception as exc:
             issues.append(
                 _computation_exception_issue(
@@ -2005,13 +2035,15 @@ def compute_preprocessing_graph_workflow_rg_contacts(
 
     if include_contacts:
         try:
-            if contact_options is None:
-                contacts_result = _manifest_contacts_computer()(runtime_result)
-            else:
-                contacts_result = _manifest_contacts_computer()(
-                    runtime_result,
-                    options=contact_options,
-                )
+            contact_kwargs: dict[str, object] = {}
+            if contact_options is not None:
+                contact_kwargs["options"] = contact_options
+            if frame_sampling is not None:
+                contact_kwargs["frame_sampling"] = selected_frame_sampling
+            contacts_result = _manifest_contacts_computer()(
+                runtime_result,
+                **contact_kwargs,
+            )
         except Exception as exc:
             issues.append(
                 _computation_exception_issue(
@@ -2035,6 +2067,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
         condition_names=condition_names,
         include_rg=include_rg,
         include_contacts=include_contacts,
+        frame_sampling=selected_frame_sampling,
         rg_result=rg_result,
         contacts_result=contacts_result,
         issues=tuple(issues),
@@ -3170,6 +3203,22 @@ def _require_optional_path(value: object, field_name: str) -> None:
 def _require_bool(value: object, field_name: str) -> None:
     if not isinstance(value, bool):
         raise ValueError(f"{field_name} must be a bool")
+
+
+def _require_frame_sampling(value: object, field_name: str) -> None:
+    if not isinstance(value, PreprocessingFrameSamplingOptions):
+        raise ValueError(
+            f"{field_name} must be PreprocessingFrameSamplingOptions"
+        )
+
+
+def _frame_sampling_options(
+    value: PreprocessingFrameSamplingOptions | None,
+) -> PreprocessingFrameSamplingOptions:
+    if value is None:
+        return PreprocessingFrameSamplingOptions()
+    _require_frame_sampling(value, "frame_sampling")
+    return value
 
 
 def _non_empty_string(value: object, field_name: str) -> str:

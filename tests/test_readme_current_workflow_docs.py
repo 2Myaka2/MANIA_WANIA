@@ -92,6 +92,25 @@ def test_readme_documents_optional_scientific_csv_exports() -> None:
         assert phrase in text
 
 
+def test_readme_documents_frame_sampling() -> None:
+    text = readme_text()
+
+    for phrase in (
+        "Frame Sampling",
+        "--frame-start",
+        "--frame-stop",
+        "--frame-stride",
+        "--max-frames",
+        "computes every trajectory frame",
+        "frame_time_ps",
+        "not stride",
+        "Sampling affects Rg, contacts, graph outputs",
+        "optional scientific CSV exports",
+        "does not change the WANIA object JSON",
+    ):
+        assert phrase in text
+
+
 def test_readme_documents_raw_data_boundary() -> None:
     text = readme_text()
 

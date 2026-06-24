@@ -1,3 +1,4 @@
+import csv
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,6 +12,7 @@ from mania.preprocessing import (
     PreprocessingContactDetectionOptions,
     PreprocessingContactFrameResult,
     PreprocessingContactPairResult,
+    PreprocessingFrameSamplingOptions,
     PreprocessingGraphWorkflowComputationResult,
     PreprocessingGraphWorkflowManifestReadinessResult,
     PreprocessingGraphWorkflowOutputLayout,
@@ -20,6 +22,7 @@ from mania.preprocessing import (
     PreprocessingManifestContactsResult,
     PreprocessingManifestRgResult,
     PreprocessingRgFrameResult,
+    build_preprocessing_graph_export_mapping,
     export_preprocessing_graph_workflow_scientific_csvs,
 )
 from mania.preprocessing import trajectory_graph_workflow as workflow
@@ -153,12 +156,84 @@ def contacts_result() -> PreprocessingManifestContactsResult:
     )
 
 
+def sampled_rg_result() -> PreprocessingManifestRgResult:
+    return PreprocessingManifestRgResult(
+        condition_results=(
+            PreprocessingConditionRgResult(
+                condition_name="normal",
+                status="computed",
+                runtime_type="synthetic",
+                topology_path=None,
+                trajectory_paths=(),
+                frame_time_ps=1.0,
+                rg_unit="angstrom",
+                frame_results=(
+                    PreprocessingRgFrameResult(
+                        condition_name="normal",
+                        frame_index=0,
+                        time_ps=0.0,
+                        rg_value=12.5,
+                        rg_unit="angstrom",
+                    ),
+                    PreprocessingRgFrameResult(
+                        condition_name="normal",
+                        frame_index=2,
+                        time_ps=2.0,
+                        rg_value=14.5,
+                        rg_unit="angstrom",
+                    ),
+                ),
+            ),
+        )
+    )
+
+
+def sampled_contacts_result() -> PreprocessingManifestContactsResult:
+    contact = PreprocessingContactPairResult(
+        source_residue_index=1,
+        target_residue_index=2,
+        source_resname="ALA",
+        target_resname="GLY",
+        minimum_distance=3.1,
+        distance_unit="angstrom",
+        atom_filter="heavy",
+        source_residue_id=10,
+        target_residue_id=11,
+        source_segid="A",
+        target_segid="A",
+    )
+    return PreprocessingManifestContactsResult(
+        condition_results=(
+            PreprocessingConditionContactsResult(
+                condition_name="normal",
+                options=PreprocessingContactDetectionOptions(),
+                frame_results=(
+                    PreprocessingContactFrameResult(
+                        condition_name="normal",
+                        frame_index=0,
+                        time_ps=0.0,
+                        contacts=(contact,),
+                    ),
+                    PreprocessingContactFrameResult(
+                        condition_name="normal",
+                        frame_index=2,
+                        time_ps=2.0,
+                        contacts=(),
+                    ),
+                ),
+                status="computed",
+            ),
+        )
+    )
+
+
 def computation_result(
     *,
     rg_source: object | None = _UNSET,
     contacts_source: object | None = _UNSET,
     include_rg: bool = True,
     include_contacts: bool = True,
+    frame_sampling: PreprocessingFrameSamplingOptions | None = None,
 ) -> PreprocessingGraphWorkflowComputationResult:
     if rg_source is _UNSET:
         rg_source = rg_result()
@@ -169,6 +244,7 @@ def computation_result(
         condition_names=("normal",),
         include_rg=include_rg,
         include_contacts=include_contacts,
+        frame_sampling=frame_sampling or PreprocessingFrameSamplingOptions(),
         rg_result=rg_source,
         contacts_result=contacts_source,
     )
@@ -260,6 +336,57 @@ def test_contacts_perframe_csv_requires_explicit_enable(
         tmp_path / "full" / "contacts" / "contacts_perframe.csv"
     ).is_file()
     assert full_result.to_dict()["validation"]["contacts_perframe"] is not None
+
+
+def test_sampled_scientific_csvs_and_graph_mapping_use_sampled_frames(
+    tmp_path: Path,
+) -> None:
+    frame_sampling = PreprocessingFrameSamplingOptions(frame_stride=2)
+    computation = computation_result(
+        rg_source=sampled_rg_result(),
+        contacts_source=sampled_contacts_result(),
+        frame_sampling=frame_sampling,
+    )
+
+    result = export_preprocessing_graph_workflow_scientific_csvs(
+        computation,
+        output_layout(tmp_path / "out"),
+        export_rg_timeseries=True,
+        export_contact_edges=True,
+        export_contacts_perframe=True,
+    )
+    mapping = build_preprocessing_graph_export_mapping(
+        sampled_contacts_result()
+    )
+
+    assert result.passed
+    assert result.computation.to_dict()["frame_sampling"] == (
+        frame_sampling.to_dict()
+    )
+    with (tmp_path / "out" / "rg" / "rg_timeseries.csv").open(
+        encoding="utf-8",
+        newline="",
+    ) as csv_file:
+        rg_rows = list(csv.DictReader(csv_file))
+    with (tmp_path / "out" / "contacts" / "contacts_perframe.csv").open(
+        encoding="utf-8",
+        newline="",
+    ) as csv_file:
+        perframe_rows = list(csv.DictReader(csv_file))
+    with (tmp_path / "out" / "contacts" / "contact_edges.csv").open(
+        encoding="utf-8",
+        newline="",
+    ) as csv_file:
+        edge_rows = list(csv.DictReader(csv_file))
+
+    assert [row["frame_index"] for row in rg_rows] == ["0", "2"]
+    assert [row["frame_index"] for row in perframe_rows] == ["0"]
+    assert edge_rows[0]["contact_frame_count"] == "1"
+    assert edge_rows[0]["total_frame_count"] == "2"
+    assert float(edge_rows[0]["contact_frequency"]) == 0.5
+    assert mapping.edges[0].contact_frame_count == 1
+    assert mapping.edges[0].total_frame_count == 2
+    assert mapping.edges[0].contact_frequency == 0.5
 
 
 def test_missing_rg_result_gives_clear_issue(tmp_path: Path) -> None:
