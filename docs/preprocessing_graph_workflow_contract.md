@@ -121,6 +121,19 @@ as before. `frame_stop` is exclusive, `max_frames` caps sampled frames after
 start/stop/stride filtering, and sampled frame indexes preserve original
 source frame indexes. Boolean values are rejected for integer sampling fields.
 
+Stage 16.3 adds optional contacts computation guard/progress contracts, also
+exported from `mania.preprocessing`:
+
+```python
+PreprocessingContactComputationLimits
+PreprocessingContactProgressEvent
+```
+
+The default limits are unlimited and preserve existing contacts semantics.
+When configured, a per-frame contacts limit exceedance is reported as a
+deterministic issue and the workflow does not continue to complete graph export
+as if contacts were complete.
+
 ## Run options
 
 `PreprocessingGraphWorkflowOptions` records:
@@ -133,7 +146,8 @@ source frame indexes. Boolean values are rejected for integer sampling fields.
   comparison;
 - optional explicit reference artifact paths;
 - `reference_semantics`;
-- `frame_sampling`.
+- `frame_sampling`;
+- `contact_computation_limits`.
 
 `reference_semantics` defaults to `MANIA_analysis_v1_2`. v1.1 remains
 historical and is not the default. Reference comparison is disabled by
@@ -144,6 +158,12 @@ consistently to Rg and contacts computation. Sampling affects Rg, contacts,
 graph outputs derived from sampled contacts, and optional scientific CSV
 exports. `frame_time_ps` remains timing metadata/fallback between source frames;
 it is not stride.
+
+`contact_computation_limits` is JSON-safe workflow provenance metadata for
+optional local smoke/debug safeguards. Limits are not enabled by default. Frame
+sampling reduces how many frames are processed; it does not reduce the
+candidate residue-pair or atom-distance work inside a single sampled contacts
+frame.
 
 The options validate types only. They do not check whether `manifest_path` or
 `output_dir` exists, do not load YAML, do not inspect `local_md`, and do not
@@ -537,6 +557,19 @@ Stage 16.2 also adds frame sampling flags to the same narrow command:
 
 Without these flags, default CLI behavior remains unchanged and every frame is
 computed.
+
+Stage 16.3 adds optional contacts smoke/debug guard flags to the same command:
+
+```text
+--contact-max-residue-pairs-per-frame
+--contact-max-distance-evaluations-per-frame
+```
+
+These guards are disabled by default. With `--verbose`, contacts progress is
+printed to stderr while stdout remains final JSON only. If a configured guard
+is exceeded, the final JSON exposes the contact issue and the workflow exits
+non-zero rather than silently producing complete graph artifacts from partial
+contacts.
 
 `--export-scientific-csvs` is the safe shortcut for `--export-rg-timeseries`
 plus `--export-contact-edges`. It deliberately does not include

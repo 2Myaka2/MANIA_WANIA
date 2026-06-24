@@ -162,6 +162,20 @@ frames; it is not stride. Sampling affects Rg, contacts, graph outputs, and
 optional scientific CSV exports. It does not change the WANIA object JSON
 contract.
 
+Frame sampling reduces the number of frames, not the cost of contacts inside
+one sampled frame. With `--verbose`, contacts progress is also printed to
+stderr. Optional local smoke/debug guards are available and are disabled by
+default:
+
+```text
+--contact-max-residue-pairs-per-frame
+--contact-max-distance-evaluations-per-frame
+```
+
+If a configured contact guard is exceeded, the workflow reports the issue in
+the final JSON and exits non-zero rather than silently producing complete graph
+artifacts from incomplete contacts.
+
 ## Optional Scientific CSV Exports
 
 By default, the Stage 15 CLI does not export Rg/contacts CSVs. They can be

@@ -184,6 +184,19 @@ caps sampled frames after start/stop/stride filtering, and sampled frame
 indexes preserve original source frame indexes. `frame_time_ps` remains timing
 metadata/fallback between source frames; it is not stride.
 
+Contact safety guards are optional and disabled by default:
+
+```text
+--contact-max-residue-pairs-per-frame
+--contact-max-distance-evaluations-per-frame
+```
+
+Frame sampling reduces the number of frames; it does not reduce contacts work
+inside one sampled frame. With `--verbose`, contacts progress is printed to
+stderr. If a configured contact guard is exceeded, the final JSON exposes the
+issue and the workflow exits non-zero rather than silently producing complete
+graph artifacts from incomplete contacts.
+
 ## Accepted output artifacts
 
 Stage 15 may produce these artifacts under the selected output directory:
@@ -219,6 +232,9 @@ scientific CSVs are not WANIA/frontend API payloads.
 When Stage 16.2 frame sampling is used, Rg, contacts, contact aggregate
 frequencies, graph edges, and optional scientific CSVs reflect sampled frames.
 Backend graph schemas and WANIA object JSON payload schemas remain unchanged.
+
+Stage 16.3 contact guard metadata is workflow/CLI metadata only. It is not a
+WANIA payload schema change and does not change graph artifact schemas.
 
 The corrected backend graph edge schema includes:
 

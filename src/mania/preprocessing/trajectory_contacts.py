@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field
 from numbers import Integral
 from typing import Any, TypeAlias, cast
 
@@ -34,6 +34,14 @@ _CONTACT_RESULT_STATUSES = (
     "computed",
     "partial",
     "failed",
+)
+_CONTACT_PROGRESS_STAGES = (
+    "condition_start",
+    "frame_start",
+    "frame_candidates_built",
+    "frame_limit_exceeded",
+    "frame_done",
+    "condition_done",
 )
 _BOOLEAN_OPTION_FIELDS = (
     "exclude_same_residue",
@@ -128,6 +136,17 @@ def _require_non_negative_int(value: object, field_name: str) -> None:
         or value < 0
     ):
         raise ValueError(f"{field_name} must be a non-negative int")
+
+
+def _require_optional_positive_int(value: object, field_name: str) -> None:
+    if value is None:
+        return
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or value <= 0
+    ):
+        raise ValueError(f"{field_name} must be a positive int or None")
 
 
 def _require_non_negative_finite_number(
@@ -252,6 +271,79 @@ class PreprocessingContactDetectionOptions:
             "include_frame_index": self.include_frame_index,
             "include_time_ps": self.include_time_ps,
         }
+
+
+@dataclass(frozen=True)
+class PreprocessingContactComputationLimits:
+    """Optional smoke/debug guards for per-frame contacts computation."""
+
+    max_residue_pairs_per_frame: int | None = None
+    max_atom_distance_evaluations_per_frame: int | None = None
+
+    def __post_init__(self) -> None:
+        _require_optional_positive_int(
+            self.max_residue_pairs_per_frame,
+            "max_residue_pairs_per_frame",
+        )
+        _require_optional_positive_int(
+            self.max_atom_distance_evaluations_per_frame,
+            "max_atom_distance_evaluations_per_frame",
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return deterministic JSON-safe contact computation limits."""
+        return {
+            "max_residue_pairs_per_frame": (
+                self.max_residue_pairs_per_frame
+            ),
+            "max_atom_distance_evaluations_per_frame": (
+                self.max_atom_distance_evaluations_per_frame
+            ),
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingContactProgressEvent:
+    """One lightweight contacts progress event."""
+
+    condition_name: str
+    frame_index: int | None
+    stage: str
+    message: str
+    residue_count: int | None = None
+    candidate_pair_count: int | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "condition_name",
+            _normalize_non_empty_string(
+                self.condition_name,
+                "condition_name",
+            ),
+        )
+        if self.frame_index is not None:
+            _require_non_negative_int(self.frame_index, "frame_index")
+        if self.stage not in _CONTACT_PROGRESS_STAGES:
+            raise ValueError("stage must be a supported contacts stage")
+        object.__setattr__(
+            self,
+            "message",
+            _normalize_non_empty_string(self.message, "message"),
+        )
+        if self.residue_count is not None:
+            _require_non_negative_int(self.residue_count, "residue_count")
+        if self.candidate_pair_count is not None:
+            _require_non_negative_int(
+                self.candidate_pair_count,
+                "candidate_pair_count",
+            )
+
+
+ContactProgressCallback: TypeAlias = Callable[
+    [PreprocessingContactProgressEvent],
+    None,
+]
 
 
 @dataclass(frozen=True)
@@ -451,6 +543,9 @@ class PreprocessingConditionContactsResult:
 
     condition_name: str
     options: PreprocessingContactDetectionOptions
+    computation_limits: PreprocessingContactComputationLimits = field(
+        default_factory=PreprocessingContactComputationLimits
+    )
     frame_results: tuple[PreprocessingContactFrameResult, ...] = ()
     issues: tuple[PreprocessingContactComputationIssue, ...] = ()
     status: str = "not_computed"
@@ -467,6 +562,14 @@ class PreprocessingConditionContactsResult:
         if not isinstance(self.options, PreprocessingContactDetectionOptions):
             raise ValueError(
                 "options must be PreprocessingContactDetectionOptions"
+            )
+        if not isinstance(
+            self.computation_limits,
+            PreprocessingContactComputationLimits,
+        ):
+            raise ValueError(
+                "computation_limits must be "
+                "PreprocessingContactComputationLimits"
             )
         frame_indexes: set[int] = set()
         for frame_result in self.frame_results:
@@ -530,6 +633,9 @@ class PreprocessingConditionContactsResult:
             "condition_name": self.condition_name,
             "status": self.status,
             "options": self.options.to_dict(),
+            "contact_computation_limits": (
+                self.computation_limits.to_dict()
+            ),
             "frame_count": self.frame_count,
             "contact_count": self.contact_count,
             "passed_frame_count": self.passed_frame_count,
@@ -549,6 +655,9 @@ class PreprocessingManifestContactsResult:
 
     condition_results: tuple[PreprocessingConditionContactsResult, ...] = ()
     issues: tuple[PreprocessingContactComputationIssue, ...] = ()
+    computation_limits: PreprocessingContactComputationLimits = field(
+        default_factory=PreprocessingContactComputationLimits
+    )
 
     def __post_init__(self) -> None:
         condition_names: set[str] = set()
@@ -570,6 +679,14 @@ class PreprocessingManifestContactsResult:
                     "issues must contain "
                     "PreprocessingContactComputationIssue"
                 )
+        if not isinstance(
+            self.computation_limits,
+            PreprocessingContactComputationLimits,
+        ):
+            raise ValueError(
+                "computation_limits must be "
+                "PreprocessingContactComputationLimits"
+            )
 
     @property
     def condition_count(self) -> int:
@@ -632,6 +749,9 @@ class PreprocessingManifestContactsResult:
             "contact_count": self.contact_count,
             "passed_frame_count": self.passed_frame_count,
             "failed_frame_count": self.failed_frame_count,
+            "contact_computation_limits": (
+                self.computation_limits.to_dict()
+            ),
             "condition_results": [
                 condition_result.to_dict()
                 for condition_result in self.condition_results
@@ -654,16 +774,20 @@ def compute_condition_contacts(
     condition_load_result: PreprocessingConditionLoadResult,
     *,
     options: PreprocessingContactDetectionOptions | None = None,
+    computation_limits: PreprocessingContactComputationLimits | None = None,
     frame_sampling: PreprocessingFrameSamplingOptions | None = None,
+    progress_callback: ContactProgressCallback | None = None,
 ) -> PreprocessingConditionContactsResult:
     """Compute per-frame contacts from one already loaded condition."""
     selected_options = options or PreprocessingContactDetectionOptions()
+    selected_limits = _contact_computation_limits(computation_limits)
     selected_frame_sampling = _frame_sampling_options(frame_sampling)
     option_issue = _unsupported_options_issue(selected_options)
     if option_issue is not None:
         return _condition_contacts_result(
             condition_load_result.condition_name,
             selected_options,
+            selected_limits,
             status="failed",
             issues=(option_issue,),
         )
@@ -673,6 +797,7 @@ def compute_condition_contacts(
         return _condition_contacts_result(
             condition_load_result.condition_name,
             selected_options,
+            selected_limits,
             status="failed",
             issues=(_missing_runtime_issue(),),
         )
@@ -683,6 +808,7 @@ def compute_condition_contacts(
         return _condition_contacts_result(
             condition_load_result.condition_name,
             selected_options,
+            selected_limits,
             status="failed",
             issues=tuple(issues),
         )
@@ -691,6 +817,7 @@ def compute_condition_contacts(
         return _condition_contacts_result(
             condition_load_result.condition_name,
             selected_options,
+            selected_limits,
             status="failed",
             issues=(_missing_runtime_issue(),),
         )
@@ -725,6 +852,7 @@ def compute_condition_contacts(
         return _condition_contacts_result(
             condition_load_result.condition_name,
             selected_options,
+            selected_limits,
             status="failed",
             issues=tuple(fatal_issues),
         )
@@ -735,6 +863,7 @@ def compute_condition_contacts(
         return _condition_contacts_result(
             condition_load_result.condition_name,
             selected_options,
+            selected_limits,
             status="failed",
             issues=(
                 PreprocessingContactComputationIssue(
@@ -750,6 +879,16 @@ def compute_condition_contacts(
     )
     frame_results: list[PreprocessingContactFrameResult] = []
     condition_issues: list[PreprocessingContactComputationIssue] = []
+    _emit_progress(
+        progress_callback,
+        PreprocessingContactProgressEvent(
+            condition_name=condition_load_result.condition_name,
+            frame_index=None,
+            stage="condition_start",
+            message="starting contacts computation",
+            residue_count=len(residue_items),
+        ),
+    )
     try:
         trajectory_iterator = iter(
             trajectory_frame_sampling.iter_sampled_trajectory_frames(
@@ -777,6 +916,8 @@ def compute_condition_contacts(
                     frame_time_ps=frame_time_ps,
                     residue_items=residue_items,
                     options=selected_options,
+                    computation_limits=selected_limits,
+                    progress_callback=progress_callback,
                 )
             except Exception:
                 frame_result = PreprocessingContactFrameResult(
@@ -818,42 +959,58 @@ def compute_condition_contacts(
     else:
         status = "computed"
 
-    return _condition_contacts_result(
+    result = _condition_contacts_result(
         condition_load_result.condition_name,
         selected_options,
+        selected_limits,
         status=status,
         frame_results=tuple(frame_results),
         issues=tuple(condition_issues),
     )
+    _emit_progress(
+        progress_callback,
+        PreprocessingContactProgressEvent(
+            condition_name=condition_load_result.condition_name,
+            frame_index=None,
+            stage="condition_done",
+            message=f"contacts computation {status}",
+            residue_count=len(residue_items),
+        ),
+    )
+    return result
 
 
 def _aggregate_manifest_contacts(
     manifest_load_result: PreprocessingManifestLoadResult,
     *,
     options: PreprocessingContactDetectionOptions | None = None,
+    computation_limits: PreprocessingContactComputationLimits | None = None,
     frame_sampling: PreprocessingFrameSamplingOptions | None = None,
+    progress_callback: ContactProgressCallback | None = None,
 ) -> PreprocessingManifestContactsResult:
     """Compose condition contact results across one manifest load result."""
     selected_options = options or PreprocessingContactDetectionOptions()
+    selected_limits = _contact_computation_limits(computation_limits)
     selected_frame_sampling = _frame_sampling_options(frame_sampling)
     condition_results: list[PreprocessingConditionContactsResult] = []
     for condition_load_result in manifest_load_result.condition_results:
         try:
-            if frame_sampling is None:
-                contact_result = compute_condition_contacts(
-                    condition_load_result,
-                    options=selected_options,
-                )
-            else:
-                contact_result = compute_condition_contacts(
-                    condition_load_result,
-                    options=selected_options,
-                    frame_sampling=selected_frame_sampling,
-                )
+            contact_kwargs: dict[str, Any] = {"options": selected_options}
+            if computation_limits is not None:
+                contact_kwargs["computation_limits"] = selected_limits
+            if frame_sampling is not None:
+                contact_kwargs["frame_sampling"] = selected_frame_sampling
+            if progress_callback is not None:
+                contact_kwargs["progress_callback"] = progress_callback
+            contact_result = compute_condition_contacts(
+                condition_load_result,
+                **contact_kwargs,
+            )
         except Exception:
             contact_result = _unexpected_condition_contacts_result(
                 condition_load_result,
                 selected_options,
+                selected_limits,
             )
         condition_results.append(contact_result)
 
@@ -871,16 +1028,19 @@ def _aggregate_manifest_contacts(
     return PreprocessingManifestContactsResult(
         condition_results=tuple(condition_results),
         issues=issues,
+        computation_limits=selected_limits,
     )
 
 
 def _unexpected_condition_contacts_result(
     condition_load_result: PreprocessingConditionLoadResult,
     options: PreprocessingContactDetectionOptions,
+    computation_limits: PreprocessingContactComputationLimits,
 ) -> PreprocessingConditionContactsResult:
     return PreprocessingConditionContactsResult(
         condition_name=condition_load_result.condition_name,
         options=options,
+        computation_limits=computation_limits,
         frame_results=(),
         issues=(
             PreprocessingContactComputationIssue(
@@ -916,7 +1076,19 @@ def _compute_contact_frame(
     frame_time_ps: float | None,
     residue_items: tuple[object, ...],
     options: PreprocessingContactDetectionOptions,
+    computation_limits: PreprocessingContactComputationLimits,
+    progress_callback: ContactProgressCallback | None,
 ) -> PreprocessingContactFrameResult:
+    _emit_progress(
+        progress_callback,
+        PreprocessingContactProgressEvent(
+            condition_name=condition_name,
+            frame_index=frame_index,
+            stage="frame_start",
+            message="preparing residue candidates",
+            residue_count=len(residue_items),
+        ),
+    )
     candidates: list[_ResidueCandidate] = []
     issues: list[PreprocessingContactComputationIssue] = []
     for residue_index, residue in enumerate(residue_items):
@@ -928,6 +1100,46 @@ def _compute_contact_frame(
         issues.extend(residue_issues)
         if candidate is not None:
             candidates.append(candidate)
+
+    candidate_pair_count = _candidate_pair_count(candidates)
+    _emit_progress(
+        progress_callback,
+        PreprocessingContactProgressEvent(
+            condition_name=condition_name,
+            frame_index=frame_index,
+            stage="frame_candidates_built",
+            message=f"candidate residue pairs={candidate_pair_count}",
+            residue_count=len(candidates),
+            candidate_pair_count=candidate_pair_count,
+        ),
+    )
+    limit_issue = _contact_frame_limit_issue(
+        condition_name=condition_name,
+        frame_index=frame_index,
+        candidates=candidates,
+        candidate_pair_count=candidate_pair_count,
+        computation_limits=computation_limits,
+    )
+    if limit_issue is not None:
+        issues.append(limit_issue)
+        _emit_progress(
+            progress_callback,
+            PreprocessingContactProgressEvent(
+                condition_name=condition_name,
+                frame_index=frame_index,
+                stage="frame_limit_exceeded",
+                message=_contact_limit_progress_message(limit_issue),
+                residue_count=len(candidates),
+                candidate_pair_count=candidate_pair_count,
+            ),
+        )
+        return PreprocessingContactFrameResult(
+            condition_name=condition_name,
+            frame_index=frame_index,
+            time_ps=_frame_time(timestep, frame_index, frame_time_ps),
+            contacts=(),
+            issues=tuple(issues),
+        )
 
     contacts: list[PreprocessingContactPairResult] = []
     for source_offset, source in enumerate(candidates):
@@ -978,6 +1190,17 @@ def _compute_contact_frame(
             contact.target_resname,
         )
     )
+    _emit_progress(
+        progress_callback,
+        PreprocessingContactProgressEvent(
+            condition_name=condition_name,
+            frame_index=frame_index,
+            stage="frame_done",
+            message=f"computed contacts={len(contacts)}",
+            residue_count=len(candidates),
+            candidate_pair_count=candidate_pair_count,
+        ),
+    )
     return PreprocessingContactFrameResult(
         condition_name=condition_name,
         frame_index=frame_index,
@@ -985,6 +1208,73 @@ def _compute_contact_frame(
         contacts=tuple(contacts),
         issues=tuple(issues),
     )
+
+
+def _candidate_pair_count(candidates: list[_ResidueCandidate]) -> int:
+    candidate_count = len(candidates)
+    return candidate_count * (candidate_count - 1) // 2
+
+
+def _atom_distance_evaluation_count(
+    candidates: list[_ResidueCandidate],
+) -> int:
+    evaluation_count = 0
+    for source_offset, source in enumerate(candidates):
+        for target in candidates[source_offset + 1 :]:
+            evaluation_count += len(source.coordinates) * len(
+                target.coordinates
+            )
+    return evaluation_count
+
+
+def _contact_frame_limit_issue(
+    *,
+    condition_name: str,
+    frame_index: int,
+    candidates: list[_ResidueCandidate],
+    candidate_pair_count: int,
+    computation_limits: PreprocessingContactComputationLimits,
+) -> PreprocessingContactComputationIssue | None:
+    pair_limit = computation_limits.max_residue_pairs_per_frame
+    if pair_limit is not None and candidate_pair_count > pair_limit:
+        return PreprocessingContactComputationIssue(
+            kind="contact_frame_limit_exceeded",
+            field=f"frames[{frame_index}].candidate_residue_pairs",
+            message=(
+                "Contact computation skipped for condition "
+                f"'{condition_name}' frame {frame_index} because estimated "
+                f"residue pairs {candidate_pair_count} exceed "
+                f"max_residue_pairs_per_frame={pair_limit}."
+            ),
+        )
+
+    distance_evaluation_count = _atom_distance_evaluation_count(candidates)
+    distance_limit = (
+        computation_limits.max_atom_distance_evaluations_per_frame
+    )
+    if (
+        distance_limit is not None
+        and distance_evaluation_count > distance_limit
+    ):
+        return PreprocessingContactComputationIssue(
+            kind="contact_distance_evaluation_limit_exceeded",
+            field=f"frames[{frame_index}].atom_distance_evaluations",
+            message=(
+                "Contact computation skipped for condition "
+                f"'{condition_name}' frame {frame_index} because estimated "
+                f"atom distance evaluations {distance_evaluation_count} "
+                "exceed "
+                "max_atom_distance_evaluations_per_frame="
+                f"{distance_limit}."
+            ),
+        )
+    return None
+
+
+def _contact_limit_progress_message(
+    issue: PreprocessingContactComputationIssue,
+) -> str:
+    return issue.message
 
 
 def _residue_candidate(
@@ -1215,6 +1505,28 @@ def _frame_sampling_options(
     return value
 
 
+def _contact_computation_limits(
+    value: PreprocessingContactComputationLimits | None,
+) -> PreprocessingContactComputationLimits:
+    if value is None:
+        return PreprocessingContactComputationLimits()
+    if not isinstance(value, PreprocessingContactComputationLimits):
+        raise ValueError(
+            "computation_limits must be "
+            "PreprocessingContactComputationLimits or None"
+        )
+    return value
+
+
+def _emit_progress(
+    progress_callback: ContactProgressCallback | None,
+    event: PreprocessingContactProgressEvent,
+) -> None:
+    if progress_callback is None:
+        return
+    progress_callback(event)
+
+
 def _read_attribute(value: object, name: str) -> tuple[object | None, bool]:
     try:
         return getattr(cast(Any, value), name), True
@@ -1286,6 +1598,7 @@ def _frame_iteration_issue() -> PreprocessingContactComputationIssue:
 def _condition_contacts_result(
     condition_name: str,
     options: PreprocessingContactDetectionOptions,
+    computation_limits: PreprocessingContactComputationLimits,
     *,
     status: str,
     frame_results: tuple[PreprocessingContactFrameResult, ...] = (),
@@ -1294,6 +1607,7 @@ def _condition_contacts_result(
     return PreprocessingConditionContactsResult(
         condition_name=condition_name,
         options=options,
+        computation_limits=computation_limits,
         frame_results=frame_results,
         issues=issues,
         status=status,
@@ -1301,12 +1615,15 @@ def _condition_contacts_result(
 
 
 __all__ = [
+    "ContactProgressCallback",
     "PreprocessingConditionContactsResult",
+    "PreprocessingContactComputationLimits",
     "PreprocessingContactComputationIssue",
     "PreprocessingContactDefinition",
     "PreprocessingContactDetectionOptions",
     "PreprocessingContactFrameResult",
     "PreprocessingContactPairResult",
+    "PreprocessingContactProgressEvent",
     "PreprocessingFrameSamplingOptions",
     "PreprocessingManifestContactsResult",
     "compute_condition_contacts",

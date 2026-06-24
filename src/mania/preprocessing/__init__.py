@@ -55,6 +55,9 @@ from mania.preprocessing.scientific_runtime import (
     require_mdanalysis,
 )
 from mania.preprocessing.trajectory_contacts import (
+    ContactProgressCallback as ContactProgressCallback,
+)
+from mania.preprocessing.trajectory_contacts import (
     PreprocessingConditionContactsResult,
     PreprocessingContactComputationIssue,
     PreprocessingContactDefinition,
@@ -63,6 +66,12 @@ from mania.preprocessing.trajectory_contacts import (
     PreprocessingContactPairResult,
     PreprocessingManifestContactsResult,
     compute_condition_contacts,
+)
+from mania.preprocessing.trajectory_contacts import (
+    PreprocessingContactComputationLimits as PreprocessingContactComputationLimits,
+)
+from mania.preprocessing.trajectory_contacts import (
+    PreprocessingContactProgressEvent as PreprocessingContactProgressEvent,
 )
 from mania.preprocessing.trajectory_contacts_export import (
     PreprocessingContactEdgesCsvWriteIssue,

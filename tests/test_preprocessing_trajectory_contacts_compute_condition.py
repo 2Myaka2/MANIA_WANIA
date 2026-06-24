@@ -11,10 +11,12 @@ from mania.preprocessing import (
     PreprocessingConditionLoadResult,
     PreprocessingConditionRuntime,
     PreprocessingConditionRuntimeInput,
+    PreprocessingContactComputationLimits,
     PreprocessingContactDefinition,
     PreprocessingContactDetectionOptions,
     PreprocessingContactFrameResult,
     PreprocessingContactPairResult,
+    PreprocessingContactProgressEvent,
     PreprocessingFrameSamplingOptions,
     PreprocessingManifestContactsResult,
     PreprocessingTrajectoryLoadIssue,
@@ -196,7 +198,9 @@ def test_public_exports_and_import_safety() -> None:
     assert mania.preprocessing is not None
     assert compute_condition_contacts is not None
     assert PreprocessingContactDefinition is not None
+    assert PreprocessingContactComputationLimits is not None
     assert PreprocessingContactDetectionOptions is not None
+    assert PreprocessingContactProgressEvent is not None
     assert PreprocessingContactPairResult is not None
     assert PreprocessingContactFrameResult is not None
     assert PreprocessingConditionContactsResult is not None
@@ -510,6 +514,133 @@ def test_multiple_pairs_are_sorted_by_original_residue_index() -> None:
         )
         for contact in result.frame_results[0].contacts
     ] == [(0, 1), (0, 2), (1, 2)]
+
+
+def test_residue_pair_limit_exceeded_returns_partial_issue() -> None:
+    residues = [
+        FakeResidue("SER", 30, [FakeAtom(position=(0.0, 0.0, 0.0))]),
+        FakeResidue("ALA", 10, [FakeAtom(position=(1.0, 0.0, 0.0))]),
+        FakeResidue("GLY", 20, [FakeAtom(position=(2.0, 0.0, 0.0))]),
+    ]
+
+    result = compute_condition_contacts(
+        make_loaded_result(make_runtime(residues)),
+        computation_limits=PreprocessingContactComputationLimits(
+            max_residue_pairs_per_frame=2
+        ),
+    )
+
+    assert result.status == "partial"
+    assert result.passed is False
+    assert result.contact_count == 0
+    assert result.frame_results[0].passed is False
+    issue = result.frame_results[0].issues[0]
+    assert issue.kind == "contact_frame_limit_exceeded"
+    assert "condition 'normal'" in issue.message
+    assert "frame 0" in issue.message
+    assert "residue pairs 3" in issue.message
+    assert "max_residue_pairs_per_frame=2" in issue.message
+    assert result.to_dict()["contact_computation_limits"] == {
+        "max_residue_pairs_per_frame": 2,
+        "max_atom_distance_evaluations_per_frame": None,
+    }
+
+
+def test_distance_evaluation_limit_exceeded_returns_partial_issue() -> None:
+    residues = [
+        FakeResidue(
+            "ALA",
+            1,
+            [
+                FakeAtom(position=(0.0, 0.0, 0.0)),
+                FakeAtom(position=(0.1, 0.0, 0.0)),
+            ],
+        ),
+        FakeResidue(
+            "GLY",
+            2,
+            [
+                FakeAtom(position=(1.0, 0.0, 0.0)),
+                FakeAtom(position=(1.1, 0.0, 0.0)),
+            ],
+        ),
+    ]
+
+    result = compute_condition_contacts(
+        make_loaded_result(make_runtime(residues)),
+        computation_limits=PreprocessingContactComputationLimits(
+            max_atom_distance_evaluations_per_frame=3
+        ),
+    )
+
+    assert result.status == "partial"
+    assert result.contact_count == 0
+    issue = result.frame_results[0].issues[0]
+    assert issue.kind == "contact_distance_evaluation_limit_exceeded"
+    assert "atom distance evaluations 4" in issue.message
+    assert "max_atom_distance_evaluations_per_frame=3" in issue.message
+
+
+def test_contact_limit_not_exceeded_preserves_sampling_and_frequency(
+    tmp_path: Path,
+) -> None:
+    source = FakeAtom(position=(0.0, 0.0, 0.0))
+    target = FakeAtom(position=(10.0, 0.0, 0.0))
+    residues = [
+        FakeResidue("ALA", 1, [source]),
+        FakeResidue("GLY", 2, [target]),
+    ]
+    frames = [
+        FakeTimestep(positions=((0.0, 0.0, 0.0), (3.0, 0.0, 0.0))),
+        FakeTimestep(positions=((0.0, 0.0, 0.0), (3.0, 0.0, 0.0))),
+        FakeTimestep(positions=((0.0, 0.0, 0.0), (8.0, 0.0, 0.0))),
+    ]
+
+    result = compute_condition_contacts(
+        make_loaded_result(make_runtime(residues, frames)),
+        computation_limits=PreprocessingContactComputationLimits(
+            max_residue_pairs_per_frame=1
+        ),
+        frame_sampling=PreprocessingFrameSamplingOptions(frame_stride=2),
+    )
+
+    assert result.status == "computed"
+    assert result.passed is True
+    assert [frame.frame_index for frame in result.frame_results] == [0, 2]
+    assert [frame.contact_count for frame in result.frame_results] == [1, 0]
+
+    edges_path = tmp_path / "contact_edges.csv"
+    edges_result = write_contact_edges_csv(result, edges_path)
+    assert edges_result.passed is True
+    with edges_path.open(encoding="utf-8", newline="") as csv_file:
+        edge_rows = list(csv.DictReader(csv_file))
+    assert len(edge_rows) == 1
+    assert edge_rows[0]["contact_frame_count"] == "1"
+    assert edge_rows[0]["total_frame_count"] == "2"
+    assert float(edge_rows[0]["contact_frequency"]) == 0.5
+
+
+def test_contact_progress_callback_receives_stable_frame_events() -> None:
+    events: list[PreprocessingContactProgressEvent] = []
+
+    result = compute_condition_contacts(
+        make_loaded_result(two_residue_runtime(3.0)),
+        progress_callback=events.append,
+    )
+
+    assert result.passed is True
+    assert [event.stage for event in events] == [
+        "condition_start",
+        "frame_start",
+        "frame_candidates_built",
+        "frame_done",
+        "condition_done",
+    ]
+    candidate_event = events[2]
+    assert candidate_event.condition_name == "normal"
+    assert candidate_event.frame_index == 0
+    assert candidate_event.candidate_pair_count == 1
+    assert "candidate residue pairs=1" in candidate_event.message
 
 
 def test_multiple_frames_use_trajectory_order_and_positions() -> None:

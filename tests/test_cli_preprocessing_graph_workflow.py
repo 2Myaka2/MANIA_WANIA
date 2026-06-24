@@ -8,7 +8,12 @@ from typing import Any
 import pytest
 
 import mania.cli as cli
-from mania.preprocessing import PreprocessingFrameSamplingOptions
+from mania.preprocessing import (
+    ContactProgressCallback,
+    PreprocessingContactComputationLimits,
+    PreprocessingContactProgressEvent,
+    PreprocessingFrameSamplingOptions,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CLI_SOURCE_PATH = PROJECT_ROOT / "src" / "mania" / "cli.py"
@@ -70,12 +75,18 @@ class FakeLayout:
 class FakePlan:
     passed: bool = True
     output_layout: FakeLayout = field(default_factory=FakeLayout)
+    options: object | None = None
 
     def to_dict(self) -> dict[str, object]:
-        return {
+        payload: dict[str, object] = {
             "passed": self.passed,
             "output_layout": self.output_layout.to_dict(),
         }
+        if self.options is not None:
+            to_dict = getattr(self.options, "to_dict", None)
+            if callable(to_dict):
+                payload["options"] = to_dict()
+        return payload
 
 
 @dataclass(frozen=True)
@@ -98,12 +109,19 @@ class FakeComputationResult(FakeResult):
     include_rg: bool = True
     include_contacts: bool = True
     frame_sampling: dict[str, object] | None = None
+    contact_computation_limits: dict[str, object] | None = None
+    issues: tuple[dict[str, object], ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         payload = super().to_dict()
         payload["include_rg"] = self.include_rg
         payload["include_contacts"] = self.include_contacts
         payload["frame_sampling"] = self.frame_sampling
+        payload["contact_computation_limits"] = (
+            self.contact_computation_limits
+        )
+        payload["issues"] = list(self.issues)
+        payload["issue_count"] = len(self.issues)
         return payload
 
 
@@ -248,7 +266,7 @@ def install_fake_stage15(
     def fake_build(options: object) -> FakePlan:
         calls.append("build_preprocessing_graph_workflow_plan")
         received["options"] = options
-        return FakePlan(passed=failing_stage != "plan")
+        return FakePlan(passed=failing_stage != "plan", options=options)
 
     def fake_load(
         manifest_path: str | Path,
@@ -270,18 +288,61 @@ def install_fake_stage15(
         include_rg: bool,
         include_contacts: bool,
         frame_sampling: PreprocessingFrameSamplingOptions,
+        contact_computation_limits: (
+            PreprocessingContactComputationLimits | None
+        ) = None,
+        progress_callback: ContactProgressCallback | None = None,
     ) -> FakeComputationResult:
         calls.append("compute_preprocessing_graph_workflow_rg_contacts")
         received["runtime_loading"] = runtime_loading
         received["include_rg"] = include_rg
         received["include_contacts"] = include_contacts
         received["frame_sampling"] = frame_sampling
+        received["contact_computation_limits"] = contact_computation_limits
+        received["progress_callback"] = progress_callback
+        if progress_callback is not None:
+            progress_callback(
+                PreprocessingContactProgressEvent(
+                    condition_name="normal",
+                    frame_index=0,
+                    stage="frame_start",
+                    message="preparing residue candidates",
+                )
+            )
+            progress_callback(
+                PreprocessingContactProgressEvent(
+                    condition_name="normal",
+                    frame_index=0,
+                    stage="frame_candidates_built",
+                    message="candidate residue pairs=1",
+                    residue_count=2,
+                    candidate_pair_count=1,
+                )
+            )
+        computation_issues: tuple[dict[str, object], ...] = ()
+        if failing_stage == "computation":
+            computation_issues = (
+                {
+                    "kind": "contact_frame_limit_exceeded",
+                    "message": (
+                        "Contact computation skipped for condition 'normal' "
+                        "frame 0 because estimated residue pairs 3 exceed "
+                        "max_residue_pairs_per_frame=2."
+                    ),
+                },
+            )
         return FakeComputationResult(
             "computation",
             passed=failing_stage != "computation",
             include_rg=include_rg,
             include_contacts=include_contacts,
             frame_sampling=frame_sampling.to_dict(),
+            contact_computation_limits=(
+                None
+                if contact_computation_limits is None
+                else contact_computation_limits.to_dict()
+            ),
+            issues=computation_issues,
             raw=object(),
         )
 
@@ -419,6 +480,8 @@ def test_graph_export_help_mentions_verbose_without_mdanalysis() -> None:
     assert "--frame-stop" in result.stdout
     assert "--frame-stride" in result.stdout
     assert "--max-frames" in result.stdout
+    assert "--contact-max-residue-pairs-per-frame" in result.stdout
+    assert "--contact-max-distance-evaluations-per-frame" in result.stdout
     assert "MDAnalysis" not in result.stderr
 
 
@@ -458,6 +521,21 @@ def test_graph_export_accepts_frame_sampling_flags() -> None:
     assert args.frame_stop == 500
     assert args.frame_stride == 5
     assert args.max_frames == 100
+
+
+def test_graph_export_accepts_contact_limit_flags() -> None:
+    args = cli.build_parser().parse_args(
+        [
+            *BASE_COMMAND,
+            "--contact-max-residue-pairs-per-frame",
+            "50000",
+            "--contact-max-distance-evaluations-per-frame",
+            "1000000",
+        ]
+    )
+
+    assert args.contact_max_residue_pairs_per_frame == 50000
+    assert args.contact_max_distance_evaluations_per_frame == 1000000
 
 
 @pytest.mark.parametrize(
@@ -577,6 +655,37 @@ def test_frame_sampling_flags_are_forwarded(
     assert computation["frame_sampling"] == expected_sampling.to_dict()
 
 
+def test_contact_limit_flags_are_forwarded_and_serialized(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _, received = install_fake_stage15(monkeypatch)
+
+    _, stdout, _ = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--contact-max-residue-pairs-per-frame",
+        "50000",
+        "--contact-max-distance-evaluations-per-frame",
+        "1000000",
+    )
+    payload = stdout_json(stdout)
+    limits = PreprocessingContactComputationLimits(
+        max_residue_pairs_per_frame=50000,
+        max_atom_distance_evaluations_per_frame=1000000,
+    )
+    plan = payload["plan"]
+    computation = payload["computation"]
+
+    assert received["options"].contact_computation_limits == limits
+    assert received["contact_computation_limits"] == limits
+    assert isinstance(plan, dict)
+    assert plan["options"]["contact_computation_limits"] == limits.to_dict()
+    assert isinstance(computation, dict)
+    assert computation["contact_computation_limits"] == limits.to_dict()
+
+
 @pytest.mark.parametrize(
     ("extra_args", "expected_message"),
     (
@@ -615,6 +724,45 @@ def test_invalid_frame_sampling_flags_fail_clearly(
     assert stdout == ""
     assert "Invalid frame sampling options" in stderr
     assert expected_message in stderr
+    assert called is False
+
+
+@pytest.mark.parametrize(
+    ("flag", "value"),
+    (
+        ("--contact-max-residue-pairs-per-frame", "0"),
+        ("--contact-max-residue-pairs-per-frame", "-1"),
+        ("--contact-max-distance-evaluations-per-frame", "0"),
+        ("--contact-max-distance-evaluations-per-frame", "-1"),
+    ),
+)
+def test_invalid_contact_limit_flags_fail_clearly(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    flag: str,
+    value: str,
+) -> None:
+    called = False
+
+    def fake_build(options: object) -> object:
+        nonlocal called
+        called = True
+        return object()
+
+    monkeypatch.setattr(cli, "build_preprocessing_graph_workflow_plan", fake_build)
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        flag,
+        value,
+        expected_exit_code=2,
+    )
+
+    assert stdout == ""
+    assert flag in stderr
+    assert "positive integer" in stderr
     assert called is False
 
 
@@ -817,6 +965,53 @@ def test_verbose_graph_export_progress_goes_to_stderr_only(
         assert message not in stdout
     for forbidden in ("%", "ETA", "remaining"):
         assert forbidden not in stderr
+
+
+def test_verbose_contacts_progress_goes_to_stderr_only(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    install_fake_stage15(monkeypatch)
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--verbose",
+    )
+    payload = stdout_json(stdout)
+
+    assert payload["passed"] is True
+    assert stdout.strip() == json.dumps(payload, sort_keys=True)
+    assert "[contacts]" in stderr
+    assert "condition=normal" in stderr
+    assert "frame=0" in stderr
+    assert "candidate residue pairs=1" in stderr
+    assert "[contacts]" not in stdout
+
+
+def test_cli_computation_failure_json_exposes_contact_limit_issue(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    install_fake_stage15(monkeypatch, failing_stage="computation")
+
+    _, stdout, _ = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--contact-max-residue-pairs-per-frame",
+        "2",
+        expected_exit_code=1,
+    )
+    payload = stdout_json(stdout)
+    computation = payload["computation"]
+
+    assert payload["stage"] == "computation"
+    assert payload["passed"] is False
+    assert isinstance(computation, dict)
+    assert "contact_frame_limit_exceeded" in json.dumps(computation)
+    assert "max_residue_pairs_per_frame=2" in json.dumps(computation)
 
 
 @pytest.mark.parametrize(

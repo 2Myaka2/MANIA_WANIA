@@ -15,6 +15,11 @@ from mania.pipeline_steps import (
     NotebookExportGraphDiagnosticsPipelineResult,
     run_notebook_export_graph_diagnostics_pipeline_from_config_file,
 )
+from mania.preprocessing.trajectory_contacts import (
+    ContactProgressCallback,
+    PreprocessingContactComputationLimits,
+    PreprocessingContactProgressEvent,
+)
 from mania.preprocessing.trajectory_frame_sampling import (
     PreprocessingFrameSamplingOptions,
 )
@@ -50,6 +55,18 @@ _PREPROCESSING_GRAPH_EXPORT_WITH_SCIENTIFIC_VERBOSE_STAGES = {
     7: "Running/skipping reference comparison",
     8: "Writing final summary",
 }
+
+
+def _positive_contact_limit_value(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "must be a positive integer"
+        ) from exc
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
 
 
 def _exit_with_error(message: str) -> NoReturn:
@@ -250,6 +267,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Maximum sampled frame count after filtering.",
     )
     graph_export_parser.add_argument(
+        "--contact-max-residue-pairs-per-frame",
+        type=_positive_contact_limit_value,
+        default=None,
+        help=(
+            "Optional smoke/debug guard for maximum candidate residue pairs "
+            "inside one contacts frame."
+        ),
+    )
+    graph_export_parser.add_argument(
+        "--contact-max-distance-evaluations-per-frame",
+        type=_positive_contact_limit_value,
+        default=None,
+        help=(
+            "Optional smoke/debug guard for maximum atom distance "
+            "evaluations inside one contacts frame."
+        ),
+    )
+    graph_export_parser.add_argument(
         "--verbose",
         action="store_true",
         help="Print stage-by-stage progress messages to stderr.",
@@ -302,6 +337,14 @@ def _build_preprocessing_graph_workflow_options(
             frame_stop=args.frame_stop,
             frame_stride=args.frame_stride,
             max_frames=args.max_frames,
+        ),
+        "contact_computation_limits": PreprocessingContactComputationLimits(
+            max_residue_pairs_per_frame=(
+                args.contact_max_residue_pairs_per_frame
+            ),
+            max_atom_distance_evaluations_per_frame=(
+                args.contact_max_distance_evaluations_per_frame
+            ),
         ),
     }
     if args.run_name is not None:
@@ -445,6 +488,37 @@ def _print_preprocessing_graph_export_failure(
     )
 
 
+def _contact_limit_flags_enabled(args: argparse.Namespace) -> bool:
+    return (
+        args.contact_max_residue_pairs_per_frame is not None
+        or args.contact_max_distance_evaluations_per_frame is not None
+    )
+
+
+def _format_contacts_progress_event(
+    event: PreprocessingContactProgressEvent,
+) -> str:
+    prefix = f"[contacts] condition={event.condition_name}"
+    if event.frame_index is not None:
+        prefix = f"{prefix} frame={event.frame_index}"
+    message = event.message
+    if event.stage == "frame_start":
+        message = f"{message}..."
+    return f"{prefix}: {message}"
+
+
+def _contacts_progress_callback(
+    args: argparse.Namespace,
+) -> ContactProgressCallback | None:
+    if not _verbose_enabled(args):
+        return None
+
+    def callback(event: PreprocessingContactProgressEvent) -> None:
+        print(_format_contacts_progress_event(event), file=sys.stderr)
+
+    return callback
+
+
 def _skipped_scientific_csv_export_summary() -> dict[str, object]:
     return {
         "stage": "scientific_csv_export",
@@ -521,11 +595,21 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         return 1
 
     _print_preprocessing_graph_export_progress(args, 3)
+    computation_kwargs: dict[str, Any] = {
+        "include_rg": options.include_rg,
+        "include_contacts": options.include_contacts,
+        "frame_sampling": options.frame_sampling,
+    }
+    if _contact_limit_flags_enabled(args):
+        computation_kwargs["contact_computation_limits"] = (
+            options.contact_computation_limits
+        )
+    progress_callback = _contacts_progress_callback(args)
+    if progress_callback is not None:
+        computation_kwargs["progress_callback"] = progress_callback
     computation = compute_preprocessing_graph_workflow_rg_contacts(
         runtime_loading,
-        include_rg=options.include_rg,
-        include_contacts=options.include_contacts,
-        frame_sampling=options.frame_sampling,
+        **computation_kwargs,
     )
     if not computation.passed:
         _print_preprocessing_graph_export_failure(args, 3)

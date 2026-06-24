@@ -7,6 +7,7 @@ import pytest
 
 import mania.preprocessing
 from mania.preprocessing import (
+    PreprocessingContactComputationLimits,
     PreprocessingContactDetectionOptions,
     PreprocessingFrameSamplingOptions,
     PreprocessingGraphWorkflowComputationIssue,
@@ -447,6 +448,43 @@ def test_contact_options_are_passed_through(
 
     assert result.passed is True
     assert contacts_calls[0][1]["options"] is options
+
+
+def test_contact_limits_are_passed_through_and_serialized(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, contacts_calls = patch_computers(monkeypatch)
+    limits = PreprocessingContactComputationLimits(
+        max_residue_pairs_per_frame=50,
+        max_atom_distance_evaluations_per_frame=100,
+    )
+
+    result = compute_preprocessing_graph_workflow_rg_contacts(
+        runtime_loading_result(),
+        include_rg=False,
+        contact_computation_limits=limits,
+    )
+    payload = result.to_dict()
+
+    assert result.passed is True
+    assert contacts_calls[0][1]["computation_limits"] is limits
+    assert result.contact_computation_limits is limits
+    assert payload["contact_computation_limits"] == limits.to_dict()
+
+
+def test_failed_contacts_result_makes_workflow_computation_fail(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    raw_contacts = FakeComputationResult(passed=False)
+    patch_computers(monkeypatch, contacts_result=raw_contacts)
+
+    result = compute_preprocessing_graph_workflow_rg_contacts(
+        runtime_loading_result()
+    )
+
+    assert result.passed is False
+    assert result.contacts_result is raw_contacts
+    assert issue_kinds(result) == {"contacts_computation_failed"}
 
 
 def test_frame_sampling_is_passed_to_rg_and_contacts(

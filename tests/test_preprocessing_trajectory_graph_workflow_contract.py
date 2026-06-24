@@ -7,6 +7,7 @@ import mania.preprocessing
 from mania.preprocessing import (
     PreprocessingConditionLoadResult,
     PreprocessingConditionRgResult,
+    PreprocessingContactComputationLimits,
     PreprocessingContactDefinition,
     PreprocessingGraphDiagnosticsReport,
     PreprocessingGraphExportBundleResult,
@@ -124,6 +125,7 @@ def test_existing_stage_11_to_14_exports_still_work() -> None:
         PreprocessingConditionRgResult,
         compute_condition_rg,
         compute_manifest_rg,
+        PreprocessingContactComputationLimits,
         PreprocessingContactDefinition,
         compute_condition_contacts,
         compute_manifest_contacts,
@@ -153,9 +155,15 @@ def test_options_validate_and_serialize() -> None:
     assert isinstance(workflow_options.output_dir, Path)
     assert workflow_options.reference_semantics == "MANIA_analysis_v1_2"
     assert workflow_options.enable_reference_comparison is False
+    assert workflow_options.contact_computation_limits == (
+        PreprocessingContactComputationLimits()
+    )
     payload = workflow_options.to_dict()
     assert payload["manifest_path"] == "local_md/manifests/napi2b_10ns.yaml"
     assert payload["output_dir"] == "outputs/napi2b_10ns"
+    assert payload["contact_computation_limits"] == (
+        PreprocessingContactComputationLimits().to_dict()
+    )
     assert_json_safe(payload)
 
 
@@ -177,6 +185,7 @@ def test_options_validate_and_serialize() -> None:
         ("reference_graph_json_path", "graph.json"),
         ("reference_semantics", ""),
         ("reference_semantics", " "),
+        ("contact_computation_limits", object()),
     ),
 )
 def test_options_reject_invalid_values(

@@ -11,8 +11,10 @@ from mania.preprocessing import (
     PreprocessingConditionRuntime,
     PreprocessingConditionRuntimeInput,
     PreprocessingContactComputationIssue,
+    PreprocessingContactComputationLimits,
     PreprocessingContactDetectionOptions,
     PreprocessingContactFrameResult,
+    PreprocessingContactProgressEvent,
     PreprocessingManifestContactsResult,
     PreprocessingManifestLoadIssue,
     PreprocessingManifestLoadResult,
@@ -217,6 +219,65 @@ def test_custom_options_are_passed_to_every_condition(
         condition_result.options == custom_options
         for condition_result in result.condition_results
     )
+
+
+def test_limits_and_progress_callback_are_passed_to_every_condition(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    limits = PreprocessingContactComputationLimits(
+        max_residue_pairs_per_frame=5
+    )
+    events: list[PreprocessingContactProgressEvent] = []
+    calls: list[
+        tuple[
+            PreprocessingContactComputationLimits | None,
+            object | None,
+        ]
+    ] = []
+
+    def fake_compute(
+        condition_result: PreprocessingConditionLoadResult,
+        *,
+        options: PreprocessingContactDetectionOptions | None = None,
+        computation_limits: PreprocessingContactComputationLimits | None = None,
+        progress_callback: object | None = None,
+    ) -> PreprocessingConditionContactsResult:
+        calls.append((computation_limits, progress_callback))
+        if callable(progress_callback):
+            progress_callback(
+                PreprocessingContactProgressEvent(
+                    condition_name=condition_result.condition_name,
+                    frame_index=None,
+                    stage="condition_start",
+                    message="starting contacts computation",
+                )
+            )
+        return make_contacts_result(
+            condition_result.condition_name,
+            options=options,
+        )
+
+    monkeypatch.setattr(
+        trajectory_contacts,
+        "compute_condition_contacts",
+        fake_compute,
+    )
+    manifest = PreprocessingManifestLoadResult(
+        condition_results=(
+            make_load_result("normal"),
+            make_load_result("tumor"),
+        ),
+    )
+
+    result = compute_manifest_contacts(
+        manifest,
+        computation_limits=limits,
+        progress_callback=events.append,
+    )
+
+    assert calls == [(limits, events.append), (limits, events.append)]
+    assert [event.condition_name for event in events] == ["normal", "tumor"]
+    assert result.to_dict()["contact_computation_limits"] == limits.to_dict()
 
 
 def test_partial_condition_does_not_stop_aggregation(
