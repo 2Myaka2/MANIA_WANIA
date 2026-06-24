@@ -11,6 +11,7 @@ import mania.cli as cli
 from mania.preprocessing import (
     ContactProgressCallback,
     PreprocessingContactComputationLimits,
+    PreprocessingContactDetectionOptions,
     PreprocessingContactProgressEvent,
     PreprocessingFrameSamplingOptions,
 )
@@ -109,6 +110,7 @@ class FakeComputationResult(FakeResult):
     include_rg: bool = True
     include_contacts: bool = True
     frame_sampling: dict[str, object] | None = None
+    contact_detection_options: dict[str, object] | None = None
     contact_computation_limits: dict[str, object] | None = None
     issues: tuple[dict[str, object], ...] = ()
 
@@ -117,6 +119,9 @@ class FakeComputationResult(FakeResult):
         payload["include_rg"] = self.include_rg
         payload["include_contacts"] = self.include_contacts
         payload["frame_sampling"] = self.frame_sampling
+        payload["contact_detection_options"] = (
+            self.contact_detection_options
+        )
         payload["contact_computation_limits"] = (
             self.contact_computation_limits
         )
@@ -288,6 +293,7 @@ def install_fake_stage15(
         include_rg: bool,
         include_contacts: bool,
         frame_sampling: PreprocessingFrameSamplingOptions,
+        contact_options: PreprocessingContactDetectionOptions,
         contact_computation_limits: (
             PreprocessingContactComputationLimits | None
         ) = None,
@@ -298,15 +304,27 @@ def install_fake_stage15(
         received["include_rg"] = include_rg
         received["include_contacts"] = include_contacts
         received["frame_sampling"] = frame_sampling
+        received["contact_options"] = contact_options
         received["contact_computation_limits"] = contact_computation_limits
         received["progress_callback"] = progress_callback
         if progress_callback is not None:
             progress_callback(
                 PreprocessingContactProgressEvent(
                     condition_name="normal",
+                    frame_index=None,
+                    stage="condition_selection",
+                    message=(
+                        "contact selection="
+                        f"{contact_options.contact_selection}"
+                    ),
+                )
+            )
+            progress_callback(
+                PreprocessingContactProgressEvent(
+                    condition_name="normal",
                     frame_index=0,
                     stage="frame_start",
-                    message="preparing residue candidates",
+                    message="selected residues=2",
                 )
             )
             progress_callback(
@@ -337,6 +355,9 @@ def install_fake_stage15(
             include_rg=include_rg,
             include_contacts=include_contacts,
             frame_sampling=frame_sampling.to_dict(),
+            contact_detection_options=contact_options.to_dict(
+                include_contact_selection=True
+            ),
             contact_computation_limits=(
                 None
                 if contact_computation_limits is None
@@ -480,6 +501,7 @@ def test_graph_export_help_mentions_verbose_without_mdanalysis() -> None:
     assert "--frame-stop" in result.stdout
     assert "--frame-stride" in result.stdout
     assert "--max-frames" in result.stdout
+    assert "--contact-selection" in result.stdout
     assert "--contact-max-residue-pairs-per-frame" in result.stdout
     assert "--contact-max-distance-evaluations-per-frame" in result.stdout
     assert "MDAnalysis" not in result.stderr
@@ -538,6 +560,21 @@ def test_graph_export_accepts_contact_limit_flags() -> None:
     assert args.contact_max_distance_evaluations_per_frame == 1000000
 
 
+@pytest.mark.parametrize("selection", ("all", "protein"))
+def test_graph_export_accepts_contact_selection_flag(
+    selection: str,
+) -> None:
+    args = cli.build_parser().parse_args(
+        [
+            *BASE_COMMAND,
+            "--contact-selection",
+            selection,
+        ]
+    )
+
+    assert args.contact_selection == selection
+
+
 @pytest.mark.parametrize(
     "args",
     (
@@ -594,7 +631,11 @@ def test_default_command_builds_options_and_calls_stage15_in_order(
     assert options.reference_edges_csv_path is None
     assert options.reference_graph_json_path is None
     assert options.frame_sampling == PreprocessingFrameSamplingOptions()
+    assert options.contact_detection_options == (
+        PreprocessingContactDetectionOptions()
+    )
     assert received["frame_sampling"] == PreprocessingFrameSamplingOptions()
+    assert received["contact_options"] == PreprocessingContactDetectionOptions()
     assert received["expected_condition_names"] == ("normal", "tumor")
 
 
@@ -686,6 +727,38 @@ def test_contact_limit_flags_are_forwarded_and_serialized(
     assert computation["contact_computation_limits"] == limits.to_dict()
 
 
+def test_contact_selection_flag_is_forwarded_and_serialized(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _, received = install_fake_stage15(monkeypatch)
+
+    _, stdout, _ = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--contact-selection",
+        "protein",
+    )
+    payload = stdout_json(stdout)
+    expected_options = PreprocessingContactDetectionOptions(
+        contact_selection="protein"
+    )
+    plan = payload["plan"]
+    computation = payload["computation"]
+
+    assert received["options"].contact_detection_options == expected_options
+    assert received["contact_options"] == expected_options
+    assert isinstance(plan, dict)
+    assert plan["options"]["contact_detection_options"] == (
+        expected_options.to_dict(include_contact_selection=True)
+    )
+    assert isinstance(computation, dict)
+    assert computation["contact_detection_options"] == (
+        expected_options.to_dict(include_contact_selection=True)
+    )
+
+
 @pytest.mark.parametrize(
     ("extra_args", "expected_message"),
     (
@@ -763,6 +836,36 @@ def test_invalid_contact_limit_flags_fail_clearly(
     assert stdout == ""
     assert flag in stderr
     assert "positive integer" in stderr
+    assert called is False
+
+
+@pytest.mark.parametrize("selection", ("water", ""))
+def test_invalid_contact_selection_fails_clearly(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    selection: str,
+) -> None:
+    called = False
+
+    def fake_build(options: object) -> object:
+        nonlocal called
+        called = True
+        return object()
+
+    monkeypatch.setattr(cli, "build_preprocessing_graph_workflow_plan", fake_build)
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--contact-selection",
+        selection,
+        expected_exit_code=2,
+    )
+
+    assert stdout == ""
+    assert "--contact-selection" in stderr
+    assert "invalid choice" in stderr
     assert called is False
 
 
@@ -985,6 +1088,8 @@ def test_verbose_contacts_progress_goes_to_stderr_only(
     assert stdout.strip() == json.dumps(payload, sort_keys=True)
     assert "[contacts]" in stderr
     assert "condition=normal" in stderr
+    assert "contact selection=all" in stderr
+    assert "selected residues=2" in stderr
     assert "frame=0" in stderr
     assert "candidate residue pairs=1" in stderr
     assert "[contacts]" not in stdout

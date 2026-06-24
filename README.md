@@ -176,6 +176,17 @@ If a configured contact guard is exceeded, the workflow reports the issue in
 the final JSON and exits non-zero rather than silently producing complete graph
 artifacts from incomplete contacts.
 
+### Contact Selection
+
+Contacts use `contact_selection="all"` by default, preserving the existing
+full-system residue behavior. Use `--contact-selection protein` to build a
+protein residue-contact graph from `runtime_object.select_atoms("protein")`;
+no NaPi2b-specific residue filtering or residue-name blacklist is used.
+
+Frame sampling reduces the number of frames. `contact_selection` reduces the
+per-frame candidate residue set. Contact limits remain optional smoke/debug
+guards, and the WANIA object JSON contract is unchanged.
+
 ## Optional Scientific CSV Exports
 
 By default, the Stage 15 CLI does not export Rg/contacts CSVs. They can be

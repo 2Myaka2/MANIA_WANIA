@@ -9,6 +9,7 @@ from mania.preprocessing import (
     PreprocessingConditionRgResult,
     PreprocessingContactComputationLimits,
     PreprocessingContactDefinition,
+    PreprocessingContactDetectionOptions,
     PreprocessingGraphDiagnosticsReport,
     PreprocessingGraphExportBundleResult,
     PreprocessingGraphReferenceComparisonInput,
@@ -158,9 +159,17 @@ def test_options_validate_and_serialize() -> None:
     assert workflow_options.contact_computation_limits == (
         PreprocessingContactComputationLimits()
     )
+    assert workflow_options.contact_detection_options == (
+        PreprocessingContactDetectionOptions()
+    )
     payload = workflow_options.to_dict()
     assert payload["manifest_path"] == "local_md/manifests/napi2b_10ns.yaml"
     assert payload["output_dir"] == "outputs/napi2b_10ns"
+    assert payload["contact_detection_options"] == (
+        PreprocessingContactDetectionOptions().to_dict(
+            include_contact_selection=True
+        )
+    )
     assert payload["contact_computation_limits"] == (
         PreprocessingContactComputationLimits().to_dict()
     )
@@ -185,6 +194,7 @@ def test_options_validate_and_serialize() -> None:
         ("reference_graph_json_path", "graph.json"),
         ("reference_semantics", ""),
         ("reference_semantics", " "),
+        ("contact_detection_options", object()),
         ("contact_computation_limits", object()),
     ),
 )

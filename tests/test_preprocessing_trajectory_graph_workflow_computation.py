@@ -248,6 +248,14 @@ def test_computation_result_validates_and_serializes() -> None:
     assert result.condition_count == 2
     assert result.rg_computed is True
     assert result.contacts_computed is True
+    assert result.contact_detection_options == (
+        PreprocessingContactDetectionOptions()
+    )
+    assert payload["contact_detection_options"] == (
+        PreprocessingContactDetectionOptions().to_dict(
+            include_contact_selection=True
+        )
+    )
     assert "not_json" not in json.dumps(payload)
     assert_json_safe(payload)
 
@@ -261,6 +269,7 @@ def test_computation_result_validates_and_serializes() -> None:
         ("include_rg", 1),
         ("include_contacts", 0),
         ("frame_sampling", object()),
+        ("contact_detection_options", object()),
         ("issues", [PreprocessingGraphWorkflowComputationIssue("x", "y")]),
         ("issues", (object(),)),
     ),
@@ -438,7 +447,10 @@ def test_contact_options_are_passed_through(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _, contacts_calls = patch_computers(monkeypatch)
-    options = PreprocessingContactDetectionOptions(cutoff_distance=6.0)
+    options = PreprocessingContactDetectionOptions(
+        cutoff_distance=6.0,
+        contact_selection="protein",
+    )
 
     result = compute_preprocessing_graph_workflow_rg_contacts(
         runtime_loading_result(),
@@ -448,6 +460,10 @@ def test_contact_options_are_passed_through(
 
     assert result.passed is True
     assert contacts_calls[0][1]["options"] is options
+    assert result.contact_detection_options is options
+    assert result.to_dict()["contact_detection_options"] == options.to_dict(
+        include_contact_selection=True
+    )
 
 
 def test_contact_limits_are_passed_through_and_serialized(

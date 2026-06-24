@@ -134,6 +134,13 @@ When configured, a per-frame contacts limit exceedance is reported as a
 deterministic issue and the workflow does not continue to complete graph export
 as if contacts were complete.
 
+Stage 16.4 adds explicit contact analysis scope with `contact_selection`.
+Supported values are `all` and `protein`. `all` is the default and preserves
+the existing full-system residue behavior. `protein` uses dependency-free duck
+typing via `runtime_object.select_atoms("protein").residues`; unavailable or
+empty protein selections fail with deterministic contact issues and never
+silently fall back to all residues.
+
 ## Run options
 
 `PreprocessingGraphWorkflowOptions` records:
@@ -147,6 +154,7 @@ as if contacts were complete.
 - optional explicit reference artifact paths;
 - `reference_semantics`;
 - `frame_sampling`;
+- `contact_detection_options`;
 - `contact_computation_limits`.
 
 `reference_semantics` defaults to `MANIA_analysis_v1_2`. v1.1 remains
@@ -164,6 +172,13 @@ optional local smoke/debug safeguards. Limits are not enabled by default. Frame
 sampling reduces how many frames are processed; it does not reduce the
 candidate residue-pair or atom-distance work inside a single sampled contacts
 frame.
+
+`contact_detection_options` is JSON-safe workflow provenance metadata for
+contact construction settings, including `contact_selection`. Frame sampling
+reduces frame count; `contact_selection` reduces the per-frame candidate
+residue set. `protein` is recommended for the protein residue-contact graph /
+RIN MVP. No NaPi2b-specific residue filtering or residue-name blacklist is
+used, and the WANIA object JSON contract is unchanged.
 
 The options validate types only. They do not check whether `manifest_path` or
 `output_dir` exists, do not load YAML, do not inspect `local_md`, and do not
@@ -570,6 +585,18 @@ printed to stderr while stdout remains final JSON only. If a configured guard
 is exceeded, the final JSON exposes the contact issue and the workflow exits
 non-zero rather than silently producing complete graph artifacts from partial
 contacts.
+
+Stage 16.4 adds contact selection to the same command:
+
+```text
+--contact-selection all
+--contact-selection protein
+```
+
+The CLI default is `all`. `protein` is explicit and is intended for
+protein-only residue-contact graph smoke runs. With `--verbose`, contacts
+progress includes the selected contact selection, selected residue count, and
+candidate residue-pair count on stderr while stdout remains final JSON only.
 
 `--export-scientific-csvs` is the safe shortcut for `--export-rg-timeseries`
 plus `--export-contact-edges`. It deliberately does not include

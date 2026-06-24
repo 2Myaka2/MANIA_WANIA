@@ -25,6 +25,7 @@ PreprocessingFrameSamplingOptions: TypeAlias = (
 )
 
 _ATOM_FILTERS = ("heavy", "all")
+_CONTACT_SELECTIONS = ("all", "protein")
 _CONTACT_LEVEL = "residue"
 _DISTANCE_DEFINITION = "minimum_selected_atom_distance"
 _FRAME_SCOPE = "per_frame"
@@ -37,6 +38,7 @@ _CONTACT_RESULT_STATUSES = (
 )
 _CONTACT_PROGRESS_STAGES = (
     "condition_start",
+    "condition_selection",
     "frame_start",
     "frame_candidates_built",
     "frame_limit_exceeded",
@@ -102,6 +104,13 @@ def _normalize_non_empty_string(value: object, field_name: str) -> str:
     normalized = value.strip()
     if not normalized:
         raise ValueError(f"{field_name} must be a non-empty string")
+    return normalized
+
+
+def _normalize_contact_selection(value: object) -> str:
+    normalized = _normalize_non_empty_string(value, "contact_selection")
+    if normalized not in _CONTACT_SELECTIONS:
+        raise ValueError("contact_selection must be 'all' or 'protein'")
     return normalized
 
 
@@ -229,6 +238,7 @@ class PreprocessingContactDetectionOptions:
     distance_unit: str = "angstrom"
     atom_filter: str = "heavy"
     contact_level: str = _CONTACT_LEVEL
+    contact_selection: str = "all"
     exclude_same_residue: bool = True
     exclude_duplicate_pairs: bool = True
     skip_resnames: tuple[str, ...] = ()
@@ -249,6 +259,14 @@ class PreprocessingContactDetectionOptions:
             raise ValueError("atom_filter must be 'heavy' or 'all'")
         if self.contact_level != _CONTACT_LEVEL:
             raise ValueError("contact_level must be 'residue'")
+        contact_selection = _normalize_contact_selection(
+            self.contact_selection
+        )
+        object.__setattr__(
+            self,
+            "contact_selection",
+            contact_selection,
+        )
         for field_name in _BOOLEAN_OPTION_FIELDS:
             if not isinstance(getattr(self, field_name), bool):
                 raise ValueError(f"{field_name} must be a bool")
@@ -258,9 +276,13 @@ class PreprocessingContactDetectionOptions:
             _normalize_skip_resnames(self.skip_resnames),
         )
 
-    def to_dict(self) -> dict[str, object]:
+    def to_dict(
+        self,
+        *,
+        include_contact_selection: bool = False,
+    ) -> dict[str, object]:
         """Return a deterministic JSON-serializable options dictionary."""
-        return {
+        payload: dict[str, object] = {
             "cutoff_distance": self.cutoff_distance,
             "distance_unit": self.distance_unit,
             "atom_filter": self.atom_filter,
@@ -271,6 +293,9 @@ class PreprocessingContactDetectionOptions:
             "include_frame_index": self.include_frame_index,
             "include_time_ps": self.include_time_ps,
         }
+        if include_contact_selection:
+            payload["contact_selection"] = self.contact_selection
+        return payload
 
 
 @dataclass(frozen=True)
@@ -827,10 +852,6 @@ def compute_condition_contacts(
         runtime_object,
         _TRAJECTORY_ATTRIBUTE,
     )
-    residues, has_residues = _read_attribute(
-        runtime_object,
-        _RESIDUES_ATTRIBUTE,
-    )
     fatal_issues: list[PreprocessingContactComputationIssue] = []
     if not has_trajectory or trajectory is None:
         fatal_issues.append(
@@ -838,14 +859,6 @@ def compute_condition_contacts(
                 kind="missing_trajectory",
                 field="runtime_object_trajectory",
                 message="Runtime object has no usable trajectory.",
-            )
-        )
-    if not has_residues or residues is None:
-        fatal_issues.append(
-            PreprocessingContactComputationIssue(
-                kind="missing_residues",
-                field="runtime_object_residues",
-                message="Runtime object has no usable residues collection.",
             )
         )
     if fatal_issues:
@@ -857,21 +870,17 @@ def compute_condition_contacts(
             issues=tuple(fatal_issues),
         )
 
-    try:
-        residue_items = tuple(cast(Iterable[object], residues))
-    except Exception:
+    residue_items, selection_issue = _selected_contact_residue_items(
+        runtime_object,
+        selected_options,
+    )
+    if selection_issue is not None:
         return _condition_contacts_result(
             condition_load_result.condition_name,
             selected_options,
             selected_limits,
             status="failed",
-            issues=(
-                PreprocessingContactComputationIssue(
-                    kind="missing_residues",
-                    field="runtime_object_residues",
-                    message="Runtime residues could not be iterated.",
-                ),
-            ),
+            issues=(selection_issue,),
         )
 
     frame_time_ps = _usable_non_negative_float(
@@ -886,6 +895,16 @@ def compute_condition_contacts(
             frame_index=None,
             stage="condition_start",
             message="starting contacts computation",
+            residue_count=len(residue_items),
+        ),
+    )
+    _emit_progress(
+        progress_callback,
+        PreprocessingContactProgressEvent(
+            condition_name=condition_load_result.condition_name,
+            frame_index=None,
+            stage="condition_selection",
+            message=f"contact selection={selected_options.contact_selection}",
             residue_count=len(residue_items),
         ),
     )
@@ -1085,7 +1104,7 @@ def _compute_contact_frame(
             condition_name=condition_name,
             frame_index=frame_index,
             stage="frame_start",
-            message="preparing residue candidates",
+            message=f"selected residues={len(residue_items)}",
             residue_count=len(residue_items),
         ),
     )
@@ -1275,6 +1294,77 @@ def _contact_limit_progress_message(
     issue: PreprocessingContactComputationIssue,
 ) -> str:
     return issue.message
+
+
+def _selected_contact_residue_items(
+    runtime_object: object,
+    options: PreprocessingContactDetectionOptions,
+) -> tuple[tuple[object, ...], PreprocessingContactComputationIssue | None]:
+    if options.contact_selection == "all":
+        residues, has_residues = _read_attribute(
+            runtime_object,
+            _RESIDUES_ATTRIBUTE,
+        )
+        if not has_residues or residues is None:
+            return (), PreprocessingContactComputationIssue(
+                kind="missing_residues",
+                field="runtime_object_residues",
+                message="Runtime object has no usable residues collection.",
+            )
+        try:
+            return tuple(cast(Iterable[object], residues)), None
+        except Exception:
+            return (), PreprocessingContactComputationIssue(
+                kind="missing_residues",
+                field="runtime_object_residues",
+                message="Runtime residues could not be iterated.",
+            )
+
+    selector = getattr(cast(Any, runtime_object), "select_atoms", None)
+    if not callable(selector):
+        return (), _contact_selection_unavailable_issue(
+            "Runtime object does not provide select_atoms."
+        )
+
+    try:
+        selected_atoms = selector("protein")
+    except Exception:
+        return (), _contact_selection_unavailable_issue(
+            "Runtime protein atom selection failed."
+        )
+
+    residues, has_residues = _read_attribute(
+        selected_atoms,
+        _RESIDUES_ATTRIBUTE,
+    )
+    if not has_residues or residues is None:
+        return (), _contact_selection_unavailable_issue(
+            "Protein atom selection has no usable residues collection."
+        )
+
+    try:
+        residue_items = tuple(cast(Iterable[object], residues))
+    except Exception:
+        return (), _contact_selection_unavailable_issue(
+            "Protein selection residues could not be iterated."
+        )
+    if not residue_items:
+        return (), PreprocessingContactComputationIssue(
+            kind="contact_selection_empty",
+            field="runtime_object.select_atoms('protein').residues",
+            message="Contact selection 'protein' returned no residues.",
+        )
+    return residue_items, None
+
+
+def _contact_selection_unavailable_issue(
+    message: str,
+) -> PreprocessingContactComputationIssue:
+    return PreprocessingContactComputationIssue(
+        kind="contact_selection_unavailable",
+        field="runtime_object.select_atoms",
+        message=message,
+    )
 
 
 def _residue_candidate(

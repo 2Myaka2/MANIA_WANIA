@@ -127,6 +127,27 @@ class FakeRuntime:
         self.trajectory = trajectory
 
 
+class FakeAtomSelection:
+    def __init__(self, residues: list[FakeResidue]) -> None:
+        self.residues = residues
+
+
+class FakeSelectableRuntime(FakeRuntime):
+    def __init__(
+        self,
+        residues: list[FakeResidue],
+        protein_residues: list[FakeResidue],
+        trajectory: object,
+    ) -> None:
+        super().__init__(residues, trajectory)
+        self._protein_residues = protein_residues
+        self.selections: list[str] = []
+
+    def select_atoms(self, selection: str) -> FakeAtomSelection:
+        self.selections.append(selection)
+        return FakeAtomSelection(self._protein_residues)
+
+
 def make_runtime_input(
     *,
     frame_time_ps: float | None = 2.5,
@@ -175,6 +196,25 @@ def make_runtime(
     return FakeRuntime(
         residues,
         FakeTrajectory(frames, atoms, fail_after=fail_after),
+    )
+
+
+def make_selectable_runtime(
+    residues: list[FakeResidue],
+    protein_residues: list[FakeResidue],
+    frames: list[FakeTimestep] | None = None,
+) -> FakeSelectableRuntime:
+    if frames is None:
+        frames = [FakeTimestep(0.0)]
+    atoms = [
+        atom
+        for residue in residues
+        for atom in residue.atoms
+    ]
+    return FakeSelectableRuntime(
+        residues,
+        protein_residues,
+        FakeTrajectory(frames, atoms),
     )
 
 
@@ -355,6 +395,228 @@ def test_single_frame_detects_contact_and_maps_pair_fields() -> None:
     assert contact.minimum_distance == 3.0
     assert contact.distance_unit == "angstrom"
     assert contact.atom_filter == "heavy"
+
+
+def test_all_contact_selection_uses_runtime_residues() -> None:
+    events: list[PreprocessingContactProgressEvent] = []
+    residues = [
+        FakeResidue("ALA", 10, [FakeAtom(position=(0.0, 0.0, 0.0))]),
+        FakeResidue("GLY", 11, [FakeAtom(position=(1.0, 0.0, 0.0))]),
+        FakeResidue("HOH", 12, [FakeAtom(position=(2.0, 0.0, 0.0))]),
+    ]
+    runtime = make_selectable_runtime(
+        residues,
+        protein_residues=residues[:2],
+    )
+
+    result = compute_condition_contacts(
+        make_loaded_result(runtime),
+        options=PreprocessingContactDetectionOptions(
+            contact_selection="all"
+        ),
+        progress_callback=events.append,
+    )
+
+    assert result.status == "computed"
+    assert result.contact_count == 3
+    assert runtime.selections == []
+    candidate_event = next(
+        event
+        for event in events
+        if event.stage == "frame_candidates_built"
+    )
+    assert candidate_event.residue_count == 3
+    assert candidate_event.candidate_pair_count == 3
+
+
+def test_protein_contact_selection_uses_selected_residues() -> None:
+    events: list[PreprocessingContactProgressEvent] = []
+    residues = [
+        FakeResidue("ALA", 10, [FakeAtom(position=(0.0, 0.0, 0.0))]),
+        FakeResidue("GLY", 11, [FakeAtom(position=(1.0, 0.0, 0.0))]),
+        FakeResidue("HOH", 12, [FakeAtom(position=(1.5, 0.0, 0.0))]),
+    ]
+    runtime = make_selectable_runtime(
+        residues,
+        protein_residues=residues[:2],
+    )
+
+    result = compute_condition_contacts(
+        make_loaded_result(runtime),
+        options=PreprocessingContactDetectionOptions(
+            contact_selection="protein"
+        ),
+        progress_callback=events.append,
+    )
+
+    assert result.status == "computed"
+    assert result.passed is True
+    assert runtime.selections == ["protein"]
+    assert result.contact_count == 1
+    contact = result.frame_results[0].contacts[0]
+    assert (contact.source_resname, contact.target_resname) == (
+        "ALA",
+        "GLY",
+    )
+    assert any(
+        event.message == "contact selection=protein"
+        for event in events
+    )
+    assert any(
+        event.message == "selected residues=2"
+        for event in events
+    )
+    candidate_event = next(
+        event
+        for event in events
+        if event.stage == "frame_candidates_built"
+    )
+    assert candidate_event.residue_count == 2
+    assert candidate_event.candidate_pair_count == 1
+
+
+def test_protein_contact_selection_unavailable_does_not_fallback() -> None:
+    runtime = two_residue_runtime(1.0)
+
+    result = compute_condition_contacts(
+        make_loaded_result(runtime),
+        options=PreprocessingContactDetectionOptions(
+            contact_selection="protein"
+        ),
+    )
+
+    assert result.status == "failed"
+    assert result.passed is False
+    assert result.frame_results == ()
+    assert [issue.kind for issue in result.issues] == [
+        "contact_selection_unavailable"
+    ]
+
+
+def test_empty_protein_contact_selection_fails_clearly() -> None:
+    residues = [
+        FakeResidue("ALA", 10, [FakeAtom(position=(0.0, 0.0, 0.0))]),
+        FakeResidue("GLY", 11, [FakeAtom(position=(1.0, 0.0, 0.0))]),
+    ]
+    runtime = make_selectable_runtime(residues, protein_residues=[])
+
+    result = compute_condition_contacts(
+        make_loaded_result(runtime),
+        options=PreprocessingContactDetectionOptions(
+            contact_selection="protein"
+        ),
+    )
+
+    assert result.status == "failed"
+    assert result.passed is False
+    assert result.frame_results == ()
+    assert [issue.kind for issue in result.issues] == [
+        "contact_selection_empty"
+    ]
+
+
+def test_protein_contact_selection_preserves_frame_sampling() -> None:
+    source = FakeAtom(position=(0.0, 0.0, 0.0))
+    target = FakeAtom(position=(10.0, 0.0, 0.0))
+    solvent = FakeAtom(position=(50.0, 0.0, 0.0))
+    residues = [
+        FakeResidue("ALA", 1, [source]),
+        FakeResidue("GLY", 2, [target]),
+        FakeResidue("HOH", 3, [solvent]),
+    ]
+    frames = [
+        FakeTimestep(
+            positions=(
+                (0.0, 0.0, 0.0),
+                (3.0, 0.0, 0.0),
+                (50.0, 0.0, 0.0),
+            )
+        ),
+        FakeTimestep(
+            positions=(
+                (0.0, 0.0, 0.0),
+                (3.0, 0.0, 0.0),
+                (50.0, 0.0, 0.0),
+            )
+        ),
+        FakeTimestep(
+            positions=(
+                (0.0, 0.0, 0.0),
+                (8.0, 0.0, 0.0),
+                (50.0, 0.0, 0.0),
+            )
+        ),
+    ]
+    runtime = make_selectable_runtime(
+        residues,
+        protein_residues=residues[:2],
+        frames=frames,
+    )
+
+    result = compute_condition_contacts(
+        make_loaded_result(runtime, frame_time_ps=2.5),
+        options=PreprocessingContactDetectionOptions(
+            contact_selection="protein"
+        ),
+        frame_sampling=PreprocessingFrameSamplingOptions(frame_stride=2),
+    )
+
+    assert result.status == "computed"
+    assert result.frame_count == 2
+    assert [frame.frame_index for frame in result.frame_results] == [0, 2]
+    assert [frame.time_ps for frame in result.frame_results] == [0.0, 5.0]
+    assert [frame.contact_count for frame in result.frame_results] == [1, 0]
+
+
+def test_contact_limits_apply_after_protein_selection() -> None:
+    residues = [
+        FakeResidue("ALA", 1, [FakeAtom(position=(0.0, 0.0, 0.0))]),
+        FakeResidue("GLY", 2, [FakeAtom(position=(1.0, 0.0, 0.0))]),
+        FakeResidue("HOH", 3, [FakeAtom(position=(2.0, 0.0, 0.0))]),
+        FakeResidue("NA", 4, [FakeAtom(position=(3.0, 0.0, 0.0))]),
+    ]
+    limits = PreprocessingContactComputationLimits(
+        max_residue_pairs_per_frame=2
+    )
+    full_runtime = make_selectable_runtime(
+        residues,
+        protein_residues=residues[:2],
+    )
+    protein_runtime = make_selectable_runtime(
+        residues,
+        protein_residues=residues[:2],
+    )
+    protein_events: list[PreprocessingContactProgressEvent] = []
+
+    full_result = compute_condition_contacts(
+        make_loaded_result(full_runtime),
+        options=PreprocessingContactDetectionOptions(
+            contact_selection="all"
+        ),
+        computation_limits=limits,
+    )
+    protein_result = compute_condition_contacts(
+        make_loaded_result(protein_runtime),
+        options=PreprocessingContactDetectionOptions(
+            contact_selection="protein"
+        ),
+        computation_limits=limits,
+        progress_callback=protein_events.append,
+    )
+
+    assert full_result.status == "partial"
+    assert full_result.frame_results[0].issues[0].kind == (
+        "contact_frame_limit_exceeded"
+    )
+    assert "residue pairs 6" in full_result.frame_results[0].issues[0].message
+    assert protein_result.status == "computed"
+    assert protein_result.passed is True
+    candidate_event = next(
+        event
+        for event in protein_events
+        if event.stage == "frame_candidates_built"
+    )
+    assert candidate_event.candidate_pair_count == 1
 
 
 def test_distance_beyond_cutoff_is_not_a_contact() -> None:
@@ -631,12 +893,15 @@ def test_contact_progress_callback_receives_stable_frame_events() -> None:
     assert result.passed is True
     assert [event.stage for event in events] == [
         "condition_start",
+        "condition_selection",
         "frame_start",
         "frame_candidates_built",
         "frame_done",
         "condition_done",
     ]
-    candidate_event = events[2]
+    assert events[1].message == "contact selection=all"
+    assert events[2].message == "selected residues=2"
+    candidate_event = events[3]
     assert candidate_event.condition_name == "normal"
     assert candidate_event.frame_index == 0
     assert candidate_event.candidate_pair_count == 1

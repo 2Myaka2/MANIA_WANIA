@@ -18,6 +18,7 @@ from mania.pipeline_steps import (
 from mania.preprocessing.trajectory_contacts import (
     ContactProgressCallback,
     PreprocessingContactComputationLimits,
+    PreprocessingContactDetectionOptions,
     PreprocessingContactProgressEvent,
 )
 from mania.preprocessing.trajectory_frame_sampling import (
@@ -36,6 +37,7 @@ from mania.preprocessing.trajectory_graph_workflow import (
 
 _DEFAULT_EXPECTED_CONDITION_NAMES = ("normal", "tumor")
 _DEFAULT_REFERENCE_SEMANTICS = "MANIA_analysis_v1_2"
+_CONTACT_SELECTION_CHOICES = ("all", "protein")
 _PREPROCESSING_GRAPH_EXPORT_VERBOSE_STAGES = {
     1: "Building workflow plan",
     2: "Loading manifest and condition runtimes",
@@ -285,6 +287,15 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     graph_export_parser.add_argument(
+        "--contact-selection",
+        choices=_CONTACT_SELECTION_CHOICES,
+        default="all",
+        help=(
+            "Contact residue selection scope. Use 'all' for the full "
+            "system or 'protein' for runtime protein residues."
+        ),
+    )
+    graph_export_parser.add_argument(
         "--verbose",
         action="store_true",
         help="Print stage-by-stage progress messages to stderr.",
@@ -337,6 +348,9 @@ def _build_preprocessing_graph_workflow_options(
             frame_stop=args.frame_stop,
             frame_stride=args.frame_stride,
             max_frames=args.max_frames,
+        ),
+        "contact_detection_options": PreprocessingContactDetectionOptions(
+            contact_selection=args.contact_selection,
         ),
         "contact_computation_limits": PreprocessingContactComputationLimits(
             max_residue_pairs_per_frame=(
@@ -599,6 +613,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         "include_rg": options.include_rg,
         "include_contacts": options.include_contacts,
         "frame_sampling": options.frame_sampling,
+        "contact_options": options.contact_detection_options,
     }
     if _contact_limit_flags_enabled(args):
         computation_kwargs["contact_computation_limits"] = (

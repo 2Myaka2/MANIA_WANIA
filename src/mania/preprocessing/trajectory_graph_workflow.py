@@ -93,6 +93,18 @@ def _default_contact_computation_limits(
     return cast("PreprocessingContactComputationLimits", limits_type())
 
 
+def _default_contact_detection_options(
+) -> PreprocessingContactDetectionOptions:
+    contacts_module = importlib.import_module(
+        "mania.preprocessing.trajectory_contacts"
+    )
+    options_type = cast(
+        Any,
+        contacts_module,
+    ).PreprocessingContactDetectionOptions
+    return cast("PreprocessingContactDetectionOptions", options_type())
+
+
 class _ManifestLoader(Protocol):
     def __call__(self, path: str | Path) -> PreprocessingInputManifest: ...
 
@@ -279,6 +291,9 @@ class PreprocessingGraphWorkflowOptions:
     frame_sampling: PreprocessingFrameSamplingOptions = field(
         default_factory=PreprocessingFrameSamplingOptions
     )
+    contact_detection_options: PreprocessingContactDetectionOptions = field(
+        default_factory=_default_contact_detection_options
+    )
     contact_computation_limits: PreprocessingContactComputationLimits = field(
         default_factory=_default_contact_computation_limits
     )
@@ -301,6 +316,10 @@ class PreprocessingGraphWorkflowOptions:
             _non_empty_string(self.reference_semantics, "reference_semantics"),
         )
         _require_frame_sampling(self.frame_sampling, "frame_sampling")
+        _require_contact_detection_options(
+            self.contact_detection_options,
+            "contact_detection_options",
+        )
         _require_contact_computation_limits(
             self.contact_computation_limits,
             "contact_computation_limits",
@@ -329,6 +348,11 @@ class PreprocessingGraphWorkflowOptions:
             ),
             "reference_semantics": self.reference_semantics,
             "frame_sampling": self.frame_sampling.to_dict(),
+            "contact_detection_options": (
+                _contact_detection_options_payload(
+                    self.contact_detection_options
+                )
+            ),
             "contact_computation_limits": (
                 _contact_computation_limits_payload(
                     self.contact_computation_limits
@@ -797,6 +821,9 @@ class PreprocessingGraphWorkflowComputationResult:
     frame_sampling: PreprocessingFrameSamplingOptions = field(
         default_factory=PreprocessingFrameSamplingOptions
     )
+    contact_detection_options: PreprocessingContactDetectionOptions = field(
+        default_factory=_default_contact_detection_options
+    )
     contact_computation_limits: PreprocessingContactComputationLimits = field(
         default_factory=_default_contact_computation_limits
     )
@@ -826,6 +853,10 @@ class PreprocessingGraphWorkflowComputationResult:
         _require_bool(self.include_rg, "include_rg")
         _require_bool(self.include_contacts, "include_contacts")
         _require_frame_sampling(self.frame_sampling, "frame_sampling")
+        _require_contact_detection_options(
+            self.contact_detection_options,
+            "contact_detection_options",
+        )
         _require_contact_computation_limits(
             self.contact_computation_limits,
             "contact_computation_limits",
@@ -883,6 +914,11 @@ class PreprocessingGraphWorkflowComputationResult:
             "include_rg": self.include_rg,
             "include_contacts": self.include_contacts,
             "frame_sampling": self.frame_sampling.to_dict(),
+            "contact_detection_options": (
+                _contact_detection_options_payload(
+                    self.contact_detection_options
+                )
+            ),
             "contact_computation_limits": (
                 _contact_computation_limits_payload(
                     self.contact_computation_limits
@@ -1967,6 +2003,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
     _require_bool(include_rg, "include_rg")
     _require_bool(include_contacts, "include_contacts")
     selected_frame_sampling = _frame_sampling_options(frame_sampling)
+    selected_contact_options = _contact_detection_options(contact_options)
     selected_contact_limits = _contact_computation_limits(
         contact_computation_limits
     )
@@ -2010,6 +2047,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
             include_rg=include_rg,
             include_contacts=include_contacts,
             frame_sampling=selected_frame_sampling,
+            contact_detection_options=selected_contact_options,
             contact_computation_limits=selected_contact_limits,
             issues=tuple(issues),
         )
@@ -2032,6 +2070,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
             include_rg=include_rg,
             include_contacts=include_contacts,
             frame_sampling=selected_frame_sampling,
+            contact_detection_options=selected_contact_options,
             contact_computation_limits=selected_contact_limits,
             issues=tuple(issues),
         )
@@ -2050,6 +2089,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
             include_rg=include_rg,
             include_contacts=include_contacts,
             frame_sampling=selected_frame_sampling,
+            contact_detection_options=selected_contact_options,
             contact_computation_limits=selected_contact_limits,
             issues=tuple(issues),
         )
@@ -2084,8 +2124,10 @@ def compute_preprocessing_graph_workflow_rg_contacts(
     if include_contacts:
         try:
             contact_kwargs: dict[str, object] = {}
-            if contact_options is not None:
-                contact_kwargs["options"] = contact_options
+            if not _contact_detection_options_are_default(
+                selected_contact_options
+            ):
+                contact_kwargs["options"] = selected_contact_options
             if not _contact_computation_limits_are_default(
                 selected_contact_limits
             ):
@@ -2122,6 +2164,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
         include_rg=include_rg,
         include_contacts=include_contacts,
         frame_sampling=selected_frame_sampling,
+        contact_detection_options=selected_contact_options,
         contact_computation_limits=selected_contact_limits,
         rg_result=rg_result,
         contacts_result=contacts_result,
@@ -3275,6 +3318,48 @@ def _contact_computation_limits_type() -> type[object]:
         type[object],
         cast(Any, contacts_module).PreprocessingContactComputationLimits,
     )
+
+
+def _contact_detection_options_type() -> type[object]:
+    contacts_module = importlib.import_module(
+        "mania.preprocessing.trajectory_contacts"
+    )
+    return cast(
+        type[object],
+        cast(Any, contacts_module).PreprocessingContactDetectionOptions,
+    )
+
+
+def _require_contact_detection_options(
+    value: object,
+    field_name: str,
+) -> None:
+    if not isinstance(value, _contact_detection_options_type()):
+        raise ValueError(
+            f"{field_name} must be PreprocessingContactDetectionOptions"
+        )
+
+
+def _contact_detection_options(
+    value: PreprocessingContactDetectionOptions | None,
+) -> PreprocessingContactDetectionOptions:
+    if value is None:
+        return _default_contact_detection_options()
+    _require_contact_detection_options(value, "contact_detection_options")
+    return value
+
+
+def _contact_detection_options_payload(value: object) -> dict[str, object]:
+    _require_contact_detection_options(value, "contact_detection_options")
+    payload = cast(Any, value).to_dict(include_contact_selection=True)
+    if not isinstance(payload, dict):
+        raise ValueError("contact_detection_options.to_dict() must be a dict")
+    return cast(dict[str, object], payload)
+
+
+def _contact_detection_options_are_default(value: object) -> bool:
+    _require_contact_detection_options(value, "contact_detection_options")
+    return value == _default_contact_detection_options()
 
 
 def _require_contact_computation_limits(

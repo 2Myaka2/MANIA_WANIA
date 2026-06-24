@@ -197,6 +197,22 @@ stderr. If a configured contact guard is exceeded, the final JSON exposes the
 issue and the workflow exits non-zero rather than silently producing complete
 graph artifacts from incomplete contacts.
 
+Contact selection controls which part of the MD system is used for contact
+graph construction:
+
+```text
+--contact-selection all
+--contact-selection protein
+```
+
+`all` is the default and preserves existing full-system contact behavior.
+`protein` uses `runtime_object.select_atoms("protein").residues` and is
+recommended for the protein residue-contact graph / RIN MVP. It reduces the
+per-frame candidate residue set, while frame sampling reduces the number of
+frames. No NaPi2b-specific filtering or residue-name blacklist is used, contact
+limits remain optional smoke/debug guards, and the WANIA object JSON contract
+is unchanged.
+
 ## Accepted output artifacts
 
 Stage 15 may produce these artifacts under the selected output directory:

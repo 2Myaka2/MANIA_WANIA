@@ -4,6 +4,7 @@ import pytest
 
 from mania.preprocessing import (
     PreprocessingContactComputationLimits,
+    PreprocessingContactDetectionOptions,
     PreprocessingContactProgressEvent,
 )
 
@@ -60,3 +61,34 @@ def test_contact_progress_event_validates_and_serializes() -> None:
 
     assert event.condition_name == "normal"
     assert event.frame_index == 0
+
+
+def test_default_contact_selection_is_all_and_json_safe() -> None:
+    options = PreprocessingContactDetectionOptions()
+
+    assert options.contact_selection == "all"
+    payload = options.to_dict(include_contact_selection=True)
+    assert payload["contact_selection"] == "all"
+    assert json.loads(json.dumps(payload)) == payload
+
+
+@pytest.mark.parametrize("selection", ("all", "protein"))
+def test_contact_selection_accepts_supported_values(selection: str) -> None:
+    options = PreprocessingContactDetectionOptions(
+        contact_selection=selection
+    )
+
+    assert options.contact_selection == selection
+
+
+@pytest.mark.parametrize(
+    "selection",
+    ("", " ", "water", True, False, None, 1),
+)
+def test_contact_selection_rejects_invalid_values(
+    selection: object,
+) -> None:
+    with pytest.raises(ValueError):
+        PreprocessingContactDetectionOptions(
+            contact_selection=selection
+        )
