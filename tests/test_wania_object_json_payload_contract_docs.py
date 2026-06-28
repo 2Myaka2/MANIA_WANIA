@@ -133,6 +133,21 @@ def test_wania_contract_doc_mentions_stage_16_2_sampling_without_schema_change(
         assert phrase in text
 
 
+def test_wania_contract_doc_mentions_stage_16_5_coordinate_extension() -> None:
+    text = normalized(doc_text())
+
+    for phrase in (
+        "Stage 16.5 representative Cα coordinates",
+        "x/y/z",
+        "x_ca/y_ca/z_ca",
+        "frontend-facing aliases",
+        "not a trajectory average",
+        "does not claim full Kabsch parity",
+        "non-breaking node extension",
+    ):
+        assert phrase in text
+
+
 def test_wania_payload_sample_is_valid_object_json() -> None:
     payload = load_payload()
 

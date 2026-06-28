@@ -94,6 +94,33 @@ The WANIA object JSON contract is not changed by Stage 16.2. A WANIA payload
 can be regenerated from sampled Stage 15 artifacts without changing the
 payload schema or the Stage 16.1 adapter payload schema.
 
+## Stage 16.5 representative Cα coordinates
+
+Stage 16.5 extends WANIA node objects non-breakingly with representative Cα
+coordinates preserved from backend `graph/graph.json`:
+
+```json
+{
+  "x": 121.22,
+  "y": 83.81,
+  "z": 98.52,
+  "x_ca": 121.22,
+  "y_ca": 83.81,
+  "z_ca": 98.52
+}
+```
+
+`x/y/z` are frontend-facing aliases. `x_ca/y_ca/z_ca` preserve Cα semantics.
+Values are JSON-safe floats or null. These are representative,
+condition-specific Cα coordinates from the first sampled frame, not a
+trajectory average. Stage 16.5 does not claim full Kabsch parity;
+Kabsch-aligned notebook parity remains future scope.
+
+This is only a non-breaking node extension. Artifact references and the Stage
+16.1 adapter input/output contract are unchanged. Backbone edges,
+`EDGE_PRIORITY`, `InteractionAccumulator`, and `build_atom_cache` remain
+deferred.
+
 ## Protein-agnostic run metadata
 
 The payload is protein-agnostic. The `run` block identifies which protein run
@@ -235,6 +262,12 @@ Nodes are object JSON records. Each node represents a residue in a condition:
   "label": "LYS123",
   "condition": "normal",
   "component_id": null,
+  "x": 121.22,
+  "y": 83.81,
+  "z": 98.52,
+  "x_ca": 121.22,
+  "y_ca": 83.81,
+  "z_ca": 98.52,
   "residue": {
     "index": 123,
     "id": "123",

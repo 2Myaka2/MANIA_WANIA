@@ -635,12 +635,26 @@ def _map_nodes(
                 )
             )
 
+        field_prefix = f"nodes[{index}]"
+        x = _node_coordinate(node, "x", "x_ca", issues, field_prefix)
+        y = _node_coordinate(node, "y", "y_ca", issues, field_prefix)
+        z = _node_coordinate(node, "z", "z_ca", issues, field_prefix)
+        x_ca = _node_coordinate(node, "x_ca", "x", issues, field_prefix)
+        y_ca = _node_coordinate(node, "y_ca", "y", issues, field_prefix)
+        z_ca = _node_coordinate(node, "z_ca", "z", issues, field_prefix)
+
         nodes.append(
             {
                 "id": node_id,
                 "label": _node_label(node_id, residue_name, residue_id),
                 "condition": condition,
                 "component_id": None,
+                "x": x,
+                "y": y,
+                "z": z,
+                "x_ca": x_ca,
+                "y_ca": y_ca,
+                "z_ca": z_ca,
                 "residue": {
                     "index": residue_index,
                     "id": residue_id,
@@ -652,6 +666,35 @@ def _map_nodes(
         )
         conditions.append(condition)
     return nodes, tuple(conditions)
+
+
+def _node_coordinate(
+    node: Mapping[str, object],
+    primary_key: str,
+    fallback_key: str,
+    issues: list[WaniaGraphPayloadIssue],
+    field_prefix: str,
+) -> float | None:
+    raw_value = node.get(primary_key)
+    source_key = primary_key
+    if raw_value is None:
+        raw_value = node.get(fallback_key)
+        source_key = fallback_key
+    raw = _value_string(raw_value)
+    if raw is None:
+        return None
+    parsed = _number(raw)
+    if not isinstance(parsed, float):
+        issues.append(
+            WaniaGraphPayloadIssue(
+                kind="node_coordinates_invalid",
+                message="Backend graph node coordinate could not be parsed.",
+                fatal=False,
+                field=f"{field_prefix}.{source_key}",
+            )
+        )
+        return None
+    return parsed
 
 
 def _map_edges(

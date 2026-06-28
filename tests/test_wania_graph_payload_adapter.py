@@ -232,6 +232,39 @@ def test_builds_multi_condition_payload(tmp_path: Path) -> None:
     assert "condition" not in result.payload
 
 
+def test_wania_nodes_preserve_json_safe_ca_coordinates(
+    tmp_path: Path,
+) -> None:
+    payload = load_fixture_graph()
+    payload["nodes"][0].update(
+        {
+            "x": 121.22,
+            "y": 83.81,
+            "z": 98.52,
+            "x_ca": 121.22,
+            "y_ca": 83.81,
+            "z_ca": 98.52,
+        }
+    )
+
+    _, wania_payload, issues = build_payload(tmp_path, graph_payload=payload)
+    node = wania_payload["graph"]["nodes"][0]
+
+    assert issues == []
+    assert {
+        field: node[field]
+        for field in ("x", "y", "z", "x_ca", "y_ca", "z_ca")
+    } == {
+        "x": 121.22,
+        "y": 83.81,
+        "z": 98.52,
+        "x_ca": 121.22,
+        "y_ca": 83.81,
+        "z_ca": 98.52,
+    }
+    json.dumps(node, allow_nan=False)
+
+
 @pytest.mark.parametrize(
     ("run_metadata", "field"),
     (

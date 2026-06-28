@@ -9,6 +9,11 @@ import pytest
 import mania.preprocessing
 from mania.constants import EDGE_COLUMNS, GRAPH_REQUIRED_KEYS, NODE_COLUMNS
 from mania.preprocessing import (
+    PreprocessingCaCoordinate,
+    PreprocessingConditionContactsResult,
+    PreprocessingContactDetectionOptions,
+    PreprocessingContactFrameResult,
+    PreprocessingContactPairResult,
     PreprocessingGraphCsvValidationIssue,
     PreprocessingGraphCsvValidationResult,
     PreprocessingGraphEdgeMappingRecord,
@@ -21,6 +26,7 @@ from mania.preprocessing import (
     PreprocessingGraphNodeMappingRecord,
     PreprocessingGraphNodesCsvWriteIssue,
     PreprocessingGraphNodesCsvWriteResult,
+    PreprocessingManifestContactsResult,
     build_preprocessing_graph_export_mapping,
     validate_preprocessing_graph_csvs,
     write_preprocessing_graph_edges_csv,
@@ -316,6 +322,137 @@ def test_writer_creates_graph_json_from_writer_generated_csvs(
         assert column in edges[0]
 
 
+def test_writer_adds_json_safe_ca_coordinate_aliases(tmp_path: Path) -> None:
+    nodes_path, edges_path = write_valid_csvs(
+        tmp_path,
+        node_rows=[
+            node_row(
+                x_ca="-1.25",
+                y_ca="2.5",
+                z_ca="3.75",
+            )
+        ],
+    )
+    output_path = tmp_path / "graph.json"
+
+    result = write_preprocessing_graph_json(nodes_path, edges_path, output_path)
+    node = read_graph(output_path)["nodes"][0]
+
+    assert result.passed is True
+    assert {
+        field: node[field]
+        for field in ("x", "y", "z", "x_ca", "y_ca", "z_ca")
+    } == {
+        "x": -1.25,
+        "y": 2.5,
+        "z": 3.75,
+        "x_ca": -1.25,
+        "y_ca": 2.5,
+        "z_ca": 3.75,
+    }
+    json.dumps(node, allow_nan=False)
+
+
+def test_graph_mapping_keeps_coordinates_condition_specific() -> None:
+    pair = PreprocessingContactPairResult(
+        source_residue_index=0,
+        target_residue_index=1,
+        source_resname="ALA",
+        target_resname="GLY",
+        minimum_distance=3.0,
+        source_residue_id=10,
+        target_residue_id=11,
+        source_segid="A",
+        target_segid="A",
+    )
+
+    def condition(
+        condition_name: str,
+        source_x: float,
+    ) -> PreprocessingConditionContactsResult:
+        return PreprocessingConditionContactsResult(
+            condition_name=condition_name,
+            options=PreprocessingContactDetectionOptions(),
+            representative_ca_coordinates=(
+                PreprocessingCaCoordinate(
+                    residue_index=0,
+                    residue_id=10,
+                    resname="ALA",
+                    segid="A",
+                    x_ca=source_x,
+                    y_ca=2.0,
+                    z_ca=3.0,
+                ),
+                PreprocessingCaCoordinate(
+                    residue_index=1,
+                    residue_id=11,
+                    resname="GLY",
+                    segid="A",
+                    x_ca=4.0,
+                    y_ca=5.0,
+                    z_ca=6.0,
+                ),
+            ),
+            frame_results=(
+                PreprocessingContactFrameResult(
+                    condition_name=condition_name,
+                    frame_index=0,
+                    contacts=(pair,),
+                ),
+            ),
+            status="computed",
+        )
+
+    result = build_preprocessing_graph_export_mapping(
+        PreprocessingManifestContactsResult(
+            condition_results=(
+                condition("normal", 1.0),
+                condition("tumor", 11.0),
+            )
+        )
+    )
+
+    assert result.passed is True
+    source_coordinates = {
+        node.condition_name: node.x_ca
+        for node in result.nodes
+        if node.residue_id == "10"
+    }
+    assert source_coordinates == {"normal": 1.0, "tumor": 11.0}
+
+
+def test_protein_graph_mapping_reports_missing_ca_coordinates() -> None:
+    pair = PreprocessingContactPairResult(
+        source_residue_index=0,
+        target_residue_index=1,
+        source_resname="ALA",
+        target_resname="GLY",
+        minimum_distance=3.0,
+    )
+    condition = PreprocessingConditionContactsResult(
+        condition_name="normal",
+        options=PreprocessingContactDetectionOptions(
+            contact_selection="protein"
+        ),
+        frame_results=(
+            PreprocessingContactFrameResult(
+                condition_name="normal",
+                frame_index=0,
+                contacts=(pair,),
+            ),
+        ),
+        status="computed",
+    )
+
+    result = build_preprocessing_graph_export_mapping(condition)
+
+    assert result.passed is False
+    assert [issue.kind for issue in result.issues] == [
+        "node_coordinates_missing",
+        "node_coordinates_missing",
+    ]
+
+
 def test_writer_calls_validation_before_writing(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -459,7 +596,8 @@ def test_writer_preserves_empty_optional_metadata(tmp_path: Path) -> None:
     node = graph["nodes"][0]
 
     assert result.passed is True
-    assert node["x_ca"] == ""
+    assert node["x_ca"] is None
+    assert node["x"] is None
     assert edge["std_dist_A"] == ""
     assert edge["n_episodes"] == ""
     assert edge["window_cv"] == ""

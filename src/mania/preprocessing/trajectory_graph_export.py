@@ -21,6 +21,7 @@ from mania.constants import (
     SCHEMA_VERSION,
 )
 from mania.preprocessing.trajectory_contacts import (
+    PreprocessingCaCoordinate,
     PreprocessingConditionContactsResult,
     PreprocessingContactFrameResult,
     PreprocessingContactPairResult,
@@ -99,6 +100,9 @@ class PreprocessingGraphNodeMappingRecord:
     residue_id: str
     resname: str
     segid: str | None = None
+    x_ca: float | None = None
+    y_ca: float | None = None
+    z_ca: float | None = None
     node_kind: str = _NODE_KIND
     source: str = _SOURCE
 
@@ -125,6 +129,16 @@ class PreprocessingGraphNodeMappingRecord:
             _non_empty_string(self.resname, "resname"),
         )
         _require_optional_string(self.segid, "segid")
+        coordinate_values = (self.x_ca, self.y_ca, self.z_ca)
+        if any(value is None for value in coordinate_values) and any(
+            value is not None for value in coordinate_values
+        ):
+            raise ValueError("Cα coordinates must be all present or all None")
+        for field_name in ("x_ca", "y_ca", "z_ca"):
+            value = getattr(self, field_name)
+            _require_optional_finite_number(value, field_name)
+            if value is not None:
+                object.__setattr__(self, field_name, float(value))
         object.__setattr__(
             self,
             "node_kind",
@@ -145,6 +159,9 @@ class PreprocessingGraphNodeMappingRecord:
             "residue_id": self.residue_id,
             "resname": self.resname,
             "segid": self.segid,
+            "x_ca": self.x_ca,
+            "y_ca": self.y_ca,
+            "z_ca": self.z_ca,
             "node_kind": self.node_kind,
             "source": self.source,
         }
@@ -2584,6 +2601,7 @@ def _map_condition_result(
 
     included_frame_count = 0
     aggregate_distances: dict[_AggregateKey, list[float]] = {}
+    coordinates_by_node_id = _ca_coordinates_by_node_id(condition_result)
 
     for frame_index, frame_result in enumerate(condition_result.frame_results):
         if not frame_result.passed:
@@ -2606,6 +2624,7 @@ def _map_condition_result(
             condition_index=condition_index,
             frame_index=frame_index,
             nodes_by_id=nodes_by_id,
+            coordinates_by_node_id=coordinates_by_node_id,
             issues=issues,
         )
         for key, distance in frame_distances.items():
@@ -2623,6 +2642,24 @@ def _map_condition_result(
                 ),
             )
         )
+
+    if condition_result.options.contact_selection == "protein":
+        for node in sorted(nodes_by_id.values(), key=lambda item: item.node_id):
+            if (
+                node.condition_name == condition_result.condition_name
+                and node.x_ca is None
+            ):
+                issues.append(
+                    PreprocessingGraphExportMappingIssue(
+                        kind="node_coordinates_missing",
+                        record_id=node.node_id,
+                        field="representative_ca_coordinates",
+                        message=(
+                            "Protein graph node has no representative Cα "
+                            "coordinates."
+                        ),
+                    )
+                )
 
     edges = tuple(
         _edge_record(key, distances, included_frame_count)
@@ -2644,6 +2681,9 @@ def _graph_node_row(
             "resname": node.resname,
             "region": f"{node.source}:{node.node_kind}",
             "condition": node.condition_name,
+            "x_ca": _optional_number_csv_value(node.x_ca),
+            "y_ca": _optional_number_csv_value(node.y_ca),
+            "z_ca": _optional_number_csv_value(node.z_ca),
         }
     )
     return row
@@ -2895,7 +2935,7 @@ def _read_graph_json_payload(
     if isinstance(edges_result, PreprocessingGraphJsonWriteIssue):
         return edges_result
 
-    nodes = [{"id": row["resid"], **row} for row in nodes_result]
+    nodes = [_graph_json_node(row) for row in nodes_result]
     edges = [
         {"source": row["resid_i"], "target": row["resid_j"], **row}
         for row in edges_result
@@ -2935,6 +2975,31 @@ def _read_graph_json_rows(
             message="Graph CSV file could not be read for JSON writing.",
         )
     return rows
+
+
+def _graph_json_node(row: dict[str, str]) -> dict[str, object]:
+    x_ca = _optional_json_float(row["x_ca"])
+    y_ca = _optional_json_float(row["y_ca"])
+    z_ca = _optional_json_float(row["z_ca"])
+    return {
+        "id": row["resid"],
+        **row,
+        "x": x_ca,
+        "y": y_ca,
+        "z": z_ca,
+        "x_ca": x_ca,
+        "y_ca": y_ca,
+        "z_ca": z_ca,
+    }
+
+
+def _optional_json_float(value: str) -> float | None:
+    if value.strip() == "":
+        return None
+    converted = float(value)
+    if not math.isfinite(converted):
+        return None
+    return converted
 
 
 def _graph_json_condition(
@@ -3054,6 +3119,7 @@ def _frame_distances(
     condition_index: int,
     frame_index: int,
     nodes_by_id: dict[str, PreprocessingGraphNodeMappingRecord],
+    coordinates_by_node_id: dict[str, PreprocessingCaCoordinate],
     issues: list[PreprocessingGraphExportMappingIssue],
 ) -> dict[_AggregateKey, float]:
     frame_distances: dict[_AggregateKey, float] = {}
@@ -3061,8 +3127,14 @@ def _frame_distances(
     for contact in frame_result.contacts:
         source_identity = _source_identity(frame_result, contact)
         target_identity = _target_identity(frame_result, contact)
-        source_node = _node_record(source_identity)
-        target_node = _node_record(target_identity)
+        source_node = _node_record(
+            source_identity,
+            coordinates_by_node_id.get(_node_id(source_identity)),
+        )
+        target_node = _node_record(
+            target_identity,
+            coordinates_by_node_id.get(_node_id(target_identity)),
+        )
         nodes_by_id.setdefault(source_node.node_id, source_node)
         nodes_by_id.setdefault(target_node.node_id, target_node)
 
@@ -3120,7 +3192,29 @@ def _target_identity(
     )
 
 
-def _node_record(identity: _ResidueIdentity) -> PreprocessingGraphNodeMappingRecord:
+def _ca_coordinates_by_node_id(
+    condition_result: PreprocessingConditionContactsResult,
+) -> dict[str, PreprocessingCaCoordinate]:
+    coordinates: dict[str, PreprocessingCaCoordinate] = {}
+    for coordinate in condition_result.representative_ca_coordinates:
+        identity = _ResidueIdentity(
+            condition_name=condition_result.condition_name,
+            residue_index=coordinate.residue_index,
+            residue_id=_residue_id(
+                coordinate.residue_id,
+                coordinate.residue_index,
+            ),
+            resname=coordinate.resname,
+            segid=coordinate.segid,
+        )
+        coordinates[_node_id(identity)] = coordinate
+    return coordinates
+
+
+def _node_record(
+    identity: _ResidueIdentity,
+    coordinate: PreprocessingCaCoordinate | None = None,
+) -> PreprocessingGraphNodeMappingRecord:
     return PreprocessingGraphNodeMappingRecord(
         node_id=_node_id(identity),
         condition_name=identity.condition_name,
@@ -3128,6 +3222,9 @@ def _node_record(identity: _ResidueIdentity) -> PreprocessingGraphNodeMappingRec
         residue_id=identity.residue_id,
         resname=identity.resname,
         segid=identity.segid,
+        x_ca=coordinate.x_ca if coordinate is not None else None,
+        y_ca=coordinate.y_ca if coordinate is not None else None,
+        z_ca=coordinate.z_ca if coordinate is not None else None,
     )
 
 
@@ -3283,6 +3380,20 @@ def _require_optional_non_negative_finite_number(
         raise ValueError(
             f"{field_name} must be a finite non-negative number"
         )
+
+
+def _require_optional_finite_number(
+    value: object,
+    field_name: str,
+) -> None:
+    if value is None:
+        return
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+    ):
+        raise ValueError(f"{field_name} must be a finite number or None")
 
 
 def _duplicates(values: tuple[str, ...]) -> tuple[str, ...]:

@@ -66,6 +66,12 @@ or dependency change.
   sampling for Rg, contacts, graph outputs derived from contacts, optional
   scientific CSVs, and JSON-safe workflow provenance. It must not be confused
   with FastAPI/upload/job API work or a WANIA payload schema change.
+- Stage 16.5 representative Cα coordinates: captures condition-specific Cα
+  positions from the first sampled frame, writes `x_ca/y_ca/z_ca`, adds
+  frontend-facing `x/y/z` aliases in graph JSON, and preserves them in WANIA
+  node objects. They are not trajectory averages and do not claim full Kabsch
+  parity. Backbone edges and `EDGE_PRIORITY` remain deferred, as do
+  `InteractionAccumulator` and `build_atom_cache`.
 
 ## Accepted public workflow APIs
 
@@ -248,6 +254,13 @@ scientific CSVs are not WANIA/frontend API payloads.
 When Stage 16.2 frame sampling is used, Rg, contacts, contact aggregate
 frequencies, graph edges, and optional scientific CSVs reflect sampled frames.
 Backend graph schemas and WANIA object JSON payload schemas remain unchanged.
+
+Stage 16.5 populates the existing Cα coordinate columns in `nodes.csv` and
+extends graph/WANIA node objects non-breakingly with `x/y/z` and
+`x_ca/y_ca/z_ca`. Coordinates are representative values from the first
+sampled frame per condition, not a trajectory average and not full Kabsch
+parity. Protein-only graph export reports `node_coordinates_missing` when an
+expected Cα coordinate is unavailable.
 
 Stage 16.3 contact guard metadata is workflow/CLI metadata only. It is not a
 WANIA payload schema change and does not change graph artifact schemas.

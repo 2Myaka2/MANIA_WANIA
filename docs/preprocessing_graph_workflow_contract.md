@@ -141,6 +141,23 @@ typing via `runtime_object.select_atoms("protein").residues`; unavailable or
 empty protein selections fail with deterministic contact issues and never
 silently fall back to all residues.
 
+Stage 16.5 captures representative Cα coordinates from the first sampled
+frame of each condition. The coordinates are bound to selected residues and
+written to existing `nodes.csv` fields `x_ca/y_ca/z_ca`. `graph.json` exposes
+the same values as both `x_ca/y_ca/z_ca` and frontend-facing `x/y/z` aliases.
+Values are JSON-safe floats or null and remain condition-specific.
+
+These representative coordinates are not a trajectory average and are not
+full Kabsch parity. Kabsch-aligned Cα coordinate parity with the reference
+notebook remains future notebook-parity scope. With
+`contact_selection=protein`, missing Cα coordinates for a graph node produce
+`node_coordinates_missing` and fail graph export. With the default `all`
+selection, non-Cα residues may retain null coordinates without breaking
+legacy full-system behavior.
+
+Stage 16.5 does not add backbone edges or change `EDGE_PRIORITY`. It does not
+port `InteractionAccumulator` or `build_atom_cache`.
+
 ## Run options
 
 `PreprocessingGraphWorkflowOptions` records:

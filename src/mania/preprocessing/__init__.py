@@ -58,6 +58,7 @@ from mania.preprocessing.trajectory_contacts import (
     ContactProgressCallback as ContactProgressCallback,
 )
 from mania.preprocessing.trajectory_contacts import (
+    PreprocessingCaCoordinate,
     PreprocessingConditionContactsResult,
     PreprocessingContactComputationIssue,
     PreprocessingContactDefinition,
@@ -268,6 +269,7 @@ __all__ = [
     "OptionalScientificDependencyStatus",
     "PreprocessingCheckedPath",
     "PreprocessingConditionContactsResult",
+    "PreprocessingCaCoordinate",
     "PreprocessingContactComputationIssue",
     "PreprocessingContactDefinition",
     "PreprocessingContactDetectionOptions",

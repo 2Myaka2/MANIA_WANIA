@@ -7,6 +7,7 @@ from pathlib import Path
 
 import mania.preprocessing
 from mania.preprocessing import (
+    PreprocessingCaCoordinate,
     PreprocessingConditionContactsResult,
     PreprocessingConditionLoadResult,
     PreprocessingConditionRuntime,
@@ -241,6 +242,7 @@ def test_public_exports_and_import_safety() -> None:
     assert PreprocessingContactComputationLimits is not None
     assert PreprocessingContactDetectionOptions is not None
     assert PreprocessingContactProgressEvent is not None
+    assert PreprocessingCaCoordinate is not None
     assert PreprocessingContactPairResult is not None
     assert PreprocessingContactFrameResult is not None
     assert PreprocessingConditionContactsResult is not None
@@ -395,6 +397,51 @@ def test_single_frame_detects_contact_and_maps_pair_fields() -> None:
     assert contact.minimum_distance == 3.0
     assert contact.distance_unit == "angstrom"
     assert contact.atom_filter == "heavy"
+    assert [
+        coordinate.to_dict()
+        for coordinate in result.representative_ca_coordinates
+    ] == [
+        {
+            "residue_index": 0,
+            "residue_id": 10,
+            "resname": "ALA",
+            "segid": "PROA",
+            "x_ca": 0.0,
+            "y_ca": 0.0,
+            "z_ca": 0.0,
+        },
+        {
+            "residue_index": 1,
+            "residue_id": 11,
+            "resname": "GLY",
+            "segid": "PROA",
+            "x_ca": 3.0,
+            "y_ca": 0.0,
+            "z_ca": 0.0,
+        },
+    ]
+
+
+def test_representative_ca_coordinates_use_first_sampled_frame() -> None:
+    frames = [
+        FakeTimestep(
+            0.0,
+            positions=((1.0, 2.0, 3.0), (4.0, 5.0, 6.0)),
+        ),
+        FakeTimestep(
+            2.5,
+            positions=((11.0, 12.0, 13.0), (14.0, 15.0, 16.0)),
+        ),
+    ]
+
+    result = compute_condition_contacts(
+        make_loaded_result(two_residue_runtime(1.0, frames=frames))
+    )
+
+    assert [
+        (coordinate.x_ca, coordinate.y_ca, coordinate.z_ca)
+        for coordinate in result.representative_ca_coordinates
+    ] == [(1.0, 2.0, 3.0), (4.0, 5.0, 6.0)]
 
 
 def test_all_contact_selection_uses_runtime_residues() -> None:

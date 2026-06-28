@@ -185,7 +185,15 @@ no NaPi2b-specific residue filtering or residue-name blacklist is used.
 
 Frame sampling reduces the number of frames. `contact_selection` reduces the
 per-frame candidate residue set. Contact limits remain optional smoke/debug
-guards, and the WANIA object JSON contract is unchanged.
+guards.
+
+### Representative Cα Coordinates
+
+Stage 16.5 adds condition-specific representative Cα coordinates to graph and
+WANIA nodes as `x/y/z` and `x_ca/y_ca/z_ca`. The aliases `x/y/z` are for
+frontend layout; `x_ca/y_ca/z_ca` retain the Cα meaning. Values come from the
+first sampled frame, not a trajectory average, and do not claim full Kabsch
+notebook parity. Backbone edges and `EDGE_PRIORITY` remain deferred.
 
 ## Optional Scientific CSV Exports
 

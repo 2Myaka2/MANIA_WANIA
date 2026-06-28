@@ -181,6 +181,15 @@ def _require_optional_non_negative_finite_number(
         _require_non_negative_finite_number(value, field_name)
 
 
+def _require_finite_number(value: object, field_name: str) -> None:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+    ):
+        raise ValueError(f"{field_name} must be a finite number")
+
+
 @dataclass(frozen=True)
 class PreprocessingContactDefinition:
     """Serializable definition of the Stage 13 residue contact MVP."""
@@ -406,6 +415,52 @@ class PreprocessingContactComputationIssue:
 
 
 @dataclass(frozen=True)
+class PreprocessingCaCoordinate:
+    """Representative Cα coordinate for one selected residue."""
+
+    residue_index: int
+    residue_id: int | str | None
+    resname: str
+    segid: str | None
+    x_ca: float
+    y_ca: float
+    z_ca: float
+
+    def __post_init__(self) -> None:
+        _require_non_negative_int(self.residue_index, "residue_index")
+        object.__setattr__(
+            self,
+            "residue_id",
+            _normalize_optional_residue_id(self.residue_id, "residue_id"),
+        )
+        object.__setattr__(
+            self,
+            "resname",
+            _normalize_non_empty_string(self.resname, "resname"),
+        )
+        object.__setattr__(
+            self,
+            "segid",
+            _normalize_optional_string(self.segid, "segid"),
+        )
+        for field_name in ("x_ca", "y_ca", "z_ca"):
+            _require_finite_number(getattr(self, field_name), field_name)
+            object.__setattr__(self, field_name, float(getattr(self, field_name)))
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a deterministic JSON-safe coordinate dictionary."""
+        return {
+            "residue_index": self.residue_index,
+            "residue_id": self.residue_id,
+            "resname": self.resname,
+            "segid": self.segid,
+            "x_ca": self.x_ca,
+            "y_ca": self.y_ca,
+            "z_ca": self.z_ca,
+        }
+
+
+@dataclass(frozen=True)
 class PreprocessingContactPairResult:
     """One residue-residue contact observed in one frame."""
 
@@ -571,6 +626,7 @@ class PreprocessingConditionContactsResult:
     computation_limits: PreprocessingContactComputationLimits = field(
         default_factory=PreprocessingContactComputationLimits
     )
+    representative_ca_coordinates: tuple[PreprocessingCaCoordinate, ...] = ()
     frame_results: tuple[PreprocessingContactFrameResult, ...] = ()
     issues: tuple[PreprocessingContactComputationIssue, ...] = ()
     status: str = "not_computed"
@@ -596,6 +652,18 @@ class PreprocessingConditionContactsResult:
                 "computation_limits must be "
                 "PreprocessingContactComputationLimits"
             )
+        coordinate_indexes: set[int] = set()
+        for coordinate in self.representative_ca_coordinates:
+            if not isinstance(coordinate, PreprocessingCaCoordinate):
+                raise ValueError(
+                    "representative_ca_coordinates must contain "
+                    "PreprocessingCaCoordinate"
+                )
+            if coordinate.residue_index in coordinate_indexes:
+                raise ValueError(
+                    "representative Cα residue indexes must be unique"
+                )
+            coordinate_indexes.add(coordinate.residue_index)
         frame_indexes: set[int] = set()
         for frame_result in self.frame_results:
             if not isinstance(frame_result, PreprocessingContactFrameResult):
@@ -661,6 +729,10 @@ class PreprocessingConditionContactsResult:
             "contact_computation_limits": (
                 self.computation_limits.to_dict()
             ),
+            "representative_ca_coordinates": [
+                coordinate.to_dict()
+                for coordinate in self.representative_ca_coordinates
+            ],
             "frame_count": self.frame_count,
             "contact_count": self.contact_count,
             "passed_frame_count": self.passed_frame_count,
@@ -887,6 +959,8 @@ def compute_condition_contacts(
         condition_load_result.runtime_input.frame_time_ps
     )
     frame_results: list[PreprocessingContactFrameResult] = []
+    representative_ca_coordinates: tuple[PreprocessingCaCoordinate, ...] = ()
+    representative_coordinates_captured = False
     condition_issues: list[PreprocessingContactComputationIssue] = []
     _emit_progress(
         progress_callback,
@@ -926,6 +1000,12 @@ def compute_condition_contacts(
             except Exception:
                 condition_issues.append(_frame_iteration_issue())
                 break
+
+            if not representative_coordinates_captured:
+                representative_ca_coordinates = _representative_ca_coordinates(
+                    residue_items
+                )
+                representative_coordinates_captured = True
 
             try:
                 frame_result = _compute_contact_frame(
@@ -983,6 +1063,7 @@ def compute_condition_contacts(
         selected_options,
         selected_limits,
         status=status,
+        representative_ca_coordinates=representative_ca_coordinates,
         frame_results=tuple(frame_results),
         issues=tuple(condition_issues),
     )
@@ -1470,6 +1551,64 @@ def _residue_candidate(
     ), tuple(issues)
 
 
+def _representative_ca_coordinates(
+    residue_items: tuple[object, ...],
+) -> tuple[PreprocessingCaCoordinate, ...]:
+    coordinates: list[PreprocessingCaCoordinate] = []
+    for residue_index, residue in enumerate(residue_items):
+        coordinate = _residue_ca_coordinate(residue)
+        if coordinate is None:
+            continue
+        raw_resname, has_resname = _read_attribute(residue, "resname")
+        if not has_resname or raw_resname is None:
+            continue
+        resname = str(raw_resname).strip()
+        if not resname:
+            continue
+        coordinates.append(
+            PreprocessingCaCoordinate(
+                residue_index=residue_index,
+                residue_id=_residue_id(residue),
+                resname=resname,
+                segid=_segid(residue),
+                x_ca=coordinate[0],
+                y_ca=coordinate[1],
+                z_ca=coordinate[2],
+            )
+        )
+    return tuple(coordinates)
+
+
+def _residue_ca_coordinate(residue: object) -> _Coordinate | None:
+    atom_group, has_atom_group = _read_attribute(residue, _ATOMS_ATTRIBUTE)
+    if not has_atom_group or atom_group is None:
+        return None
+    try:
+        atom_items = tuple(cast(Iterable[object], atom_group))
+    except Exception:
+        return None
+    fallback_positions = _atom_group_positions(atom_group)
+    for atom_index, atom in enumerate(atom_items):
+        raw_name, has_name = _read_attribute(atom, "name")
+        if (
+            not has_name
+            or raw_name is None
+            or str(raw_name).strip().upper() != "CA"
+        ):
+            continue
+        raw_position, has_position = _read_attribute(atom, _POSITION_ATTRIBUTE)
+        if (
+            (not has_position or raw_position is None)
+            and fallback_positions is not None
+            and atom_index < len(fallback_positions)
+        ):
+            raw_position = fallback_positions[atom_index]
+        if raw_position is None:
+            return None
+        return _coordinate(raw_position)
+    return None
+
+
 def _minimum_distance(
     source_coordinates: tuple[_Coordinate, ...],
     target_coordinates: tuple[_Coordinate, ...],
@@ -1691,6 +1830,7 @@ def _condition_contacts_result(
     computation_limits: PreprocessingContactComputationLimits,
     *,
     status: str,
+    representative_ca_coordinates: tuple[PreprocessingCaCoordinate, ...] = (),
     frame_results: tuple[PreprocessingContactFrameResult, ...] = (),
     issues: tuple[PreprocessingContactComputationIssue, ...] = (),
 ) -> PreprocessingConditionContactsResult:
@@ -1698,6 +1838,7 @@ def _condition_contacts_result(
         condition_name=condition_name,
         options=options,
         computation_limits=computation_limits,
+        representative_ca_coordinates=representative_ca_coordinates,
         frame_results=frame_results,
         issues=issues,
         status=status,
@@ -1707,6 +1848,7 @@ def _condition_contacts_result(
 __all__ = [
     "ContactProgressCallback",
     "PreprocessingConditionContactsResult",
+    "PreprocessingCaCoordinate",
     "PreprocessingContactComputationLimits",
     "PreprocessingContactComputationIssue",
     "PreprocessingContactDefinition",
