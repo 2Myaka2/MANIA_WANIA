@@ -35,6 +35,7 @@ EXPECTED_CROSS_CONDITION_ARTIFACTS = (
 )
 
 EXPECTED_EDGE_TYPE_PRIORITY = (
+    "backbone",
     "hbond",
     "disulfide",
     "salt_bridge",

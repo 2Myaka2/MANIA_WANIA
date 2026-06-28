@@ -117,9 +117,33 @@ trajectory average. Stage 16.5 does not claim full Kabsch parity;
 Kabsch-aligned notebook parity remains future scope.
 
 This is only a non-breaking node extension. Artifact references and the Stage
-16.1 adapter input/output contract are unchanged. Backbone edges,
-`EDGE_PRIORITY`, `InteractionAccumulator`, and `build_atom_cache` remain
-deferred.
+16.1 adapter input/output contract are unchanged.
+
+## Stage 16.6 backbone edge semantics
+
+Stage 16.6 ports `backbone` and the notebook `EDGE_PRIORITY` as a non-breaking
+interaction type value extension. A backend structural edge between
+sequential Cα residues can map to:
+
+```json
+{
+  "interaction": {
+    "primary_type": "backbone",
+    "all_types": ["backbone", "vdw"]
+  }
+}
+```
+
+The adapter preserves `backbone` in `primary_type` and `all_types`. It does
+not interpret structural backbone support as richer typed RIN chemistry, so
+`typed_rin_interactions` remains false. Artifact references and payload shape
+remain unchanged.
+
+Overlapping backbone and contact-derived edges preserve contact-derived
+metrics. Pure backbone structural edges do not invent contact_frequency or
+other contact metrics when none exist. `InteractionAccumulator`,
+`build_atom_cache`, richer typed chemistry, and per-frame parquet parity
+remain deferred.
 
 ## Protein-agnostic run metadata
 
@@ -306,8 +330,8 @@ condition:
 }
 ```
 
-The current static contact graph can provide residue-contact edge data. Typed
-RIN interactions remain future scope.
+The current static graph can provide residue-contact and structural backbone
+edge data. Richer typed RIN interactions remain future scope.
 
 ## Interaction object
 

@@ -47,11 +47,23 @@ graph export stops clearly. The default `all` selection keeps legacy
 full-system behavior: residues without an identifiable Cα may carry null
 coordinates.
 
-## Stage 16.6 deferred scope
+## What Stage 16.6 ports
 
-Backbone edge type support is deferred. The notebook v1.3 `EDGE_PRIORITY`
-update is also deferred. Stage 16.5 does not change the edge schema or edge
-priority.
+The backbone edge type and the notebook v1.3 `EDGE_PRIORITY` update are
+implemented in Stage 16.6. A backbone edge is a structural graph edge between
+sequential protein residues in one condition and chain, derived from their
+representative Cα coordinates. `BACKBONE_MAX_CA_DIST_A = 4.5` Å. Missing Cα
+coordinates, non-sequential indexes, different conditions, and different
+known chain ids do not produce backbone edges.
+
+`backbone` is first in the accepted backend priority, ahead of `hbond`,
+`disulfide`, `salt_bridge`, `ionic`, `cation_pi`, `aromatic_pi`,
+`hydrophobic`, and `vdw`. Notebook compact aliases `saltbridge`, `cationpi`,
+and `aromaticpi` normalize to the accepted backend snake_case names.
+
+For 690 continuous protein residues in one chain, local manual validation
+should find approximately 689 backbone edges per condition. Default CI uses
+small synthetic inputs instead of real MD data.
 
 ## Stage 16.7+ deferred scope
 
@@ -69,6 +81,6 @@ notebook chemistry parity also remain future work.
   blacklist or protein-specific hardcoding is introduced.
 - The backend uses `x_ca/y_ca/z_ca`; notebook-only `xca/yca/zca` names are not
   competing backend fields.
-- Backbone and `EDGE_PRIORITY` parity remain deferred to Stage 16.6.
+- Backbone edge type and `EDGE_PRIORITY` are implemented in Stage 16.6.
 - The accumulator, atom cache, richer chemistry, and parquet parity remain
   deferred to Stage 16.7+.

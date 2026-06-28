@@ -112,6 +112,7 @@ from mania.preprocessing.trajectory_graph_diagnostics import (
     run_preprocessing_graph_diagnostics,
 )
 from mania.preprocessing.trajectory_graph_export import (
+    BACKBONE_MAX_CA_DIST_A,
     PreprocessingGraphCsvValidationIssue,
     PreprocessingGraphCsvValidationResult,
     PreprocessingGraphEdgeMappingRecord,
@@ -266,6 +267,7 @@ compare_contacts_outputs = getattr(
 )
 
 __all__ = [
+    "BACKBONE_MAX_CA_DIST_A",
     "OptionalScientificDependencyStatus",
     "PreprocessingCheckedPath",
     "PreprocessingConditionContactsResult",

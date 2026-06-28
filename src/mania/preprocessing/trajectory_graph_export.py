@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 import math
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from io import StringIO
 from json import JSONDecodeError
 from json import dumps as _json_dumps
@@ -30,6 +30,7 @@ from mania.preprocessing.trajectory_contacts import (
 
 _NODE_KIND = "residue"
 _EDGE_KIND = "residue_contact"
+_BACKBONE_EDGE_KIND = "backbone"
 _SOURCE = "preprocessing_contacts"
 _ID_SEPARATOR = "|"
 _ID_ESCAPE = "\\"
@@ -37,6 +38,12 @@ _EDGE_TYPE_SEPARATOR = "|"
 _EDGE_TYPE_PRIORITY_INDEX = {
     edge_type: index for index, edge_type in enumerate(EDGE_TYPE_PRIORITY)
 }
+_EDGE_TYPE_ALIASES = {
+    "saltbridge": "salt_bridge",
+    "cationpi": "cation_pi",
+    "aromaticpi": "aromatic_pi",
+}
+BACKBONE_MAX_CA_DIST_A = 4.5
 _PATHLIKE_TYPES = (str, Path, PathLike)
 _EDGES_CSV_PUBLIC_WRITER_NAME = "write_preprocessing_graph_" + "edges_csv"
 _GRAPH_CSV_PATH_TYPES = (str, Path)
@@ -424,12 +431,26 @@ class PreprocessingGraphExportMappingResult:
         """Return the number of mapped edges."""
         return len(self.edges)
 
+    @property
+    def backbone_edge_counts(self) -> dict[str, int]:
+        """Return deterministic backbone edge counts keyed by condition."""
+        counts: dict[str, int] = {}
+        for edge in self.edges:
+            if edge.all_edge_types is not None and (
+                _BACKBONE_EDGE_KIND in edge.all_edge_types
+            ):
+                counts[edge.condition_name] = (
+                    counts.get(edge.condition_name, 0) + 1
+                )
+        return dict(sorted(counts.items()))
+
     def to_dict(self) -> dict[str, object]:
         """Return a JSON-safe mapping result dictionary."""
         return {
             "passed": self.passed,
             "node_count": self.node_count,
             "edge_count": self.edge_count,
+            "backbone_edge_counts": self.backbone_edge_counts,
             "nodes": [node.to_dict() for node in self.nodes],
             "edges": [edge.to_dict() for edge in self.edges],
             "issues": [issue.to_dict() for issue in self.issues],
@@ -1015,6 +1036,13 @@ class _AggregateKey:
     target_node_id: str
     distance_unit: str
     atom_filter: str
+
+
+@dataclass(frozen=True)
+class _EdgePairKey:
+    condition_name: str
+    source_node_id: str
+    target_node_id: str
 
 
 def build_preprocessing_graph_export_mapping(
@@ -2603,6 +2631,14 @@ def _map_condition_result(
     aggregate_distances: dict[_AggregateKey, list[float]] = {}
     coordinates_by_node_id = _ca_coordinates_by_node_id(condition_result)
 
+    if condition_result.options.contact_selection == "protein":
+        for coordinate in condition_result.representative_ca_coordinates:
+            node = _node_record_from_ca_coordinate(
+                condition_result.condition_name,
+                coordinate,
+            )
+            nodes_by_id.setdefault(node.node_id, node)
+
     for frame_index, frame_result in enumerate(condition_result.frame_results):
         if not frame_result.passed:
             issues.append(
@@ -2630,7 +2666,20 @@ def _map_condition_result(
         for key, distance in frame_distances.items():
             aggregate_distances.setdefault(key, []).append(distance)
 
-    if included_frame_count == 0 or not aggregate_distances:
+    contact_edges = tuple(
+        _edge_record(key, distances, included_frame_count)
+        for key, distances in sorted(
+            aggregate_distances.items(),
+            key=lambda item: _edge_id(item[0]),
+        )
+    )
+    backbone_pairs = _backbone_edge_pairs(
+        condition_result,
+        nodes_by_id=nodes_by_id,
+    )
+    edges = _merge_backbone_edges(contact_edges, backbone_pairs)
+
+    if not edges:
         issues.append(
             PreprocessingGraphExportMappingIssue(
                 kind="empty_contacts_result",
@@ -2638,7 +2687,7 @@ def _map_condition_result(
                 field=f"condition_results[{condition_index}]",
                 message=(
                     "Condition contacts result contains no graph-mappable "
-                    "passed-frame contacts."
+                    "passed-frame contacts or backbone edges."
                 ),
             )
         )
@@ -2661,13 +2710,6 @@ def _map_condition_result(
                     )
                 )
 
-    edges = tuple(
-        _edge_record(key, distances, included_frame_count)
-        for key, distances in sorted(
-            aggregate_distances.items(),
-            key=lambda item: _edge_id(item[0]),
-        )
-    )
     return edges, tuple(issues)
 
 
@@ -3211,6 +3253,145 @@ def _ca_coordinates_by_node_id(
     return coordinates
 
 
+def _node_record_from_ca_coordinate(
+    condition_name: str,
+    coordinate: PreprocessingCaCoordinate,
+) -> PreprocessingGraphNodeMappingRecord:
+    identity = _ResidueIdentity(
+        condition_name=condition_name,
+        residue_index=coordinate.residue_index,
+        residue_id=_residue_id(coordinate.residue_id, coordinate.residue_index),
+        resname=coordinate.resname,
+        segid=coordinate.segid,
+    )
+    return _node_record(identity, coordinate)
+
+
+def _backbone_edge_pairs(
+    condition_result: PreprocessingConditionContactsResult,
+    *,
+    nodes_by_id: dict[str, PreprocessingGraphNodeMappingRecord],
+) -> tuple[_EdgePairKey, ...]:
+    if condition_result.options.contact_selection != "protein":
+        return ()
+
+    nodes_by_chain: dict[str | None, list[PreprocessingGraphNodeMappingRecord]] = {}
+    for node in nodes_by_id.values():
+        if (
+            node.condition_name == condition_result.condition_name
+            and node.x_ca is not None
+            and node.y_ca is not None
+            and node.z_ca is not None
+        ):
+            nodes_by_chain.setdefault(node.segid, []).append(node)
+
+    pairs: list[_EdgePairKey] = []
+    for chain_nodes in nodes_by_chain.values():
+        ordered_nodes = sorted(
+            chain_nodes,
+            key=lambda node: (node.residue_index, node.node_id),
+        )
+        for source, target in zip(ordered_nodes, ordered_nodes[1:], strict=False):
+            if target.residue_index != source.residue_index + 1:
+                continue
+            if _ca_distance(source, target) > BACKBONE_MAX_CA_DIST_A:
+                continue
+            pairs.append(
+                _EdgePairKey(
+                    condition_name=condition_result.condition_name,
+                    source_node_id=source.node_id,
+                    target_node_id=target.node_id,
+                )
+            )
+    return tuple(sorted(pairs, key=_backbone_edge_id))
+
+
+def _ca_distance(
+    source: PreprocessingGraphNodeMappingRecord,
+    target: PreprocessingGraphNodeMappingRecord,
+) -> float:
+    if (
+        source.x_ca is None
+        or source.y_ca is None
+        or source.z_ca is None
+        or target.x_ca is None
+        or target.y_ca is None
+        or target.z_ca is None
+    ):
+        raise ValueError("Backbone distance requires complete Cα coordinates")
+    return math.sqrt(
+        (target.x_ca - source.x_ca) ** 2
+        + (target.y_ca - source.y_ca) ** 2
+        + (target.z_ca - source.z_ca) ** 2
+    )
+
+
+def _merge_backbone_edges(
+    contact_edges: tuple[PreprocessingGraphEdgeMappingRecord, ...],
+    backbone_pairs: tuple[_EdgePairKey, ...],
+) -> tuple[PreprocessingGraphEdgeMappingRecord, ...]:
+    backbone_by_pair = {
+        _canonical_edge_pair(
+            pair.condition_name,
+            pair.source_node_id,
+            pair.target_node_id,
+        ): pair
+        for pair in backbone_pairs
+    }
+    merged_edges: list[PreprocessingGraphEdgeMappingRecord] = []
+
+    for edge in contact_edges:
+        pair_key = _canonical_edge_pair(
+            edge.condition_name,
+            edge.source_node_id,
+            edge.target_node_id,
+        )
+        backbone_pair = backbone_by_pair.pop(pair_key, None)
+        if backbone_pair is None:
+            merged_edges.append(edge)
+            continue
+        merged_edges.append(
+            replace(
+                edge,
+                all_edge_types=(*edge.all_edge_types, _BACKBONE_EDGE_KIND)
+                if edge.all_edge_types is not None
+                else (edge.edge_kind, _BACKBONE_EDGE_KIND),
+            )
+        )
+
+    for pair in backbone_by_pair.values():
+        merged_edges.append(
+            PreprocessingGraphEdgeMappingRecord(
+                edge_id=_backbone_edge_id(pair),
+                source_node_id=pair.source_node_id,
+                target_node_id=pair.target_node_id,
+                condition_name=pair.condition_name,
+                edge_kind=_BACKBONE_EDGE_KIND,
+            )
+        )
+    return tuple(sorted(merged_edges, key=lambda edge: edge.edge_id))
+
+
+def _canonical_edge_pair(
+    condition_name: str,
+    source_node_id: str,
+    target_node_id: str,
+) -> tuple[str, str, str]:
+    source, target = sorted((source_node_id, target_node_id))
+    return condition_name, source, target
+
+
+def _backbone_edge_id(pair: _EdgePairKey) -> str:
+    return _join_identifier_parts(
+        (
+            pair.condition_name,
+            pair.source_node_id,
+            pair.target_node_id,
+            _BACKBONE_EDGE_KIND,
+        )
+    )
+
+
 def _node_record(
     identity: _ResidueIdentity,
     coordinate: PreprocessingCaCoordinate | None = None,
@@ -3329,7 +3510,7 @@ def _edge_type_string(value: object, field_name: str) -> str:
     edge_type = _non_empty_string(value, field_name)
     if _EDGE_TYPE_SEPARATOR in edge_type:
         raise ValueError(f"{field_name} must not contain {_EDGE_TYPE_SEPARATOR!r}")
-    return edge_type
+    return _EDGE_TYPE_ALIASES.get(edge_type, edge_type)
 
 
 def _non_empty_string(value: object, field_name: str) -> str:

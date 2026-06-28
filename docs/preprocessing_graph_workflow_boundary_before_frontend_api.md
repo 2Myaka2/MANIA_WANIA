@@ -70,8 +70,12 @@ or dependency change.
   positions from the first sampled frame, writes `x_ca/y_ca/z_ca`, adds
   frontend-facing `x/y/z` aliases in graph JSON, and preserves them in WANIA
   node objects. They are not trajectory averages and do not claim full Kabsch
-  parity. Backbone edges and `EDGE_PRIORITY` remain deferred, as do
-  `InteractionAccumulator` and `build_atom_cache`.
+  parity.
+- Stage 16.6 backbone graph semantics: adds structural `backbone` edges for
+  sequential protein Cα nodes in one condition and chain within
+  `BACKBONE_MAX_CA_DIST_A = 4.5` Å, and places `backbone` first in
+  `EDGE_PRIORITY`. `InteractionAccumulator`, `build_atom_cache`, richer typed
+  chemistry, and per-frame parquet parity remain deferred.
 
 ## Accepted public workflow APIs
 
@@ -261,6 +265,13 @@ extends graph/WANIA node objects non-breakingly with `x/y/z` and
 sampled frame per condition, not a trajectory average and not full Kabsch
 parity. Protein-only graph export reports `node_coordinates_missing` when an
 expected Cα coordinate is unavailable.
+
+Stage 16.6 keeps the accepted backend `graph/edges.csv` columns. `backbone`
+has priority over contact-derived types, while `all_edge_types` and
+`n_edge_types` preserve every unique type. An overlapping backbone/contact
+edge retains its contact metrics. A pure structural backbone edge leaves
+contact metrics empty; it does not invent `contact_frequency`. Notebook
+compact type names are aliases only and normalize to backend snake_case.
 
 Stage 16.3 contact guard metadata is workflow/CLI metadata only. It is not a
 WANIA payload schema change and does not change graph artifact schemas.

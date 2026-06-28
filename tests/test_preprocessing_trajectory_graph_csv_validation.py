@@ -168,6 +168,7 @@ def test_existing_graph_exports_still_work() -> None:
         "n_edge_types",
     )
     assert EDGE_TYPE_PRIORITY == (
+        "backbone",
         "hbond",
         "disulfide",
         "salt_bridge",

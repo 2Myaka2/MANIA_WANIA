@@ -232,6 +232,26 @@ def test_builds_multi_condition_payload(tmp_path: Path) -> None:
     assert "condition" not in result.payload
 
 
+def test_preserves_backbone_interaction_without_enabling_typed_rin(
+    tmp_path: Path,
+) -> None:
+    backend_graph = load_fixture_graph()
+    edge = backend_graph["edges"][0]
+    edge["edge_type"] = "backbone"
+    edge["all_edge_types"] = "backbone|vdw"
+    edge["n_edge_types"] = "2"
+
+    _, payload, issues = build_payload(tmp_path, graph_payload=backend_graph)
+
+    assert issues == []
+    graph = payload["graph"]
+    assert graph["edges"][0]["interaction"] == {
+        "primary_type": "backbone",
+        "all_types": ["backbone", "vdw"],
+    }
+    assert payload["capabilities"]["typed_rin_interactions"] is False
+
+
 def test_wania_nodes_preserve_json_safe_ca_coordinates(
     tmp_path: Path,
 ) -> None:

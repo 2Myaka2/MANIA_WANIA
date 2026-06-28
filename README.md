@@ -193,7 +193,13 @@ Stage 16.5 adds condition-specific representative Cα coordinates to graph and
 WANIA nodes as `x/y/z` and `x_ca/y_ca/z_ca`. The aliases `x/y/z` are for
 frontend layout; `x_ca/y_ca/z_ca` retain the Cα meaning. Values come from the
 first sampled frame, not a trajectory average, and do not claim full Kabsch
-notebook parity. Backbone edges and `EDGE_PRIORITY` remain deferred.
+notebook parity.
+
+Stage 16.6 adds structural `backbone` edges for sequential protein Cα nodes in
+one condition and chain within 4.5 Å. `backbone` is the highest-priority edge
+type, while overlapping contact types and metrics are preserved. Pure
+backbone edges do not invent contact frequency. Broader notebook chemistry
+parity remains deferred, and `typed_rin_interactions` remains false.
 
 ## Optional Scientific CSV Exports
 

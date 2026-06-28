@@ -42,6 +42,7 @@ NODE_COLUMNS = (
 )
 
 EDGE_TYPE_PRIORITY = (
+    "backbone",
     "hbond",
     "disulfide",
     "salt_bridge",

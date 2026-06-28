@@ -148,6 +148,22 @@ def test_wania_contract_doc_mentions_stage_16_5_coordinate_extension() -> None:
         assert phrase in text
 
 
+def test_wania_contract_doc_mentions_stage_16_6_backbone_extension() -> None:
+    text = normalized(doc_text())
+
+    for phrase in (
+        "Stage 16.6 backbone edge semantics",
+        "primary_type",
+        "backbone",
+        "all_types",
+        "typed_rin_interactions",
+        "remains false",
+        "contact-derived metrics",
+        "do not invent contact_frequency",
+    ):
+        assert phrase in text
+
+
 def test_wania_payload_sample_is_valid_object_json() -> None:
     payload = load_payload()
 

@@ -155,8 +155,32 @@ notebook remains future notebook-parity scope. With
 selection, non-Cα residues may retain null coordinates without breaking
 legacy full-system behavior.
 
-Stage 16.5 does not add backbone edges or change `EDGE_PRIORITY`. It does not
-port `InteractionAccumulator` or `build_atom_cache`.
+Stage 16.6 ports the notebook backbone edge type and `EDGE_PRIORITY` at the
+graph mapping boundary. For the reliable protein selection scope, a backbone
+edge connects sequential residue indexes in the same condition and known
+chain when both nodes have representative Cα coordinates no farther apart
+than `BACKBONE_MAX_CA_DIST_A = 4.5` Å. It does not connect missing indexes,
+non-sequential residues, different conditions, or different known chains.
+
+The accepted priority is `backbone`, `hbond`, `disulfide`, `salt_bridge`,
+`ionic`, `cation_pi`, `aromatic_pi`, `hydrophobic`, then `vdw`. Notebook
+compact aliases `saltbridge`, `cationpi`, and `aromaticpi` normalize to those
+backend snake_case names. Existing `graph/edges.csv` columns remain unchanged.
+For a pair with several types, `edge_type` is the highest-priority type,
+`all_edge_types` retains all unique types in priority order, and
+`n_edge_types` is their count.
+
+Backbone is structural, not a contact-engine rewrite. A pure backbone edge
+leaves contact frequency and distance metrics empty instead of inventing
+`contact_frequency`. When backbone overlaps a contact-derived edge, graph
+mapping retains the contact-derived metrics. The mapping result reports
+deterministic `backbone_edge_counts` keyed by condition. For local manual
+validation, one continuous 690-residue protein chain should produce
+approximately 689 backbone edges per condition; default CI uses small
+synthetic graphs.
+
+Stage 16.6 does not port `InteractionAccumulator`, `build_atom_cache`, richer
+typed chemistry, or per-frame parquet parity.
 
 ## Run options
 
