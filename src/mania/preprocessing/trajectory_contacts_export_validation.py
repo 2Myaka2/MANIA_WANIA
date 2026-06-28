@@ -26,6 +26,11 @@ _CONTACTS_PERFRAME_HEADER = (
     "atom_filter",
     "frame_passed",
 )
+_TYPED_CONTACTS_PERFRAME_HEADER = (
+    *_CONTACTS_PERFRAME_HEADER[:11],
+    "edge_type",
+    *_CONTACTS_PERFRAME_HEADER[11:],
+)
 _CONTACT_EDGES_HEADER = (
     "condition_name",
     "source_residue_index",
@@ -247,7 +252,10 @@ def validate_contacts_perframe_csv(
     header = read_result.header
     rows = read_result.rows
 
-    if header != _CONTACTS_PERFRAME_HEADER:
+    if header not in (
+        _CONTACTS_PERFRAME_HEADER,
+        _TYPED_CONTACTS_PERFRAME_HEADER,
+    ):
         return _perframe_file_issue_result(
             path,
             "invalid_header",
@@ -267,6 +275,7 @@ def validate_contacts_perframe_csv(
             row,
             row_number=row_number,
             duplicate_keys=duplicate_keys,
+            header=header,
         )
         issues.extend(row_issues)
         if row_issues:
@@ -360,22 +369,25 @@ def _validate_perframe_row(
     *,
     row_number: int,
     duplicate_keys: set[tuple[str, ...]],
+    header: tuple[str, ...],
 ) -> tuple[
     list[PreprocessingContactsPerFrameCsvValidationIssue],
     _PerFrameRowSummary,
 ]:
     issues: list[PreprocessingContactsPerFrameCsvValidationIssue] = []
-    if len(row) != len(_CONTACTS_PERFRAME_HEADER):
+    if len(row) != len(header):
         issues.append(
             _perframe_issue(
                 "invalid_column_count",
                 row_number,
                 "row",
-                "CSV row must contain exactly 15 columns.",
+                f"CSV row must contain exactly {len(header)} columns.",
             )
         )
 
-    fields = _row_fields(row, _CONTACTS_PERFRAME_HEADER)
+    fields = _row_fields(row, header)
+    typed_row = header == _TYPED_CONTACTS_PERFRAME_HEADER
+    edge_type = fields.get("edge_type", "residue_contact")
     _add_required_issues(
         issues,
         row_number,
@@ -389,11 +401,28 @@ def _validate_perframe_row(
             "target_resname",
             "minimum_distance",
             "distance_unit",
-            "atom_filter",
             "frame_passed",
         ),
         _perframe_issue,
     )
+    if typed_row and edge_type not in ("residue_contact", "backbone"):
+        issues.append(
+            _perframe_issue(
+                "invalid_edge_type",
+                row_number,
+                "edge_type",
+                "Edge type must be residue_contact or backbone.",
+            )
+        )
+    if edge_type == "residue_contact" and not fields["atom_filter"]:
+        issues.append(
+            _perframe_issue(
+                "missing_required_value",
+                row_number,
+                "atom_filter",
+                "Required value is missing.",
+            )
+        )
 
     frame_index = _validate_non_negative_integer(
         fields["frame_index"],
@@ -442,12 +471,13 @@ def _validate_perframe_row(
         issues=issues,
         issue_factory=_perframe_issue,
     )
-    _validate_atom_filter(
-        fields["atom_filter"],
-        row_number=row_number,
-        issues=issues,
-        issue_factory=_perframe_issue,
-    )
+    if fields["atom_filter"]:
+        _validate_atom_filter(
+            fields["atom_filter"],
+            row_number=row_number,
+            issues=issues,
+            issue_factory=_perframe_issue,
+        )
     if fields["frame_passed"] not in ("", "true", "false"):
         issues.append(
             _perframe_issue(
@@ -480,6 +510,7 @@ def _validate_perframe_row(
             "target_resname",
             "source_segid",
             "target_segid",
+            *(('edge_type',) if typed_row else ()),
             "distance_unit",
             "atom_filter",
         )

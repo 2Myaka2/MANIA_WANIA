@@ -39,6 +39,8 @@ _DISTANCE_DEFINITION = "minimum_selected_atom_distance"
 _FRAME_SCOPE = "per_frame"
 _PAIR_SCOPE = "distinct_residue_pair"
 _RESIDUE_CONTACT_EDGE_TYPE = "residue_contact"
+_BACKBONE_EDGE_TYPE = "backbone"
+BACKBONE_MAX_CA_DIST_A = 4.5
 _CONTACT_RESULT_STATUSES = (
     "not_computed",
     "computed",
@@ -568,6 +570,91 @@ class PreprocessingContactPairResult:
 
 
 @dataclass(frozen=True)
+class PreprocessingBackboneObservation:
+    """One structural backbone observation in one sampled frame."""
+
+    source_residue_index: int
+    target_residue_index: int
+    source_resname: str
+    target_resname: str
+    ca_distance: float
+    distance_unit: str = "angstrom"
+    source_residue_id: int | str | None = None
+    target_residue_id: int | str | None = None
+    source_segid: str | None = None
+    target_segid: str | None = None
+    edge_type: str = _BACKBONE_EDGE_TYPE
+
+    def __post_init__(self) -> None:
+        _require_non_negative_int(
+            self.source_residue_index,
+            "source_residue_index",
+        )
+        _require_non_negative_int(
+            self.target_residue_index,
+            "target_residue_index",
+        )
+        if self.target_residue_index != self.source_residue_index + 1:
+            raise ValueError("backbone residue indexes must be sequential")
+        for field_name in ("source_resname", "target_resname"):
+            object.__setattr__(
+                self,
+                field_name,
+                _normalize_non_empty_string(
+                    getattr(self, field_name),
+                    field_name,
+                ),
+            )
+        _require_non_negative_finite_number(
+            self.ca_distance,
+            "ca_distance",
+        )
+        object.__setattr__(
+            self,
+            "distance_unit",
+            _normalize_unit(self.distance_unit),
+        )
+        for field_name in ("source_residue_id", "target_residue_id"):
+            object.__setattr__(
+                self,
+                field_name,
+                _normalize_optional_residue_id(
+                    getattr(self, field_name),
+                    field_name,
+                ),
+            )
+        for field_name in ("source_segid", "target_segid"):
+            object.__setattr__(
+                self,
+                field_name,
+                _normalize_optional_string(
+                    getattr(self, field_name),
+                    field_name,
+                ),
+            )
+        if self.source_segid != self.target_segid:
+            raise ValueError("backbone residues must have the same chain id")
+        if self.edge_type != _BACKBONE_EDGE_TYPE:
+            raise ValueError("edge_type must be 'backbone'")
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a deterministic JSON-safe observation dictionary."""
+        return {
+            "source_residue_index": self.source_residue_index,
+            "target_residue_index": self.target_residue_index,
+            "source_resname": self.source_resname,
+            "target_resname": self.target_resname,
+            "ca_distance": self.ca_distance,
+            "distance_unit": self.distance_unit,
+            "source_residue_id": self.source_residue_id,
+            "target_residue_id": self.target_residue_id,
+            "source_segid": self.source_segid,
+            "target_segid": self.target_segid,
+            "edge_type": self.edge_type,
+        }
+
+
+@dataclass(frozen=True)
 class PreprocessingContactFrameResult:
     """Contacts detected for one condition frame."""
 
@@ -575,6 +662,7 @@ class PreprocessingContactFrameResult:
     frame_index: int
     time_ps: float | None = None
     contacts: tuple[PreprocessingContactPairResult, ...] = ()
+    backbone_observations: tuple[PreprocessingBackboneObservation, ...] = ()
     issues: tuple[PreprocessingContactComputationIssue, ...] = ()
 
     def __post_init__(self) -> None:
@@ -595,6 +683,12 @@ class PreprocessingContactFrameResult:
             if not isinstance(contact, PreprocessingContactPairResult):
                 raise ValueError(
                     "contacts must contain PreprocessingContactPairResult"
+                )
+        for observation in self.backbone_observations:
+            if not isinstance(observation, PreprocessingBackboneObservation):
+                raise ValueError(
+                    "backbone_observations must contain "
+                    "PreprocessingBackboneObservation"
                 )
         for issue in self.issues:
             if not isinstance(issue, PreprocessingContactComputationIssue):
@@ -621,6 +715,11 @@ class PreprocessingContactFrameResult:
             "time_ps": self.time_ps,
             "contact_count": self.contact_count,
             "contacts": [contact.to_dict() for contact in self.contacts],
+            "backbone_observation_count": len(self.backbone_observations),
+            "backbone_observations": [
+                observation.to_dict()
+                for observation in self.backbone_observations
+            ],
             "issues": [issue.to_dict() for issue in self.issues],
             "passed": self.passed,
         }
@@ -1446,6 +1545,11 @@ def _compute_contact_frame(
             contact.target_resname,
         )
     )
+    backbone_observations = (
+        _backbone_observations(atom_cache)
+        if options.contact_selection == "protein"
+        else ()
+    )
     _emit_progress(
         progress_callback,
         PreprocessingContactProgressEvent(
@@ -1462,6 +1566,7 @@ def _compute_contact_frame(
         frame_index=frame_index,
         time_ps=_frame_time(timestep, frame_index, frame_time_ps),
         contacts=tuple(contacts),
+        backbone_observations=backbone_observations,
         issues=tuple(issues),
     )
 
@@ -1700,6 +1805,43 @@ def _representative_ca_coordinates(
     return tuple(coordinates)
 
 
+def _backbone_observations(
+    atom_cache: tuple[ContactResidueAtomCacheEntry, ...],
+) -> tuple[PreprocessingBackboneObservation, ...]:
+    observations: list[PreprocessingBackboneObservation] = []
+    for source, target in zip(atom_cache, atom_cache[1:], strict=False):
+        if target.residue_index != source.residue_index + 1:
+            continue
+        if source.segid != target.segid:
+            continue
+        if source.resname is None or target.resname is None:
+            continue
+        source_coordinate = _residue_ca_coordinate(source)
+        target_coordinate = _residue_ca_coordinate(target)
+        if source_coordinate is None or target_coordinate is None:
+            continue
+        ca_distance = _coordinate_distance(
+            source_coordinate,
+            target_coordinate,
+        )
+        if ca_distance > BACKBONE_MAX_CA_DIST_A:
+            continue
+        observations.append(
+            PreprocessingBackboneObservation(
+                source_residue_index=source.residue_index,
+                target_residue_index=target.residue_index,
+                source_resname=source.resname,
+                target_resname=target.resname,
+                ca_distance=ca_distance,
+                source_residue_id=source.residue_id,
+                target_residue_id=target.residue_id,
+                source_segid=source.segid,
+                target_segid=target.segid,
+            )
+        )
+    return tuple(observations)
+
+
 def _residue_ca_coordinate(
     entry: ContactResidueAtomCacheEntry,
 ) -> _Coordinate | None:
@@ -1744,6 +1886,14 @@ def _minimum_distance(
             if minimum is None or distance < minimum:
                 minimum = distance
     return minimum
+
+
+def _coordinate_distance(source: _Coordinate, target: _Coordinate) -> float:
+    return math.sqrt(
+        (source[0] - target[0]) ** 2
+        + (source[1] - target[1]) ** 2
+        + (source[2] - target[2]) ** 2
+    )
 
 
 def _coordinate(value: object) -> _Coordinate | None:
@@ -1968,11 +2118,13 @@ def _condition_contacts_result(
 
 
 __all__ = [
+    "BACKBONE_MAX_CA_DIST_A",
     "ContactProgressCallback",
     "InteractionAccumulator",
     "InteractionAggregateResult",
     "PreprocessingConditionContactsResult",
     "PreprocessingCaCoordinate",
+    "PreprocessingBackboneObservation",
     "PreprocessingContactComputationLimits",
     "PreprocessingContactComputationIssue",
     "PreprocessingContactDefinition",

@@ -204,9 +204,24 @@ after the trajectory advances, preserving frame sampling, contact output, and
 
 This cache changes no accepted scientific CSV, graph, or WANIA object JSON
 schema, makes no benchmark or timing guarantee, and adds no neighbor-search
-backend. Per-frame contact/parquet parity remains deferred to Stage 16.9,
-richer aromatic/cation-pi chemistry remains deferred to Stage 16.10, and
-analysis metrics parity remains deferred to Stage 16.11.
+backend.
+
+Stage 16.9 ports notebook per-frame interaction export semantics into the
+accepted backend CSV path. For `contact_selection=protein`, each passing
+sampled frame can add `backbone` rows to
+`contacts/contacts_perframe.csv` when sequential same-chain residues have
+available Cα coordinates no farther apart than 4.5 Å in that frame. The CSV
+distance is the per-frame Cα distance, and source frame indexes are preserved
+without renumbering. Contact-derived `residue_contact` rows remain compatible;
+`contact_selection=all` retains its previous scope.
+
+These observations do not enter `contact_edges.csv` or the contact
+accumulator. Contact safety failures still skip incomplete frames. Graph
+backbone priority and pure-edge metrics remain Stage 16.6 behavior, and the
+WANIA object JSON contract remains unchanged. This is not a full temporal RIN,
+richer chemistry parity, or parquet dependency parity. Notebook parquet
+format parity remains future export-format scope; richer aromatic/cation-pi
+chemistry and analysis metrics remain deferred to Stages 16.10 and 16.11.
 
 ## Run options
 
@@ -669,6 +684,10 @@ candidate residue-pair count on stderr while stdout remains final JSON only.
 plus `--export-contact-edges`. It deliberately does not include
 `--export-contacts-perframe`; per-frame contacts require the explicit
 `--export-contacts-perframe` flag.
+
+Stage 16.9 may add per-frame `backbone` observations to that CSV for the
+protein selection. It preserves sampled source indexes and remains an
+optional CSV export; no parquet dependency or full temporal RIN is added.
 
 The optional scientific CSV export result is included in the final JSON under
 `scientific_csv_export`. Without flags it is a skipped success. If a requested

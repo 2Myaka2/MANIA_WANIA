@@ -94,11 +94,34 @@ This stage makes no benchmark or timing guarantee and introduces no new
 neighbor-search backend. Default scientific behavior, accepted output
 schemas, and the WANIA object JSON contract remain unchanged.
 
+## What Stage 16.9 ports
+
+Per-frame contact export parity is implemented in Stage 16.9 for accepted
+backend interaction types. When `contact_selection=protein`,
+`contacts/contacts_perframe.csv` includes structural `backbone` observations
+for sequential residues in the same condition and chain whose live sampled-
+frame Cα distance is at most `BACKBONE_MAX_CA_DIST_A = 4.5` Å. The distance
+field contains that Cα distance. Original source frame indexes are preserved;
+sampled frames are not renumbered.
+
+Contact-derived `residue_contact` rows remain compatible, and `all` selection
+keeps its previous all-residue contact behavior. Safety-limit failures do not
+produce fake-complete backbone rows. Aggregate contacts, Stage 16.6 graph
+backbone/priority behavior, and the WANIA object JSON contract are unchanged.
+This CSV is not a full temporal RIN and does not enable
+`typed_rin_interactions` or `temporal_interactions`.
+
+Notebook v1.2 writes parquet. Backend Stage 16.9 ports the semantics into the
+accepted CSV export path; parquet format parity remains future export-format
+scope. Richer aromatic/cation-pi chemistry remains deferred to Stage 16.10,
+and analysis metrics parity remains deferred to Stage 16.11.
+
 ## Deferred Stage 16 parity scope
 
+- `InteractionAccumulator`: implemented in Stage 16.7.
 - `build_atom_cache`: implemented in Stage 16.8.
-- Per-frame contact parity remains deferred to Stage 16.9, including parquet
-  parity.
+- Per-frame contact export parity: implemented in Stage 16.9.
+- Parquet format parity remains future export-format scope.
 - Richer aromatic/cation-pi chemistry remains deferred to Stage 16.10.
 - Analysis metrics parity remains deferred to Stage 16.11.
 
@@ -119,5 +142,7 @@ chemistry parity also remain future work.
   accepted output schemas.
 - `build_atom_cache` is implemented in Stage 16.8 without changing accepted
   output schemas or contact scientific semantics.
-- Per-frame parquet parity, richer typed chemistry, and analysis metrics
-  remain deferred to Stages 16.9–16.11.
+- Per-frame contact export parity is implemented in Stage 16.9 without adding
+  full temporal RIN or changing the WANIA object JSON contract.
+- Parquet format parity, richer typed chemistry, and analysis metrics remain
+  future scope; chemistry and metrics are deferred to Stages 16.10–16.11.

@@ -36,6 +36,12 @@ _CSV_HEADER = (
     "atom_filter",
     "frame_passed",
 )
+_TYPED_CSV_HEADER = (
+    *_CSV_HEADER[:11],
+    "edge_type",
+    *_CSV_HEADER[11:],
+)
+_RESIDUE_CONTACT_EDGE_TYPE = "residue_contact"
 _AGGREGATE_CSV_HEADER = (
     "condition_name",
     "source_residue_index",
@@ -265,9 +271,9 @@ def write_contacts_perframe_csv(
         for condition_result in condition_results
     )
 
-    rows: list[tuple[str, ...]] = []
     issues: list[PreprocessingContactsPerFrameCsvWriteIssue] = []
     skipped_frame_count = 0
+    included_frames: list[PreprocessingContactFrameResult] = []
     for condition_index, condition_result in enumerate(condition_results):
         if not condition_result.passed:
             issues.append(
@@ -294,7 +300,23 @@ def write_contacts_perframe_csv(
                 if not include_failed_frames:
                     skipped_frame_count += 1
                     continue
-            rows.extend(_contact_rows(frame_result))
+            included_frames.append(frame_result)
+
+    include_edge_type = any(
+        condition_result.options.contact_selection == "protein"
+        for condition_result in condition_results
+    ) or any(
+        frame_result.backbone_observations
+        for frame_result in included_frames
+    )
+    rows = [
+        row
+        for frame_result in included_frames
+        for row in _interaction_rows(
+            frame_result,
+            include_edge_type=include_edge_type,
+        )
+    ]
 
     path_issue = _path_write_issue(path)
     if path_issue is not None:
@@ -308,7 +330,11 @@ def write_contacts_perframe_csv(
             issues=(path_issue,),
         )
 
-    write_issue = _write_rows(path, rows)
+    write_issue = _write_rows(
+        path,
+        rows,
+        include_edge_type=include_edge_type,
+    )
     if write_issue is not None:
         return _result(
             path,
@@ -706,20 +732,33 @@ def _aggregate_row(
     )
 
 
-def _contact_rows(
+def _interaction_rows(
     frame_result: PreprocessingContactFrameResult,
+    *,
+    include_edge_type: bool,
 ) -> tuple[tuple[str, ...], ...]:
-    return tuple(
-        _contact_row(frame_result, contact)
+    contact_rows = tuple(
+        _contact_row(
+            frame_result,
+            contact,
+            include_edge_type=include_edge_type,
+        )
         for contact in frame_result.contacts
     )
+    backbone_rows = tuple(
+        _backbone_row(frame_result, observation)
+        for observation in frame_result.backbone_observations
+    )
+    return contact_rows + backbone_rows
 
 
 def _contact_row(
     frame_result: PreprocessingContactFrameResult,
     contact: PreprocessingContactPairResult,
+    *,
+    include_edge_type: bool,
 ) -> tuple[str, ...]:
-    return (
+    row: tuple[str, ...] = (
         frame_result.condition_name,
         str(frame_result.frame_index),
         _cell(frame_result.time_ps),
@@ -731,9 +770,37 @@ def _contact_row(
         contact.target_resname,
         _cell(contact.source_segid),
         _cell(contact.target_segid),
+    )
+    if include_edge_type:
+        row += (_RESIDUE_CONTACT_EDGE_TYPE,)
+    return row + (
         str(contact.minimum_distance),
         contact.distance_unit,
         contact.atom_filter,
+        _cell(frame_result.passed),
+    )
+
+
+def _backbone_row(
+    frame_result: PreprocessingContactFrameResult,
+    observation: Any,
+) -> tuple[str, ...]:
+    return (
+        frame_result.condition_name,
+        str(frame_result.frame_index),
+        _cell(frame_result.time_ps),
+        str(observation.source_residue_index),
+        str(observation.target_residue_index),
+        _cell(observation.source_residue_id),
+        _cell(observation.target_residue_id),
+        observation.source_resname,
+        observation.target_resname,
+        _cell(observation.source_segid),
+        _cell(observation.target_segid),
+        observation.edge_type,
+        str(observation.ca_distance),
+        observation.distance_unit,
+        "",
         _cell(frame_result.passed),
     )
 
@@ -797,6 +864,8 @@ def _aggregate_path_write_issue(
 def _write_rows(
     output_path: Path,
     rows: list[tuple[str, ...]],
+    *,
+    include_edge_type: bool,
 ) -> PreprocessingContactsPerFrameCsvWriteIssue | None:
     temporary_path: Path | None = None
     try:
@@ -811,7 +880,9 @@ def _write_rows(
         ) as csv_file:
             temporary_path = Path(csv_file.name)
             writer = csv.writer(csv_file, lineterminator="\n")
-            writer.writerow(_CSV_HEADER)
+            writer.writerow(
+                _TYPED_CSV_HEADER if include_edge_type else _CSV_HEADER
+            )
             writer.writerows(rows)
         temporary_path.replace(output_path)
     except (OSError, csv.Error):

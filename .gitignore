@@ -53,6 +53,8 @@ logs/
 
 # Local scientific data directories
 local_md/
+local_md_small/
+local_md_protein/
 data/*
 
 # Tracked lightweight reference notebook context
@@ -61,6 +63,10 @@ data/reference/*
 !data/reference/notebooks_libraries_v1_2/
 data/reference/notebooks_libraries_v1_2/*
 !data/reference/notebooks_libraries_v1_2/MANIA_analysis_v1_2.ipynb
+!data/reference/notebooks_libraries_v1_3/
+data/reference/notebooks_libraries_v1_3/*
+!data/reference/notebooks_libraries_v1_2/MANIA_analysis_v1_3.ipynb
+!data/reference/notebooks_libraries_v1_2/MANIA_preprocessing_v1_2.ipynb
 
 # Keep notebook runtime/cache artifacts out of git
 .ipynb_checkpoints/

@@ -82,8 +82,12 @@ or dependency change.
 - Stage 16.8 atom cache refactor: ports the notebook `build_atom_cache` idea
   after contact selection and before frame iteration. It caches selected
   residue metadata and existing filtered atom references without changing
-  scientific outputs or adding a neighbor-search backend. Per-frame parity
-  and richer typed chemistry remain deferred.
+  scientific outputs or adding a neighbor-search backend.
+- Stage 16.9 per-frame contact export parity: adds sampled-frame `backbone`
+  observations to the accepted `contacts/contacts_perframe.csv` path for the
+  protein selection. Source frame indexes and selection scope are preserved.
+  This is not full temporal RIN, richer chemistry, or parquet dependency
+  parity, and it does not change the WANIA object JSON contract.
 
 ## Accepted public workflow APIs
 
@@ -295,9 +299,15 @@ filtered atom references are cached before the frame loop; changing positions
 are still read per sampled frame. Guard estimates use cached selected atom
 counts. Default scientific behavior and output schemas, including the WANIA
 object JSON contract, remain unchanged. No benchmark/timing guarantee or new
-neighbor-search backend is introduced. Per-frame contact parity remains
-deferred to Stage 16.9, richer aromatic/cation-pi chemistry to Stage 16.10,
-and analysis metrics parity to Stage 16.11.
+neighbor-search backend is introduced.
+
+Stage 16.9 exports accepted contact-derived observations plus per-frame
+`backbone` rows for sequential same-chain protein residues with live sampled-
+frame Cα distance at most 4.5 Å. Original sampled source indexes are not
+renumbered, and `contact_selection` limits the output scope. Aggregate contact
+CSV semantics, graph backbone priority, and WANIA remain unchanged. Parquet
+format parity remains future export-format scope; richer aromatic/cation-pi
+chemistry and analysis metrics remain deferred to Stages 16.10 and 16.11.
 
 Stage 16.3 contact guard metadata is workflow/CLI metadata only. It is not a
 WANIA payload schema change and does not change graph artifact schemas.

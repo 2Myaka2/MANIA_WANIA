@@ -213,8 +213,13 @@ and existing `heavy`/`all` filtered atom references are cached before frame
 iteration; coordinates remain frame-specific. This adds no neighbor-search
 backend and makes no benchmark or timing guarantee. Default scientific
 behavior and output schemas, including the WANIA object JSON contract, remain
-unchanged. Per-frame parity, richer chemistry, and analysis metrics parity
-remain deferred to Stages 16.9–16.11.
+unchanged.
+
+Stage 16.9 adds sampled-frame `backbone` observations to the optional
+`contacts/contacts_perframe.csv` export for `contact_selection=protein` while
+preserving original source frame indexes. Contact aggregates, graph backbone
+priority, and the WANIA contract are unchanged. This is CSV semantic parity,
+not parquet dependency, richer chemistry, or full temporal RIN parity.
 
 ## Optional Scientific CSV Exports
 
@@ -251,6 +256,10 @@ mania preprocessing run-graph-export \
   --export-scientific-csvs \
   --export-contacts-perframe
 ```
+
+For protein selection, Stage 16.9 rows can include `backbone` alongside the
+existing `residue_contact` type. Frame indexes remain original trajectory
+source indexes; `contact_selection` limits the exported residue scope.
 
 Granular flags are also available:
 

@@ -21,6 +21,9 @@ from mania.constants import (
     SCHEMA_VERSION,
 )
 from mania.preprocessing.trajectory_contacts import (
+    BACKBONE_MAX_CA_DIST_A as BACKBONE_MAX_CA_DIST_A,
+)
+from mania.preprocessing.trajectory_contacts import (
     PreprocessingCaCoordinate,
     PreprocessingConditionContactsResult,
     PreprocessingContactFrameResult,
@@ -43,7 +46,6 @@ _EDGE_TYPE_ALIASES = {
     "cationpi": "cation_pi",
     "aromaticpi": "aromatic_pi",
 }
-BACKBONE_MAX_CA_DIST_A = 4.5
 _PATHLIKE_TYPES = (str, Path, PathLike)
 _EDGES_CSV_PUBLIC_WRITER_NAME = "write_preprocessing_graph_" + "edges_csv"
 _GRAPH_CSV_PATH_TYPES = (str, Path)

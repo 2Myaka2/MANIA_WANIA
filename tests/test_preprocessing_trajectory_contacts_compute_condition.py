@@ -512,6 +512,12 @@ def test_protein_contact_selection_uses_selected_residues() -> None:
         "ALA",
         "GLY",
     )
+    backbone = result.frame_results[0].backbone_observations
+    assert len(backbone) == 1
+    assert (
+        backbone[0].source_residue_id,
+        backbone[0].target_residue_id,
+    ) == (10, 11)
     assert any(
         event.message == "contact selection=protein"
         for event in events
@@ -621,6 +627,9 @@ def test_protein_contact_selection_preserves_frame_sampling() -> None:
     assert [frame.frame_index for frame in result.frame_results] == [0, 2]
     assert [frame.time_ps for frame in result.frame_results] == [0.0, 5.0]
     assert [frame.contact_count for frame in result.frame_results] == [1, 0]
+    assert [
+        len(frame.backbone_observations) for frame in result.frame_results
+    ] == [1, 0]
 
 
 def test_contact_limits_apply_after_protein_selection() -> None:
@@ -1081,6 +1090,131 @@ def test_frame_stride_computes_sampled_source_frames_and_exports(
     assert edge_rows[0]["contact_frame_count"] == "1"
     assert edge_rows[0]["total_frame_count"] == "2"
     assert float(edge_rows[0]["contact_frequency"]) == 0.5
+
+
+def test_protein_backbone_observations_export_sampled_source_frames(
+    tmp_path: Path,
+) -> None:
+    atoms = [FakeAtom(position=(0.0, 0.0, 0.0)) for _ in range(5)]
+    residues = [
+        FakeResidue(resname, index + 1, [atom], segid="A")
+        for index, (resname, atom) in enumerate(
+            zip(("ALA", "GLY", "SER", "THR", "LEU"), atoms, strict=True)
+        )
+    ]
+    frames = [
+        FakeTimestep(
+            positions=tuple((index * spacing, 0.0, 0.0) for index in range(5))
+        )
+        for spacing in (8.0, 3.8, 8.0, 4.0)
+    ]
+    runtime = make_selectable_runtime(residues, residues, frames)
+
+    result = compute_condition_contacts(
+        make_loaded_result(runtime),
+        options=PreprocessingContactDetectionOptions(
+            contact_selection="protein"
+        ),
+        frame_sampling=PreprocessingFrameSamplingOptions(
+            frame_start=1,
+            frame_stride=2,
+            max_frames=2,
+        ),
+    )
+
+    assert result.status == "computed"
+    assert [frame.frame_index for frame in result.frame_results] == [1, 3]
+    assert [
+        len(frame.backbone_observations) for frame in result.frame_results
+    ] == [4, 4]
+    assert result.contact_count == 8
+    assert len(result.interaction_aggregates) == 4
+
+    output_path = tmp_path / "contacts_perframe.csv"
+    write_result = write_contacts_perframe_csv(result, output_path)
+
+    assert write_result.passed
+    with output_path.open(encoding="utf-8", newline="") as csv_file:
+        rows = list(csv.DictReader(csv_file))
+    backbone_rows = [row for row in rows if row["edge_type"] == "backbone"]
+    contact_rows = [
+        row for row in rows if row["edge_type"] == "residue_contact"
+    ]
+    assert len(backbone_rows) == 8
+    assert {row["frame_index"] for row in backbone_rows} == {"1", "3"}
+    assert [
+        (row["source_residue_index"], row["target_residue_index"])
+        for row in backbone_rows[:4]
+    ] == [("0", "1"), ("1", "2"), ("2", "3"), ("3", "4")]
+    assert all(
+        math.isclose(float(row["minimum_distance"]), 3.8)
+        for row in backbone_rows[:4]
+    )
+    assert all(row["atom_filter"] == "" for row in backbone_rows)
+    assert len(contact_rows) == 8
+    assert {row["frame_index"] for row in contact_rows} == {"1", "3"}
+
+
+def test_protein_backbone_observation_respects_ca_cutoff() -> None:
+    residues = [
+        FakeResidue("ALA", 1, [FakeAtom(position=(0.0, 0.0, 0.0))]),
+        FakeResidue("GLY", 2, [FakeAtom(position=(4.6, 0.0, 0.0))]),
+    ]
+
+    result = compute_condition_contacts(
+        make_loaded_result(make_selectable_runtime(residues, residues)),
+        options=PreprocessingContactDetectionOptions(
+            contact_selection="protein"
+        ),
+    )
+
+    assert result.status == "computed"
+    assert result.frame_results[0].backbone_observations == ()
+
+
+def test_all_selection_keeps_legacy_perframe_contact_scope() -> None:
+    residues = [
+        FakeResidue("ALA", 1, [FakeAtom(position=(0.0, 0.0, 0.0))]),
+        FakeResidue("GLY", 2, [FakeAtom(position=(3.8, 0.0, 0.0))]),
+    ]
+
+    result = compute_condition_contacts(
+        make_loaded_result(make_runtime(residues)),
+        options=PreprocessingContactDetectionOptions(contact_selection="all"),
+    )
+
+    assert result.frame_results[0].contact_count == 1
+    assert result.frame_results[0].backbone_observations == ()
+
+
+def test_contact_limit_failure_does_not_export_backbone_rows(
+    tmp_path: Path,
+) -> None:
+    residues = [
+        FakeResidue(
+            resname,
+            index + 1,
+            [FakeAtom(position=(index * 3.8, 0.0, 0.0))],
+        )
+        for index, resname in enumerate(("ALA", "GLY", "SER"))
+    ]
+    result = compute_condition_contacts(
+        make_loaded_result(make_selectable_runtime(residues, residues)),
+        options=PreprocessingContactDetectionOptions(
+            contact_selection="protein"
+        ),
+        computation_limits=PreprocessingContactComputationLimits(
+            max_residue_pairs_per_frame=1
+        ),
+    )
+
+    assert result.status == "partial"
+    assert result.frame_results[0].backbone_observations == ()
+    output_path = tmp_path / "contacts_perframe.csv"
+    write_result = write_contacts_perframe_csv(result, output_path)
+    assert write_result.skipped_frame_count == 1
+    with output_path.open(encoding="utf-8", newline="") as csv_file:
+        assert list(csv.DictReader(csv_file)) == []
 
 
 def test_time_falls_back_to_declared_frame_interval() -> None:

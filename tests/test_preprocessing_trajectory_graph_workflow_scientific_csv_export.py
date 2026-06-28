@@ -7,6 +7,7 @@ import pytest
 
 import mania.preprocessing
 from mania.preprocessing import (
+    PreprocessingBackboneObservation,
     PreprocessingConditionContactsResult,
     PreprocessingConditionRgResult,
     PreprocessingContactDetectionOptions,
@@ -143,6 +144,19 @@ def contacts_result() -> PreprocessingManifestContactsResult:
         frame_index=0,
         time_ps=0.0,
         contacts=(contact,),
+        backbone_observations=(
+            PreprocessingBackboneObservation(
+                source_residue_index=1,
+                target_residue_index=2,
+                source_resname="ALA",
+                target_resname="GLY",
+                ca_distance=3.8,
+                source_residue_id=10,
+                target_residue_id=11,
+                source_segid="A",
+                target_segid="A",
+            ),
+        ),
     )
     return PreprocessingManifestContactsResult(
         condition_results=(
@@ -336,6 +350,14 @@ def test_contacts_perframe_csv_requires_explicit_enable(
         tmp_path / "full" / "contacts" / "contacts_perframe.csv"
     ).is_file()
     assert full_result.to_dict()["validation"]["contacts_perframe"] is not None
+    with (
+        tmp_path / "full" / "contacts" / "contacts_perframe.csv"
+    ).open(encoding="utf-8", newline="") as csv_file:
+        rows = list(csv.DictReader(csv_file))
+    assert {row["edge_type"] for row in rows} == {
+        "backbone",
+        "residue_contact",
+    }
 
 
 def test_sampled_scientific_csvs_and_graph_mapping_use_sampled_frames(

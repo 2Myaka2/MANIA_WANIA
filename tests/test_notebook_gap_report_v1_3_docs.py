@@ -12,7 +12,7 @@ def test_notebook_gap_report_v1_3_exists() -> None:
     assert DOC_PATH.is_file()
 
 
-def test_notebook_gap_report_v1_3_records_stage_16_8_scope_and_gaps() -> None:
+def test_notebook_gap_report_v1_3_records_stage_16_9_scope_and_gaps() -> None:
     text = normalized_doc_text()
 
     for phrase in (
@@ -32,7 +32,11 @@ def test_notebook_gap_report_v1_3_records_stage_16_8_scope_and_gaps() -> None:
         "build_atom_cache",
         "build_atom_cache is implemented in Stage 16.8",
         "Stage 16.6",
-        "Per-frame contact parity remains deferred to Stage 16.9",
+        "Per-frame contact export parity is implemented in Stage 16.9",
+        "contacts/contacts_perframe.csv",
+        "Original source frame indexes are preserved",
+        "parquet format parity remains future export-format scope",
+        "not a full temporal RIN",
         (
             "Richer aromatic/cation-pi chemistry remains deferred to "
             "Stage 16.10"
