@@ -79,12 +79,28 @@ accepted scientific CSV and graph schemas, backbone mapping, and the WANIA
 object JSON contract remain unchanged. Failed or partial contact computation
 does not expose finalized aggregates as a complete result.
 
+## What Stage 16.8 ports
+
+build_atom_cache is implemented in Stage 16.8 as an internal contact
+performance/refactor layer. After `contact_selection` resolves the runtime
+residues and before frame iteration, the backend caches stable residue
+identity metadata and the atom references selected by the existing `heavy` or
+`all` filter. Coordinates are still read from those cached atom references in
+each sampled frame, so trajectory positions and accepted contact semantics do
+not change. Empty filtered atom groups retain the existing successful
+zero-contact behavior.
+
+This stage makes no benchmark or timing guarantee and introduces no new
+neighbor-search backend. Default scientific behavior, accepted output
+schemas, and the WANIA object JSON contract remain unchanged.
+
 ## Deferred Stage 16 parity scope
 
-- `build_atom_cache`: deferred to Stage 16.8.
-- Per-frame contact/parquet parity: deferred to Stage 16.9.
-- Aromatic π–π and cation-π chemistry parity: deferred to Stage 16.10.
-- Analysis metrics parity: deferred to Stage 16.11.
+- `build_atom_cache`: implemented in Stage 16.8.
+- Per-frame contact parity remains deferred to Stage 16.9, including parquet
+  parity.
+- Richer aromatic/cation-pi chemistry remains deferred to Stage 16.10.
+- Analysis metrics parity remains deferred to Stage 16.11.
 
 Typed or temporal RIN, centrality/community metrics, and other full notebook
 chemistry parity also remain future work.
@@ -101,5 +117,7 @@ chemistry parity also remain future work.
 - Backbone edge type and `EDGE_PRIORITY` are implemented in Stage 16.6.
 - `InteractionAccumulator` is implemented in Stage 16.7 without changing
   accepted output schemas.
-- `build_atom_cache`, per-frame parquet parity, richer typed chemistry, and
-  analysis metrics remain deferred to Stages 16.8–16.11.
+- `build_atom_cache` is implemented in Stage 16.8 without changing accepted
+  output schemas or contact scientific semantics.
+- Per-frame parquet parity, richer typed chemistry, and analysis metrics
+  remain deferred to Stages 16.9–16.11.

@@ -78,8 +78,12 @@ or dependency change.
 - Stage 16.7 contact aggregation parity: ports the notebook
   `InteractionAccumulator` idea into the backend contact result layer. It
   preserves default contact behavior and accepted scientific CSV, graph, and
-  WANIA schemas. `build_atom_cache`, per-frame parquet parity, and richer
-  typed chemistry remain deferred.
+  WANIA schemas.
+- Stage 16.8 atom cache refactor: ports the notebook `build_atom_cache` idea
+  after contact selection and before frame iteration. It caches selected
+  residue metadata and existing filtered atom references without changing
+  scientific outputs or adding a neighbor-search backend. Per-frame parity
+  and richer typed chemistry remain deferred.
 
 ## Accepted public workflow APIs
 
@@ -284,6 +288,16 @@ types independently. It does not change contact selection, contact safety
 limits, progress, scientific CSV schemas, graph schemas, or the WANIA object
 JSON contract. Backbone continues to be generated in graph mapping/export,
 not by the contact accumulator.
+
+Stage 16.8 builds an internal atom cache only for the residues resolved by
+`contact_selection`. Stable residue identity and existing `heavy`/`all`
+filtered atom references are cached before the frame loop; changing positions
+are still read per sampled frame. Guard estimates use cached selected atom
+counts. Default scientific behavior and output schemas, including the WANIA
+object JSON contract, remain unchanged. No benchmark/timing guarantee or new
+neighbor-search backend is introduced. Per-frame contact parity remains
+deferred to Stage 16.9, richer aromatic/cation-pi chemistry to Stage 16.10,
+and analysis metrics parity to Stage 16.11.
 
 Stage 16.3 contact guard metadata is workflow/CLI metadata only. It is not a
 WANIA payload schema change and does not change graph artifact schemas.

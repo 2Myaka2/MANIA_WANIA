@@ -193,9 +193,20 @@ frame before observations are recorded, and partial or failed conditions are
 not finalized as complete aggregates. Backbone remains a structural graph
 mapping concern from Stage 16.6 and is not accumulated as a contact.
 
-`build_atom_cache` remains deferred to Stage 16.8, per-frame parquet parity to
-Stage 16.9, richer aromatic π–π/cation-π chemistry parity to Stage 16.10,
-and analysis metrics parity to Stage 16.11.
+Stage 16.8 ports the notebook `build_atom_cache` idea as an internal contact
+performance/refactor layer. Contact selection resolves the residue scope
+first; the backend then caches stable residue identity metadata and atoms from
+the existing `heavy` or `all` filter before trajectory frame iteration.
+Candidate-pair and atom-distance-evaluation guard estimates use that selected
+cache. Per-frame coordinates continue to come from the cached atom references
+after the trajectory advances, preserving frame sampling, contact output, and
+`InteractionAccumulator` semantics.
+
+This cache changes no accepted scientific CSV, graph, or WANIA object JSON
+schema, makes no benchmark or timing guarantee, and adds no neighbor-search
+backend. Per-frame contact/parquet parity remains deferred to Stage 16.9,
+richer aromatic/cation-pi chemistry remains deferred to Stage 16.10, and
+analysis metrics parity remains deferred to Stage 16.11.
 
 ## Run options
 

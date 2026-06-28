@@ -205,8 +205,16 @@ Stage 16.7 ports the notebook `InteractionAccumulator` idea into internal
 backend contact aggregation. Sampled-frame frequency, distance aggregates,
 and original first/last source frame indexes are finalized deterministically;
 default scientific behavior and scientific CSV, graph, and WANIA schemas are
-unchanged. `build_atom_cache`, per-frame parquet parity, and richer chemistry
-parity remain deferred.
+unchanged.
+
+Stage 16.8 ports the notebook `build_atom_cache` idea as an internal contact
+performance/refactor layer. After contact selection, stable residue metadata
+and existing `heavy`/`all` filtered atom references are cached before frame
+iteration; coordinates remain frame-specific. This adds no neighbor-search
+backend and makes no benchmark or timing guarantee. Default scientific
+behavior and output schemas, including the WANIA object JSON contract, remain
+unchanged. Per-frame parity, richer chemistry, and analysis metrics parity
+remain deferred to Stages 16.9–16.11.
 
 ## Optional Scientific CSV Exports
 

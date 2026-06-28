@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from numbers import Integral
 from typing import Any, TypeAlias, cast
@@ -888,6 +888,121 @@ class _ResidueCandidate:
     coordinates: tuple[_Coordinate, ...]
 
 
+@dataclass(frozen=True)
+class ContactResidueAtomCacheEntry:
+    """Stable residue metadata and filtered atoms used by contact frames."""
+
+    residue_index: int
+    residue_id: int | str | None
+    resname: str | None
+    segid: str | None
+    atom_group: object | None
+    all_atoms: tuple[object, ...]
+    distance_atoms: tuple[object, ...]
+    atom_indexes: tuple[int, ...]
+    atom_count: int
+    contact_eligible: bool
+    issues: tuple[PreprocessingContactComputationIssue, ...] = ()
+
+    def __post_init__(self) -> None:
+        _require_non_negative_int(self.residue_index, "residue_index")
+        _require_non_negative_int(self.atom_count, "atom_count")
+        if self.atom_count != len(self.distance_atoms):
+            raise ValueError("atom_count must match cached atoms")
+        if len(self.atom_indexes) != len(self.distance_atoms):
+            raise ValueError("atom_indexes must match cached atoms")
+        if not isinstance(self.contact_eligible, bool):
+            raise ValueError("contact_eligible must be a bool")
+
+    @property
+    def atoms(self) -> tuple[object, ...]:
+        """Return atoms selected for residue distance calculations."""
+        return self.distance_atoms
+
+
+def build_atom_cache(
+    residue_items: Iterable[object],
+    *,
+    options: PreprocessingContactDetectionOptions,
+) -> tuple[ContactResidueAtomCacheEntry, ...]:
+    """Cache selected residue atoms and stable metadata before frame iteration."""
+    entries: list[ContactResidueAtomCacheEntry] = []
+    for residue_index, residue in enumerate(residue_items):
+        raw_resname, has_resname = _read_attribute(residue, "resname")
+        resname = (
+            str(raw_resname).strip()
+            if has_resname and raw_resname is not None
+            else None
+        )
+        if resname == "":
+            resname = None
+
+        issues: list[PreprocessingContactComputationIssue] = []
+        if resname is None:
+            issues.append(
+                PreprocessingContactComputationIssue(
+                    kind="contact_computation_error",
+                    field=f"residues[{residue_index}].resname",
+                    message=(
+                        "Residue name is unavailable."
+                        if not has_resname or raw_resname is None
+                        else "Residue name is empty."
+                    ),
+                )
+            )
+
+        atom_group, has_atom_group = _read_attribute(
+            residue,
+            _ATOMS_ATTRIBUTE,
+        )
+        all_atoms: tuple[object, ...] = ()
+        atom_iteration_failed = False
+        if has_atom_group and atom_group is not None:
+            try:
+                all_atoms = tuple(cast(Iterable[object], atom_group))
+            except Exception:
+                atom_iteration_failed = True
+                issues.append(
+                    PreprocessingContactComputationIssue(
+                        kind="contact_computation_error",
+                        field=f"residues[{residue_index}]_atoms",
+                        message="Residue atoms could not be iterated.",
+                    )
+                )
+        else:
+            atom_group = None
+
+        cached_atoms: list[object] = []
+        atom_indexes: list[int] = []
+        for atom_index, atom in enumerate(all_atoms):
+            if options.atom_filter == "heavy" and _is_hydrogen(atom):
+                continue
+            cached_atoms.append(atom)
+            atom_indexes.append(atom_index)
+
+        contact_eligible = (
+            resname is not None
+            and resname not in options.skip_resnames
+            and not atom_iteration_failed
+        )
+        entries.append(
+            ContactResidueAtomCacheEntry(
+                residue_index=residue_index,
+                residue_id=_residue_id(residue),
+                resname=resname,
+                segid=_segid(residue),
+                atom_group=atom_group,
+                all_atoms=all_atoms,
+                distance_atoms=tuple(cached_atoms),
+                atom_indexes=tuple(atom_indexes),
+                atom_count=len(cached_atoms),
+                contact_eligible=contact_eligible,
+                issues=tuple(issues),
+            )
+        )
+    return tuple(entries)
+
+
 def compute_condition_contacts(
     condition_load_result: PreprocessingConditionLoadResult,
     *,
@@ -976,6 +1091,17 @@ def compute_condition_contacts(
             issues=(selection_issue,),
         )
 
+    atom_cache = build_atom_cache(
+        residue_items,
+        options=selected_options,
+    )
+    contact_atom_cache = tuple(
+        entry for entry in atom_cache if entry.contact_eligible
+    )
+    candidate_pair_count = _candidate_pair_count(contact_atom_cache)
+    atom_distance_evaluation_count = _atom_distance_evaluation_count(
+        contact_atom_cache
+    )
     frame_time_ps = _usable_non_negative_float(
         condition_load_result.runtime_input.frame_time_ps
     )
@@ -1024,7 +1150,7 @@ def compute_condition_contacts(
 
             if not representative_coordinates_captured:
                 representative_ca_coordinates = _representative_ca_coordinates(
-                    residue_items
+                    atom_cache
                 )
                 representative_coordinates_captured = True
 
@@ -1034,7 +1160,12 @@ def compute_condition_contacts(
                     frame_index=frame_index,
                     timestep=timestep,
                     frame_time_ps=frame_time_ps,
-                    residue_items=residue_items,
+                    atom_cache=atom_cache,
+                    contact_atom_cache=contact_atom_cache,
+                    candidate_pair_count=candidate_pair_count,
+                    atom_distance_evaluation_count=(
+                        atom_distance_evaluation_count
+                    ),
                     options=selected_options,
                     computation_limits=selected_limits,
                     progress_callback=progress_callback,
@@ -1202,7 +1333,10 @@ def _compute_contact_frame(
     frame_index: int,
     timestep: object,
     frame_time_ps: float | None,
-    residue_items: tuple[object, ...],
+    atom_cache: tuple[ContactResidueAtomCacheEntry, ...],
+    contact_atom_cache: tuple[ContactResidueAtomCacheEntry, ...],
+    candidate_pair_count: int,
+    atom_distance_evaluation_count: int,
     options: PreprocessingContactDetectionOptions,
     computation_limits: PreprocessingContactComputationLimits,
     progress_callback: ContactProgressCallback | None,
@@ -1213,23 +1347,11 @@ def _compute_contact_frame(
             condition_name=condition_name,
             frame_index=frame_index,
             stage="frame_start",
-            message=f"selected residues={len(residue_items)}",
-            residue_count=len(residue_items),
+            message=f"selected residues={len(atom_cache)}",
+            residue_count=len(atom_cache),
         ),
     )
-    candidates: list[_ResidueCandidate] = []
-    issues: list[PreprocessingContactComputationIssue] = []
-    for residue_index, residue in enumerate(residue_items):
-        candidate, residue_issues = _residue_candidate(
-            residue,
-            residue_index,
-            options,
-        )
-        issues.extend(residue_issues)
-        if candidate is not None:
-            candidates.append(candidate)
-
-    candidate_pair_count = _candidate_pair_count(candidates)
+    issues = [issue for entry in atom_cache for issue in entry.issues]
     _emit_progress(
         progress_callback,
         PreprocessingContactProgressEvent(
@@ -1237,15 +1359,15 @@ def _compute_contact_frame(
             frame_index=frame_index,
             stage="frame_candidates_built",
             message=f"candidate residue pairs={candidate_pair_count}",
-            residue_count=len(candidates),
+            residue_count=len(contact_atom_cache),
             candidate_pair_count=candidate_pair_count,
         ),
     )
     limit_issue = _contact_frame_limit_issue(
         condition_name=condition_name,
         frame_index=frame_index,
-        candidates=candidates,
         candidate_pair_count=candidate_pair_count,
+        atom_distance_evaluation_count=atom_distance_evaluation_count,
         computation_limits=computation_limits,
     )
     if limit_issue is not None:
@@ -1257,7 +1379,7 @@ def _compute_contact_frame(
                 frame_index=frame_index,
                 stage="frame_limit_exceeded",
                 message=_contact_limit_progress_message(limit_issue),
-                residue_count=len(candidates),
+                residue_count=len(contact_atom_cache),
                 candidate_pair_count=candidate_pair_count,
             ),
         )
@@ -1268,6 +1390,12 @@ def _compute_contact_frame(
             contacts=(),
             issues=tuple(issues),
         )
+
+    candidates: list[_ResidueCandidate] = []
+    for entry in contact_atom_cache:
+        candidate, residue_issues = _residue_candidate(entry)
+        issues.extend(residue_issues)
+        candidates.append(candidate)
 
     contacts: list[PreprocessingContactPairResult] = []
     for source_offset, source in enumerate(candidates):
@@ -1338,7 +1466,7 @@ def _compute_contact_frame(
     )
 
 
-def _candidate_pair_count(candidates: list[_ResidueCandidate]) -> int:
+def _candidate_pair_count(candidates: Sequence[object]) -> int:
     candidate_count = len(candidates)
     return candidate_count * (candidate_count - 1) // 2
 
@@ -1361,14 +1489,12 @@ def _finalize_condition_interactions(
 
 
 def _atom_distance_evaluation_count(
-    candidates: list[_ResidueCandidate],
+    atom_cache: Sequence[ContactResidueAtomCacheEntry],
 ) -> int:
     evaluation_count = 0
-    for source_offset, source in enumerate(candidates):
-        for target in candidates[source_offset + 1 :]:
-            evaluation_count += len(source.coordinates) * len(
-                target.coordinates
-            )
+    for source_offset, source in enumerate(atom_cache):
+        for target in atom_cache[source_offset + 1 :]:
+            evaluation_count += source.atom_count * target.atom_count
     return evaluation_count
 
 
@@ -1376,8 +1502,8 @@ def _contact_frame_limit_issue(
     *,
     condition_name: str,
     frame_index: int,
-    candidates: list[_ResidueCandidate],
     candidate_pair_count: int,
+    atom_distance_evaluation_count: int,
     computation_limits: PreprocessingContactComputationLimits,
 ) -> PreprocessingContactComputationIssue | None:
     pair_limit = computation_limits.max_residue_pairs_per_frame
@@ -1393,13 +1519,12 @@ def _contact_frame_limit_issue(
             ),
         )
 
-    distance_evaluation_count = _atom_distance_evaluation_count(candidates)
     distance_limit = (
         computation_limits.max_atom_distance_evaluations_per_frame
     )
     if (
         distance_limit is not None
-        and distance_evaluation_count > distance_limit
+        and atom_distance_evaluation_count > distance_limit
     ):
         return PreprocessingContactComputationIssue(
             kind="contact_distance_evaluation_limit_exceeded",
@@ -1407,7 +1532,8 @@ def _contact_frame_limit_issue(
             message=(
                 "Contact computation skipped for condition "
                 f"'{condition_name}' frame {frame_index} because estimated "
-                f"atom distance evaluations {distance_evaluation_count} "
+                "atom distance evaluations "
+                f"{atom_distance_evaluation_count} "
                 "exceed "
                 "max_atom_distance_evaluations_per_frame="
                 f"{distance_limit}."
@@ -1494,64 +1620,20 @@ def _contact_selection_unavailable_issue(
 
 
 def _residue_candidate(
-    residue: object,
-    residue_index: int,
-    options: PreprocessingContactDetectionOptions,
-) -> tuple[
-    _ResidueCandidate | None,
-    tuple[PreprocessingContactComputationIssue, ...],
-]:
-    raw_resname, has_resname = _read_attribute(residue, "resname")
-    if not has_resname or raw_resname is None:
-        return None, (
-            PreprocessingContactComputationIssue(
-                kind="contact_computation_error",
-                field=f"residues[{residue_index}].resname",
-                message="Residue name is unavailable.",
-            ),
-        )
-    resname = str(raw_resname).strip()
-    if not resname:
-        return None, (
-            PreprocessingContactComputationIssue(
-                kind="contact_computation_error",
-                field=f"residues[{residue_index}].resname",
-                message="Residue name is empty.",
-            ),
-        )
-    if resname in options.skip_resnames:
-        return None, ()
-
-    atom_group, has_atom_group = _read_attribute(
-        residue,
-        _ATOMS_ATTRIBUTE,
+    entry: ContactResidueAtomCacheEntry,
+) -> tuple[_ResidueCandidate, tuple[PreprocessingContactComputationIssue, ...]]:
+    fallback_positions = (
+        _atom_group_positions(entry.atom_group)
+        if entry.atom_group is not None
+        else None
     )
-    if not has_atom_group or atom_group is None:
-        return _ResidueCandidate(
-            index=residue_index,
-            resname=resname,
-            residue_id=_residue_id(residue),
-            segid=_segid(residue),
-            coordinates=(),
-        ), ()
-
-    try:
-        atom_items = tuple(cast(Iterable[object], atom_group))
-    except Exception:
-        return None, (
-            PreprocessingContactComputationIssue(
-                kind="contact_computation_error",
-                field=f"residues[{residue_index}]_atoms",
-                message="Residue atoms could not be iterated.",
-            ),
-        )
-
-    fallback_positions = _atom_group_positions(atom_group)
     coordinates: list[_Coordinate] = []
     issues: list[PreprocessingContactComputationIssue] = []
-    for atom_index, atom in enumerate(atom_items):
-        if options.atom_filter == "heavy" and _is_hydrogen(atom):
-            continue
+    for atom_index, atom in zip(
+        entry.atom_indexes,
+        entry.distance_atoms,
+        strict=True,
+    ):
         raw_position, has_position = _read_attribute(
             atom,
             _POSITION_ATTRIBUTE,
@@ -1564,7 +1646,7 @@ def _residue_candidate(
             raw_position = fallback_positions[atom_index]
             has_position = True
         field = (
-            f"residues[{residue_index}]_atoms[{atom_index}]_position"
+            f"residues[{entry.residue_index}]_atoms[{atom_index}]_position"
         )
         if not has_position or raw_position is None:
             issues.append(
@@ -1588,34 +1670,28 @@ def _residue_candidate(
         coordinates.append(coordinate)
 
     return _ResidueCandidate(
-        index=residue_index,
-        resname=resname,
-        residue_id=_residue_id(residue),
-        segid=_segid(residue),
+        index=entry.residue_index,
+        resname=cast(str, entry.resname),
+        residue_id=entry.residue_id,
+        segid=entry.segid,
         coordinates=tuple(coordinates),
     ), tuple(issues)
 
 
 def _representative_ca_coordinates(
-    residue_items: tuple[object, ...],
+    atom_cache: tuple[ContactResidueAtomCacheEntry, ...],
 ) -> tuple[PreprocessingCaCoordinate, ...]:
     coordinates: list[PreprocessingCaCoordinate] = []
-    for residue_index, residue in enumerate(residue_items):
-        coordinate = _residue_ca_coordinate(residue)
-        if coordinate is None:
-            continue
-        raw_resname, has_resname = _read_attribute(residue, "resname")
-        if not has_resname or raw_resname is None:
-            continue
-        resname = str(raw_resname).strip()
-        if not resname:
+    for entry in atom_cache:
+        coordinate = _residue_ca_coordinate(entry)
+        if coordinate is None or entry.resname is None:
             continue
         coordinates.append(
             PreprocessingCaCoordinate(
-                residue_index=residue_index,
-                residue_id=_residue_id(residue),
-                resname=resname,
-                segid=_segid(residue),
+                residue_index=entry.residue_index,
+                residue_id=entry.residue_id,
+                resname=entry.resname,
+                segid=entry.segid,
                 x_ca=coordinate[0],
                 y_ca=coordinate[1],
                 z_ca=coordinate[2],
@@ -1624,16 +1700,15 @@ def _representative_ca_coordinates(
     return tuple(coordinates)
 
 
-def _residue_ca_coordinate(residue: object) -> _Coordinate | None:
-    atom_group, has_atom_group = _read_attribute(residue, _ATOMS_ATTRIBUTE)
-    if not has_atom_group or atom_group is None:
-        return None
-    try:
-        atom_items = tuple(cast(Iterable[object], atom_group))
-    except Exception:
-        return None
-    fallback_positions = _atom_group_positions(atom_group)
-    for atom_index, atom in enumerate(atom_items):
+def _residue_ca_coordinate(
+    entry: ContactResidueAtomCacheEntry,
+) -> _Coordinate | None:
+    fallback_positions = (
+        _atom_group_positions(entry.atom_group)
+        if entry.atom_group is not None
+        else None
+    )
+    for atom_index, atom in enumerate(entry.all_atoms):
         raw_name, has_name = _read_attribute(atom, "name")
         if (
             not has_name

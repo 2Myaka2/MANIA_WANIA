@@ -60,10 +60,12 @@ class FakeAtomGroup:
         positions: object = MISSING,
     ) -> None:
         self._atoms = atoms
+        self.iteration_count = 0
         if positions is not MISSING:
             self.positions = positions
 
     def __iter__(self) -> Iterator[FakeAtom]:
+        self.iteration_count += 1
         return iter(self._atoms)
 
 
@@ -455,6 +457,8 @@ def test_all_contact_selection_uses_runtime_residues() -> None:
         residues,
         protein_residues=residues[:2],
     )
+    for residue in residues:
+        residue.atoms.iteration_count = 0
 
     result = compute_condition_contacts(
         make_loaded_result(runtime),
@@ -474,6 +478,7 @@ def test_all_contact_selection_uses_runtime_residues() -> None:
     )
     assert candidate_event.residue_count == 3
     assert candidate_event.candidate_pair_count == 3
+    assert [residue.atoms.iteration_count for residue in residues] == [1, 1, 1]
 
 
 def test_protein_contact_selection_uses_selected_residues() -> None:
@@ -487,6 +492,8 @@ def test_protein_contact_selection_uses_selected_residues() -> None:
         residues,
         protein_residues=residues[:2],
     )
+    for residue in residues:
+        residue.atoms.iteration_count = 0
 
     result = compute_condition_contacts(
         make_loaded_result(runtime),
@@ -520,6 +527,7 @@ def test_protein_contact_selection_uses_selected_residues() -> None:
     )
     assert candidate_event.residue_count == 2
     assert candidate_event.candidate_pair_count == 1
+    assert [residue.atoms.iteration_count for residue in residues] == [1, 1, 0]
 
 
 def test_protein_contact_selection_unavailable_does_not_fallback() -> None:
@@ -968,13 +976,52 @@ def test_multiple_frames_use_trajectory_order_and_positions() -> None:
         FakeTimestep(9.0, positions=((0.0, 0.0, 0.0), (8.0, 0.0, 0.0))),
     ]
 
-    result = compute_condition_contacts(
-        make_loaded_result(make_runtime(residues, frames))
-    )
+    runtime = make_runtime(residues, frames)
+    for residue in residues:
+        residue.atoms.iteration_count = 0
+
+    result = compute_condition_contacts(make_loaded_result(runtime))
 
     assert [frame.frame_index for frame in result.frame_results] == [0, 1]
     assert [frame.time_ps for frame in result.frame_results] == [7.0, 9.0]
     assert [frame.contact_count for frame in result.frame_results] == [1, 0]
+    assert [residue.atoms.iteration_count for residue in residues] == [1, 1]
+
+
+def test_distance_limit_estimate_uses_cached_selected_atom_counts() -> None:
+    residues = [
+        FakeResidue(
+            "ALA",
+            1,
+            [
+                FakeAtom(position=(0.0, 0.0, 0.0)),
+                FakeAtom(position=MISSING),
+            ],
+        ),
+        FakeResidue(
+            "GLY",
+            2,
+            [
+                FakeAtom(position=(1.0, 0.0, 0.0)),
+                FakeAtom(position=MISSING),
+            ],
+        ),
+    ]
+
+    result = compute_condition_contacts(
+        make_loaded_result(make_runtime(residues)),
+        computation_limits=PreprocessingContactComputationLimits(
+            max_atom_distance_evaluations_per_frame=3
+        ),
+    )
+
+    assert result.status == "partial"
+    assert [issue.kind for issue in result.frame_results[0].issues] == [
+        "contact_distance_evaluation_limit_exceeded"
+    ]
+    assert "atom distance evaluations 4" in (
+        result.frame_results[0].issues[0].message
+    )
 
 
 def test_frame_stride_computes_sampled_source_frames_and_exports(
