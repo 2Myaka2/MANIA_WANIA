@@ -10,6 +10,7 @@ from typing import Any, TypeAlias, cast
 
 from mania.preprocessing import (
     trajectory_contact_accumulator,
+    trajectory_contact_chemistry,
     trajectory_frame_sampling,
     trajectory_manifest_loader,
     trajectory_runtime,
@@ -40,6 +41,11 @@ _FRAME_SCOPE = "per_frame"
 _PAIR_SCOPE = "distinct_residue_pair"
 _RESIDUE_CONTACT_EDGE_TYPE = "residue_contact"
 _BACKBONE_EDGE_TYPE = "backbone"
+_CONTACT_PAIR_EDGE_TYPES = (
+    _RESIDUE_CONTACT_EDGE_TYPE,
+    "aromatic_pi",
+    "cation_pi",
+)
 BACKBONE_MAX_CA_DIST_A = 4.5
 _CONTACT_RESULT_STATUSES = (
     "not_computed",
@@ -486,6 +492,7 @@ class PreprocessingContactPairResult:
     target_residue_id: int | str | None = None
     source_segid: str | None = None
     target_segid: str | None = None
+    edge_type: str = _RESIDUE_CONTACT_EDGE_TYPE
 
     def __post_init__(self) -> None:
         _require_non_negative_int(
@@ -525,6 +532,10 @@ class PreprocessingContactPairResult:
         )
         if self.atom_filter not in _ATOM_FILTERS:
             raise ValueError("atom_filter must be 'heavy' or 'all'")
+        if self.edge_type not in _CONTACT_PAIR_EDGE_TYPES:
+            raise ValueError(
+                "edge_type must be residue_contact, aromatic_pi, or cation_pi"
+            )
         object.__setattr__(
             self,
             "source_residue_id",
@@ -554,7 +565,7 @@ class PreprocessingContactPairResult:
 
     def to_dict(self) -> dict[str, object]:
         """Return a deterministic JSON-serializable contact pair."""
-        return {
+        payload: dict[str, object] = {
             "source_residue_index": self.source_residue_index,
             "target_residue_index": self.target_residue_index,
             "source_resname": self.source_resname,
@@ -567,6 +578,9 @@ class PreprocessingContactPairResult:
             "source_segid": self.source_segid,
             "target_segid": self.target_segid,
         }
+        if self.edge_type != _RESIDUE_CONTACT_EDGE_TYPE:
+            payload["edge_type"] = self.edge_type
+        return payload
 
 
 @dataclass(frozen=True)
@@ -1537,10 +1551,17 @@ def _compute_contact_frame(
                     )
                 )
 
+    contacts.extend(
+        _pi_interaction_contacts(
+            contact_atom_cache,
+            options=options,
+        )
+    )
     contacts.sort(
         key=lambda contact: (
             contact.source_residue_index,
             contact.target_residue_index,
+            contact.edge_type,
             contact.source_resname,
             contact.target_resname,
         )
@@ -1587,10 +1608,81 @@ def _finalize_condition_interactions(
                 frame_index=frame_result.frame_index,
                 resid_i=contact.source_residue_index,
                 resid_j=contact.target_residue_index,
-                edge_type=_RESIDUE_CONTACT_EDGE_TYPE,
+                edge_type=contact.edge_type,
                 distance_A=contact.minimum_distance,
             )
     return accumulator.finalize(frame_count=len(frame_results))
+
+
+def _pi_interaction_contacts(
+    atom_cache: tuple[ContactResidueAtomCacheEntry, ...],
+    *,
+    options: PreprocessingContactDetectionOptions,
+) -> tuple[PreprocessingContactPairResult, ...]:
+    residue_candidates = tuple(
+        _residue_chemistry_candidate(entry)
+        for entry in atom_cache
+        if entry.resname is not None
+    )
+    return tuple(
+        PreprocessingContactPairResult(
+            source_residue_index=observation.source.residue_index,
+            target_residue_index=observation.target.residue_index,
+            source_resname=observation.source.resname,
+            target_resname=observation.target.resname,
+            minimum_distance=observation.distance_A,
+            distance_unit=options.distance_unit,
+            atom_filter=options.atom_filter,
+            edge_type=observation.edge_type,
+            source_residue_id=observation.source.residue_id,
+            target_residue_id=observation.target.residue_id,
+            source_segid=observation.source.segid,
+            target_segid=observation.target.segid,
+        )
+        for observation in trajectory_contact_chemistry.detect_pi_interactions(
+            residue_candidates
+        )
+    )
+
+
+def _residue_chemistry_candidate(
+    entry: ContactResidueAtomCacheEntry,
+) -> trajectory_contact_chemistry.ResidueChemistryCandidate:
+    fallback_positions = (
+        _atom_group_positions(entry.atom_group)
+        if entry.atom_group is not None
+        else None
+    )
+    coordinates_by_name: dict[str, _Coordinate] = {}
+    for atom_index, atom in enumerate(entry.all_atoms):
+        raw_name, has_name = _read_attribute(atom, "name")
+        if not has_name or raw_name is None:
+            continue
+        atom_name = str(raw_name).strip().upper()
+        if not atom_name or atom_name in coordinates_by_name:
+            continue
+        raw_position, has_position = _read_attribute(
+            atom,
+            _POSITION_ATTRIBUTE,
+        )
+        if (
+            (not has_position or raw_position is None)
+            and fallback_positions is not None
+            and atom_index < len(fallback_positions)
+        ):
+            raw_position = fallback_positions[atom_index]
+        if raw_position is None:
+            continue
+        coordinate = _coordinate(raw_position)
+        if coordinate is not None:
+            coordinates_by_name[atom_name] = coordinate
+    return trajectory_contact_chemistry.ResidueChemistryCandidate(
+        residue_index=entry.residue_index,
+        residue_id=entry.residue_id,
+        resname=cast(str, entry.resname),
+        segid=entry.segid,
+        atom_coordinates=tuple(coordinates_by_name.items()),
+    )
 
 
 def _atom_distance_evaluation_count(

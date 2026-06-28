@@ -60,6 +60,11 @@ _AGGREGATE_CSV_HEADER = (
     "distance_unit",
     "atom_filter",
 )
+_TYPED_AGGREGATE_CSV_HEADER = (
+    *_AGGREGATE_CSV_HEADER[:9],
+    "edge_type",
+    *_AGGREGATE_CSV_HEADER[9:],
+)
 
 _PATHLIKE_TYPES = (str, Path, PathLike)
 _AggregateKey: TypeAlias = tuple[
@@ -72,6 +77,7 @@ _AggregateKey: TypeAlias = tuple[
     str,
     str | None,
     str | None,
+    str,
     str,
     str,
 ]
@@ -308,6 +314,10 @@ def write_contacts_perframe_csv(
     ) or any(
         frame_result.backbone_observations
         for frame_result in included_frames
+    ) or any(
+        contact.edge_type != _RESIDUE_CONTACT_EDGE_TYPE
+        for frame_result in included_frames
+        for contact in frame_result.contacts
     )
     rows = [
         row
@@ -395,6 +405,12 @@ def _write_contact_pair_aggregates_csv(
         condition_result.contact_count
         for condition_result in condition_results
     )
+    include_edge_type = any(
+        contact.edge_type != _RESIDUE_CONTACT_EDGE_TYPE
+        for condition_result in condition_results
+        for frame_result in condition_result.frame_results
+        for contact in frame_result.contacts
+    )
 
     rows: list[tuple[str, ...]] = []
     issues: list[PreprocessingContactEdgesCsvWriteIssue] = []
@@ -406,6 +422,7 @@ def _write_contact_pair_aggregates_csv(
                 condition_result,
                 condition_index=condition_index,
                 include_failed_frames=include_failed_frames,
+                include_edge_type=include_edge_type,
             )
         )
         rows.extend(condition_rows)
@@ -430,7 +447,11 @@ def _write_contact_pair_aggregates_csv(
             issues=(path_issue,),
         )
 
-    write_issue = _write_aggregate_rows(path, rows)
+    write_issue = _write_aggregate_rows(
+        path,
+        rows,
+        include_edge_type=include_edge_type,
+    )
     if write_issue is not None:
         return _aggregate_result(
             path,
@@ -591,6 +612,7 @@ def _aggregate_condition_rows(
     *,
     condition_index: int,
     include_failed_frames: bool,
+    include_edge_type: bool,
 ) -> tuple[
     list[tuple[str, ...]],
     list[PreprocessingContactEdgesCsvWriteIssue],
@@ -654,7 +676,12 @@ def _aggregate_condition_rows(
             aggregate_distances.setdefault(key, []).append(distance)
 
     rows = [
-        _aggregate_row(key, distances, included_frame_count)
+        _aggregate_row(
+            key,
+            distances,
+            included_frame_count,
+            include_edge_type=include_edge_type,
+        )
         for key, distances in sorted(
             aggregate_distances.items(),
             key=lambda item: _aggregate_sort_key(item[0]),
@@ -680,6 +707,7 @@ def _aggregate_key(
         contact.target_segid,
         contact.distance_unit,
         contact.atom_filter,
+        contact.edge_type,
     )
 
 
@@ -695,6 +723,7 @@ def _aggregate_sort_key(key: _AggregateKey) -> tuple[object, ...]:
         _sort_optional_value(key[8]),
         key[9],
         key[10],
+        key[11],
     )
 
 
@@ -708,11 +737,13 @@ def _aggregate_row(
     key: _AggregateKey,
     distances: list[float],
     total_frame_count: int,
+    *,
+    include_edge_type: bool,
 ) -> tuple[str, ...]:
     contact_frame_count = len(distances)
     minimum_distance = min(distances)
     mean_minimum_distance = sum(distances) / contact_frame_count
-    return (
+    identity: tuple[str, ...] = (
         key[0],
         str(key[1]),
         str(key[2]),
@@ -722,6 +753,10 @@ def _aggregate_row(
         key[6],
         _cell(key[7]),
         _cell(key[8]),
+    )
+    if include_edge_type:
+        identity += (key[11],)
+    return identity + (
         str(contact_frame_count),
         str(total_frame_count),
         str(contact_frame_count / total_frame_count),
@@ -772,7 +807,7 @@ def _contact_row(
         _cell(contact.target_segid),
     )
     if include_edge_type:
-        row += (_RESIDUE_CONTACT_EDGE_TYPE,)
+        row += (contact.edge_type,)
     return row + (
         str(contact.minimum_distance),
         contact.distance_unit,
@@ -899,6 +934,8 @@ def _write_rows(
 def _write_aggregate_rows(
     output_path: Path,
     rows: list[tuple[str, ...]],
+    *,
+    include_edge_type: bool,
 ) -> PreprocessingContactEdgesCsvWriteIssue | None:
     temporary_path: Path | None = None
     try:
@@ -913,7 +950,11 @@ def _write_aggregate_rows(
         ) as csv_file:
             temporary_path = Path(csv_file.name)
             writer = csv.writer(csv_file, lineterminator="\n")
-            writer.writerow(_AGGREGATE_CSV_HEADER)
+            writer.writerow(
+                _TYPED_AGGREGATE_CSV_HEADER
+                if include_edge_type
+                else _AGGREGATE_CSV_HEADER
+            )
             writer.writerows(rows)
         temporary_path.replace(output_path)
     except (OSError, csv.Error):

@@ -34,6 +34,8 @@ def ca_coordinate(
 def contact_pair(
     source_index: int = 0,
     target_index: int = 1,
+    *,
+    edge_type: str = "residue_contact",
 ) -> PreprocessingContactPairResult:
     return PreprocessingContactPairResult(
         source_residue_index=source_index,
@@ -45,6 +47,7 @@ def contact_pair(
         source_segid="A",
         target_segid="A",
         minimum_distance=3.0,
+        edge_type=edge_type,
     )
 
 
@@ -213,6 +216,55 @@ def test_backbone_has_highest_edge_type_priority() -> None:
         assert edge.edge_kind == "backbone"
         assert edge.all_edge_types == ("backbone", lower_priority_type)
         assert edge.n_edge_types == 2
+
+
+def test_pi_edge_types_follow_existing_graph_priority() -> None:
+    aromatic = PreprocessingGraphEdgeMappingRecord(
+        edge_id="aromatic-vdw",
+        source_node_id="n1",
+        target_node_id="n2",
+        condition_name="normal",
+        edge_kind="vdw",
+        all_edge_types=("vdw", "aromatic_pi"),
+    )
+    cation = PreprocessingGraphEdgeMappingRecord(
+        edge_id="cation-hydrophobic",
+        source_node_id="n1",
+        target_node_id="n2",
+        condition_name="normal",
+        edge_kind="hydrophobic",
+        all_edge_types=("hydrophobic", "cation_pi"),
+    )
+
+    assert aromatic.edge_kind == "aromatic_pi"
+    assert aromatic.all_edge_types == ("aromatic_pi", "vdw")
+    assert aromatic.n_edge_types == 2
+    assert cation.edge_kind == "cation_pi"
+    assert cation.all_edge_types == ("cation_pi", "hydrophobic")
+    assert cation.n_edge_types == 2
+
+
+def test_graph_mapping_merges_typed_contacts_and_preserves_backbone_priority() -> None:
+    result = build_preprocessing_graph_export_mapping(
+        condition_result(
+            (ca_coordinate(0, 0.0), ca_coordinate(1, 3.8)),
+            contacts=(
+                contact_pair(edge_type="aromatic_pi"),
+                contact_pair(edge_type="cation_pi"),
+            ),
+        )
+    )
+
+    assert result.passed
+    assert result.edge_count == 1
+    edge = result.edges[0]
+    assert edge.edge_kind == "backbone"
+    assert edge.all_edge_types == (
+        "backbone",
+        "cation_pi",
+        "aromatic_pi",
+    )
+    assert edge.n_edge_types == 3
 
 
 def test_notebook_compact_edge_type_aliases_normalize_to_backend_names() -> None:

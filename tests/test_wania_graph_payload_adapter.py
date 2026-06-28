@@ -252,6 +252,29 @@ def test_preserves_backbone_interaction_without_enabling_typed_rin(
     assert payload["capabilities"]["typed_rin_interactions"] is False
 
 
+@pytest.mark.parametrize("edge_type", ["aromatic_pi", "cation_pi"])
+def test_preserves_pi_interactions_without_enabling_typed_or_temporal_rin(
+    tmp_path: Path,
+    edge_type: str,
+) -> None:
+    backend_graph = load_fixture_graph()
+    edge = backend_graph["edges"][0]
+    edge["edge_type"] = edge_type
+    edge["all_edge_types"] = f"{edge_type}|vdw"
+    edge["n_edge_types"] = "2"
+
+    _, payload, issues = build_payload(tmp_path, graph_payload=backend_graph)
+
+    assert issues == []
+    graph = payload["graph"]
+    assert graph["edges"][0]["interaction"] == {
+        "primary_type": edge_type,
+        "all_types": [edge_type, "vdw"],
+    }
+    assert payload["capabilities"]["typed_rin_interactions"] is False
+    assert payload["capabilities"]["temporal_rin"] is False
+
+
 def test_wania_nodes_preserve_json_safe_ca_coordinates(
     tmp_path: Path,
 ) -> None:

@@ -219,7 +219,16 @@ Stage 16.9 adds sampled-frame `backbone` observations to the optional
 `contacts/contacts_perframe.csv` export for `contact_selection=protein` while
 preserving original source frame indexes. Contact aggregates, graph backbone
 priority, and the WANIA contract are unchanged. This is CSV semantic parity,
-not parquet dependency, richer chemistry, or full temporal RIN parity.
+not parquet dependency or full temporal RIN parity.
+
+Stage 16.10 adds canonical `aromatic_pi` and `cation_pi` chemistry without new
+dependencies. Aromatic π–π uses ring centroids within the notebook's 7.0 Å
+cutoff and sign-invariant best-fit-plane normal angles (parallel below 30°;
+T-shaped 60°–120°). Cation-π uses LYS NZ or ARG CZ to ring-centroid distance
+below 6.0 Å. Typed observations use the existing accumulator, sampled source
+indexes, contact selection/limits, optional CSV exports, graph priority, and
+WANIA edge-type preservation. Full typed/temporal RIN and analysis metrics
+remain deferred; the WANIA object JSON contract is unchanged.
 
 ## Optional Scientific CSV Exports
 
@@ -257,9 +266,10 @@ mania preprocessing run-graph-export \
   --export-contacts-perframe
 ```
 
-For protein selection, Stage 16.9 rows can include `backbone` alongside the
-existing `residue_contact` type. Frame indexes remain original trajectory
-source indexes; `contact_selection` limits the exported residue scope.
+For protein selection, rows can include `backbone` alongside
+`residue_contact`. Stage 16.10 also emits `aromatic_pi` and `cation_pi` rows
+when detected. Frame indexes remain original trajectory source indexes;
+`contact_selection` limits the exported residue scope.
 
 Granular flags are also available:
 

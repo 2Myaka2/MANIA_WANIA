@@ -49,7 +49,18 @@ _CONTACT_EDGES_HEADER = (
     "distance_unit",
     "atom_filter",
 )
+_TYPED_CONTACT_EDGES_HEADER = (
+    *_CONTACT_EDGES_HEADER[:9],
+    "edge_type",
+    *_CONTACT_EDGES_HEADER[9:],
+)
 _ATOM_FILTERS = ("heavy", "all")
+_TYPED_CONTACT_EDGE_TYPES = (
+    "residue_contact",
+    "backbone",
+    "aromatic_pi",
+    "cation_pi",
+)
 _FREQUENCY_TOLERANCE = 1e-12
 
 
@@ -313,7 +324,10 @@ def validate_contact_edges_csv(
     header = read_result.header
     rows = read_result.rows
 
-    if header != _CONTACT_EDGES_HEADER:
+    if header not in (
+        _CONTACT_EDGES_HEADER,
+        _TYPED_CONTACT_EDGES_HEADER,
+    ):
         return _edges_file_issue_result(
             path,
             "invalid_header",
@@ -332,6 +346,7 @@ def validate_contact_edges_csv(
             row,
             row_number=row_number,
             duplicate_keys=duplicate_keys,
+            header=header,
         )
         issues.extend(row_issues)
         if row_issues:
@@ -405,16 +420,17 @@ def _validate_perframe_row(
         ),
         _perframe_issue,
     )
-    if typed_row and edge_type not in ("residue_contact", "backbone"):
+    if typed_row and edge_type not in _TYPED_CONTACT_EDGE_TYPES:
         issues.append(
             _perframe_issue(
                 "invalid_edge_type",
                 row_number,
                 "edge_type",
-                "Edge type must be residue_contact or backbone.",
+                "Edge type must be residue_contact, backbone, aromatic_pi, "
+                "or cation_pi.",
             )
         )
-    if edge_type == "residue_contact" and not fields["atom_filter"]:
+    if edge_type != "backbone" and not fields["atom_filter"]:
         issues.append(
             _perframe_issue(
                 "missing_required_value",
@@ -534,19 +550,22 @@ def _validate_edges_row(
     *,
     row_number: int,
     duplicate_keys: set[tuple[str, ...]],
+    header: tuple[str, ...],
 ) -> tuple[list[PreprocessingContactEdgesCsvValidationIssue], str]:
     issues: list[PreprocessingContactEdgesCsvValidationIssue] = []
-    if len(row) != len(_CONTACT_EDGES_HEADER):
+    if len(row) != len(header):
         issues.append(
             _edges_issue(
                 "invalid_column_count",
                 row_number,
                 "row",
-                "CSV row must contain exactly 16 columns.",
+                f"CSV row must contain exactly {len(header)} columns.",
             )
         )
 
-    fields = _row_fields(row, _CONTACT_EDGES_HEADER)
+    fields = _row_fields(row, header)
+    typed_row = header == _TYPED_CONTACT_EDGES_HEADER
+    edge_type = fields.get("edge_type", "residue_contact")
     _add_required_issues(
         issues,
         row_number,
@@ -564,9 +583,20 @@ def _validate_edges_row(
             "mean_minimum_distance",
             "distance_unit",
             "atom_filter",
+            *(('edge_type',) if typed_row else ()),
         ),
         _edges_issue,
     )
+    if typed_row and edge_type not in _TYPED_CONTACT_EDGE_TYPES:
+        issues.append(
+            _edges_issue(
+                "invalid_edge_type",
+                row_number,
+                "edge_type",
+                "Edge type must be residue_contact, backbone, aromatic_pi, "
+                "or cation_pi.",
+            )
+        )
 
     source_index = _validate_non_negative_integer(
         fields["source_residue_index"],
@@ -693,6 +723,7 @@ def _validate_edges_row(
             "target_resname",
             "source_segid",
             "target_segid",
+            *(('edge_type',) if typed_row else ()),
             "distance_unit",
             "atom_filter",
         )

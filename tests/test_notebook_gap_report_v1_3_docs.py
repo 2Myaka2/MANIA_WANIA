@@ -12,7 +12,7 @@ def test_notebook_gap_report_v1_3_exists() -> None:
     assert DOC_PATH.is_file()
 
 
-def test_notebook_gap_report_v1_3_records_stage_16_9_scope_and_gaps() -> None:
+def test_notebook_gap_report_v1_3_records_stage_16_10_scope_and_gaps() -> None:
     text = normalized_doc_text()
 
     for phrase in (
@@ -37,11 +37,18 @@ def test_notebook_gap_report_v1_3_records_stage_16_9_scope_and_gaps() -> None:
         "Original source frame indexes are preserved",
         "parquet format parity remains future export-format scope",
         "not a full temporal RIN",
-        (
-            "Richer aromatic/cation-pi chemistry remains deferred to "
-            "Stage 16.10"
-        ),
+        "Aromatic π–π / cation-π chemistry parity is implemented in Stage 16.10",
+        "aromatic_pi",
+        "cation_pi",
+        "best-fit-plane unit normals",
+        "below 30°",
+        "60°–120°",
+        "7.0 Å",
+        "below 6.0 Å",
         "Analysis metrics parity remains deferred to Stage 16.11",
+        "Full temporal RIN remains deferred",
+        "typed_rin_interactions",
+        "temporal_interactions",
         "no new neighbor-search backend",
         "accepted output schemas",
         "WANIA object JSON contract remain unchanged",

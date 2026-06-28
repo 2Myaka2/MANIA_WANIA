@@ -86,8 +86,13 @@ or dependency change.
 - Stage 16.9 per-frame contact export parity: adds sampled-frame `backbone`
   observations to the accepted `contacts/contacts_perframe.csv` path for the
   protein selection. Source frame indexes and selection scope are preserved.
-  This is not full temporal RIN, richer chemistry, or parquet dependency
-  parity, and it does not change the WANIA object JSON contract.
+  This is not full temporal RIN or parquet dependency parity, and it does not
+  change the WANIA object JSON contract.
+- Stage 16.10 aromatic/cation-π chemistry parity: detects canonical
+  `aromatic_pi` and `cation_pi` observations from selected residue geometry,
+  carries them through aggregate/per-frame CSV and graph/WANIA edge types,
+  and preserves all Stage 16.2–16.9 workflow semantics. It adds no dependency
+  and declares no typed or temporal RIN capability.
 
 ## Accepted public workflow APIs
 
@@ -306,8 +311,22 @@ Stage 16.9 exports accepted contact-derived observations plus per-frame
 frame Cα distance at most 4.5 Å. Original sampled source indexes are not
 renumbered, and `contact_selection` limits the output scope. Aggregate contact
 CSV semantics, graph backbone priority, and WANIA remain unchanged. Parquet
-format parity remains future export-format scope; richer aromatic/cation-pi
-chemistry and analysis metrics remain deferred to Stages 16.10 and 16.11.
+format parity remains future export-format scope.
+
+Stage 16.10 detects aromatic π–π using complete supported ring atom patterns,
+deterministic centroids, and dependency-free best-fit-plane normals. The
+notebook centroid cutoff is 7.0 Å; sign-invariant normal angles classify
+parallel below 30° and T-shaped from 60° through 120°. Cation-π uses LYS NZ or
+ARG CZ to ring-centroid distance below 6.0 Å. Canonical backend names are
+`aromatic_pi` and `cation_pi`; compact notebook spellings remain aliases only.
+
+Both types remain inside the selected atom-cache and accepted contact-limit
+path. They preserve sampled-frame denominators and original source indexes in
+the accumulator and typed-compatible CSV exports. Graph priority and WANIA
+preserve the types without changing `EDGE_TYPE_PRIORITY` or the WANIA object
+JSON contract. No new dependency, parquet requirement, temporal RIN, or typed
+RIN capability is added. Analysis metrics parity is deferred to Stage 16.11,
+and full temporal RIN remains deferred.
 
 Stage 16.3 contact guard metadata is workflow/CLI metadata only. It is not a
 WANIA payload schema change and does not change graph artifact schemas.

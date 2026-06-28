@@ -142,8 +142,22 @@ remain unchanged.
 Overlapping backbone and contact-derived edges preserve contact-derived
 metrics. Pure backbone structural edges do not invent contact_frequency or
 other contact metrics when none exist. `InteractionAccumulator`,
-`build_atom_cache`, richer typed chemistry, and per-frame parquet parity
-remain deferred.
+`build_atom_cache`, and per-frame CSV parity are backend preprocessing details;
+per-frame parquet parity remains deferred.
+
+## Stage 16.10 aromatic and cation-π preservation
+
+Stage 16.10 ports the canonical backend interaction values `aromatic_pi` and
+`cation_pi`. The adapter preserves either value in
+`interaction.primary_type` and preserves both in `interaction.all_types` when
+they are present in accepted graph JSON. Ring centroids, normals, angle modes,
+and cation centers are not added to the WANIA payload.
+
+This is edge-type preservation, not a WANIA object JSON redesign and not a
+declaration of full typed RIN support. typed_rin_interactions remains false,
+the temporal RIN capability remains false, and no per-frame rows are inlined.
+Analysis metrics parity remains deferred to Stage 16.11; full temporal RIN
+remains deferred.
 
 ## Protein-agnostic run metadata
 

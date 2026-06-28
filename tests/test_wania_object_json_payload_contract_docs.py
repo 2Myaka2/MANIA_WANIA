@@ -164,6 +164,24 @@ def test_wania_contract_doc_mentions_stage_16_6_backbone_extension() -> None:
         assert phrase in text
 
 
+def test_wania_contract_doc_mentions_stage_16_10_pi_type_preservation() -> None:
+    text = normalized(doc_text())
+
+    for phrase in (
+        "Stage 16.10 aromatic and cation-π preservation",
+        "aromatic_pi",
+        "cation_pi",
+        "interaction.primary_type",
+        "interaction.all_types",
+        "typed_rin_interactions remains false",
+        "temporal RIN capability remains false",
+        "not a WANIA object JSON redesign",
+        "Analysis metrics parity remains deferred to Stage 16.11",
+        "full temporal RIN remains deferred",
+    ):
+        assert phrase in text
+
+
 def test_wania_payload_sample_is_valid_object_json() -> None:
     payload = load_payload()
 

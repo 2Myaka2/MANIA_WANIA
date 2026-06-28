@@ -218,10 +218,26 @@ without renumbering. Contact-derived `residue_contact` rows remain compatible;
 These observations do not enter `contact_edges.csv` or the contact
 accumulator. Contact safety failures still skip incomplete frames. Graph
 backbone priority and pure-edge metrics remain Stage 16.6 behavior, and the
-WANIA object JSON contract remains unchanged. This is not a full temporal RIN,
-richer chemistry parity, or parquet dependency parity. Notebook parquet
-format parity remains future export-format scope; richer aromatic/cation-pi
-chemistry and analysis metrics remain deferred to Stages 16.10 and 16.11.
+WANIA object JSON contract remains unchanged. This is not a full temporal RIN
+or parquet dependency parity. Notebook parquet format parity remains future
+export-format scope, and analysis metrics remain deferred to Stage 16.11.
+
+Stage 16.10 ports notebook-inspired `aromatic_pi` and `cation_pi` chemistry.
+Supported aromatic residues provide complete named ring atoms; their centroid
+and dependency-free best-fit-plane unit normal are deterministic. Aromatic π–π
+uses the notebook's 7.0 Å centroid cutoff and a sign-invariant normal-axis
+angle: parallel is below 30°, and T-shaped is 60°–120°. Cation-π uses LYS NZ
+or ARG CZ to ring-centroid distance below 6.0 Å. Unsupported or incomplete
+patterns are skipped.
+
+These typed observations enter the existing `InteractionAccumulator` and the
+typed-compatible aggregate/per-frame CSV paths. Original sampled source frame
+indexes, sampled-frame frequency denominator, atom-cache scope,
+`contact_selection`, contact limits, partial/failed behavior, graph priority,
+and WANIA edge-type preservation remain compatible. Canonical output uses
+`aromatic_pi` and `cation_pi`; compact notebook spellings remain aliases only.
+No new dependency, parquet output, temporal RIN, typed RIN capability, or
+WANIA object JSON redesign is introduced.
 
 ## Run options
 
@@ -688,6 +704,9 @@ plus `--export-contact-edges`. It deliberately does not include
 Stage 16.9 may add per-frame `backbone` observations to that CSV for the
 protein selection. It preserves sampled source indexes and remains an
 optional CSV export; no parquet dependency or full temporal RIN is added.
+Stage 16.10 adds canonical `aromatic_pi` and `cation_pi` rows when their
+geometry is detected; the aggregate contact CSV uses the same optional typed
+extension while legacy untyped `residue_contact` output remains compatible.
 
 The optional scientific CSV export result is included in the final JSON under
 `scientific_csv_export`. Without flags it is a skipped success. If a requested

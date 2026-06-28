@@ -54,6 +54,27 @@ from mania.preprocessing.scientific_runtime import (
     is_mdanalysis_available,
     require_mdanalysis,
 )
+from mania.preprocessing.trajectory_contact_chemistry import (
+    AromaticRingCandidate as AromaticRingCandidate,
+)
+from mania.preprocessing.trajectory_contact_chemistry import (
+    CationCenterCandidate as CationCenterCandidate,
+)
+from mania.preprocessing.trajectory_contact_chemistry import (
+    PiInteractionObservation as PiInteractionObservation,
+)
+from mania.preprocessing.trajectory_contact_chemistry import (
+    ResidueChemistryCandidate as ResidueChemistryCandidate,
+)
+from mania.preprocessing.trajectory_contact_chemistry import (
+    build_aromatic_ring_candidate as build_aromatic_ring_candidate,
+)
+from mania.preprocessing.trajectory_contact_chemistry import (
+    build_cation_center_candidate as build_cation_center_candidate,
+)
+from mania.preprocessing.trajectory_contact_chemistry import (
+    detect_pi_interactions as detect_pi_interactions,
+)
 from mania.preprocessing.trajectory_contacts import (
     ContactProgressCallback as ContactProgressCallback,
 )
@@ -173,6 +194,42 @@ from mania.preprocessing.trajectory_graph_workflow import (
     export_preprocessing_graph_workflow_scientific_csvs,
     load_preprocessing_graph_workflow_condition_runtimes,
     run_preprocessing_graph_workflow_diagnostics,
+)
+from mania.preprocessing.trajectory_interaction_geometry import (
+    AROMATIC_PI_MAX_CENTROID_DISTANCE_A as AROMATIC_PI_MAX_CENTROID_DISTANCE_A,
+)
+from mania.preprocessing.trajectory_interaction_geometry import (
+    AROMATIC_PI_PARALLEL_MAX_ANGLE_DEG as AROMATIC_PI_PARALLEL_MAX_ANGLE_DEG,
+)
+from mania.preprocessing.trajectory_interaction_geometry import (
+    AROMATIC_PI_TSHAPED_MAX_ANGLE_DEG as AROMATIC_PI_TSHAPED_MAX_ANGLE_DEG,
+)
+from mania.preprocessing.trajectory_interaction_geometry import (
+    AROMATIC_PI_TSHAPED_MIN_ANGLE_DEG as AROMATIC_PI_TSHAPED_MIN_ANGLE_DEG,
+)
+from mania.preprocessing.trajectory_interaction_geometry import (
+    CATION_PI_MAX_DISTANCE_A as CATION_PI_MAX_DISTANCE_A,
+)
+from mania.preprocessing.trajectory_interaction_geometry import (
+    AromaticPiGeometry as AromaticPiGeometry,
+)
+from mania.preprocessing.trajectory_interaction_geometry import (
+    AromaticRingGeometry as AromaticRingGeometry,
+)
+from mania.preprocessing.trajectory_interaction_geometry import (
+    build_aromatic_ring_geometry as build_aromatic_ring_geometry,
+)
+from mania.preprocessing.trajectory_interaction_geometry import (
+    classify_aromatic_pi_angle as classify_aromatic_pi_angle,
+)
+from mania.preprocessing.trajectory_interaction_geometry import (
+    detect_aromatic_pi_geometry as detect_aromatic_pi_geometry,
+)
+from mania.preprocessing.trajectory_interaction_geometry import (
+    detect_cation_pi_distance as detect_cation_pi_distance,
+)
+from mania.preprocessing.trajectory_interaction_geometry import (
+    sign_invariant_normal_angle_deg as sign_invariant_normal_angle_deg,
 )
 from mania.preprocessing.trajectory_loader import load_single_condition_runtime
 from mania.preprocessing.trajectory_manifest_loader import (

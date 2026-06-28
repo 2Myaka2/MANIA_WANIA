@@ -1036,6 +1036,7 @@ class _AggregateKey:
     condition_name: str
     source_node_id: str
     target_node_id: str
+    edge_type: str
     distance_unit: str
     atom_filter: str
 
@@ -2668,11 +2669,13 @@ def _map_condition_result(
         for key, distance in frame_distances.items():
             aggregate_distances.setdefault(key, []).append(distance)
 
-    contact_edges = tuple(
-        _edge_record(key, distances, included_frame_count)
-        for key, distances in sorted(
-            aggregate_distances.items(),
-            key=lambda item: _edge_id(item[0]),
+    contact_edges = _merge_typed_contact_edges(
+        tuple(
+            _edge_record(key, distances, included_frame_count)
+            for key, distances in sorted(
+                aggregate_distances.items(),
+                key=lambda item: (_edge_id(item[0]), item[0].edge_type),
+            )
         )
     )
     backbone_pairs = _backbone_edge_pairs(
@@ -3186,6 +3189,7 @@ def _frame_distances(
             condition_name=frame_result.condition_name,
             source_node_id=source_node.node_id,
             target_node_id=target_node.node_id,
+            edge_type=contact.edge_type,
             distance_unit=contact.distance_unit,
             atom_filter=contact.atom_filter,
         )
@@ -3374,6 +3378,38 @@ def _merge_backbone_edges(
     return tuple(sorted(merged_edges, key=lambda edge: edge.edge_id))
 
 
+def _merge_typed_contact_edges(
+    contact_edges: tuple[PreprocessingGraphEdgeMappingRecord, ...],
+) -> tuple[PreprocessingGraphEdgeMappingRecord, ...]:
+    edges_by_pair: dict[
+        tuple[str, str, str],
+        list[PreprocessingGraphEdgeMappingRecord],
+    ] = {}
+    for edge in contact_edges:
+        pair_key = _canonical_edge_pair(
+            edge.condition_name,
+            edge.source_node_id,
+            edge.target_node_id,
+        )
+        edges_by_pair.setdefault(pair_key, []).append(edge)
+
+    merged_edges: list[PreprocessingGraphEdgeMappingRecord] = []
+    for pair_edges in edges_by_pair.values():
+        primary = min(
+            pair_edges,
+            key=lambda edge: _edge_type_priority_key(edge.edge_kind),
+        )
+        merged_edges.append(
+            replace(
+                primary,
+                all_edge_types=tuple(
+                    edge.edge_kind for edge in pair_edges
+                ),
+            )
+        )
+    return tuple(sorted(merged_edges, key=lambda edge: edge.edge_id))
+
+
 def _canonical_edge_pair(
     condition_name: str,
     source_node_id: str,
@@ -3424,6 +3460,8 @@ def _edge_record(
         source_node_id=key.source_node_id,
         target_node_id=key.target_node_id,
         condition_name=key.condition_name,
+        edge_kind=key.edge_type,
+        all_edge_types=(key.edge_type,),
         contact_frame_count=contact_frame_count,
         total_frame_count=total_frame_count,
         contact_frequency=contact_frame_count / total_frame_count,

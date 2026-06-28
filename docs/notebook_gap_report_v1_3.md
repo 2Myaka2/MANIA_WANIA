@@ -72,7 +72,8 @@ aggregation layer. It records observations by condition, canonical residue
 pair, and edge type; uses sampled frame count as the contact-frequency
 denominator; retains original source frame indexes; and deterministically
 finalizes frequency and distance aggregates. The current contact engine still
-produces only accepted generic `residue_contact` observations.
+preserves accepted generic `residue_contact` observations; Stage 16.10 adds
+the two typed chemistry observations described below.
 
 This is an internal refactor/parity step. Default scientific behavior,
 accepted scientific CSV and graph schemas, backbone mapping, and the WANIA
@@ -113,20 +114,43 @@ This CSV is not a full temporal RIN and does not enable
 
 Notebook v1.2 writes parquet. Backend Stage 16.9 ports the semantics into the
 accepted CSV export path; parquet format parity remains future export-format
-scope. Richer aromatic/cation-pi chemistry remains deferred to Stage 16.10,
-and analysis metrics parity remains deferred to Stage 16.11.
+scope. Analysis metrics parity remains deferred to Stage 16.11.
+
+## What Stage 16.10 ports
+
+Aromatic π–π / cation-π chemistry parity is implemented in Stage 16.10 under
+the canonical backend names `aromatic_pi` and `cation_pi`. Aromatic rings use
+deterministic centroids and dependency-free best-fit-plane unit normals. The
+normal-axis angle is sign-invariant: parallel interactions require an angle
+below 30°, while T-shaped interactions accept 60°–120°. The notebook's exact
+aromatic centroid cutoff is 7.0 Å.
+
+Cation-π detection uses the LYS NZ or ARG CZ cation center and requires its
+distance to a supported aromatic ring centroid to be below 6.0 Å. Incomplete
+or unsupported atom-name patterns are skipped deterministically. The accepted
+amino-acid patterns are general residue chemistry rather than protein-specific
+residue IDs.
+
+Both interaction types flow through `InteractionAccumulator`, typed aggregate
+and per-frame CSV output, graph priority, and WANIA edge-type preservation.
+Frame sampling, original source indexes, `contact_selection`, atom-cache scope,
+contact limits, and partial/failed finalization behavior remain unchanged. No
+new dependency is required. Notebook compact names `aromaticpi` and `cationpi`
+remain aliases only. The WANIA object schema is not redesigned, and
+`typed_rin_interactions` and `temporal_interactions` remain false.
 
 ## Deferred Stage 16 parity scope
 
 - `InteractionAccumulator`: implemented in Stage 16.7.
 - `build_atom_cache`: implemented in Stage 16.8.
 - Per-frame contact export parity: implemented in Stage 16.9.
+- Aromatic π–π / cation-π chemistry parity: implemented in Stage 16.10.
 - Parquet format parity remains future export-format scope.
-- Richer aromatic/cation-pi chemistry remains deferred to Stage 16.10.
 - Analysis metrics parity remains deferred to Stage 16.11.
+- Full temporal RIN remains deferred.
 
-Typed or temporal RIN, centrality/community metrics, and other full notebook
-chemistry parity also remain future work.
+Full typed or temporal RIN, centrality/community metrics, and other notebook
+chemistry parity remain future work.
 
 ## Known semantic gaps
 
@@ -144,5 +168,7 @@ chemistry parity also remain future work.
   output schemas or contact scientific semantics.
 - Per-frame contact export parity is implemented in Stage 16.9 without adding
   full temporal RIN or changing the WANIA object JSON contract.
-- Parquet format parity, richer typed chemistry, and analysis metrics remain
-  future scope; chemistry and metrics are deferred to Stages 16.10–16.11.
+- Aromatic π–π / cation-π chemistry parity is implemented in Stage 16.10
+  without declaring full typed or temporal RIN capability.
+- Parquet format parity and analysis metrics remain future scope; metrics are
+  deferred to Stage 16.11, and full temporal RIN remains deferred.
