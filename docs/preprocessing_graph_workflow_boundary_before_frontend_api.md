@@ -74,8 +74,12 @@ or dependency change.
 - Stage 16.6 backbone graph semantics: adds structural `backbone` edges for
   sequential protein Cα nodes in one condition and chain within
   `BACKBONE_MAX_CA_DIST_A = 4.5` Å, and places `backbone` first in
-  `EDGE_PRIORITY`. `InteractionAccumulator`, `build_atom_cache`, richer typed
-  chemistry, and per-frame parquet parity remain deferred.
+  `EDGE_PRIORITY`.
+- Stage 16.7 contact aggregation parity: ports the notebook
+  `InteractionAccumulator` idea into the backend contact result layer. It
+  preserves default contact behavior and accepted scientific CSV, graph, and
+  WANIA schemas. `build_atom_cache`, per-frame parquet parity, and richer
+  typed chemistry remain deferred.
 
 ## Accepted public workflow APIs
 
@@ -272,6 +276,14 @@ has priority over contact-derived types, while `all_edge_types` and
 edge retains its contact metrics. A pure structural backbone edge leaves
 contact metrics empty; it does not invent `contact_frequency`. Notebook
 compact type names are aliases only and normalize to backend snake_case.
+
+Stage 16.7 centralizes sampled-frame count and distance aggregation in an
+`InteractionAccumulator`-style helper. The helper keeps original source frame
+indexes, supports deterministic minimum-frequency filtering, and treats edge
+types independently. It does not change contact selection, contact safety
+limits, progress, scientific CSV schemas, graph schemas, or the WANIA object
+JSON contract. Backbone continues to be generated in graph mapping/export,
+not by the contact accumulator.
 
 Stage 16.3 contact guard metadata is workflow/CLI metadata only. It is not a
 WANIA payload schema change and does not change graph artifact schemas.

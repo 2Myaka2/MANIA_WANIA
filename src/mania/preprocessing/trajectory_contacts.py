@@ -9,9 +9,17 @@ from numbers import Integral
 from typing import Any, TypeAlias, cast
 
 from mania.preprocessing import (
+    trajectory_contact_accumulator,
     trajectory_frame_sampling,
     trajectory_manifest_loader,
     trajectory_runtime,
+)
+
+InteractionAccumulator: TypeAlias = (
+    trajectory_contact_accumulator.InteractionAccumulator
+)
+InteractionAggregateResult: TypeAlias = (
+    trajectory_contact_accumulator.InteractionAggregateResult
 )
 
 PreprocessingConditionLoadResult: TypeAlias = (
@@ -30,6 +38,7 @@ _CONTACT_LEVEL = "residue"
 _DISTANCE_DEFINITION = "minimum_selected_atom_distance"
 _FRAME_SCOPE = "per_frame"
 _PAIR_SCOPE = "distinct_residue_pair"
+_RESIDUE_CONTACT_EDGE_TYPE = "residue_contact"
 _CONTACT_RESULT_STATUSES = (
     "not_computed",
     "computed",
@@ -628,6 +637,7 @@ class PreprocessingConditionContactsResult:
     )
     representative_ca_coordinates: tuple[PreprocessingCaCoordinate, ...] = ()
     frame_results: tuple[PreprocessingContactFrameResult, ...] = ()
+    interaction_aggregates: tuple[InteractionAggregateResult, ...] = ()
     issues: tuple[PreprocessingContactComputationIssue, ...] = ()
     status: str = "not_computed"
 
@@ -680,6 +690,17 @@ class PreprocessingConditionContactsResult:
                     "frame result indexes must be unique within a condition"
                 )
             frame_indexes.add(frame_result.frame_index)
+        for aggregate in self.interaction_aggregates:
+            if not isinstance(aggregate, InteractionAggregateResult):
+                raise ValueError(
+                    "interaction_aggregates must contain "
+                    "InteractionAggregateResult"
+                )
+            if aggregate.condition_name != self.condition_name:
+                raise ValueError(
+                    "interaction aggregate condition_name must match "
+                    "condition result"
+                )
         for issue in self.issues:
             if not isinstance(issue, PreprocessingContactComputationIssue):
                 raise ValueError(
@@ -1058,6 +1079,12 @@ def compute_condition_contacts(
     else:
         status = "computed"
 
+    interaction_aggregates = (
+        _finalize_condition_interactions(frame_results)
+        if status == "computed"
+        else ()
+    )
+
     result = _condition_contacts_result(
         condition_load_result.condition_name,
         selected_options,
@@ -1065,6 +1092,7 @@ def compute_condition_contacts(
         status=status,
         representative_ca_coordinates=representative_ca_coordinates,
         frame_results=tuple(frame_results),
+        interaction_aggregates=interaction_aggregates,
         issues=tuple(condition_issues),
     )
     _emit_progress(
@@ -1313,6 +1341,23 @@ def _compute_contact_frame(
 def _candidate_pair_count(candidates: list[_ResidueCandidate]) -> int:
     candidate_count = len(candidates)
     return candidate_count * (candidate_count - 1) // 2
+
+
+def _finalize_condition_interactions(
+    frame_results: list[PreprocessingContactFrameResult],
+) -> tuple[InteractionAggregateResult, ...]:
+    accumulator = InteractionAccumulator()
+    for frame_result in frame_results:
+        for contact in frame_result.contacts:
+            accumulator.add(
+                condition_name=frame_result.condition_name,
+                frame_index=frame_result.frame_index,
+                resid_i=contact.source_residue_index,
+                resid_j=contact.target_residue_index,
+                edge_type=_RESIDUE_CONTACT_EDGE_TYPE,
+                distance_A=contact.minimum_distance,
+            )
+    return accumulator.finalize(frame_count=len(frame_results))
 
 
 def _atom_distance_evaluation_count(
@@ -1832,6 +1877,7 @@ def _condition_contacts_result(
     status: str,
     representative_ca_coordinates: tuple[PreprocessingCaCoordinate, ...] = (),
     frame_results: tuple[PreprocessingContactFrameResult, ...] = (),
+    interaction_aggregates: tuple[InteractionAggregateResult, ...] = (),
     issues: tuple[PreprocessingContactComputationIssue, ...] = (),
 ) -> PreprocessingConditionContactsResult:
     return PreprocessingConditionContactsResult(
@@ -1840,6 +1886,7 @@ def _condition_contacts_result(
         computation_limits=computation_limits,
         representative_ca_coordinates=representative_ca_coordinates,
         frame_results=frame_results,
+        interaction_aggregates=interaction_aggregates,
         issues=issues,
         status=status,
     )
@@ -1847,6 +1894,8 @@ def _condition_contacts_result(
 
 __all__ = [
     "ContactProgressCallback",
+    "InteractionAccumulator",
+    "InteractionAggregateResult",
     "PreprocessingConditionContactsResult",
     "PreprocessingCaCoordinate",
     "PreprocessingContactComputationLimits",

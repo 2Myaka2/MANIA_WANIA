@@ -201,6 +201,13 @@ type, while overlapping contact types and metrics are preserved. Pure
 backbone edges do not invent contact frequency. Broader notebook chemistry
 parity remains deferred, and `typed_rin_interactions` remains false.
 
+Stage 16.7 ports the notebook `InteractionAccumulator` idea into internal
+backend contact aggregation. Sampled-frame frequency, distance aggregates,
+and original first/last source frame indexes are finalized deterministically;
+default scientific behavior and scientific CSV, graph, and WANIA schemas are
+unchanged. `build_atom_cache`, per-frame parquet parity, and richer chemistry
+parity remain deferred.
+
 ## Optional Scientific CSV Exports
 
 By default, the Stage 15 CLI does not export Rg/contacts CSVs. They can be

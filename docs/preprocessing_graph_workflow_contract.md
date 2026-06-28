@@ -179,8 +179,23 @@ validation, one continuous 690-residue protein chain should produce
 approximately 689 backbone edges per condition; default CI uses small
 synthetic graphs.
 
-Stage 16.6 does not port `InteractionAccumulator`, `build_atom_cache`, richer
-typed chemistry, or per-frame parquet parity.
+Stage 16.7 ports the notebook `InteractionAccumulator` idea into the backend
+contact result layer. Observations are accumulated by condition, canonical
+residue pair, and edge type. Contact frequency uses the sampled frame count as
+its denominator, and first/last-seen values retain original source frame
+indexes. Finalization is deterministic and records the existing distance
+aggregate semantics without changing default contact detection.
+
+This is an internal aggregation refactor. Existing Stage 13 scientific CSV,
+graph CSV/JSON, and WANIA object JSON schemas remain unchanged. Contact
+selection still precedes candidate generation, limits still stop a failing
+frame before observations are recorded, and partial or failed conditions are
+not finalized as complete aggregates. Backbone remains a structural graph
+mapping concern from Stage 16.6 and is not accumulated as a contact.
+
+`build_atom_cache` remains deferred to Stage 16.8, per-frame parquet parity to
+Stage 16.9, richer aromatic π–π/cation-π chemistry parity to Stage 16.10,
+and analysis metrics parity to Stage 16.11.
 
 ## Run options
 

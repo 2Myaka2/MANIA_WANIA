@@ -842,6 +842,7 @@ def test_residue_pair_limit_exceeded_returns_partial_issue() -> None:
     assert result.status == "partial"
     assert result.passed is False
     assert result.contact_count == 0
+    assert result.interaction_aggregates == ()
     assert result.frame_results[0].passed is False
     issue = result.frame_results[0].issues[0]
     assert issue.kind == "contact_frame_limit_exceeded"
@@ -1007,6 +1008,13 @@ def test_frame_stride_computes_sampled_source_frames_and_exports(
     assert [frame.frame_index for frame in result.frame_results] == [0, 2]
     assert [frame.time_ps for frame in result.frame_results] == [0.0, 5.0]
     assert [frame.contact_count for frame in result.frame_results] == [1, 0]
+    assert len(result.interaction_aggregates) == 1
+    aggregate = result.interaction_aggregates[0]
+    assert aggregate.contact_freq == 0.5
+    assert aggregate.mean_dist_A == 3.0
+    assert aggregate.std_dist_A == 0.0
+    assert aggregate.first_seen_frame == 0
+    assert aggregate.last_seen_frame == 0
 
     perframe_path = tmp_path / "contacts_perframe.csv"
     edges_path = tmp_path / "contact_edges.csv"
@@ -1182,6 +1190,7 @@ def test_result_is_nested_json_safe() -> None:
 
     payload = result.to_dict()
 
+    assert "interaction_aggregates" not in payload
     assert payload["frame_results"] == [
         result.frame_results[0].to_dict()
     ]

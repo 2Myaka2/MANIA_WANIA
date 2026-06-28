@@ -12,7 +12,7 @@ def test_notebook_gap_report_v1_3_exists() -> None:
     assert DOC_PATH.is_file()
 
 
-def test_notebook_gap_report_v1_3_records_stage_16_6_scope_and_gaps() -> None:
+def test_notebook_gap_report_v1_3_records_stage_16_7_scope_and_gaps() -> None:
     text = normalized_doc_text()
 
     for phrase in (
@@ -28,8 +28,14 @@ def test_notebook_gap_report_v1_3_records_stage_16_6_scope_and_gaps() -> None:
         "690 continuous protein residues",
         "approximately 689 backbone edges",
         "InteractionAccumulator",
+        "InteractionAccumulator is implemented in Stage 16.7",
         "build_atom_cache",
         "Stage 16.6",
-        "Stage 16.7+",
+        "deferred to Stage 16.8",
+        "deferred to Stage 16.9",
+        "deferred to Stage 16.10",
+        "deferred to Stage 16.11",
+        "accepted output schemas",
+        "WANIA object JSON contract remain unchanged",
     ):
         assert phrase in text

@@ -65,12 +65,29 @@ For 690 continuous protein residues in one chain, local manual validation
 should find approximately 689 backbone edges per condition. Default CI uses
 small synthetic inputs instead of real MD data.
 
-## Stage 16.7+ deferred scope
+## What Stage 16.7 ports
 
-`InteractionAccumulator`, `build_atom_cache`, richer typed chemistry,
-π–π SVD normals, cation-π centroid logic, and per-frame parquet parity are
-deferred. Typed or temporal RIN, centrality/community metrics, and other full
-notebook chemistry parity also remain future work.
+InteractionAccumulator is implemented in Stage 16.7 as an internal contact
+aggregation layer. It records observations by condition, canonical residue
+pair, and edge type; uses sampled frame count as the contact-frequency
+denominator; retains original source frame indexes; and deterministically
+finalizes frequency and distance aggregates. The current contact engine still
+produces only accepted generic `residue_contact` observations.
+
+This is an internal refactor/parity step. Default scientific behavior,
+accepted scientific CSV and graph schemas, backbone mapping, and the WANIA
+object JSON contract remain unchanged. Failed or partial contact computation
+does not expose finalized aggregates as a complete result.
+
+## Deferred Stage 16 parity scope
+
+- `build_atom_cache`: deferred to Stage 16.8.
+- Per-frame contact/parquet parity: deferred to Stage 16.9.
+- Aromatic π–π and cation-π chemistry parity: deferred to Stage 16.10.
+- Analysis metrics parity: deferred to Stage 16.11.
+
+Typed or temporal RIN, centrality/community metrics, and other full notebook
+chemistry parity also remain future work.
 
 ## Known semantic gaps
 
@@ -82,5 +99,7 @@ notebook chemistry parity also remain future work.
 - The backend uses `x_ca/y_ca/z_ca`; notebook-only `xca/yca/zca` names are not
   competing backend fields.
 - Backbone edge type and `EDGE_PRIORITY` are implemented in Stage 16.6.
-- The accumulator, atom cache, richer chemistry, and parquet parity remain
-  deferred to Stage 16.7+.
+- `InteractionAccumulator` is implemented in Stage 16.7 without changing
+  accepted output schemas.
+- `build_atom_cache`, per-frame parquet parity, richer typed chemistry, and
+  analysis metrics remain deferred to Stages 16.8–16.11.
