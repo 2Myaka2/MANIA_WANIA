@@ -260,6 +260,11 @@ full backend/scientific export and not a FastAPI/upload/job API contract. See
 `docs/wania_mvp_contract_v0_1.md`. The Stage 16.12 sample remains a rich
 illustrative payload rather than the minimal required MVP payload.
 
+Stage 17.2 freezes the exact required fields and coordinate-based render
+profile in `docs/wania_required_fields_contract_v0_1.md`. It adds only a
+minimal fixture and contract tests; it does not add runtime validation or
+change scientific, API, frontend, or CLI behavior.
+
 ## Optional Scientific CSV Exports
 
 By default, the Stage 15 CLI does not export Rg/contacts CSVs. They can be

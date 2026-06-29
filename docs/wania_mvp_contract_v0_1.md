@@ -13,8 +13,9 @@ display basic diagnostics, show artifact links, and ignore missing optional
 science fields.
 
 Stage 17.1 freezes this documented profile. It is not schema redesign and does
-not add runtime validation. Stage 17.2 will add stricter required-field tests
-and a minimal valid payload fixture.
+not add runtime validation. Stage 17.2 freezes the exact required subset in
+[`wania_required_fields_contract_v0_1.md`](wania_required_fields_contract_v0_1.md),
+with contract tests and a minimal valid payload fixture.
 
 ## 2. Layer separation
 
@@ -46,8 +47,9 @@ The documented MVP profile has these required top-level blocks:
 
 The existing payload can also contain `temporal`, but it is not required by
 the frontend MVP profile. Stage 17.1 documents the profile; it does not
-redesign the runtime schema or introduce strict validation code. Stage 17.2
-will turn this profile into stricter required-field contract tests.
+redesign the runtime schema or introduce strict validation code. The Stage
+17.2 required-fields contract provides the exact field-level rules without a
+runtime validator.
 
 ## 4. MVP graph requirements
 
@@ -73,12 +75,9 @@ The accepted payload also supports coordinates:
   rendering;
 - `x_ca/y_ca/z_ca` are optional explicit Cα scientific coordinate fields.
 
-Coordinates are optional in this Stage 17.1 MVP profile. A frontend that uses
-a coordinate-based rendering mode uses `x/y/z` when they are available and
-must handle their absence. If coordinate-based rendering later becomes the
-only supported MVP mode, Stage 17.2 may make `x/y/z` required in contract
-tests. This distinction does not change the runtime schema, and it does not
-remove `x_ca/y_ca/z_ca` from the Stage 16.12 sample.
+Stage 17.2 selects the coordinate-based WANIA MVP v0.1 render profile:
+renderable nodes require `x/y/z`. This selection does not change the runtime
+schema, and it does not remove `x_ca/y_ca/z_ca` from the Stage 16.12 sample.
 
 ## 6. MVP edge expectations
 
@@ -140,8 +139,8 @@ requirements.
 | `graph.edges` | required | Renderable relationships/interactions | May be empty for an edgeless graph. |
 | node `id` | required | Node identity | Edge endpoints refer to node ids. |
 | node `condition` | required | Condition identity | Belongs to the run context. |
-| node `label` or `residue` display identity | required | Human-readable residue/entity identity | Stage 17.2 will freeze exact minimal field combinations. |
-| node `x/y/z` | optional | Frontend-facing coordinates | Used when coordinate-based rendering is selected. |
+| node `residue.index` and `residue.name` | required | Residue/display identity | Exact Stage 17.2 minimal identity fields. |
+| node `x/y/z` | required | Frontend-facing coordinates | Required by the Stage 17.2 coordinate-based render profile. |
 | node `x_ca/y_ca/z_ca` | optional | Explicit scientific Cα coordinates | Not required for MVP rendering. |
 | edge `id` | required | Edge identity | Stable within the payload. |
 | edge `source` / `target` | required | Node references | Refer to node ids. |
@@ -194,7 +193,9 @@ references, and analysis artifact references.
 
 It is a rich illustrative payload, not the minimal required MVP payload. Not
 every optional scientific field present in the sample is required for MVP
-rendering, and the sample is not a strict minimal payload fixture.
+rendering, and the sample is not a strict minimal payload fixture. The exact
+minimal fixture and superset rule are defined by the
+[`Stage 17.2 required-fields contract`](wania_required_fields_contract_v0_1.md).
 
 ## 11. Non-goals
 
@@ -209,7 +210,7 @@ It is not upload/job API work.
 ## 12. Stage 17 roadmap
 
 - **Stage 17.1:** freeze and document the WANIA MVP frontend profile.
-- **Stage 17.2:** add required-fields contract tests and a minimal valid
-  payload fixture.
+- **Stage 17.2:** freeze the required-fields contract and add its minimal valid
+  payload fixture and tests.
 - **Stage 17.3:** harden the science vs UI boundary and backend-only leakage
   rules.

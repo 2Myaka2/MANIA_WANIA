@@ -210,10 +210,22 @@ full backend graph export or scientific analysis layer, and it is not a
 FastAPI/upload/job API contract.
 
 The Stage 16.12 sample is a rich illustrative payload, not the minimal required
-MVP payload. Optional coordinates, scientific interaction types, measurements,
-and analysis artifact references in that sample do not become universal MVP
-requirements. Strict required-field validation and a minimal valid payload
-fixture remain Stage 17.2 scope.
+MVP payload. Optional scientific interaction types, measurements, and analysis
+artifact references in that sample do not become universal MVP requirements.
+The exact required-field profile and minimal valid payload fixture are defined
+by Stage 17.2.
+
+## Stage 17.2 required-fields contract
+
+Stage 17.2 freezes the exact frontend-required subset in
+`docs/wania_required_fields_contract_v0_1.md`. The contract selects the
+coordinate-based MVP render profile, so renderable nodes require `x/y/z`,
+while `x_ca/y_ca/z_ca` remain optional scientific Cα fields. It adds a
+minimal fixture and contract tests only: no runtime validator, schema redesign,
+FastAPI/upload/job API, frontend behavior, or scientific behavior is added.
+
+The Stage 16.12 frontend sample remains a rich superset rather than the
+minimal MVP fixture.
 
 ## Protein-agnostic run metadata
 

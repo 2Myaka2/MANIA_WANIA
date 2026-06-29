@@ -1,0 +1,55 @@
+{
+  "schema_version": "wania_graph.v0.1",
+  "run": {
+    "run_name": "minimal_mvp_run",
+    "protein_id": "synthetic_protein",
+    "protein_name": "Synthetic protein",
+    "condition_names": [
+      "reference"
+    ]
+  },
+  "capabilities": {
+    "static_contact_graph": true
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": "reference|1|ALA",
+        "condition": "reference",
+        "residue": {
+          "index": 1,
+          "name": "ALA"
+        },
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      {
+        "id": "reference|2|GLY",
+        "condition": "reference",
+        "residue": {
+          "index": 2,
+          "name": "GLY"
+        },
+        "x": 1.0,
+        "y": 0.0,
+        "z": 0.0
+      }
+    ],
+    "edges": [
+      {
+        "id": "reference|1|ALA--reference|2|GLY",
+        "source": "reference|1|ALA",
+        "target": "reference|2|GLY",
+        "condition": "reference",
+        "interaction": {
+          "primary_type": "residue_contact"
+        }
+      }
+    ]
+  },
+  "artifacts": {},
+  "diagnostics": {
+    "passed": true
+  }
+}
