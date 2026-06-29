@@ -202,6 +202,19 @@ FastAPI/upload/job API remains future scope. Temporal RIN remains future scope.
 Formal statistics remain future scope. Conformational clustering remains future
 scope.
 
+## Stage 17.1 WANIA MVP frontend profile
+
+Stage 17.1 freezes the stable frontend-facing subset of this object JSON
+payload in `docs/wania_mvp_contract_v0_1.md`. The WANIA MVP profile is not the
+full backend graph export or scientific analysis layer, and it is not a
+FastAPI/upload/job API contract.
+
+The Stage 16.12 sample is a rich illustrative payload, not the minimal required
+MVP payload. Optional coordinates, scientific interaction types, measurements,
+and analysis artifact references in that sample do not become universal MVP
+requirements. Strict required-field validation and a minimal valid payload
+fixture remain Stage 17.2 scope.
+
 ## Protein-agnostic run metadata
 
 The payload is protein-agnostic. The `run` block identifies which protein run

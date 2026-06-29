@@ -26,6 +26,7 @@ Audited sources:
 - `data/reference/notebooks_libraries_v1_3/MANIA_preprocessing_v1_2.ipynb`
 - `data/reference/notebooks_libraries_v1_3/MANIA_analysis_v1_3.ipynb`
 - `docs/notebook_gap_report_v1_3.md`
+- `docs/wania_mvp_contract_v0_1.md`
 - `tests/fixtures/wania_graph_payload_frontend_sample_v0_1.json`
 
 Backend implementation and contract files were used to verify names,
@@ -105,8 +106,9 @@ the accepted manifest, graph export, scientific CSV, and diagnostics paths.
 | Notebook/WANIA concern | Backend status | Backend stage | Backend artifact/module | Notes / semantic differences |
 |---|---|---|---|---|
 | Object JSON payload contract | implemented with backend-specific semantics | Stage 16.1 | `src/mania/wania/graph_payload.py` | The backend keeps the WANIA payload object JSON contract stable and separate from backend `graph/graph.json`. |
-| Node coordinates and identity | implemented | Stage 16.5 | WANIA `graph.elements.nodes` | Accepted graph identity and representative coordinates are preserved. |
-| Backbone and typed edge preservation | implemented | Stage 16.6 and Stage 16.10 | WANIA `graph.elements.edges` | Primary priority and all interaction types remain available without claiming full typed-RIN capability. |
+| WANIA MVP frontend profile | documented contract freeze | Stage 17.1 | `docs/wania_mvp_contract_v0_1.md` | The frontend may rely on the required MVP subset without treating optional scientific/backend fields as required. |
+| Node coordinates and identity | implemented | Stage 16.5 | WANIA `graph.nodes` | Accepted graph identity and representative coordinates are preserved; the Stage 17.1 MVP keeps coordinates optional. |
+| Backbone and typed edge preservation | implemented | Stage 16.6 and Stage 16.10 | WANIA `graph.edges` | Primary priority and all interaction types remain available without claiming full typed-RIN capability or making those types required by the MVP. |
 | Analysis artifact references | implemented with backend-specific semantics | Stage 16.11 and Stage 16.12 | WANIA `artifacts` plus the frontend sample | The payload may reference separate metrics/community/report artifacts; analysis rows are not embedded. |
 | Temporal, formal-statistical, and conformational capability flags | implemented | Stage 16.1 and Stage 16.12 | WANIA `capabilities` | Unsupported capabilities remain false instead of being inferred from notebook plans. |
 | Upload/job API and frontend application | not applicable to backend | Future product scope | No FastAPI endpoint or frontend module | Stage 16.13 adds no FastAPI, upload/job API, or frontend implementation. |

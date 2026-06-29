@@ -254,6 +254,12 @@ payload contract. FastAPI/upload/job API remains future scope. Temporal RIN
 remains future scope. Formal statistics remain future scope. Conformational
 clustering remains future scope.
 
+Stage 17.1 freezes the documented WANIA MVP frontend profile. The profile is
+the stable frontend-facing subset of the WANIA object JSON payload, not the
+full backend/scientific export and not a FastAPI/upload/job API contract. See
+`docs/wania_mvp_contract_v0_1.md`. The Stage 16.12 sample remains a rich
+illustrative payload rather than the minimal required MVP payload.
+
 ## Optional Scientific CSV Exports
 
 By default, the Stage 15 CLI does not export Rg/contacts CSVs. They can be
@@ -425,6 +431,8 @@ future scope should be specified separately before implementation.
   API/run boundary.
 - `docs/wania_object_json_payload_contract.md`: future WANIA object JSON
   payload contract, separate from backend `graph/graph.json`.
+- `docs/wania_mvp_contract_v0_1.md`: stable frontend-facing WANIA MVP profile,
+  including required, optional, backend-only, and future classifications.
 - `docs/preprocessing_graph_workflow_contract.md`: workflow APIs, options, and
   output layout.
 - `docs/local_scientific_integration_tests.md`: local-only real MD smoke test
