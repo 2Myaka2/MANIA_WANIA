@@ -211,3 +211,8 @@ fixture.
 
 Stage 17.2 adds no runtime payload validator, source behavior, scientific
 computation, API, frontend, dependency, or schema redesign.
+
+Stage 18.1 uses this required skeleton to define when an assembled
+`wania_graph_payload.json` is demo-ready. See the
+[`WANIA JSON assembly profile`](wania_json_assembly_profile_v0_1.md). Mapping
+validation remains separate Stage 18.2 work.

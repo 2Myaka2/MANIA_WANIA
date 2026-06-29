@@ -235,6 +235,15 @@ science, backend computational details, and future capabilities begin. See
 This docs/tests-only boundary adds no fields, validator, schema redesign, or
 runtime behavior.
 
+## Stage 18.1 WANIA JSON assembly profile
+
+Stage 18.1 defines how accepted MANIA artifacts and explicit run context are
+interpreted when assembling a demo-ready `wania_graph_payload.json`. See the
+[`WANIA JSON assembly profile`](wania_json_assembly_profile_v0_1.md). It adds
+no CLI, runtime validator, adapter change, payload field, or generated output;
+mapping validation and the reproducible export flow remain Stage 18.2 and
+Stage 18.3 work.
+
 ## Protein-agnostic run metadata
 
 The payload is protein-agnostic. The `run` block identifies which protein run

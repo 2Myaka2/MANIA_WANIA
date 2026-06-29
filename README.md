@@ -270,6 +270,11 @@ Stage 17.3 defines the science-vs-UI layer boundary in
 optional scientific annotations, backend-only implementation details, and
 future capabilities without changing payload or runtime behavior.
 
+Stage 18.1 defines the docs/tests-only WANIA JSON assembly profile for turning
+accepted MANIA artifacts into a demo-ready `wania_graph_payload.json`. See
+`docs/wania_json_assembly_profile_v0_1.md`; mapping validation and a
+reproducible export flow remain Stage 18.2 and Stage 18.3 work.
+
 ## Optional Scientific CSV Exports
 
 By default, the Stage 15 CLI does not export Rg/contacts CSVs. They can be
@@ -447,6 +452,8 @@ future scope should be specified separately before implementation.
   fields and minimal valid payload rules.
 - `docs/wania_science_ui_boundary_v0_1.md`: science-vs-UI layer ownership for
   display fields, optional science, backend internals, and future capability.
+- `docs/wania_json_assembly_profile_v0_1.md`: Stage 18.1 inputs, demo-ready
+  output expectations, portable references, and Stage 17 alignment.
 - `docs/preprocessing_graph_workflow_contract.md`: workflow APIs, options, and
   output layout.
 - `docs/local_scientific_integration_tests.md`: local-only real MD smoke test

@@ -217,3 +217,8 @@ It is not upload/job API work.
 - **Stage 17.3:** harden the science vs UI boundary and backend-only leakage
   rules, as defined by the
   [`Science vs UI boundary`](wania_science_ui_boundary_v0_1.md).
+
+Stage 18.1 applies these frozen MVP expectations as the contract boundary for
+assembling a demo-ready payload from accepted MANIA artifacts. See the
+[`WANIA JSON assembly profile`](wania_json_assembly_profile_v0_1.md). It does
+not expand the MVP required set.

@@ -278,3 +278,8 @@ internals from becoming frontend contract.
 
 Together, the three documents keep the MVP identity, its required display
 model, and the science-versus-UI ownership boundary separate and reviewable.
+
+Stage 18.1 carries this ownership boundary into artifact assembly: a
+demo-ready payload may preserve optional science but must not expose
+backend-only details as frontend requirements. See the
+[`WANIA JSON assembly profile`](wania_json_assembly_profile_v0_1.md).
