@@ -3,6 +3,8 @@ import math
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DOC_PATH = REPO_ROOT / "docs" / "wania_required_fields_contract_v0_1.md"
 MINIMAL_PATH = (
@@ -167,7 +169,7 @@ def assert_required_fields_contract(payload: dict[str, Any]) -> None:
     diagnostics = payload["diagnostics"]
     assert isinstance(diagnostics, dict)
     assert "passed" in diagnostics
-    assert diagnostics["passed"] is None or isinstance(diagnostics["passed"], bool)
+    assert isinstance(diagnostics["passed"], bool)
     if "issues" in diagnostics:
         assert isinstance(diagnostics["issues"], list)
     if not nodes:
@@ -243,6 +245,14 @@ def test_minimal_fixture_passes_required_fields_contract() -> None:
     assert set(payload["graph"]) == {"nodes", "edges"}
     assert payload["artifacts"] == {}
     assert payload["diagnostics"] == {"passed": True}
+
+
+def test_required_fields_contract_rejects_null_diagnostics_status() -> None:
+    payload = load_payload(MINIMAL_PATH)
+    payload["diagnostics"]["passed"] = None
+
+    with pytest.raises(AssertionError):
+        assert_required_fields_contract(payload)
 
 
 def test_minimal_fixture_omits_optional_science() -> None:

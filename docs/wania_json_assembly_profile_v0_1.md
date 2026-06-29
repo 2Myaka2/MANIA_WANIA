@@ -242,23 +242,55 @@ A demo-ready `wania_graph_payload.json` satisfies all of the following:
 
 Stage 18.1 defines the WANIA JSON assembly profile. Stage 18.2 validates
 graph/artifact-to-WANIA MVP mapping using synthetic fixtures and the existing
-WANIA adapter/writer. Stage 18.3 will provide the reproducible demo export
-command or short command sequence.
+WANIA adapter/writer. Stage 18.3 provides the reproducible demo export flow as
+one command:
 
-The Stage 18.1 profile itself does not implement Stage 18.2 mapping validation
-or the Stage 18.3 export flow.
+```bash
+mania wania build-payload \
+  --graph-json tests/fixtures/wania_assembly_artifacts_v0_1/graph/graph.json \
+  --output /tmp/wania_demo/wania_graph_payload.json \
+  --run-name demo_wania_assembly \
+  --protein-id demo_protein \
+  --protein-name "Demo Protein" \
+  --condition-name normal \
+  --condition-name tumor
+```
+
+`--condition-name` is repeatable and must list every condition represented by
+the graph. `--output` writes exactly to the selected path. As an alternative,
+`--output-dir /tmp/wania_demo` writes the fixed name
+`/tmp/wania_demo/wania_graph_payload.json`. The accepted writer creates parent
+directories as needed. The command prints a short success message containing
+the output path and does not print the full payload by default.
+
+The required inputs are the accepted `graph/graph.json`, one output location,
+`run_name`, `protein_id`, `protein_name`, and one or more `condition_names`.
+Optional scientific artifacts are not required. Optional coordinates,
+interaction annotations, and metrics already supported inside the graph JSON
+are preserved by the accepted adapter.
+
+Demo-ready success means the output loads as valid, JSON-safe JSON; satisfies
+the Stage 17.2 required fields; uses portable artifact references; and contains
+no backend-only or local/raw path leakage. On a call, the file can show run and
+condition identity, residue nodes and coordinates, graph edges and interaction
+types, capability signals, artifact references, and diagnostics status.
+
+The command directly orchestrates `build_wania_graph_payload_from_artifacts`
+and `write_wania_graph_payload_json`. It does not duplicate payload
+construction or add a runtime payload validator.
 
 ## 14. Non-goals
 
-Stage 18.1 is documentation/tests only. It does not implement new contact
-chemistry, new interaction types, new graph metrics, new analysis algorithms,
-backbone or `EDGE_PRIORITY` changes, `InteractionAccumulator` changes, atom
-cache changes, temporal RIN, a full typed RIN, formal statistics,
-conformational clustering, FastAPI, an upload/job API, database models,
-background workers, frontend implementation, a notebook execution pipeline,
-a runtime validator, a CLI command, new dependencies, real-data CI, or
-committed local/generated outputs.
+Stage 18.3 adds only the thin CLI export orchestration described above. It does
+not implement new contact chemistry, new interaction types, new graph metrics,
+new analysis algorithms, backbone or `EDGE_PRIORITY` changes,
+`InteractionAccumulator` changes, atom cache changes, temporal RIN, a full
+typed RIN, formal statistics, conformational clustering, FastAPI, an
+upload/job API, database models, background workers, frontend implementation,
+notebook execution, MD processing, a runtime validator, new dependencies,
+real-data CI, or committed local/generated outputs. It is not FastAPI, not
+frontend implementation, not notebook execution, and not new scientific
+computation.
 
-It adds no runtime assembly workflow, payload fields, fixtures, scientific
-behavior, adapter behavior, or generated demo JSON. Stage 18.1 is not FastAPI,
-not frontend implementation, and not notebook execution.
+It adds no payload fields, fixtures, scientific behavior, adapter behavior, or
+committed generated demo JSON.

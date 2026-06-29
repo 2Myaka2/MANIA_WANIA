@@ -89,16 +89,24 @@ def test_profile_defines_portable_artifact_and_backend_boundaries() -> None:
         assert phrase in text
 
 
-def test_profile_defers_mapping_and_export_work() -> None:
+def test_profile_records_mapping_and_demo_export_flow() -> None:
     text = doc_text()
 
     for phrase in (
         "Stage 18.1 defines the profile",
         "Stage 18.2 validates artifact-to-payload mapping",
         "Stage 18.3 provides the reproducible demo export flow",
-        "does not add a validator",
-        "does not implement Stage 18.2",
-        "Stage 18.3 export flow",
+        "mania wania build-payload",
+        "--graph-json",
+        "--output",
+        "--output-dir",
+        "--condition-name",
+        "build_wania_graph_payload_from_artifacts",
+        "write_wania_graph_payload_json",
+        "does not duplicate payload construction",
+        "Optional scientific artifacts are not required",
+        "does not print the full payload by default",
+        "not new scientific computation",
     ):
         assert phrase in text
 

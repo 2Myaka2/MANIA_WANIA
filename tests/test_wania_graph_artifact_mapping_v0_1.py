@@ -204,9 +204,7 @@ def assert_required_fields_contract(payload: dict[str, Any]) -> None:
     diagnostics = payload["diagnostics"]
     assert isinstance(diagnostics, dict)
     assert "passed" in diagnostics
-    assert diagnostics["passed"] is None or isinstance(
-        diagnostics["passed"], bool
-    )
+    assert isinstance(diagnostics["passed"], bool)
 
 
 def metadata() -> WaniaGraphPayloadRunMetadata:
@@ -355,10 +353,14 @@ def test_mapping_remains_valid_without_optional_science(tmp_path: Path) -> None:
         json.dumps(backend_graph, indent=2) + "\n",
         encoding="utf-8",
     )
+    diagnostics_path = output_root / "reports" / "graph_diagnostics_report.json"
+    diagnostics_path.parent.mkdir(parents=True)
+    diagnostics_path.write_text('{"passed": true}\n', encoding="utf-8")
     result = build_wania_graph_payload_from_artifacts(
         run_metadata=metadata(),
         artifact_paths=WaniaGraphPayloadArtifactPaths(
-            graph_json_path=graph_path
+            graph_json_path=graph_path,
+            diagnostics_report_json_path=diagnostics_path,
         ),
         output_root=output_root,
     )

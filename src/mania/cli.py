@@ -34,6 +34,12 @@ from mania.preprocessing.trajectory_graph_workflow import (
     load_preprocessing_graph_workflow_condition_runtimes,
     run_preprocessing_graph_workflow_diagnostics,
 )
+from mania.wania import (
+    WaniaGraphPayloadArtifactPaths,
+    WaniaGraphPayloadRunMetadata,
+    build_wania_graph_payload_from_artifacts,
+    write_wania_graph_payload_json,
+)
 
 _DEFAULT_EXPECTED_CONDITION_NAMES = ("normal", "tumor")
 _DEFAULT_REFERENCE_SEMANTICS = "MANIA_analysis_v1_2"
@@ -299,6 +305,57 @@ def build_parser() -> argparse.ArgumentParser:
         "--verbose",
         action="store_true",
         help="Print stage-by-stage progress messages to stderr.",
+    )
+
+    wania_parser = subparsers.add_parser(
+        "wania",
+        help="Build WANIA payload artifacts.",
+    )
+    wania_subparsers = wania_parser.add_subparsers(dest="wania_command")
+    payload_parser = wania_subparsers.add_parser(
+        "build-payload",
+        help="Build wania_graph_payload.json from an accepted graph artifact.",
+    )
+    payload_parser.add_argument(
+        "--graph-json",
+        type=Path,
+        required=True,
+        help="Path to the accepted graph/graph.json artifact.",
+    )
+    payload_output_group = payload_parser.add_mutually_exclusive_group(
+        required=True
+    )
+    payload_output_group.add_argument(
+        "--output",
+        type=Path,
+        help="Exact output JSON path.",
+    )
+    payload_output_group.add_argument(
+        "--output-dir",
+        type=Path,
+        help="Directory in which to write wania_graph_payload.json.",
+    )
+    payload_parser.add_argument(
+        "--run-name",
+        required=True,
+        help="Explicit WANIA run name.",
+    )
+    payload_parser.add_argument(
+        "--protein-id",
+        required=True,
+        help="Explicit protein identifier.",
+    )
+    payload_parser.add_argument(
+        "--protein-name",
+        required=True,
+        help="Explicit protein display name.",
+    )
+    payload_parser.add_argument(
+        "--condition-name",
+        action="append",
+        dest="condition_names",
+        required=True,
+        help="Graph condition name. Repeat for each condition.",
     )
 
     return parser
@@ -795,6 +852,66 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_wania_build_payload_command(args: argparse.Namespace) -> int:
+    output_path = (
+        args.output
+        if args.output is not None
+        else args.output_dir / "wania_graph_payload.json"
+    )
+    artifact_root = args.graph_json.parent.parent
+    try:
+        run_metadata = WaniaGraphPayloadRunMetadata(
+            run_name=args.run_name,
+            protein_id=args.protein_id,
+            protein_name=args.protein_name,
+            condition_names=args.condition_names,
+        )
+        condition_names = tuple(run_metadata.condition_names or ())
+        if len(condition_names) != len(set(condition_names)):
+            print(
+                "WANIA payload build failed: condition names must be unique.",
+                file=sys.stderr,
+            )
+            return 1
+        build_result = build_wania_graph_payload_from_artifacts(
+            run_metadata=run_metadata,
+            artifact_paths=WaniaGraphPayloadArtifactPaths(
+                graph_json_path=args.graph_json,
+            ),
+            output_root=artifact_root,
+        )
+    except Exception as exc:
+        print(f"WANIA payload build failed: {exc}", file=sys.stderr)
+        return 1
+
+    if not build_result.passed:
+        messages = "; ".join(
+            issue.message for issue in build_result.issues if issue.fatal
+        )
+        print(f"WANIA payload build failed: {messages}", file=sys.stderr)
+        return 1
+
+    diagnostics = cast(dict[str, Any], build_result.payload["diagnostics"])
+    if diagnostics.get("passed") is None:
+        diagnostics["passed"] = build_result.passed
+
+    try:
+        write_result = write_wania_graph_payload_json(
+            build_result.payload,
+            output_path,
+        )
+    except Exception as exc:
+        print(f"WANIA payload write failed: {exc}", file=sys.stderr)
+        return 1
+    if not write_result.passed:
+        messages = "; ".join(issue.message for issue in write_result.issues)
+        print(f"WANIA payload write failed: {messages}", file=sys.stderr)
+        return 1
+
+    print(f"WANIA payload written: {write_result.output_path}")
+    return 0
+
+
 def main() -> None:
     """Run the MANIA command-line interface."""
     parser = build_parser()
@@ -834,6 +951,12 @@ def main() -> None:
         and args.preprocessing_command == "run-graph-export"
     ):
         exit_code = _run_preprocessing_graph_export_command(args)
+        if exit_code != 0:
+            raise SystemExit(exit_code)
+        return
+
+    if args.command == "wania" and args.wania_command == "build-payload":
+        exit_code = _run_wania_build_payload_command(args)
         if exit_code != 0:
             raise SystemExit(exit_code)
         return

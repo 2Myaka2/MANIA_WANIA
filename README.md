@@ -270,10 +270,40 @@ Stage 17.3 defines the science-vs-UI layer boundary in
 optional scientific annotations, backend-only implementation details, and
 future capabilities without changing payload or runtime behavior.
 
-Stage 18.1 defines the docs/tests-only WANIA JSON assembly profile for turning
-accepted MANIA artifacts into a demo-ready `wania_graph_payload.json`. See
-`docs/wania_json_assembly_profile_v0_1.md`; mapping validation and a
-reproducible export flow remain Stage 18.2 and Stage 18.3 work.
+Stage 18.1 defines the WANIA JSON assembly profile, Stage 18.2 validates its
+artifact-to-payload mapping, and Stage 18.3 exposes that accepted mapping as a
+one-command demo export. See `docs/wania_json_assembly_profile_v0_1.md`.
+
+## Build A Demo-Ready WANIA Payload
+
+Build the frontend-facing WANIA MVP payload from the accepted synthetic graph
+fixture and explicit run metadata:
+
+```bash
+mania wania build-payload \
+  --graph-json tests/fixtures/wania_assembly_artifacts_v0_1/graph/graph.json \
+  --output /tmp/wania_demo/wania_graph_payload.json \
+  --run-name demo_wania_assembly \
+  --protein-id demo_protein \
+  --protein-name "Demo Protein" \
+  --condition-name normal \
+  --condition-name tumor
+```
+
+This creates `/tmp/wania_demo/wania_graph_payload.json`; alternatively,
+`--output-dir /tmp/wania_demo` selects the directory and uses that fixed file
+name. Required inputs are `graph/graph.json`, an output location, `run_name`,
+`protein_id`, `protein_name`, and every graph condition name. A successful run
+prints the output path, and the resulting valid JSON contains the Stage 17
+run, capability, graph, artifact, and diagnostics fields. On a call it can
+show condition-specific residue nodes and coordinates, graph edges and
+interaction types, available capabilities, and diagnostics status.
+
+The command is a thin wrapper over the accepted WANIA adapter/writer. It does
+not require optional scientific artifacts and preserves optional fields that
+the adapter supports when they are present in `graph/graph.json`. It does not
+run FastAPI, a frontend, notebooks, MD processing, or new scientific
+computation.
 
 ## Optional Scientific CSV Exports
 
@@ -389,9 +419,10 @@ CSVs are side-effect scientific exports, not WANIA/frontend API payloads.
 
 Stage 16.1 adds a Python adapter that can build a WANIA object JSON payload
 from existing Stage 15 artifacts and explicit protein/run metadata. The
-adapter can write `wania_graph_payload.json` when called directly from Python.
-It does not add FastAPI, an upload/job API, frontend implementation, or CLI
-integration.
+adapter writes `wania_graph_payload.json`; Stage 18.3 makes that accepted
+adapter/writer available through `mania wania build-payload`. Neither stage
+adds FastAPI, an upload/job API, frontend implementation, or new scientific
+computation.
 
 ## Data And Git Boundaries
 
