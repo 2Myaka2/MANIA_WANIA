@@ -243,6 +243,17 @@ artifacts or CLI behavior. Existing node attributes and Cα coordinates are
 preserved. Formal statistics, temporal RIN, conformational clustering,
 figures, and YaDisk remain deferred, and the WANIA schema is unchanged.
 
+Stage 16.12 provides the compact frontend-ready WANIA sample payload at
+`tests/fixtures/wania_graph_payload_frontend_sample_v0_1.json`. The fixture is
+synthetic, deterministic, and safe for default CI. It demonstrates residue
+identity, condition-specific `x/y/z` and `x_ca/y_ca/z_ca`, `backbone`,
+`residue_contact`, `aromatic_pi`, `cation_pi`, primary/all interaction type
+behavior, diagnostics, and relative analysis artifact references. It is not a
+real-MD benchmark and is not an API response guarantee beyond the documented
+payload contract. FastAPI/upload/job API remains future scope. Temporal RIN
+remains future scope. Formal statistics remain future scope. Conformational
+clustering remains future scope.
+
 ## Optional Scientific CSV Exports
 
 By default, the Stage 15 CLI does not export Rg/contacts CSVs. They can be
@@ -396,6 +407,9 @@ contract is object JSON, protein-agnostic, and separate from backend
 Stage 16.1 adds a Python adapter for that WANIA object JSON payload. The
 adapter consumes accepted Stage 15 artifacts and does not change backend
 `graph/graph.json`.
+
+Stage 16.12 adds a stable synthetic payload sample for frontend fixture and
+contract review. It does not add frontend implementation or an API endpoint.
 
 Future Stage 16+ implementation scope includes the FastAPI upload/job API,
 WANIA API serving, frontend integration, and any temporal RIN workflow. This

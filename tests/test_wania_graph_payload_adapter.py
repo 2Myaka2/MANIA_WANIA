@@ -445,6 +445,48 @@ def test_artifact_paths_are_relative_and_missing_optional_paths_are_null(
     )
 
 
+def test_optional_analysis_artifact_references_are_condition_keyed(
+    tmp_path: Path,
+) -> None:
+    output_root, graph_path = output_paths(tmp_path)
+    result = build_wania_graph_payload_from_artifacts(
+        run_metadata=metadata(condition_names=("normal", "tumor")),
+        artifact_paths=WaniaGraphPayloadArtifactPaths(
+            graph_json_path=graph_path,
+            analysis_metrics_csv_paths={
+                "tumor": output_root / "analysis" / "metrics_tumor.csv",
+                "normal": output_root / "analysis" / "metrics_normal.csv",
+            },
+            analysis_communities_csv_paths={
+                "tumor": output_root / "analysis" / "communities_tumor.csv",
+                "normal": output_root / "analysis" / "communities_normal.csv",
+            },
+            analysis_metrics_report_json_path=(
+                output_root / "analysis" / "analysis_metrics_report.json"
+            ),
+        ),
+        output_root=output_root,
+    )
+
+    assert result.passed is True
+    assert result.payload["artifacts"]["analysis"] == {
+        "metrics_csv": {
+            "normal": "analysis/metrics_normal.csv",
+            "tumor": "analysis/metrics_tumor.csv",
+        },
+        "communities_csv": {
+            "normal": "analysis/communities_normal.csv",
+            "tumor": "analysis/communities_tumor.csv",
+        },
+        "metrics_report_json": "analysis/analysis_metrics_report.json",
+    }
+    assert result.capabilities["centrality_metrics"] is True
+    assert result.capabilities["community_detection"] is True
+    assert result.capabilities["typed_rin_interactions"] is False
+    assert result.capabilities["temporal_rin"] is False
+    assert result.capabilities["cross_condition_statistics"] is False
+
+
 def test_payload_uses_object_json_style(tmp_path: Path) -> None:
     _, payload, _ = build_payload(tmp_path)
     graph = payload["graph"]

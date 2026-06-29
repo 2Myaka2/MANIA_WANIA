@@ -164,6 +164,21 @@ is called. Accepted preprocessing graph schemas and CLI behavior are
 unchanged. The WANIA schema is not redesigned and its analysis capability
 flags remain unchanged; analysis artifacts are separate backend outputs.
 
+## What Stage 16.12 packages
+
+WANIA frontend sample: implemented in Stage 16.12. The committed
+`tests/fixtures/wania_graph_payload_frontend_sample_v0_1.json` is a compact,
+deterministic synthetic reference payload for default CI and frontend contract
+review. It demonstrates condition-specific Cα coordinates, `backbone` as the
+highest-priority overlapping edge type, `residue_contact`, `aromatic_pi`,
+`cation_pi`, diagnostics, and relative analysis artifact references for the
+Stage 16.11 metrics/community outputs.
+
+The sample is not a real-MD benchmark and does not add scientific computation.
+It keeps `typed_rin_interactions` false and temporal, formal statistical, and
+conformational capabilities unavailable. It adds no FastAPI/upload/job API and
+no frontend implementation.
+
 ## Deferred Stage 16 parity scope
 
 - `InteractionAccumulator`: implemented in Stage 16.7.
@@ -171,6 +186,7 @@ flags remain unchanged; analysis artifacts are separate backend outputs.
 - Per-frame contact export parity: implemented in Stage 16.9.
 - Aromatic π–π / cation-π chemistry parity: implemented in Stage 16.10.
 - Analysis graph metrics/community MVP: implemented in Stage 16.11.
+- WANIA frontend sample: implemented in Stage 16.12.
 - Parquet format parity remains future export-format scope.
 - Formal statistical tests remain deferred, including Mann-Whitney U, FDR-BH,
   Cohen d, and bootstrap confidence intervals.
@@ -200,8 +216,9 @@ Full typed or temporal RIN and broader notebook analysis remain future work.
 - Aromatic π–π / cation-π chemistry parity is implemented in Stage 16.10
   without declaring full typed or temporal RIN capability.
 - Analysis graph metrics/community parity is implemented in Stage 16.11 as
-  separate backend artifacts without changing preprocessing graph artifacts
-  or the WANIA contract.
+  separate backend artifacts without changing preprocessing graph artifacts.
+  Stage 16.12 references these artifacts in the synthetic WANIA sample without
+  changing the analysis computation or artifact schemas.
 - Formal statistical tests, full temporal RIN, conformational clustering,
   figure generation, YaDisk integration, and parquet format parity remain
   deferred or notebook/reference-only scope.

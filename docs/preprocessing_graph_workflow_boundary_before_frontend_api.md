@@ -97,6 +97,10 @@ or dependency change.
   over accepted graph artifacts. It computes condition-specific centrality and
   community outputs under `analysis/` without changing preprocessing workflow,
   CLI, graph schemas, or the WANIA schema.
+- Stage 16.12 WANIA frontend sample: adds a compact deterministic synthetic
+  fixture that demonstrates accepted coordinates, backbone and typed edge
+  preservation, diagnostics, and relative analysis artifact references. It
+  adds no API endpoint and no frontend implementation.
 
 ## Accepted public workflow APIs
 
@@ -348,6 +352,17 @@ no dependency is added, and no WANIA capability or schema is changed. Formal
 statistical tests, temporal RIN, conformational clustering, figures, and
 YaDisk integration remain deferred or notebook/reference-only scope.
 
+Stage 16.12 packages the accepted Stage 16.1–16.11 contract as
+`tests/fixtures/wania_graph_payload_frontend_sample_v0_1.json`. This
+frontend-ready sample is compact, deterministic, synthetic, and safe for
+default CI. It demonstrates `x/y/z`, `x_ca/y_ca/z_ca`, `backbone`,
+`residue_contact`, `aromatic_pi`, `cation_pi`, primary/all type priority,
+diagnostics, and relative Stage 16.11 analysis artifact references. It is not
+a real-MD benchmark and is not an API response guarantee beyond the documented
+payload contract. FastAPI/upload/job API remains future scope. Temporal RIN
+remains future scope. Formal statistics remain future scope. Conformational
+clustering remains future scope.
+
 Stage 16.3 contact guard metadata is workflow/CLI metadata only. It is not a
 WANIA payload schema change and does not change graph artifact schemas.
 
@@ -451,6 +466,10 @@ adapter, does not change backend `graph/graph.json`, and does not make backend
 Stage 16.1 adds a separate `mania.wania` Python adapter that can build the
 future WANIA payload from Stage 15 artifacts. Backend graph artifacts remain
 unchanged. FastAPI/API remains future scope.
+
+Stage 16.12 adds a frontend reference sample of that documented payload and
+optional analysis artifact references. It does not turn the preprocessing CLI
+or backend `graph/graph.json` into an API response and adds no serving layer.
 
 See `docs/wania_api_protein_agnostic_boundary.md`.
 

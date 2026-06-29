@@ -45,7 +45,7 @@ class WaniaGraphPayloadRunMetadata:
 
 @dataclass(frozen=True)
 class WaniaGraphPayloadArtifactPaths:
-    """Stage 15 artifact paths referenced or consumed by the adapter."""
+    """Accepted backend artifact paths referenced or consumed by the adapter."""
 
     graph_json_path: str | Path | None
     nodes_csv_path: str | Path | None = None
@@ -54,6 +54,9 @@ class WaniaGraphPayloadArtifactPaths:
     rg_timeseries_csv_path: str | Path | None = None
     contact_edges_csv_path: str | Path | None = None
     contacts_perframe_csv_path: str | Path | None = None
+    analysis_metrics_csv_paths: Mapping[str, str | Path] | None = None
+    analysis_communities_csv_paths: Mapping[str, str | Path] | None = None
+    analysis_metrics_report_json_path: str | Path | None = None
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -64,11 +67,21 @@ class WaniaGraphPayloadArtifactPaths:
             "rg_timeseries_csv_path",
             "contact_edges_csv_path",
             "contacts_perframe_csv_path",
+            "analysis_metrics_report_json_path",
         ):
             object.__setattr__(
                 self,
                 field_name,
                 _optional_path(getattr(self, field_name)),
+            )
+        for field_name in (
+            "analysis_metrics_csv_paths",
+            "analysis_communities_csv_paths",
+        ):
+            object.__setattr__(
+                self,
+                field_name,
+                _artifact_path_mapping(getattr(self, field_name), field_name),
             )
 
 
@@ -518,6 +531,24 @@ def _optional_path(value: object) -> Path | None:
     return path
 
 
+def _artifact_path_mapping(
+    value: object,
+    field_name: str,
+) -> dict[str, Path]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{field_name} must be a mapping or None")
+    paths: dict[str, Path] = {}
+    for raw_condition, raw_path in value.items():
+        condition = _required_string(raw_condition, f"{field_name} condition")
+        path = _optional_path(raw_path)
+        if path is None:
+            raise ValueError(f"{field_name} paths must be non-empty")
+        paths[condition] = path
+    return dict(sorted(paths.items()))
+
+
 def _read_graph_json(
     path: Path,
     issues: list[WaniaGraphPayloadIssue],
@@ -850,8 +881,10 @@ def _capabilities(
         "aggregate_contacts": artifact_paths.contact_edges_csv_path is not None,
         "contacts_perframe": artifact_paths.contacts_perframe_csv_path is not None,
         "typed_rin_interactions": False,
-        "centrality_metrics": False,
-        "community_detection": False,
+        "centrality_metrics": bool(artifact_paths.analysis_metrics_csv_paths),
+        "community_detection": bool(
+            artifact_paths.analysis_communities_csv_paths
+        ),
         "node_structural_metrics": False,
         "conformational_states": False,
         "cross_condition_statistics": False,
@@ -865,7 +898,7 @@ def _artifacts_payload(
     artifact_paths: WaniaGraphPayloadArtifactPaths,
     output_root: str | Path,
 ) -> dict[str, JsonValue]:
-    return {
+    payload: dict[str, JsonValue] = {
         "backend_graph_json": _relative_artifact_path(
             _optional_path(artifact_paths.graph_json_path),
             output_root,
@@ -895,6 +928,25 @@ def _artifacts_payload(
             output_root,
         ),
     }
+    analysis: dict[str, JsonValue] = {}
+    if artifact_paths.analysis_metrics_csv_paths:
+        analysis["metrics_csv"] = _relative_artifact_path_mapping(
+            artifact_paths.analysis_metrics_csv_paths,
+            output_root,
+        )
+    if artifact_paths.analysis_communities_csv_paths:
+        analysis["communities_csv"] = _relative_artifact_path_mapping(
+            artifact_paths.analysis_communities_csv_paths,
+            output_root,
+        )
+    if artifact_paths.analysis_metrics_report_json_path is not None:
+        analysis["metrics_report_json"] = _relative_artifact_path(
+            _optional_path(artifact_paths.analysis_metrics_report_json_path),
+            output_root,
+        )
+    if analysis:
+        payload["analysis"] = analysis
+    return payload
 
 
 def _diagnostics_payload(
@@ -1084,6 +1136,16 @@ def _relative_artifact_path(path: Path | None, output_root: str | Path) -> str |
         if not path.is_absolute():
             return path.as_posix()
         return Path("..", Path(path).name).as_posix()
+
+
+def _relative_artifact_path_mapping(
+    paths: Mapping[str, str | Path],
+    output_root: str | Path,
+) -> dict[str, JsonValue]:
+    return {
+        condition: _relative_artifact_path(_optional_path(path), output_root)
+        for condition, path in sorted(paths.items())
+    }
 
 
 def _string_key_mapping(raw: Mapping[object, object]) -> dict[str, object]:

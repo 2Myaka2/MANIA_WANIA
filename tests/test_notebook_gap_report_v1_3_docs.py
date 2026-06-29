@@ -12,7 +12,7 @@ def test_notebook_gap_report_v1_3_exists() -> None:
     assert DOC_PATH.is_file()
 
 
-def test_notebook_gap_report_v1_3_records_stage_16_11_scope_and_gaps() -> None:
+def test_notebook_gap_report_v1_3_records_stage_16_12_scope_and_gaps() -> None:
     text = normalized_doc_text()
 
     for phrase in (
@@ -46,6 +46,10 @@ def test_notebook_gap_report_v1_3_records_stage_16_11_scope_and_gaps() -> None:
         "7.0 Å",
         "below 6.0 Å",
         "Analysis graph metrics/community MVP is implemented in Stage 16.11",
+        "WANIA frontend sample: implemented in Stage 16.12",
+        "deterministic synthetic reference payload",
+        "analysis artifact references",
+        "not a real-MD benchmark",
         "degree, strength, betweenness, closeness, eigenvector, pagerank, and kcore",
         "Formal statistical tests remain deferred",
         "Full temporal RIN remains deferred",

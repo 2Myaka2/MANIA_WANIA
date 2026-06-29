@@ -170,13 +170,37 @@ degree, strength, betweenness, closeness, eigenvector, pagerank, and kcore;
 existing residue attributes and representative Cα coordinates are preserved
 where available.
 
-These CSVs are separate backend analysis outputs; they are not inlined in
-WANIA nodes and are not added to the Stage 16.1 artifact block. The WANIA
-adapter and object JSON schema are unchanged, and `centrality_metrics`,
-`community_detection`, and `node_structural_metrics` remain false because the
-adapter does not expose these artifacts as confirmed WANIA fields.
+At Stage 16.11 these CSVs are separate backend analysis outputs; they are not
+inlined in WANIA nodes and were not added to the Stage 16.1 artifact block.
+The Stage 16.11 computation does not itself change the WANIA adapter or object
+JSON schema, and `node_structural_metrics` remains false.
 `typed_rin_interactions`, temporal capabilities, statistics, and
 conformational-state capabilities also remain false.
+
+## Stage 16.12 frontend sample
+
+Stage 16.12 provides a compact frontend-ready WANIA sample payload at
+`tests/fixtures/wania_graph_payload_frontend_sample_v0_1.json`. It is a
+deterministic synthetic reference fixture, not a real-MD benchmark. The sample
+demonstrates protein/run metadata, conditions, residue identity,
+condition-specific `x/y/z` and `x_ca/y_ca/z_ca`, `backbone`,
+`residue_contact`, `aromatic_pi`, `cation_pi`, primary/all interaction type
+behavior, diagnostics, and analysis artifact references.
+
+The adapter accepts optional condition-keyed Stage 16.11 metrics and community
+CSV paths plus the analysis report path. When supplied, they appear under
+`artifacts.analysis`; `centrality_metrics` and `community_detection` are true.
+When absent, the pre-16.12 artifact object and false capability values remain
+unchanged. CSV contents are not inlined, and node `metrics` remain empty unless
+a separately accepted mapping supplies confirmed node values.
+
+This sample is not an API response guarantee beyond the documented payload
+contract and adds no frontend implementation. `typed_rin_interactions` remains
+false, temporal interaction/RIN capability remains false, statistical analysis
+remains unavailable, and conformational-state capability remains false.
+FastAPI/upload/job API remains future scope. Temporal RIN remains future scope.
+Formal statistics remain future scope. Conformational clustering remains future
+scope.
 
 ## Protein-agnostic run metadata
 
@@ -266,13 +290,13 @@ Available now:
 - `rg_timeseries`;
 - `aggregate_contacts`;
 - `contacts_perframe`;
+- `centrality_metrics` and `community_detection` when optional Stage 16.11
+  analysis artifact references are supplied;
 - diagnostics, represented by the `diagnostics` block.
 
 Planned or near future:
 
 - WANIA object JSON adapter;
-- `centrality_metrics`;
-- `community_detection`;
 - `typed_rin_interactions`;
 - `node_structural_metrics`, such as RMSF, SASA, and secondary structure;
 - `inter_component_interactions`.
@@ -476,13 +500,25 @@ The `artifacts` block records backend artifact paths related to the run:
     "rg_timeseries_csv": "rg/rg_timeseries.csv",
     "contact_edges_csv": "contacts/contact_edges.csv",
     "contacts_perframe_csv": "contacts/contacts_perframe.csv",
-    "diagnostics_report_json": "reports/graph_diagnostics_report.json"
+    "diagnostics_report_json": "reports/graph_diagnostics_report.json",
+    "analysis": {
+      "metrics_csv": {
+        "normal": "analysis/metrics_normal.csv",
+        "tumor": "analysis/metrics_tumor.csv"
+      },
+      "communities_csv": {
+        "normal": "analysis/communities_normal.csv",
+        "tumor": "analysis/communities_tumor.csv"
+      },
+      "metrics_report_json": "analysis/analysis_metrics_report.json"
+    }
   }
 }
 ```
 
 These paths reference backend artifacts. They do not make `graph/graph.json`
-the WANIA frontend/API payload.
+the WANIA frontend/API payload. The `analysis` entry is optional and only
+references separate Stage 16.11 artifacts; no CSV rows are embedded.
 
 ## Diagnostics block
 
@@ -512,9 +548,10 @@ MANIA can optionally write scientific CSVs with explicit flags:
 - `contacts/contacts_perframe.csv`.
 
 MANIA does not yet compute full typed RIN or temporal RIN. Stage 16.11 computes
-centrality and community metrics as separate backend analysis artifacts, but
-they are not yet confirmed WANIA frontend fields. Node structural attributes
-are preserved only when already present; Stage 16.11 does not compute them.
+centrality and community metrics as separate backend analysis artifacts, and
+Stage 16.12 can reference those artifacts without inlining them. Node
+structural attributes are preserved only when already present; Stage 16.11
+does not compute them.
 
 Current backend schema may contain planned or empty columns for future metrics.
 Planned or empty backend columns must not be treated as available UI data until
@@ -525,8 +562,8 @@ Current backend `graph/graph.json` is not the final frontend/API payload.
 ## Future scope
 
 Future work may implement API output, frontend integration, typed RIN,
-temporal RIN, WANIA exposure of analysis metrics, node structural metric
-computation, inter-component interactions, and broader product features.
+temporal RIN, node structural metric computation, inter-component
+interactions, and broader product features.
 
 Cross-protein comparison remains future scope and may require sequence
 alignment, structure alignment, residue mapping, or domain mapping. The
@@ -555,3 +592,12 @@ tests/fixtures/wania_graph_payload_v0_1.json
 ```
 
 The sample is valid object JSON and is a contract sample, not runtime output.
+
+The Stage 16.12 final frontend reference sample is:
+
+```text
+tests/fixtures/wania_graph_payload_frontend_sample_v0_1.json
+```
+
+It is compact synthetic fixture data for default CI and frontend contract
+review. It is not generated real-MD output and does not imply API availability.

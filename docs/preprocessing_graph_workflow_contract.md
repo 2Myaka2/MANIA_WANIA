@@ -267,6 +267,23 @@ semantics remain unchanged. Formal statistical tests, temporal RIN,
 conformational clustering, figures, and YaDisk integration remain deferred.
 The WANIA schema and capability flags are not changed by Stage 16.11.
 
+Stage 16.12 adds the deterministic synthetic frontend reference fixture at
+`tests/fixtures/wania_graph_payload_frontend_sample_v0_1.json`. The compact
+sample packages accepted graph/WANIA behavior: condition-specific coordinates,
+`backbone` priority and overlap, `residue_contact`, `aromatic_pi`, `cation_pi`,
+diagnostics, and relative Stage 16.11 analysis artifact references. The WANIA
+adapter can include optional condition-keyed analysis paths without changing
+payloads that omit them. No analysis CSV contents are inlined.
+
+Stage 16.12 is frontend/sample packaging only. It does not change preprocessing
+execution, accepted graph or contact CSV schemas, Stage 16.2 frame sampling,
+Stage 16.3 limits/progress, Stage 16.4 contact selection, Stage 16.5 coordinates,
+Stage 16.6 edge priority, Stage 16.7 accumulation, Stage 16.8 atom caching,
+Stage 16.9 per-frame export, Stage 16.10 chemistry, or Stage 16.11 metric
+semantics. It is not a real-MD benchmark and does not add FastAPI, upload/job
+API, frontend code, temporal RIN, formal statistics, or conformational
+clustering.
+
 ## Run options
 
 `PreprocessingGraphWorkflowOptions` records:

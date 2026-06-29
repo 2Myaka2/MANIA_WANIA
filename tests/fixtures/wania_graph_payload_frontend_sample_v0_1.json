@@ -1,0 +1,269 @@
+{
+  "schema_version": "wania_graph.v0.1",
+  "run": {
+    "job_id": "synthetic_frontend_sample_v0_1",
+    "run_name": "synthetic_two_condition_run",
+    "protein_id": "synthetic_protein",
+    "protein_name": "Synthetic protein",
+    "condition_names": [
+      "normal",
+      "tumor"
+    ]
+  },
+  "capabilities": {
+    "static_contact_graph": true,
+    "rg_timeseries": true,
+    "aggregate_contacts": true,
+    "contacts_perframe": true,
+    "typed_rin_interactions": false,
+    "centrality_metrics": true,
+    "community_detection": true,
+    "node_structural_metrics": false,
+    "conformational_states": false,
+    "cross_condition_statistics": false,
+    "temporal_rin": false,
+    "inter_component_interactions": false,
+    "cross_protein_comparison": false
+  },
+  "graph": {
+    "directed": false,
+    "node_count": 6,
+    "edge_count": 4,
+    "conditions": [
+      {
+        "id": "normal",
+        "label": "normal"
+      },
+      {
+        "id": "tumor",
+        "label": "tumor"
+      }
+    ],
+    "components": [],
+    "nodes": [
+      {
+        "id": "normal|A|10|10|PHE",
+        "label": "PHE10",
+        "condition": "normal",
+        "component_id": null,
+        "x": 1.0,
+        "y": 2.0,
+        "z": 3.0,
+        "x_ca": 1.0,
+        "y_ca": 2.0,
+        "z_ca": 3.0,
+        "residue": {
+          "index": 10,
+          "id": "10",
+          "name": "PHE",
+          "chain_id": "A"
+        },
+        "metrics": {}
+      },
+      {
+        "id": "normal|A|11|11|PHE",
+        "label": "PHE11",
+        "condition": "normal",
+        "component_id": null,
+        "x": 4.2,
+        "y": 2.1,
+        "z": 3.1,
+        "x_ca": 4.2,
+        "y_ca": 2.1,
+        "z_ca": 3.1,
+        "residue": {
+          "index": 11,
+          "id": "11",
+          "name": "PHE",
+          "chain_id": "A"
+        },
+        "metrics": {}
+      },
+      {
+        "id": "normal|A|12|12|LYS",
+        "label": "LYS12",
+        "condition": "normal",
+        "component_id": null,
+        "x": 7.1,
+        "y": 2.8,
+        "z": 3.5,
+        "x_ca": 7.1,
+        "y_ca": 2.8,
+        "z_ca": 3.5,
+        "residue": {
+          "index": 12,
+          "id": "12",
+          "name": "LYS",
+          "chain_id": "A"
+        },
+        "metrics": {}
+      },
+      {
+        "id": "normal|A|13|13|TRP",
+        "label": "TRP13",
+        "condition": "normal",
+        "component_id": null,
+        "x": 9.8,
+        "y": 3.3,
+        "z": 3.9,
+        "x_ca": 9.8,
+        "y_ca": 3.3,
+        "z_ca": 3.9,
+        "residue": {
+          "index": 13,
+          "id": "13",
+          "name": "TRP",
+          "chain_id": "A"
+        },
+        "metrics": {}
+      },
+      {
+        "id": "tumor|A|10|10|PHE",
+        "label": "PHE10",
+        "condition": "tumor",
+        "component_id": null,
+        "x": 1.4,
+        "y": 2.5,
+        "z": 3.4,
+        "x_ca": 1.4,
+        "y_ca": 2.5,
+        "z_ca": 3.4,
+        "residue": {
+          "index": 10,
+          "id": "10",
+          "name": "PHE",
+          "chain_id": "A"
+        },
+        "metrics": {}
+      },
+      {
+        "id": "tumor|A|11|11|PHE",
+        "label": "PHE11",
+        "condition": "tumor",
+        "component_id": null,
+        "x": 4.7,
+        "y": 2.7,
+        "z": 3.6,
+        "x_ca": 4.7,
+        "y_ca": 2.7,
+        "z_ca": 3.6,
+        "residue": {
+          "index": 11,
+          "id": "11",
+          "name": "PHE",
+          "chain_id": "A"
+        },
+        "metrics": {}
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge_normal_backbone_overlap",
+        "source": "normal|A|10|10|PHE",
+        "target": "normal|A|11|11|PHE",
+        "condition": "normal",
+        "source_component_id": null,
+        "target_component_id": null,
+        "is_inter_component": false,
+        "interaction": {
+          "primary_type": "backbone",
+          "all_types": [
+            "backbone",
+            "vdw"
+          ]
+        },
+        "metrics": {
+          "contact_frequency": 0.8,
+          "mean_distance_A": 3.2
+        }
+      },
+      {
+        "id": "edge_normal_aromatic_pi",
+        "source": "normal|A|11|11|PHE",
+        "target": "normal|A|13|13|TRP",
+        "condition": "normal",
+        "source_component_id": null,
+        "target_component_id": null,
+        "is_inter_component": false,
+        "interaction": {
+          "primary_type": "aromatic_pi",
+          "all_types": [
+            "aromatic_pi",
+            "vdw"
+          ]
+        },
+        "metrics": {
+          "contact_frequency": 0.5,
+          "mean_distance_A": 6.2
+        }
+      },
+      {
+        "id": "edge_normal_cation_pi",
+        "source": "normal|A|12|12|LYS",
+        "target": "normal|A|13|13|TRP",
+        "condition": "normal",
+        "source_component_id": null,
+        "target_component_id": null,
+        "is_inter_component": false,
+        "interaction": {
+          "primary_type": "cation_pi",
+          "all_types": [
+            "cation_pi",
+            "vdw"
+          ]
+        },
+        "metrics": {
+          "contact_frequency": 0.6,
+          "mean_distance_A": 5.4
+        }
+      },
+      {
+        "id": "edge_tumor_residue_contact",
+        "source": "tumor|A|10|10|PHE",
+        "target": "tumor|A|11|11|PHE",
+        "condition": "tumor",
+        "source_component_id": null,
+        "target_component_id": null,
+        "is_inter_component": false,
+        "interaction": {
+          "primary_type": "residue_contact",
+          "all_types": [
+            "residue_contact"
+          ]
+        },
+        "metrics": {
+          "contact_frequency": 0.7,
+          "mean_distance_A": 3.3
+        }
+      }
+    ]
+  },
+  "temporal": {
+    "available": false,
+    "windows": []
+  },
+  "artifacts": {
+    "backend_graph_json": "graph/graph.json",
+    "nodes_csv": "graph/nodes.csv",
+    "edges_csv": "graph/edges.csv",
+    "rg_timeseries_csv": "rg/rg_timeseries.csv",
+    "contact_edges_csv": "contacts/contact_edges.csv",
+    "contacts_perframe_csv": "contacts/contacts_perframe.csv",
+    "diagnostics_report_json": "reports/graph_diagnostics_report.json",
+    "analysis": {
+      "metrics_csv": {
+        "normal": "analysis/metrics_normal.csv",
+        "tumor": "analysis/metrics_tumor.csv"
+      },
+      "communities_csv": {
+        "normal": "analysis/communities_normal.csv",
+        "tumor": "analysis/communities_tumor.csv"
+      },
+      "metrics_report_json": "analysis/analysis_metrics_report.json"
+    }
+  },
+  "diagnostics": {
+    "passed": true,
+    "report_path": "reports/graph_diagnostics_report.json"
+  }
+}

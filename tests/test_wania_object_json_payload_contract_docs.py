@@ -182,6 +182,24 @@ def test_wania_contract_doc_mentions_stage_16_10_pi_type_preservation() -> None:
         assert phrase in text
 
 
+def test_wania_contract_doc_mentions_stage_16_12_frontend_sample() -> None:
+    text = normalized(doc_text())
+
+    for phrase in (
+        "Stage 16.12 frontend sample",
+        "wania_graph_payload_frontend_sample_v0_1.json",
+        "deterministic synthetic reference fixture",
+        "artifacts.analysis",
+        "analysis artifact references",
+        "centrality_metrics",
+        "community_detection",
+        "typed_rin_interactions remains false",
+        "not a real-MD benchmark",
+        "not an API response guarantee",
+    ):
+        assert phrase in text
+
+
 def test_wania_payload_sample_is_valid_object_json() -> None:
     payload = load_payload()
 
