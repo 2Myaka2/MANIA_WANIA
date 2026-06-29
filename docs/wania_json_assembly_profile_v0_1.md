@@ -240,12 +240,13 @@ A demo-ready `wania_graph_payload.json` satisfies all of the following:
 
 ## 13. Relationship to Stage 18.2 and Stage 18.3
 
-Stage 18.1 defines the WANIA JSON assembly profile. Stage 18.2 will validate
-graph/artifact-to-WANIA MVP mapping. Stage 18.3 will provide the reproducible
-demo export command or short command sequence.
+Stage 18.1 defines the WANIA JSON assembly profile. Stage 18.2 validates
+graph/artifact-to-WANIA MVP mapping using synthetic fixtures and the existing
+WANIA adapter/writer. Stage 18.3 will provide the reproducible demo export
+command or short command sequence.
 
-This stage does not implement Stage 18.2 mapping validation or the Stage 18.3
-export flow.
+The Stage 18.1 profile itself does not implement Stage 18.2 mapping validation
+or the Stage 18.3 export flow.
 
 ## 14. Non-goals
 

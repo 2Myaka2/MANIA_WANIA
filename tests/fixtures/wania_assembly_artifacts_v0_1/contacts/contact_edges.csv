@@ -1,0 +1,2 @@
+source,target,condition,contact_frequency,fixture_marker
+normal|A|10|10|PHE,normal|A|20|20|LYS,normal,0.75,csv_fixture_content_stage_18_2

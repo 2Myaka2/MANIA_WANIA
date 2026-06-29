@@ -1,0 +1,2 @@
+id,source,target,condition,edge_type
+edge_normal_backbone,normal|A|10|10|PHE,normal|A|20|20|LYS,normal,backbone

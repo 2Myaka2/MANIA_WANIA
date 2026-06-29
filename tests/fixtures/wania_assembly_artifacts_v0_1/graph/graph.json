@@ -1,0 +1,70 @@
+{
+  "schema_version": "0.1",
+  "directed": false,
+  "nodes": [
+    {
+      "id": "normal|A|10|10|PHE",
+      "resid": "normal|A|10|10|PHE",
+      "resname": "PHE",
+      "condition": "normal",
+      "x": 0.0,
+      "y": 1.0,
+      "z": 2.0,
+      "x_ca": 0.1,
+      "y_ca": 1.1,
+      "z_ca": 2.1
+    },
+    {
+      "id": "normal|A|20|20|LYS",
+      "resid": "normal|A|20|20|LYS",
+      "resname": "LYS",
+      "condition": "normal",
+      "x": 3.0,
+      "y": 4.0,
+      "z": 5.0
+    },
+    {
+      "id": "tumor|A|10|10|PHE",
+      "resid": "tumor|A|10|10|PHE",
+      "resname": "PHE",
+      "condition": "tumor",
+      "x": 0.5,
+      "y": 1.5,
+      "z": 2.5
+    },
+    {
+      "id": "tumor|A|20|20|LYS",
+      "resid": "tumor|A|20|20|LYS",
+      "resname": "LYS",
+      "condition": "tumor",
+      "x": 3.5,
+      "y": 4.5,
+      "z": 5.5
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_normal_backbone",
+      "source": "normal|A|10|10|PHE",
+      "target": "normal|A|20|20|LYS",
+      "condition": "normal",
+      "edge_type": "backbone",
+      "all_edge_types": "backbone|residue_contact",
+      "n_edge_types": "2",
+      "contact_freq": "0.75",
+      "mean_dist_A": "3.8"
+    },
+    {
+      "id": "edge_tumor_aromatic_pi",
+      "source": "tumor|A|10|10|PHE",
+      "target": "tumor|A|20|20|LYS",
+      "condition": "tumor",
+      "edge_type": "aromatic_pi",
+      "all_edge_types": [
+        "aromatic_pi",
+        "cation_pi"
+      ],
+      "n_edge_types": "2"
+    }
+  ]
+}
