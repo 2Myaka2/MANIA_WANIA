@@ -239,6 +239,34 @@ and WANIA edge-type preservation remain compatible. Canonical output uses
 No new dependency, parquet output, temporal RIN, typed RIN capability, or
 WANIA object JSON redesign is introduced.
 
+Stage 16.11 adds a separate dependency-light analysis graph metrics/community
+MVP. Its Python API consumes accepted `graph/graph.json` data after graph
+export; it is not inserted into the preprocessing workflow or CLI. Per
+condition it computes degree, strength, betweenness, closeness, eigenvector,
+pagerank, kcore, and community assignment. Numeric `contact_freq` is used for
+strength, while missing or non-numeric values contribute 0.0, so pure
+backbone edges remain valid without invented contact frequencies.
+
+NetworkX Louvain with deterministic seed 42 is preferred where the accepted
+dependency boundary provides it. The current boundary does not, so Stage 16.11
+records and uses a deterministic greedy modularity fallback. This adds no
+required dependency. Existing node attributes and representative Cα
+coordinates are preserved without recomputation or invented regions.
+
+When the explicit Python artifact writer is called, it writes separate files:
+
+```text
+analysis/metrics_<condition>.csv
+analysis/communities_<condition>.csv
+analysis/analysis_metrics_report.json
+```
+
+These files do not modify `graph/nodes.csv`, `graph/edges.csv`, or
+`graph/graph.json`. Existing preprocessing CLI behavior and Stage 16.2–16.10
+semantics remain unchanged. Formal statistical tests, temporal RIN,
+conformational clustering, figures, and YaDisk integration remain deferred.
+The WANIA schema and capability flags are not changed by Stage 16.11.
+
 ## Run options
 
 `PreprocessingGraphWorkflowOptions` records:

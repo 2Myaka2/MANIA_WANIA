@@ -93,6 +93,10 @@ or dependency change.
   carries them through aggregate/per-frame CSV and graph/WANIA edge types,
   and preserves all Stage 16.2–16.9 workflow semantics. It adds no dependency
   and declares no typed or temporal RIN capability.
+- Stage 16.11 analysis graph metrics/community MVP: adds a separate Python API
+  over accepted graph artifacts. It computes condition-specific centrality and
+  community outputs under `analysis/` without changing preprocessing workflow,
+  CLI, graph schemas, or the WANIA schema.
 
 ## Accepted public workflow APIs
 
@@ -325,8 +329,24 @@ path. They preserve sampled-frame denominators and original source indexes in
 the accumulator and typed-compatible CSV exports. Graph priority and WANIA
 preserve the types without changing `EDGE_TYPE_PRIORITY` or the WANIA object
 JSON contract. No new dependency, parquet requirement, temporal RIN, or typed
-RIN capability is added. Analysis metrics parity is deferred to Stage 16.11,
-and full temporal RIN remains deferred.
+RIN capability is added. Stage 16.11 subsequently implements the separate
+graph metrics/community MVP, while full temporal RIN remains deferred.
+
+Stage 16.11 can write `analysis/metrics_<condition>.csv`,
+`analysis/communities_<condition>.csv`, and
+`analysis/analysis_metrics_report.json` through an explicit Python API. The
+metrics are degree, strength, betweenness, closeness, eigenvector, pagerank,
+and kcore. Strength uses numeric `contact_freq`, with 0.0 for missing or
+non-numeric weights. NetworkX Louvain is preferred where the accepted
+dependency boundary provides it. The current boundary does not, so
+deterministic greedy modularity is used and reported as a fallback.
+
+These analysis artifacts are separate from accepted preprocessing graph
+artifacts. Node fields and condition-specific Cα coordinates are preserved
+where available, not recomputed. No preprocessing CLI integration is added,
+no dependency is added, and no WANIA capability or schema is changed. Formal
+statistical tests, temporal RIN, conformational clustering, figures, and
+YaDisk integration remain deferred or notebook/reference-only scope.
 
 Stage 16.3 contact guard metadata is workflow/CLI metadata only. It is not a
 WANIA payload schema change and does not change graph artifact schemas.

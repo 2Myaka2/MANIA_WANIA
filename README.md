@@ -227,8 +227,21 @@ cutoff and sign-invariant best-fit-plane normal angles (parallel below 30°;
 T-shaped 60°–120°). Cation-π uses LYS NZ or ARG CZ to ring-centroid distance
 below 6.0 Å. Typed observations use the existing accumulator, sampled source
 indexes, contact selection/limits, optional CSV exports, graph priority, and
-WANIA edge-type preservation. Full typed/temporal RIN and analysis metrics
-remain deferred; the WANIA object JSON contract is unchanged.
+WANIA edge-type preservation. Full typed/temporal RIN remains deferred; the
+WANIA object JSON contract is unchanged.
+
+Stage 16.11 adds a dependency-light Python API for condition-specific degree,
+strength, betweenness, closeness, eigenvector, pagerank, kcore, and community
+metrics over accepted `graph/graph.json` data. Numeric `contact_freq` drives
+strength; absent or invalid weights contribute 0.0. NetworkX Louvain is
+preferred where the accepted dependency boundary provides it; the current
+boundary uses and reports deterministic greedy modularity as the fallback.
+The explicit writer creates `analysis/metrics_<condition>.csv`,
+`analysis/communities_<condition>.csv`, and
+`analysis/analysis_metrics_report.json` without changing preprocessing graph
+artifacts or CLI behavior. Existing node attributes and Cα coordinates are
+preserved. Formal statistics, temporal RIN, conformational clustering,
+figures, and YaDisk remain deferred, and the WANIA schema is unchanged.
 
 ## Optional Scientific CSV Exports
 

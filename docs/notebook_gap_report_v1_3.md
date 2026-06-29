@@ -114,7 +114,7 @@ This CSV is not a full temporal RIN and does not enable
 
 Notebook v1.2 writes parquet. Backend Stage 16.9 ports the semantics into the
 accepted CSV export path; parquet format parity remains future export-format
-scope. Analysis metrics parity remains deferred to Stage 16.11.
+scope. At Stage 16.9, analysis metrics parity remained deferred to Stage 16.11.
 
 ## What Stage 16.10 ports
 
@@ -139,18 +139,47 @@ new dependency is required. Notebook compact names `aromaticpi` and `cationpi`
 remain aliases only. The WANIA object schema is not redesigned, and
 `typed_rin_interactions` and `temporal_interactions` remain false.
 
+## What Stage 16.11 ports
+
+Analysis graph metrics/community MVP is implemented in Stage 16.11. The
+dependency-light Python API consumes accepted backend `graph/graph.json` data
+and computes condition-specific degree, strength, betweenness, closeness,
+eigenvector, pagerank, and kcore. Strength sums numeric `contact_freq` values;
+missing, null, empty, non-numeric, or non-finite values contribute 0.0. Pure
+backbone edges therefore remain valid without invented contact frequencies.
+
+NetworkX Louvain with seed 42 is the preferred community algorithm where the
+accepted dependency boundary provides it. The current boundary does not, so
+Stage 16.11 records a deterministic fallback issue and uses dependency-free
+greedy modularity. No new dependency is required. The report includes
+community count and modularity per condition.
+
+Existing node identifiers and available residue fields are preserved,
+including `region`, `ss`, `rmsf_A`, `sasa_A2`, `x/y/z`, and
+`x_ca/y_ca/z_ca`. Stage 16.11 does not recompute coordinates or invent region
+labels. It writes separate `analysis/metrics_<condition>.csv`,
+`analysis/communities_<condition>.csv`, and
+`analysis/analysis_metrics_report.json` artifacts only when its Python writer
+is called. Accepted preprocessing graph schemas and CLI behavior are
+unchanged. The WANIA schema is not redesigned and its analysis capability
+flags remain unchanged; analysis artifacts are separate backend outputs.
+
 ## Deferred Stage 16 parity scope
 
 - `InteractionAccumulator`: implemented in Stage 16.7.
 - `build_atom_cache`: implemented in Stage 16.8.
 - Per-frame contact export parity: implemented in Stage 16.9.
 - Aromatic π–π / cation-π chemistry parity: implemented in Stage 16.10.
+- Analysis graph metrics/community MVP: implemented in Stage 16.11.
 - Parquet format parity remains future export-format scope.
-- Analysis metrics parity remains deferred to Stage 16.11.
+- Formal statistical tests remain deferred, including Mann-Whitney U, FDR-BH,
+  Cohen d, and bootstrap confidence intervals.
 - Full temporal RIN remains deferred.
+- Conformational clustering remains deferred, including PCA, k-means, and
+  silhouette analysis.
+- Figures and YaDisk upload remain notebook/reference-only scope.
 
-Full typed or temporal RIN, centrality/community metrics, and other notebook
-chemistry parity remain future work.
+Full typed or temporal RIN and broader notebook analysis remain future work.
 
 ## Known semantic gaps
 
@@ -170,5 +199,9 @@ chemistry parity remain future work.
   full temporal RIN or changing the WANIA object JSON contract.
 - Aromatic π–π / cation-π chemistry parity is implemented in Stage 16.10
   without declaring full typed or temporal RIN capability.
-- Parquet format parity and analysis metrics remain future scope; metrics are
-  deferred to Stage 16.11, and full temporal RIN remains deferred.
+- Analysis graph metrics/community parity is implemented in Stage 16.11 as
+  separate backend artifacts without changing preprocessing graph artifacts
+  or the WANIA contract.
+- Formal statistical tests, full temporal RIN, conformational clustering,
+  figure generation, YaDisk integration, and parquet format parity remain
+  deferred or notebook/reference-only scope.

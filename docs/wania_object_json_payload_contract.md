@@ -156,8 +156,27 @@ and cation centers are not added to the WANIA payload.
 This is edge-type preservation, not a WANIA object JSON redesign and not a
 declaration of full typed RIN support. typed_rin_interactions remains false,
 the temporal RIN capability remains false, and no per-frame rows are inlined.
-Analysis metrics parity remains deferred to Stage 16.11; full temporal RIN
-remains deferred.
+Analysis metrics parity remains deferred to Stage 16.11 in the Stage 16.10
+boundary; full temporal RIN remains deferred.
+
+## Stage 16.11 separate analysis artifacts
+
+Stage 16.11 implements a backend-safe graph metrics/community MVP over
+accepted `graph/graph.json` artifacts. The Python API can write separate
+`analysis/metrics_<condition>.csv`,
+`analysis/communities_<condition>.csv`, and
+`analysis/analysis_metrics_report.json` artifacts. Centrality metrics are
+degree, strength, betweenness, closeness, eigenvector, pagerank, and kcore;
+existing residue attributes and representative Cα coordinates are preserved
+where available.
+
+These CSVs are separate backend analysis outputs; they are not inlined in
+WANIA nodes and are not added to the Stage 16.1 artifact block. The WANIA
+adapter and object JSON schema are unchanged, and `centrality_metrics`,
+`community_detection`, and `node_structural_metrics` remain false because the
+adapter does not expose these artifacts as confirmed WANIA fields.
+`typed_rin_interactions`, temporal capabilities, statistics, and
+conformational-state capabilities also remain false.
 
 ## Protein-agnostic run metadata
 
@@ -492,9 +511,10 @@ MANIA can optionally write scientific CSVs with explicit flags:
 - `contacts/contact_edges.csv`;
 - `contacts/contacts_perframe.csv`.
 
-MANIA does not yet compute full typed RIN. MANIA does not yet compute temporal
-RIN. MANIA does not yet compute centrality, community, or node structural
-metrics as confirmed frontend fields.
+MANIA does not yet compute full typed RIN or temporal RIN. Stage 16.11 computes
+centrality and community metrics as separate backend analysis artifacts, but
+they are not yet confirmed WANIA frontend fields. Node structural attributes
+are preserved only when already present; Stage 16.11 does not compute them.
 
 Current backend schema may contain planned or empty columns for future metrics.
 Planned or empty backend columns must not be treated as available UI data until
@@ -505,8 +525,8 @@ Current backend `graph/graph.json` is not the final frontend/API payload.
 ## Future scope
 
 Future work may implement API output, frontend integration, typed RIN,
-temporal RIN, centrality metrics, community detection, node structural
-metrics, inter-component interactions, and broader product features.
+temporal RIN, WANIA exposure of analysis metrics, node structural metric
+computation, inter-component interactions, and broader product features.
 
 Cross-protein comparison remains future scope and may require sequence
 alignment, structure alignment, residue mapping, or domain mapping. The

@@ -12,7 +12,7 @@ def test_notebook_gap_report_v1_3_exists() -> None:
     assert DOC_PATH.is_file()
 
 
-def test_notebook_gap_report_v1_3_records_stage_16_10_scope_and_gaps() -> None:
+def test_notebook_gap_report_v1_3_records_stage_16_11_scope_and_gaps() -> None:
     text = normalized_doc_text()
 
     for phrase in (
@@ -45,8 +45,14 @@ def test_notebook_gap_report_v1_3_records_stage_16_10_scope_and_gaps() -> None:
         "60°–120°",
         "7.0 Å",
         "below 6.0 Å",
-        "Analysis metrics parity remains deferred to Stage 16.11",
+        "Analysis graph metrics/community MVP is implemented in Stage 16.11",
+        "degree, strength, betweenness, closeness, eigenvector, pagerank, and kcore",
+        "Formal statistical tests remain deferred",
         "Full temporal RIN remains deferred",
+        "Conformational clustering remains deferred",
+        "Figures and YaDisk upload remain notebook/reference-only scope",
+        "analysis artifacts are separate backend outputs",
+        "WANIA schema is not redesigned",
         "typed_rin_interactions",
         "temporal_interactions",
         "no new neighbor-search backend",
