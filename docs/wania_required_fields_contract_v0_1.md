@@ -7,6 +7,11 @@ frontend can trust. It is a docs, fixture, and tests contract. It is not schema
 redesign, not a runtime validator, not FastAPI, and not an upload/job API or
 frontend implementation. In short, it is not upload/job API work.
 
+Stage 17.3 classifies the layer responsibility of these fields and separates
+them from optional science and backend internals in the
+[`Science vs UI boundary`](wania_science_ui_boundary_v0_1.md). That boundary
+does not change this required set.
+
 The terms in this contract mean:
 
 - **required:** the field is present in every valid WANIA MVP payload and does

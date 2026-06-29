@@ -265,6 +265,11 @@ profile in `docs/wania_required_fields_contract_v0_1.md`. It adds only a
 minimal fixture and contract tests; it does not add runtime validation or
 change scientific, API, frontend, or CLI behavior.
 
+Stage 17.3 defines the science-vs-UI layer boundary in
+`docs/wania_science_ui_boundary_v0_1.md`. It separates stable display fields,
+optional scientific annotations, backend-only implementation details, and
+future capabilities without changing payload or runtime behavior.
+
 ## Optional Scientific CSV Exports
 
 By default, the Stage 15 CLI does not export Rg/contacts CSVs. They can be
@@ -438,6 +443,10 @@ future scope should be specified separately before implementation.
   payload contract, separate from backend `graph/graph.json`.
 - `docs/wania_mvp_contract_v0_1.md`: stable frontend-facing WANIA MVP profile,
   including required, optional, backend-only, and future classifications.
+- `docs/wania_required_fields_contract_v0_1.md`: exact required WANIA MVP
+  fields and minimal valid payload rules.
+- `docs/wania_science_ui_boundary_v0_1.md`: science-vs-UI layer ownership for
+  display fields, optional science, backend internals, and future capability.
 - `docs/preprocessing_graph_workflow_contract.md`: workflow APIs, options, and
   output layout.
 - `docs/local_scientific_integration_tests.md`: local-only real MD smoke test

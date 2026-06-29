@@ -16,6 +16,8 @@ Stage 17.1 freezes this documented profile. It is not schema redesign and does
 not add runtime validation. Stage 17.2 freezes the exact required subset in
 [`wania_required_fields_contract_v0_1.md`](wania_required_fields_contract_v0_1.md),
 with contract tests and a minimal valid payload fixture.
+Stage 17.3 defines the science-vs-UI ownership boundary in
+[`wania_science_ui_boundary_v0_1.md`](wania_science_ui_boundary_v0_1.md).
 
 ## 2. Layer separation
 
@@ -213,4 +215,5 @@ It is not upload/job API work.
 - **Stage 17.2:** freeze the required-fields contract and add its minimal valid
   payload fixture and tests.
 - **Stage 17.3:** harden the science vs UI boundary and backend-only leakage
-  rules.
+  rules, as defined by the
+  [`Science vs UI boundary`](wania_science_ui_boundary_v0_1.md).

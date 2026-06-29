@@ -227,6 +227,14 @@ FastAPI/upload/job API, frontend behavior, or scientific behavior is added.
 The Stage 16.12 frontend sample remains a rich superset rather than the
 minimal MVP fixture.
 
+## Stage 17.3 science vs UI boundary
+
+Stage 17.3 defines where the stable frontend display model ends and optional
+science, backend computational details, and future capabilities begin. See
+[`wania_science_ui_boundary_v0_1.md`](wania_science_ui_boundary_v0_1.md).
+This docs/tests-only boundary adds no fields, validator, schema redesign, or
+runtime behavior.
+
 ## Protein-agnostic run metadata
 
 The payload is protein-agnostic. The `run` block identifies which protein run
