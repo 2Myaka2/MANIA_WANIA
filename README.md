@@ -417,6 +417,8 @@ future scope should be specified separately before implementation.
 
 ## Documentation
 
+- `docs/notebook_parity_audit_v1_3.md`: Stage 16 notebook-to-backend parity
+  matrices, intentional differences, deferred scope, and optional validation.
 - `docs/preprocessing_graph_workflow_boundary_before_frontend_api.md`: accepted
   Stage 15 backend workflow boundary.
 - `docs/wania_api_protein_agnostic_boundary.md`: protein-agnostic Stage 16+

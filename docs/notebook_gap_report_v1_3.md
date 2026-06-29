@@ -7,6 +7,9 @@ This report compares the backend with the reference semantics described by
 reference/specification artifacts only: default tests and CI do not execute
 them.
 
+For the structured Stage 16.13 feature matrices, module/artifact mapping, and
+optional manual validation plan, see `docs/notebook_parity_audit_v1_3.md`.
+
 ## What preprocessing v1.2 adds
 
 `MANIA_preprocessing_v1_2` adds an `InteractionAccumulator` refactor,
