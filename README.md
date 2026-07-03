@@ -274,6 +274,13 @@ Stage 18.1 defines the WANIA JSON assembly profile, Stage 18.2 validates its
 artifact-to-payload mapping, and Stage 18.3 exposes that accepted mapping as a
 one-command demo export. See `docs/wania_json_assembly_profile_v0_1.md`.
 
+Stage 19 freezes the MANIA scientific MVP RIN scope before later
+implementation and alignment work. WANIA MVP remains the accepted, stable
+frontend-facing JSON contract for graph rendering; it is not the complete
+MANIA scientific output format. Stage 19 is documentation-only. See
+`docs/mania_rin_mvp_gap_matrix.md` and
+`docs/mania_rin_mvp_scope_v0_1.md`.
+
 ## Build A Demo-Ready WANIA Payload
 
 Build the frontend-facing WANIA MVP payload from the accepted synthetic graph
@@ -448,9 +455,9 @@ boundary only; it does not change `.gitignore`.
 
 ## Future Scope
 
-Stage 15 output is backend graph workflow output. It is not yet the final WANIA
-API/frontend contract, and `graph.json` should not be assumed to be
-frontend-ready.
+Stage 15 `graph/graph.json` remains backend graph workflow output and should
+not be assumed to be frontend-ready. The separate WANIA MVP JSON contract is
+accepted and stable for frontend graph rendering.
 
 Stage 16.0 documents the future WANIA object JSON payload contract. The
 contract is object JSON, protein-agnostic, and separate from backend
@@ -463,9 +470,18 @@ adapter consumes accepted Stage 15 artifacts and does not change backend
 Stage 16.12 adds a stable synthetic payload sample for frontend fixture and
 contract review. It does not add frontend implementation or an API endpoint.
 
-Future Stage 16+ implementation scope includes the FastAPI upload/job API,
-WANIA API serving, frontend integration, and any temporal RIN workflow. This
-future scope should be specified separately before implementation.
+The planning-level scientific roadmap is:
+
+- **Stage 19 — MANIA RIN MVP scope freeze:** documentation only.
+- **Stage 20 — RIN preprocessing parity.**
+- **Stage 21 — RIN analysis parity.**
+- **Stage 22 — Temporal RIN + conformational artifacts.**
+- **Stage 23 — WANIA RIN alignment.**
+
+Stages 20–23 are future implementation/alignment stages and are not started by
+the Stage 19 scope freeze. FastAPI/upload/job API, Docker/demo packaging,
+database models, production API serving, and frontend implementation remain
+separately scoped later work.
 
 ## Documentation
 
@@ -485,6 +501,10 @@ future scope should be specified separately before implementation.
   display fields, optional science, backend internals, and future capability.
 - `docs/wania_json_assembly_profile_v0_1.md`: Stage 18.1 inputs, demo-ready
   output expectations, portable references, and Stage 17 alignment.
+- `docs/mania_rin_mvp_gap_matrix.md`: Stage 19.1 inventory of RIN requirements,
+  repository evidence, coverage, and unresolved naming/contract gaps.
+- `docs/mania_rin_mvp_scope_v0_1.md`: Stage 19.2 MANIA scientific MVP scope
+  freeze, WANIA boundary, and planning-level Stage 20–23 ownership.
 - `docs/preprocessing_graph_workflow_contract.md`: workflow APIs, options, and
   output layout.
 - `docs/local_scientific_integration_tests.md`: local-only real MD smoke test

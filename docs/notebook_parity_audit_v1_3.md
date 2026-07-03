@@ -228,11 +228,12 @@ notebook identity.
 
 ## 11. Recommended next stages
 
-1. Run and record an optional, uncommitted small real-MD comparison against
-   selected notebook outputs before changing scientific semantics.
-2. If required, specify Kabsch alignment and export-format parity separately,
-   including tolerances and fixture boundaries.
-3. Specify formal statistics, temporal RIN, and conformational clustering as
-   independent stages with explicit dependency and artifact-contract choices.
-4. Keep FastAPI/upload/job API and frontend work separate from scientific
-   parity work and preserve the accepted WANIA object JSON contract.
+Stage 19 freezes scope from this reference evidence; it does not execute the
+notebooks or make them production runtime or CI inputs. See
+`mania_rin_mvp_gap_matrix.md` and `mania_rin_mvp_scope_v0_1.md`.
+
+The planning-level roadmap is Stage 20 RIN preprocessing parity, Stage 21 RIN
+analysis parity, Stage 22 temporal RIN plus conformational artifacts, and Stage
+23 WANIA RIN alignment. FastAPI/upload/job API, Docker/demo packaging,
+database models, production API serving, and frontend implementation remain
+separately scoped later work.

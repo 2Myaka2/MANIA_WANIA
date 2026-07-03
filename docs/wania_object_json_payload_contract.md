@@ -524,8 +524,10 @@ The payload reserves a temporal RIN extension point:
 ```
 
 Temporal RIN is not required for the static graph MVP. Temporal RIN remains
-future scope, likely after Stage 17 or in a separately scoped scientific task,
-and should remain generic per protein run.
+future scope mapped at planning level to Stage 22, and should remain generic
+per protein run. Its MANIA scientific scope is frozen separately from the
+accepted WANIA frontend render contract in
+`docs/mania_rin_mvp_scope_v0_1.md`.
 
 Stage 16.0 does not compute temporal RIN.
 
@@ -603,9 +605,14 @@ Current backend `graph/graph.json` is not the final frontend/API payload.
 
 ## Future scope
 
-Future work may implement API output, frontend integration, typed RIN,
-temporal RIN, node structural metric computation, inter-component
-interactions, and broader product features.
+Stage 19 is the documentation-only MANIA RIN MVP scope freeze. The
+planning-level scientific roadmap is Stage 20 RIN preprocessing parity, Stage
+21 RIN analysis parity, Stage 22 temporal RIN plus conformational artifacts,
+and Stage 23 WANIA RIN alignment. These future stages do not expand the
+accepted WANIA base render contract by implication.
+
+FastAPI/upload/job API, Docker/demo packaging, database models, production API
+serving, and frontend implementation remain separately scoped later work.
 
 Cross-protein comparison remains future scope and may require sequence
 alignment, structure alignment, residue mapping, or domain mapping. The

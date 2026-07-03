@@ -212,8 +212,8 @@ promise that its rows are required frontend state.
 ## 11. Diagnostics expectations
 
 A demo-ready payload includes `diagnostics.passed` for frontend/status
-display. Under the Stage 17.2 contract its value may be `true`, `false`, or
-`null` when no backend report status is available.
+display. Its value is the boolean `true` or `false` and must not be `null`, as
+required by the accepted Stage 18.3 demo export guardrail.
 
 `diagnostics.issues` is stable when present and remains optional under the
 accepted payload behavior, except for the Stage 17.2 empty-graph explanation

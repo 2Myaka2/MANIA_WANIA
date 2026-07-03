@@ -142,12 +142,13 @@ basic graph rendering.
 ### Diagnostics
 
 `diagnostics` and `diagnostics.passed` are required. The accepted
-`diagnostics.passed` status summary is `true`, `false`, or `null` when the
-backend has no report status. `diagnostics.issues` is optional because the
-current WANIA adapter does not emit it; if present, it must be an array, and an
-empty issues array is valid. An empty graph must use a non-empty issues array
-to explain its empty state. `report_path` and diagnostics details beyond this
-status/issues shape are optional.
+`diagnostics.passed` status summary is a boolean: `true` or `false`; it must not
+be `null`. This wording reflects the accepted Stage 18.3 demo export guardrail
+without changing the required field set. `diagnostics.issues` is optional
+because the current WANIA adapter does not emit it; if present, it must be an
+array, and an empty issues array is valid. An empty graph must use a non-empty
+issues array to explain its empty state. `report_path` and diagnostics details
+beyond this status/issues shape are optional.
 
 ## 3. Optional progressive enhancements
 

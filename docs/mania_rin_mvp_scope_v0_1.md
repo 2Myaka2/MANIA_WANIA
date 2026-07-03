@@ -229,8 +229,8 @@ document does not change its structure or required fields.
 
 The accepted demo export command remains `mania wania build-payload`. For its
 generated Stage 18.3 demo output, `diagnostics.passed` remains boolean and must
-not be `null`. Older nullable prose is a documentation inconsistency for a
-later consistency pass; it does not weaken this accepted command guardrail.
+not be `null`. Stage 19.3 reconciles the older nullable prose with this
+accepted command guardrail without changing runtime behavior.
 
 ## 7. Optional scientific artifact boundary
 
@@ -311,7 +311,7 @@ pass.
 | `rg_mean/rg_std` / `rg_mean_A/rg_std_A` and node/graph shape | **Unclear / needs confirmation; optional artifact naming issue.** |
 | `conformation_labels_{cond}.csv` / planned `conformational_states.csv` | **MVP naming decision needed** in Stage 22; neither name proves implementation. |
 | historical temporal `cond`/frame bounds / planned `condition`/window/time fields | **MVP naming/schema decision needed** in Stage 22. |
-| older nullable `diagnostics.passed` prose / Stage 18.3 boolean demo output | **Documentation consistency issue** for Stage 19.3; the boolean/not-null demo requirement remains authoritative here. |
+| older nullable `diagnostics.passed` prose / Stage 18.3 boolean demo output | **Reconciled in Stage 19.3.** The boolean/not-null demo requirement remains authoritative; runtime behavior is unchanged. |
 
 ### 11.2 Scientific and layer guardrails
 
@@ -350,9 +350,6 @@ inside the relevant later-stage contract before implementation:
    in the Stage 22 artifact contract?
 7. Should any optional non-protein or enrichment artifact be promoted in a
    later version after its identity and biological semantics are accepted?
-8. When Stage 19.3 reconciles nullable-diagnostics prose, which documents need
-   correction without changing Stage 18.3 runtime behavior?
-
 ## 13. Acceptance checklist for future stages
 
 Before a later stage claims a scoped capability as covered, it must confirm:

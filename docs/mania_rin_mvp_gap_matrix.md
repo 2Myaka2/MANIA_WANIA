@@ -170,7 +170,7 @@ not make the item a WANIA render requirement.
 | `interaction.all_types` | WANIA alignment | WANIA optional enrichment | `src/mania/wania/graph_payload.py` — preserves all backend edge types; `tests/test_wania_graph_artifact_mapping_v0_1.py` — tests rich versus minimal payload behavior. | covered | optional candidate | WANIA frontend payload MVP | Optional progressive enrichment, not required for basic rendering. | None; contract frozen |
 | `capabilities` | WANIA alignment | WANIA v0.1 contract | `src/mania/wania/graph_payload.py` — emits availability flags; `tests/test_wania_graph_artifact_mapping_v0_1.py` — checks that values are boolean and future capabilities stay false. | covered | accepted required | WANIA frontend payload MVP | Capability true does not make optional science required. | None; contract frozen |
 | `artifacts` | WANIA alignment | WANIA v0.1 contract | `src/mania/wania/graph_payload.py` — emits portable relative references; `tests/test_wania_graph_artifact_mapping_v0_1.py` — checks the required object and safe paths. | covered | accepted required | WANIA frontend payload MVP | Individual scientific references remain optional. | None; contract frozen |
-| `diagnostics` | WANIA alignment | Accepted Stage 18.3 state | `tests/test_wania_demo_export_command_v0_1.py` — requires `diagnostics.passed` to be boolean and rejects `null` for demo output. | covered | accepted required | WANIA frontend payload MVP | Older Stage 17 prose still permits null; this documentation inconsistency must not weaken the Stage 18.3 demo guardrail. | Stage 19.2 records boundary only; contract frozen |
+| `diagnostics` | WANIA alignment | Accepted Stage 18.3 state | `tests/test_wania_demo_export_command_v0_1.py` — requires `diagnostics.passed` to be boolean and rejects `null` for demo output. | covered | accepted required | WANIA frontend payload MVP | At Stage 19.1, older Stage 17 prose still permitted null; Stage 19.3 reconciles the prose without changing the Stage 18.3 demo guardrail. | Contract frozen; documentation reconciled in Stage 19.3 |
 
 ## 5. Naming and contract mismatch notes
 
@@ -202,7 +202,8 @@ The following differences must not be silently normalized:
   `docs/wania_json_assembly_profile_v0_1.md` retain older nullable
   `diagnostics.passed` prose, while the accepted Stage 18.3 command test
   requires a boolean demo payload value. Stage 19.1 records this inconsistency
-  but does not change either contract or runtime behavior.
+  but does not change either contract or runtime behavior. Stage 19.3 later
+  reconciles that prose with the already accepted boolean requirement.
 
 ## 6. MVP, optional, and future separation
 
@@ -250,10 +251,6 @@ fields in `wania_graph_payload.json`.
    or adopt/map `centrality_{cond}.csv`?
 7. Which formal statistics and temporal/conformation artifacts are immediate
    scientific MVP requirements rather than post-MVP roadmap items?
-8. When should the older nullable-diagnostics prose be reconciled with the
-   accepted Stage 18.3 boolean demo-output requirement? This inventory must
-   not perform that consistency pass.
-
 ## 8. Suggested next step
 
 Stage 19.2 — MANIA RIN MVP scope document
