@@ -66,7 +66,7 @@ state.
 
 | Capability or artifact | Frozen scope | Coverage at Stage 19.2 | Later-stage intent |
 | --- | --- | --- | --- |
-| Residue table export and residue identity | MANIA scientific MVP | **Partially covered.** Production writes `graph/nodes.csv`; `residue_table_{cond}.csv` is consumed by the notebook adapter and exists as reference output, not as the production filename. | Stage 20 must preserve the current artifact and decide whether parity uses a new name or an explicit mapping. |
+| Residue table export and residue identity | MANIA scientific MVP | **Covered at the Stage 20.A baseline.** The public preprocessing writer emits per-condition `residue_table_{cond}.csv` files from the accepted graph mapping while preserving `graph/nodes.csv` as a separate artifact. | Later Stage 20 work may add computed attributes, but must preserve this identity and naming baseline. |
 | Residue structural attributes | MANIA scientific MVP | **Partially covered.** Accepted columns can be preserved, but the missing attributes are not generally computed. | Stage 20 target, feature by feature, with provenance and units specified. |
 | Protein-protein contact edge export | MANIA scientific MVP | **Partially covered.** Production writes `graph/edges.csv` and `contacts/contact_edges.csv`; the notebook-style `protein_contact_edges_undirected_{cond}.csv` name/layout is not the production contract. | Stage 20 must decide mapping rather than silently replace an accepted artifact. |
 | Edge frequency and distance aggregation | MANIA scientific MVP | **Already covered** for accepted contact observations by `trajectory_contact_accumulator.py` and its tests. | Stage 20 parity work may extend semantics but must preserve sampled-frame frequency meaning. |
@@ -83,6 +83,37 @@ The immediate protein RIN scientific baseline therefore consists of residue
 identity/structural tables, protein contact edges, contact aggregation,
 per-frame observations, the static graph, and explicit semantics/provenance.
 Optional heterograph inventories do not block that baseline.
+
+#### Stage 20.A residue table baseline
+
+`write_preprocessing_residue_tables_csv(mapping_result, output_dir)` writes one
+root-level `residue_table_{cond}.csv` for every condition represented by the
+accepted preprocessing graph mapping. The original condition value remains in
+the `condition` column; only unsafe filename characters are normalized, and
+colliding normalized names fail deterministically. This is a new explicit
+artifact, not a silent alias for `graph/nodes.csv`.
+
+The fixed Stage 20.A columns are:
+
+```text
+condition,residue_index,resid,resname,segment_id,region,x_ca,y_ca,z_ca,tm_relative_z,rmsf_A,sasa_A2,ss
+```
+
+`residue_index` is the zero-based runtime residue index, `resid` is the source
+residue identifier, and `segment_id` preserves the available segment/chain
+identity. This resolves the current composite graph-node `resid` mismatch
+without changing `graph/nodes.csv`. `ss` retains the existing backend name for
+the potential DSSP-derived value; it does not claim DSSP computation.
+
+`x_ca/y_ca/z_ca` preserve the optional scientific Cα values already carried by
+the graph mapping. In the current production mapping they are representative
+coordinates from the first sampled frame. They are not WANIA render `x/y/z`,
+and the writer does not create render coordinates. Unavailable segment,
+coordinate, and structural values are emitted as empty CSV fields. `region`,
+`tm_relative_z`, `rmsf_A`, `sasa_A2`, and `ss` are fixed baseline columns but
+remain empty because the current mapping does not compute or carry those
+attributes. Phi/psi and graph-level Rg summaries are not added at this stage;
+their computation and ownership remain later explicit decisions.
 
 ### 4.2 RIN edge semantics
 

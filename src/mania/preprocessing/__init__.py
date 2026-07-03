@@ -244,6 +244,13 @@ from mania.preprocessing.trajectory_metadata import (
     collect_condition_runtime_metadata,
     collect_manifest_runtime_metadata,
 )
+from mania.preprocessing.trajectory_residue_table_export import (
+    RESIDUE_TABLE_COLUMNS,
+    PreprocessingResidueTableArtifact,
+    PreprocessingResidueTableCsvWriteIssue,
+    PreprocessingResidueTableCsvWriteResult,
+    write_preprocessing_residue_tables_csv,
+)
 from mania.preprocessing.trajectory_residues import (
     PreprocessingConditionResidueNames,
     PreprocessingManifestResidueNames,
@@ -357,6 +364,9 @@ __all__ = [
     "PreprocessingConditionRuntime",
     "PreprocessingConditionRuntimeInput",
     "PreprocessingConditionRuntimeMetadata",
+    "PreprocessingResidueTableArtifact",
+    "PreprocessingResidueTableCsvWriteIssue",
+    "PreprocessingResidueTableCsvWriteResult",
     "PreprocessingGraphEdgeMappingRecord",
     "PreprocessingGraphCsvValidationIssue",
     "PreprocessingGraphCsvValidationResult",
@@ -434,6 +444,7 @@ __all__ = [
     "PreprocessingRgReportBundleIssue",
     "PreprocessingRgReportBundleSummary",
     "PreprocessingRuntimeMetadataIssue",
+    "RESIDUE_TABLE_COLUMNS",
     "PreprocessingTrajectoryLoadIssue",
     "ResolvedResidueLibraryManifestOptions",
     "ResidueLibraryInputConfig",
@@ -480,6 +491,7 @@ __all__ = [
     "validate_rg_reference_comparison_input",
     "validate_rg_timeseries_csv",
     "validate_residue_library_from_manifest_options",
+    "write_preprocessing_residue_tables_csv",
     "write_contact_edges_csv",
     "write_contacts_perframe_csv",
     "write_preprocessing_graph_edges_csv",
