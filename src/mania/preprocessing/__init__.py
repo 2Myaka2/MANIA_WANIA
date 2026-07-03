@@ -244,6 +244,14 @@ from mania.preprocessing.trajectory_metadata import (
     collect_condition_runtime_metadata,
     collect_manifest_runtime_metadata,
 )
+from mania.preprocessing.trajectory_protein_contact_export import (
+    PROTEIN_CONTACT_EDGE_COLUMNS,
+    PROTEIN_CONTACT_PERFRAME_COLUMNS,
+    PreprocessingProteinContactArtifact,
+    PreprocessingProteinContactCsvWriteIssue,
+    PreprocessingProteinContactCsvWriteResult,
+    write_preprocessing_protein_contact_artifacts_csv,
+)
 from mania.preprocessing.trajectory_residue_table_export import (
     RESIDUE_TABLE_COLUMNS,
     PreprocessingResidueTableArtifact,
@@ -333,6 +341,8 @@ compare_contacts_outputs = getattr(
 
 __all__ = [
     "BACKBONE_MAX_CA_DIST_A",
+    "PROTEIN_CONTACT_EDGE_COLUMNS",
+    "PROTEIN_CONTACT_PERFRAME_COLUMNS",
     "OptionalScientificDependencyStatus",
     "PreprocessingCheckedPath",
     "PreprocessingBackboneObservation",
@@ -422,6 +432,9 @@ __all__ = [
     "PreprocessingPathValidationReport",
     "PreprocessingReferencePackageIssue",
     "PreprocessingReferencePackageReport",
+    "PreprocessingProteinContactArtifact",
+    "PreprocessingProteinContactCsvWriteIssue",
+    "PreprocessingProteinContactCsvWriteResult",
     "PreprocessingResidueLibraryBridgeError",
     "PreprocessingResidueLibraryValidationIssue",
     "PreprocessingResidueLibraryValidationReport",
@@ -492,6 +505,7 @@ __all__ = [
     "validate_rg_timeseries_csv",
     "validate_residue_library_from_manifest_options",
     "write_preprocessing_residue_tables_csv",
+    "write_preprocessing_protein_contact_artifacts_csv",
     "write_contact_edges_csv",
     "write_contacts_perframe_csv",
     "write_preprocessing_graph_edges_csv",

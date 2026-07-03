@@ -68,9 +68,9 @@ state.
 | --- | --- | --- | --- |
 | Residue table export and residue identity | MANIA scientific MVP | **Covered at the Stage 20.A baseline.** The public preprocessing writer emits per-condition `residue_table_{cond}.csv` files from the accepted graph mapping while preserving `graph/nodes.csv` as a separate artifact. | Later Stage 20 work may add computed attributes, but must preserve this identity and naming baseline. |
 | Residue structural attributes | MANIA scientific MVP | **Partially covered.** Accepted columns can be preserved, but the missing attributes are not generally computed. | Stage 20 target, feature by feature, with provenance and units specified. |
-| Protein-protein contact edge export | MANIA scientific MVP | **Partially covered.** Production writes `graph/edges.csv` and `contacts/contact_edges.csv`; the notebook-style `protein_contact_edges_undirected_{cond}.csv` name/layout is not the production contract. | Stage 20 must decide mapping rather than silently replace an accepted artifact. |
-| Edge frequency and distance aggregation | MANIA scientific MVP | **Already covered** for accepted contact observations by `trajectory_contact_accumulator.py` and its tests. | Stage 20 parity work may extend semantics but must preserve sampled-frame frequency meaning. |
-| Per-frame contacts artifact | MANIA scientific MVP | **Partially covered.** `contacts/contacts_perframe.csv` is an accepted opt-in CSV with source-frame indexes; required parquet and exact notebook naming are not covered. | The CSV is the MVP baseline. Parquet is not required by this freeze; any later format addition needs a separate dependency/contract decision. |
+| Protein-protein contact edge export | MANIA scientific MVP | **Covered at the Stage 20.B baseline.** The public preprocessing writer emits per-condition `protein_contact_edges_undirected_{cond}.csv` files for results computed with `contact_selection="protein"`. Existing `graph/edges.csv` and `contacts/contact_edges.csv` remain separate artifacts. | Full protein RIN edge semantics remain Stage 20.C work. |
+| Edge frequency and distance aggregation | MANIA scientific MVP | **Covered at the Stage 20.B baseline** by the accepted interaction accumulator: contact frequency uses sampled frames, and distance summaries use population standard deviation over one normalized observation per contacting frame and edge type. | Preserve these semantics in later parity work. |
+| Per-frame contacts artifact | MANIA scientific MVP | **Covered at the Stage 20.B CSV baseline.** The per-condition artifact is `contacts_perframe_{cond}.csv` and preserves source frame indexes, residue identity, edge type, and distance in Å. | `contacts_perframe` is the accepted spelling; `contacts_per_frame` and parquet remain explicit non-baseline alternatives. |
 | Static RIN graph export | MANIA scientific MVP | **Already covered** as backend `graph/graph.json`; it is distinct from the WANIA payload. | Preserve the backend/frontend separation. |
 | Rg time series | MANIA scientific MVP supporting artifact | **Partially covered** relative to notebook naming, but the scientific CSV is implemented at `rg/rg_timeseries.csv`. | Preserve the accepted backend artifact; naming parity remains a Stage 20 decision. |
 | Edge semantics manifest | MANIA scientific MVP | **Partially covered.** A historical `edge_semantics.json` and current priority vocabulary exist, but there is no production writer for the full criteria. | Stage 20 target. The manifest must report accepted semantics rather than imply unsupported chemistry. |
@@ -114,6 +114,50 @@ coordinate, and structural values are emitted as empty CSV fields. `region`,
 remain empty because the current mapping does not compute or carry those
 attributes. Phi/psi and graph-level Rg summaries are not added at this stage;
 their computation and ownership remain later explicit decisions.
+
+#### Stage 20.B protein contact artifact baseline
+
+`write_preprocessing_protein_contact_artifacts_csv(contacts_result,
+output_dir)` consumes accepted condition or manifest contact results whose
+selection is explicitly `protein`. It writes one root-level artifact pair per
+condition:
+
+```text
+protein_contact_edges_undirected_{cond}.csv
+contacts_perframe_{cond}.csv
+```
+
+The edge columns are:
+
+```text
+condition,residue_index_i,resid_i,resname_i,segment_id_i,residue_index_j,resid_j,resname_j,segment_id_j,edge_type,contact_frame_count,sampled_frame_count,contact_freq,mean_dist_A,std_dist_A,weight
+```
+
+The per-frame columns are:
+
+```text
+condition,frame_index,time_ps,residue_index_i,resid_i,resname_i,segment_id_i,residue_index_j,resid_j,resname_j,segment_id_j,edge_type,distance_A
+```
+
+Endpoint ordering is undirected and deterministic by `residue_index`.
+`condition` plus `residue_index_i/j` identifies the same zero-based runtime
+residues as Stage 20.A; source `resid`, `resname`, and `segment_id` are retained
+to make that mapping explicit. A reused residue index with conflicting source
+identity fails export.
+
+For each condition and edge type, `contact_freq` is the number of sampled
+frames containing the normalized pair divided by all sampled frames in that
+condition. Duplicate observations of the same pair/type in one frame retain
+the minimum distance. `mean_dist_A` and `std_dist_A` use those per-contacting-
+frame distances; `std_dist_A` is the population standard deviation (`ddof=0`).
+The persisted `weight` equals `contact_freq`.
+
+This per-condition CSV pair is an explicit Stage 20.B artifact, not an alias
+for the older combined `contacts/contact_edges.csv` and
+`contacts/contacts_perframe.csv`, whose schemas and layout remain unchanged.
+The accepted Stage 20.B spelling is `contacts_perframe` (without the second
+underscore); no parquet dependency or `contacts_per_frame` artifact is added.
+No new contact chemistry or full RIN edge semantics are introduced here.
 
 ### 4.2 RIN edge semantics
 
@@ -332,7 +376,7 @@ pass.
 
 | Mismatch | Decision state |
 | --- | --- |
-| `contacts_per_frame` / `contacts_perframe`; parquet / backend CSV | **MVP naming decision needed.** Current CSV is accepted production evidence; parquet is not an MVP requirement. |
+| `contacts_per_frame` / `contacts_perframe`; parquet / backend CSV | **Resolved for the Stage 20.B baseline.** Use per-condition `contacts_perframe_{cond}.csv`; the older combined backend CSV remains separate, and neither parquet nor `contacts_per_frame` is added. |
 | `non_protein_nodes` / `nonprotein_nodes` | **Optional artifact naming issue.** No production contract is implied. |
 | `res_i` / backend `resid_i` and `res_j` / backend `resid_j` | **MVP naming decision needed.** Existing backend names remain current evidence. |
 | `centrality_*` / production `metrics_*` | **MVP naming decision needed** for Stage 21 artifact parity. |
