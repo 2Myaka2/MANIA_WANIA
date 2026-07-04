@@ -76,13 +76,32 @@ state.
 | Edge semantics manifest | MANIA scientific MVP | **Covered at Stage 20.D.** The deterministic `edge_semantics.json` writer reports the implemented Stage 20.C protein-only vocabulary, criteria, limitations, overlap, and central priority order. | Preserve it as descriptive metadata; do not promote deferred non-protein chemistry. |
 | MANIA run manifest export | Backend-only/internal | **Covered at Stage 20.D.** `mania_manifest.json` records available Stage 20.A/B/D artifacts using portable filenames and leaves unavailable run provenance explicitly null. | This remains optional backend provenance, not a WANIA render field. |
 | Residue library / QC artifact | Backend-only/internal | **Covered at Stage 20.D.** `mania_residue_library.json` records the Stage 20.A identity inventory, missing values, and deterministic identity-conflict QC. | It is per-run QC, not a biological residue database or non-protein inventory. |
-| Non-protein node inventory | Optional scientific artifact | **Not implemented in production.** Notebook/reference naming is `nonprotein_nodes_{condition}.csv`. | Optional Stage 20 extension after identity and naming are accepted. |
-| Protein–non-protein edge inventory | Optional scientific artifact | **Not implemented in production.** Only notebook/reference evidence exists for `np_contact_edges_{cond}.csv`. | Optional Stage 20 extension; never required for the WANIA base graph. |
+| Non-protein node inventory | Optional scientific artifact | **Explicitly deferred at Stage 20.E.** `non_protein_nodes_{cond}.csv` is not emitted. Notebook/reference naming is `nonprotein_nodes_{condition}.csv`, but production has no accepted non-protein identity or classification contract. | A later explicit scope must accept identity, inclusion, and naming before implementation. |
+| Protein–non-protein edge inventory | Optional scientific artifact | **Explicitly deferred at Stage 20.E.** `np_contact_edges_{cond}.csv` is not emitted. Current contact results do not preserve protein/non-protein membership or a mapping from mixed-selection indexes to Stage 20.A protein identity. | Never required for the WANIA base graph; a later explicit scope must accept mixed-contact identity and semantics. |
 
 The immediate protein RIN scientific baseline therefore consists of residue
 identity/structural tables, protein contact edges, contact aggregation,
 per-frame observations, the static graph, and explicit semantics/provenance.
 Optional heterograph inventories do not block that baseline.
+
+#### Stage 20.E optional non-protein inventory deferral
+
+Stage 20.E chooses explicit deferral rather than a false implementation. The
+current runtime can select either all residues or protein residues, but the
+resulting contact records do not retain endpoint membership as protein or
+non-protein. Residue indexes are local to the selected residue collection, so
+an all-residue result does not provide a reliable mapping back to the accepted
+Stage 20.A protein residue identity. The repository also has no deterministic
+production contract for excluding solvent/ions or classifying a non-protein
+residue as lipid, glycan, ligand, or another biological entity.
+
+Consequently, production emits neither `non_protein_nodes_{cond}.csv` nor
+`np_contact_edges_{cond}.csv`. `mania_manifest.json` lists produced artifacts
+only and does not advertise either artifact as implemented. The deferred
+`protein_lipid`, `protein_glycan`, `glycan_anchor`, and `protein_ligand` names
+remain unimplemented; no generic contact is silently promoted to one of those
+semantics. This decision does not change the protein RIN baseline or any WANIA
+field, capability, coordinate, or rendering requirement.
 
 #### Stage 20.A residue table baseline
 
