@@ -94,7 +94,27 @@ labeled/total node counts. Empty graphs, missing labels, one-community graphs,
 and insufficient region margins produce explicit skipped statuses with no
 invented p-values. This is a MANIA backend/scientific artifact; it does not
 change WANIA, implement cross-condition statistics, or start temporal or
-conformation analysis. Stages 21.E–21.F and 22 require separate approval.
+conformation analysis. Stage 21.E is described separately below; Stage 21.F
+and Stage 22 require separate approval.
+
+## Stage 21.E Cross-Condition Comparison Status
+
+Stage 21.E consumes accepted `centrality_{condition}.csv` artifacts and
+compares every deterministic lexical condition pair. Nodes match only when
+`residue_index`, `resid`, `resname`, and `segment_id` all agree; row order and
+condition-local node IDs are never used as cross-condition identity. Exact
+matches receive per-metric `value_b - value_a` rows in root-level
+`comparison.csv`. Missing metrics remain empty, unmatched entities are counted,
+and identity conflicts produce explicit skipped statuses.
+
+Root-level `stats.csv` reports a paired mean-delta summary and Cohen's dz when
+the complete matched pairs are sufficient and paired-difference sample
+variance is defined. No p-value method is implemented, so p-value and adjusted
+p-value fields remain empty and correction is explicitly `none`. Edge,
+condition-local community, and region-enrichment comparison scopes are
+explicitly skipped. This dependency-free backend/scientific analysis does not
+change the WANIA payload and does not implement Stage 21.F, temporal RIN, or
+conformation analysis.
 
 ## Current Backend Workflow
 

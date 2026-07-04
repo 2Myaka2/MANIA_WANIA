@@ -292,8 +292,8 @@ summaries may remain optional WANIA enrichment.
 | `modularity` | MANIA scientific MVP | **Covered for the Stage 21.A graph by Stage 21.C.** The deterministic unweighted value is repeated in the community artifact rows. |
 | `centrality_{cond}.csv` | MANIA scientific MVP artifact concept | **Covered for the Stage 21.B static graph** as deterministic `centrality_{condition}.csv`; the older `analysis/metrics_<condition>.csv` remains a separate legacy analysis path. |
 | `communities_{cond}.csv` | MANIA scientific MVP artifact | **Covered for the Stage 21.A graph by Stage 21.C** as deterministic `communities_{condition}.csv`; the older analysis output remains a separate legacy path. |
-| Cross-condition comparison, `stats.csv`, `comparison.csv` | MANIA scientific MVP | **MVP target for future implementation.** Historical examples/planned schemas do not prove a production computation or accepted artifact. |
-| `MWU`, `FDR-BH`, `Cohen's d`, Bootstrap CI | MANIA scientific MVP | **MVP targets for future implementation** in Stage 21. Algorithms, dependencies, schemas, and test fixtures remain to be accepted. |
+| Cross-condition comparison, `stats.csv`, `comparison.csv` | MANIA scientific MVP | **Covered for accepted Stage 21.B node metrics by Stage 21.E.** Stable residue identity is matched across lexical condition pairs; unsafe rows and scopes are explicitly skipped. |
+| `MWU`, `FDR-BH`, `Cohen's d`, Bootstrap CI | MANIA scientific MVP | **Partially covered by Stage 21.E.** Cohen's dz is computed from complete paired differences when sample variance is defined. MWU, bootstrap CI, p-values, and FDR-BH remain unimplemented; correction is explicitly `none`. |
 | `NMI`, `ARI` | Optional scientific artifact | **Not implemented.** Requires an explicit within-run cross-condition node/partition mapping contract. |
 | Region/community enrichment and Fisher enrichment | Optional scientific artifact | **Covered for existing Stage 21.A region labels by Stage 21.D.** Missing labels and insufficient margins produce explicit skipped rows; no biological region mapping is inferred. |
 
@@ -384,6 +384,31 @@ insufficient margins instead receive explicit skipped statuses and no invented
 p-value. This optional MANIA scientific artifact does not change the WANIA
 payload and does not implement Stage 21.E cross-condition comparison,
 multiple-testing correction, temporal RIN, or conformation analysis.
+
+#### Stage 21.E cross-condition comparison and statistical outputs
+
+Stage 21.E consumes accepted Stage 21.B `centrality_{condition}.csv` artifacts
+without rebuilding graph or metric semantics. Conditions are ordered
+lexically and every deterministic pair is compared. A node matches only by the
+complete accepted residue identity `(residue_index, resid, resname,
+segment_id)`; row order and condition-specific `node_id` values are not
+cross-condition keys. Conflicting identity at a shared residue index blocks
+statistics for that pair.
+
+Root-level `comparison.csv` records each accepted Stage 21.B metric for exact,
+missing, unmatched, and conflicting identities. Missing values are never
+replaced by zero. Root-level `stats.csv` reports matched, unmatched, and
+missing-metric counts; the supported methods are paired mean delta and Cohen's
+dz over complete paired differences. Insufficient observations and zero
+paired-difference sample variance produce explicit skipped statuses.
+
+No p-value method is introduced, so raw and adjusted p-values remain missing
+and correction is recorded as `none`; MWU, bootstrap CI, and FDR-BH remain
+deferred. Edge comparison does not treat absent edges as zero, condition-local
+community IDs are not matched, and region enrichment is not compared through
+those IDs. These scopes receive deterministic unsupported-scope rows. This is
+a dependency-free MANIA backend/scientific artifact and does not alter the
+WANIA contract or implement Stage 21.F, temporal RIN, or conformation work.
 
 ### 4.6 Temporal RIN and conformation artifacts
 
