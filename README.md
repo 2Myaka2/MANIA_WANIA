@@ -39,9 +39,27 @@ typed aggregate in priority order. The recommended output is a per-condition
 null `contact_freq` and `weight` values.
 
 This analysis artifact is not `wania_graph_payload.json` and does not change
-WANIA required fields or render-coordinate semantics. Stage 21.A does not
-compute centrality, weighted metrics, communities, enrichment, comparison,
-statistics, temporal RIN, or conformation artifacts. Stages 21.B–21.F and 22
+WANIA required fields or render-coordinate semantics. Stage 21.A itself does
+not compute metrics or later-stage analysis outputs.
+
+## Stage 21.B Static RIN Metrics Status
+
+Stage 21.B computes deterministic per-node `degree`, `strength`,
+`betweenness`, `closeness`, `eigenvector`, `pagerank`, and `kcore` values from
+the accepted Stage 21.A in-memory graph or exported `graph.json`. It writes
+`centrality_{condition}.csv` with stable node, column, and float formatting.
+`kcore` remains the existing MANIA contract spelling.
+
+Only `strength` uses the accepted scientific `weight = contact_freq` value.
+It sums available numeric incident weights; a node with incident edges but no
+numeric incident weight receives a missing strength, while an isolated node
+receives degree and strength zero. Betweenness and closeness are unweighted so
+contact strength is never misinterpreted as path distance. Iterative metric
+non-convergence produces deterministic missing values.
+
+This remains a MANIA backend/scientific artifact. It does not add metrics to
+the WANIA payload or implement communities, enrichment, comparison,
+statistics, temporal RIN, or conformation artifacts. Stages 21.C–21.F and 22
 remain subject to separate explicit approval.
 
 ## Current Backend Workflow

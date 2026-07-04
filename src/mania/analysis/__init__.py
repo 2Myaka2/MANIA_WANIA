@@ -25,6 +25,15 @@ from mania.analysis.static_rin_graph import (
     build_static_rin_graph,
     write_static_rin_graph_json,
 )
+from mania.analysis.static_rin_metrics import (
+    STATIC_RIN_METRICS_COLUMNS,
+    StaticRinMetrics,
+    StaticRinMetricsError,
+    StaticRinNodeMetrics,
+    compute_static_rin_metrics,
+    compute_static_rin_metrics_from_graph_json,
+    write_static_rin_metrics_csv,
+)
 
 __all__ = [
     "AnalysisGraphMetricsArtifacts",
@@ -35,15 +44,22 @@ __all__ = [
     "GraphTopologyMetrics",
     "NodeTopologyMetrics",
     "STATIC_RIN_GRAPH_SCHEMA_VERSION",
+    "STATIC_RIN_METRICS_COLUMNS",
     "StaticRinEdge",
     "StaticRinGraph",
     "StaticRinGraphError",
     "StaticRinInteraction",
     "StaticRinNode",
+    "StaticRinMetrics",
+    "StaticRinMetricsError",
+    "StaticRinNodeMetrics",
     "build_static_rin_graph",
     "compute_analysis_graph_metrics_from_graph_json",
     "compute_graph_topology_metrics",
+    "compute_static_rin_metrics",
+    "compute_static_rin_metrics_from_graph_json",
     "write_analysis_graph_metrics_artifacts",
     "write_graph_topology_metrics",
     "write_static_rin_graph_json",
+    "write_static_rin_metrics_csv",
 ]

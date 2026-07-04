@@ -285,12 +285,12 @@ summaries may remain optional WANIA enrichment.
 | Capability or metric | Frozen scope | Coverage at Stage 19.2 |
 | --- | --- | --- |
 | Static RIN graph input/export | MANIA scientific MVP | **Covered at the Stage 21.A analysis baseline.** `src/mania/analysis/static_rin_graph.py` builds a per-condition analysis graph directly from accepted Stage 20 residue/contact artifacts. The older backend `graph/graph.json` remains a separate accepted workflow artifact. |
-| `degree`, `strength`, `betweenness`, `closeness`, `eigenvector`, `pagerank` | MANIA scientific MVP | **Already covered** by `src/mania/analysis/graph_metrics.py` and tests. |
-| Weighted graph baseline | MANIA scientific MVP | **Already covered** for `strength` using numeric `contact_freq`; broader unspecified weighted metrics are not added by this freeze. |
-| `k_core` | MANIA scientific MVP | **Partially covered** under the production name `kcore`; canonical naming remains undecided. |
+| `degree`, `strength`, `betweenness`, `closeness`, `eigenvector`, `pagerank` | MANIA scientific MVP | **Covered for the Stage 21.A graph by Stage 21.B.** `src/mania/analysis/static_rin_metrics.py` consumes the accepted static graph directly. |
+| Weighted graph baseline | MANIA scientific MVP | **Covered for Stage 21.B strength.** Available numeric `weight = contact_freq` values are summed; path metrics remain unweighted. |
+| `k_core` | MANIA scientific MVP | **Covered under the accepted production spelling `kcore`.** |
 | `community` | MANIA scientific MVP | **Already covered** with separate community artifacts. Algorithm/fallback choice is backend-only. |
 | `modularity` | MANIA scientific MVP | **Already covered** as a report-level community quality value. |
-| `centrality_{cond}.csv` | MANIA scientific MVP artifact concept | **Partially covered** by current `analysis/metrics_<condition>.csv`; filename and content mapping remain undecided. |
+| `centrality_{cond}.csv` | MANIA scientific MVP artifact concept | **Covered for the Stage 21.B static graph** as deterministic `centrality_{condition}.csv`; the older `analysis/metrics_<condition>.csv` remains a separate legacy analysis path. |
 | `communities_{cond}.csv` | MANIA scientific MVP artifact | **Already covered** in the current analysis output layout. |
 | Cross-condition comparison, `stats.csv`, `comparison.csv` | MANIA scientific MVP | **MVP target for future implementation.** Historical examples/planned schemas do not prove a production computation or accepted artifact. |
 | `MWU`, `FDR-BH`, `Cohen's d`, Bootstrap CI | MANIA scientific MVP | **MVP targets for future implementation** in Stage 21. Algorithms, dependencies, schemas, and test fixtures remain to be accepted. |
@@ -328,6 +328,23 @@ It changes neither Stage 20 artifact schemas nor WANIA required fields,
 coordinates, or rendering semantics. Centrality, weighted metrics,
 communities, enrichment, cross-condition comparison, statistics, temporal RIN,
 and conformation artifacts remain outside Stage 21.A.
+
+#### Stage 21.B static centrality and weighted metrics
+
+Stage 21.B consumes the accepted Stage 21.A `StaticRinGraph` or its exported
+`graph.json`, preserving condition, node IDs, and residue identity. It exports
+stable `centrality_{condition}.csv` rows ordered by `residue_index`, using the
+existing `kcore` spelling. Degree, betweenness, closeness, eigenvector,
+PageRank, and core number use graph topology. Betweenness and closeness are
+unweighted; `contact_freq` is a strength rather than a distance.
+
+Strength sums only valid numeric incident `weight = contact_freq` values. An
+isolated node has degree and strength zero. A non-isolated node with no numeric
+incident weights has missing strength; with mixed weighted and missing edges,
+its strength is the sum of the available numeric weights. Iterative metric
+non-convergence is represented by a missing value. Stage 21.B does not change
+the Stage 21.A graph or WANIA contracts and does not implement communities,
+enrichment, comparison, statistics, temporal RIN, or conformation artifacts.
 
 ### 4.6 Temporal RIN and conformation artifacts
 
@@ -468,9 +485,9 @@ pass.
 | `contacts_per_frame` / `contacts_perframe`; parquet / backend CSV | **Resolved for the Stage 20.B baseline.** Use per-condition `contacts_perframe_{cond}.csv`; the older combined backend CSV remains separate, and neither parquet nor `contacts_per_frame` is added. |
 | `non_protein_nodes` / `nonprotein_nodes` | **Optional artifact naming issue.** No production contract is implied. |
 | `res_i` / backend `resid_i` and `res_j` / backend `resid_j` | **MVP naming decision needed.** Existing backend names remain current evidence. |
-| `centrality_*` / production `metrics_*` | **MVP naming decision needed** for Stage 21 artifact parity. |
+| `centrality_*` / production `metrics_*` | **Resolved for Stage 21.B.** The accepted Stage 21.A graph path exports `centrality_{condition}.csv`; legacy `metrics_*` output remains separate. |
 | `dssp` / backend `ss` | **MVP naming decision needed** with the computation/provenance contract. |
-| `k_core` / backend `kcore` | **MVP naming decision needed.** Current production output remains `kcore`. |
+| `k_core` / backend `kcore` | **Resolved for Stage 21.B.** Keep the existing production and MANIA contract spelling `kcore`. |
 | notebook `xca/yca/zca` / backend `x_ca/y_ca/z_ca` | **MVP naming decision needed only for parity mapping.** Backend underscore names remain accepted scientific provenance fields. |
 | `rg_mean/rg_std` / `rg_mean_A/rg_std_A` and node/graph shape | **Unclear / needs confirmation; optional artifact naming issue.** |
 | `conformation_labels_{cond}.csv` / planned `conformational_states.csv` | **MVP naming decision needed** in Stage 22; neither name proves implementation. |
