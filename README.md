@@ -76,9 +76,25 @@ stable one-based community IDs, community size, algorithm, modularity, and
 community count. Communities are ordered by their minimum residue identity;
 disconnected components and isolates therefore remain deterministic. This is
 a MANIA backend/scientific artifact and does not change the WANIA payload.
-Region enrichment, cross-condition comparison/statistics, temporal RIN, and
-conformation artifacts remain outside Stage 21.C. Stages 21.D–21.F and 22
-require separate explicit approval.
+Region enrichment and later comparison/statistics remain outside Stage 21.C.
+
+## Stage 21.D Static RIN Region Enrichment Status
+
+Stage 21.D consumes the accepted per-condition Stage 21.A `graph.json` and
+Stage 21.C `communities_{condition}.csv`. It uses only non-empty `region`
+labels already present on Stage 21.A nodes; unlabeled nodes are excluded from
+contingency tables and no region is inferred from residue numbers. For each
+community and observed region, a dependency-free two-sided Fisher exact test
+is computed only when community, outside-community, region, and non-region
+margins are available.
+
+The deterministic writer emits `region_enrichment_{condition}.csv` with the
+2x2 counts, raw p-value, method, status, accepted community metadata, and
+labeled/total node counts. Empty graphs, missing labels, one-community graphs,
+and insufficient region margins produce explicit skipped statuses with no
+invented p-values. This is a MANIA backend/scientific artifact; it does not
+change WANIA, implement cross-condition statistics, or start temporal or
+conformation analysis. Stages 21.E–21.F and 22 require separate approval.
 
 ## Current Backend Workflow
 

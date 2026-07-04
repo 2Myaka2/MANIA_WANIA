@@ -295,7 +295,7 @@ summaries may remain optional WANIA enrichment.
 | Cross-condition comparison, `stats.csv`, `comparison.csv` | MANIA scientific MVP | **MVP target for future implementation.** Historical examples/planned schemas do not prove a production computation or accepted artifact. |
 | `MWU`, `FDR-BH`, `Cohen's d`, Bootstrap CI | MANIA scientific MVP | **MVP targets for future implementation** in Stage 21. Algorithms, dependencies, schemas, and test fixtures remain to be accepted. |
 | `NMI`, `ARI` | Optional scientific artifact | **Not implemented.** Requires an explicit within-run cross-condition node/partition mapping contract. |
-| Region/community enrichment and Fisher enrichment | Optional scientific artifact | **Not implemented.** Requires accepted labels, hypotheses, and output schema. |
+| Region/community enrichment and Fisher enrichment | Optional scientific artifact | **Covered for existing Stage 21.A region labels by Stage 21.D.** Missing labels and insufficient margins produce explicit skipped rows; no biological region mapping is inferred. |
 
 Metrics, communities, comparison tables, statistics, and enrichment outputs
 are separate MANIA scientific artifacts. They do not become required node,
@@ -367,6 +367,23 @@ modularity, and community count. It is a MANIA backend/scientific artifact,
 not a WANIA contract change. Stage 21.C does not implement region enrichment,
 cross-condition comparison or statistics, NMI/ARI, temporal RIN, or
 conformation analysis.
+
+#### Stage 21.D static region enrichment
+
+Stage 21.D joins accepted Stage 21.A node identity and existing `region`
+labels to accepted Stage 21.C community assignments. It emits deterministic
+`region_enrichment_{condition}.csv` rows ordered by community and region. The
+2x2 table is defined over labeled nodes only; missing labels are excluded and
+are never converted into a biological category or inferred from residue
+numbers.
+
+When both community groups and both region margins are available, Stage 21.D
+reports a dependency-free two-sided Fisher exact raw p-value with method and
+status metadata. Empty graphs, absent labels, one-community graphs, and
+insufficient margins instead receive explicit skipped statuses and no invented
+p-value. This optional MANIA scientific artifact does not change the WANIA
+payload and does not implement Stage 21.E cross-condition comparison,
+multiple-testing correction, temporal RIN, or conformation analysis.
 
 ### 4.6 Temporal RIN and conformation artifacts
 
