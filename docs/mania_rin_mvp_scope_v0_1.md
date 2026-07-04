@@ -288,10 +288,10 @@ summaries may remain optional WANIA enrichment.
 | `degree`, `strength`, `betweenness`, `closeness`, `eigenvector`, `pagerank` | MANIA scientific MVP | **Covered for the Stage 21.A graph by Stage 21.B.** `src/mania/analysis/static_rin_metrics.py` consumes the accepted static graph directly. |
 | Weighted graph baseline | MANIA scientific MVP | **Covered for Stage 21.B strength.** Available numeric `weight = contact_freq` values are summed; path metrics remain unweighted. |
 | `k_core` | MANIA scientific MVP | **Covered under the accepted production spelling `kcore`.** |
-| `community` | MANIA scientific MVP | **Already covered** with separate community artifacts. Algorithm/fallback choice is backend-only. |
-| `modularity` | MANIA scientific MVP | **Already covered** as a report-level community quality value. |
+| `community` | MANIA scientific MVP | **Covered for the Stage 21.A graph by Stage 21.C.** The dependency-free implementation reports deterministic unweighted greedy modularity as a fallback, not Louvain. |
+| `modularity` | MANIA scientific MVP | **Covered for the Stage 21.A graph by Stage 21.C.** The deterministic unweighted value is repeated in the community artifact rows. |
 | `centrality_{cond}.csv` | MANIA scientific MVP artifact concept | **Covered for the Stage 21.B static graph** as deterministic `centrality_{condition}.csv`; the older `analysis/metrics_<condition>.csv` remains a separate legacy analysis path. |
-| `communities_{cond}.csv` | MANIA scientific MVP artifact | **Already covered** in the current analysis output layout. |
+| `communities_{cond}.csv` | MANIA scientific MVP artifact | **Covered for the Stage 21.A graph by Stage 21.C** as deterministic `communities_{condition}.csv`; the older analysis output remains a separate legacy path. |
 | Cross-condition comparison, `stats.csv`, `comparison.csv` | MANIA scientific MVP | **MVP target for future implementation.** Historical examples/planned schemas do not prove a production computation or accepted artifact. |
 | `MWU`, `FDR-BH`, `Cohen's d`, Bootstrap CI | MANIA scientific MVP | **MVP targets for future implementation** in Stage 21. Algorithms, dependencies, schemas, and test fixtures remain to be accepted. |
 | `NMI`, `ARI` | Optional scientific artifact | **Not implemented.** Requires an explicit within-run cross-condition node/partition mapping contract. |
@@ -345,6 +345,28 @@ its strength is the sum of the available numeric weights. Iterative metric
 non-convergence is represented by a missing value. Stage 21.B does not change
 the Stage 21.A graph or WANIA contracts and does not implement communities,
 enrichment, comparison, statistics, temporal RIN, or conformation artifacts.
+
+#### Stage 21.C static communities and community quality
+
+Stage 21.C consumes the same accepted Stage 21.A `StaticRinGraph` or exported
+`graph.json`, preserving condition, node ID, residue identity, and the graph's
+edge topology. Louvain is unavailable inside the accepted dependency
+boundary, so Stage 21.C uses and reports
+`greedy_modularity_unweighted`. It does not label the fallback as Louvain and
+does not add a dependency.
+
+Community detection and modularity are unweighted. Thus `contact_freq`
+remains scientific contact strength and is never interpreted as distance or
+filled when missing. Stable tie-breaking uses Stage 21.A residue identity;
+community IDs are one-based and ordered by minimum residue identity. Isolates
+form deterministic singleton communities.
+
+The deterministic `communities_{condition}.csv` contains condition, Stage
+21.A node identity, community ID and size, the actual algorithm name,
+modularity, and community count. It is a MANIA backend/scientific artifact,
+not a WANIA contract change. Stage 21.C does not implement region enrichment,
+cross-condition comparison or statistics, NMI/ARI, temporal RIN, or
+conformation analysis.
 
 ### 4.6 Temporal RIN and conformation artifacts
 

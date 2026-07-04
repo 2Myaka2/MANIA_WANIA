@@ -57,10 +57,28 @@ receives degree and strength zero. Betweenness and closeness are unweighted so
 contact strength is never misinterpreted as path distance. Iterative metric
 non-convergence produces deterministic missing values.
 
-This remains a MANIA backend/scientific artifact. It does not add metrics to
-the WANIA payload or implement communities, enrichment, comparison,
-statistics, temporal RIN, or conformation artifacts. Stages 21.C–21.F and 22
-remain subject to separate explicit approval.
+This remains a MANIA backend/scientific artifact. Stage 21.B itself does not
+add metrics to the WANIA payload or implement communities, enrichment,
+comparison, statistics, temporal RIN, or conformation artifacts.
+
+## Stage 21.C Static RIN Communities Status
+
+Stage 21.C computes deterministic community assignments from the accepted
+Stage 21.A in-memory graph or exported `graph.json`. No Louvain implementation
+is available within the accepted dependency boundary, so the implementation
+truthfully reports `greedy_modularity_unweighted` as its deterministic
+fallback. Community detection and modularity use topology only; available and
+missing `weight = contact_freq` values are preserved but not reinterpreted or
+filled.
+
+The writer emits `communities_{condition}.csv` with Stage 21.A node identity,
+stable one-based community IDs, community size, algorithm, modularity, and
+community count. Communities are ordered by their minimum residue identity;
+disconnected components and isolates therefore remain deterministic. This is
+a MANIA backend/scientific artifact and does not change the WANIA payload.
+Region enrichment, cross-condition comparison/statistics, temporal RIN, and
+conformation artifacts remain outside Stage 21.C. Stages 21.D–21.F and 22
+require separate explicit approval.
 
 ## Current Backend Workflow
 
