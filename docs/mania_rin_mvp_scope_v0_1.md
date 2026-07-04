@@ -84,6 +84,17 @@ identity/structural tables, protein contact edges, contact aggregation,
 per-frame observations, the static graph, and explicit semantics/provenance.
 Optional heterograph inventories do not block that baseline.
 
+#### Stage 20.F validation and alignment
+
+Stage 20.F consolidates, rather than expands, the accepted preprocessing
+baseline. Synthetic contract tests write the Stage 20.A/B/D artifacts together
+and validate their schemas, cross-artifact residue identity, sampled-frame
+aggregation, deterministic ordering and bytes, portable manifest references,
+protein-only semantics vocabulary, residue-library missing/conflict behavior,
+and Stage 20.E deferral. No accepted artifact schema or scientific computation
+is changed. Stage 21 analysis parity, temporal RIN, non-protein inventory, full
+heterograph support, and WANIA typed-RIN schema work remain unimplemented.
+
 #### Stage 20.E optional non-protein inventory deferral
 
 Stage 20.E chooses explicit deferral rather than a false implementation. The

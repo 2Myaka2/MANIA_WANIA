@@ -2,10 +2,12 @@
 
 ## 1. Purpose and scope
 
-This document is the Stage 19.1 inventory for the MANIA RIN MVP. It maps the
+This document originated as the Stage 19.1 inventory for the MANIA RIN MVP and
+is maintained through the Stage 20.F preprocessing consolidation. It maps the
 requirements supplied for Stage 19 to concrete repository evidence, current
-coverage, layer ownership, and unresolved gaps. It is an inventory only: it
-does not freeze the final Stage 19.2 scope and does not authorize implementation.
+coverage, layer ownership, and unresolved gaps. Historical Stage 19 candidate
+wording remains inventory context; accepted Stage 20 rows record the actual
+implemented or explicitly deferred outcome.
 
 The accepted WANIA MVP remains the frontend-facing JSON contract for graph
 rendering. MANIA scientific requirements, optional scientific artifacts, and
@@ -74,6 +76,17 @@ The `Classification` column uses `accepted required`, `MVP candidate`,
 `optional candidate`, `backend/internal`, and `future/deferred`. “MVP
 candidate” means Stage 19.2 must decide the frozen scientific scope; it does
 not make the item a WANIA render requirement.
+
+### Stage 20 consolidation status
+
+Stage 20.A implements the residue table baseline; Stage 20.B implements the
+protein contact edge and per-frame CSVs with accepted frequency and distance
+aggregation; Stage 20.C implements protein-only RIN edge semantics; Stage 20.D
+implements the three semantics/provenance manifests; and Stage 20.E explicitly
+defers optional non-protein inventories. Stage 20.F adds deterministic
+cross-artifact contract coverage and aligns documentation with those outcomes.
+It does not implement Stage 21, temporal RIN, non-protein inventory, full
+heterograph support, or a WANIA typed-RIN schema.
 
 ## 4. Gap matrices
 

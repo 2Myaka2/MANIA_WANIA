@@ -10,6 +10,23 @@ backend graph artifacts, writes diagnostics when report writing succeeds, and
 can optionally compare generated graph artifacts against explicit reference
 artifacts.
 
+## Stage 20 Preprocessing Status
+
+Stage 20 preprocessing parity is consolidated through Stage 20.F:
+
+- Stage 20.A implements `residue_table_{cond}.csv` baseline export.
+- Stage 20.B implements `protein_contact_edges_undirected_{cond}.csv` and
+  `contacts_perframe_{cond}.csv` with the accepted aggregation semantics.
+- Stage 20.C implements the accepted protein-only RIN edge semantics.
+- Stage 20.D implements `edge_semantics.json`, `mania_manifest.json`, and
+  `mania_residue_library.json`.
+- Stage 20.E explicitly defers optional non-protein node/contact inventory.
+- Stage 20.F validates these accepted artifacts and aligns their docs/tests.
+
+This status does not implement Stage 21 analysis parity, temporal RIN,
+non-protein inventory, a full heterograph, or a WANIA typed-RIN schema. The
+accepted WANIA JSON contract and required rendering fields remain unchanged.
+
 ## Current Backend Workflow
 
 Accepted Stage 15 workflow:
