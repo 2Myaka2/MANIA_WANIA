@@ -68,7 +68,7 @@ state.
 | --- | --- | --- | --- |
 | Residue table export and residue identity | MANIA scientific MVP | **Covered at the Stage 20.A baseline.** The public preprocessing writer emits per-condition `residue_table_{cond}.csv` files from the accepted graph mapping while preserving `graph/nodes.csv` as a separate artifact. | Later Stage 20 work may add computed attributes, but must preserve this identity and naming baseline. |
 | Residue structural attributes | MANIA scientific MVP | **Partially covered.** Accepted columns can be preserved, but the missing attributes are not generally computed. | Stage 20 target, feature by feature, with provenance and units specified. |
-| Protein-protein contact edge export | MANIA scientific MVP | **Covered at the Stage 20.B baseline.** The public preprocessing writer emits per-condition `protein_contact_edges_undirected_{cond}.csv` files for results computed with `contact_selection="protein"`. Existing `graph/edges.csv` and `contacts/contact_edges.csv` remain separate artifacts. | Full protein RIN edge semantics remain Stage 20.C work. |
+| Protein-protein contact edge export | MANIA scientific MVP | **Covered at the Stage 20.B baseline and extended at Stage 20.C.** The public preprocessing writer emits per-condition `protein_contact_edges_undirected_{cond}.csv` files for results computed with `contact_selection="protein"`, including available typed protein interactions. Existing `graph/edges.csv` and `contacts/contact_edges.csv` remain separate artifacts. | Preserve the Stage 20.B schema and aggregation semantics. |
 | Edge frequency and distance aggregation | MANIA scientific MVP | **Covered at the Stage 20.B baseline** by the accepted interaction accumulator: contact frequency uses sampled frames, and distance summaries use population standard deviation over one normalized observation per contacting frame and edge type. | Preserve these semantics in later parity work. |
 | Per-frame contacts artifact | MANIA scientific MVP | **Covered at the Stage 20.B CSV baseline.** The per-condition artifact is `contacts_perframe_{cond}.csv` and preserves source frame indexes, residue identity, edge type, and distance in Å. | `contacts_perframe` is the accepted spelling; `contacts_per_frame` and parquet remain explicit non-baseline alternatives. |
 | Static RIN graph export | MANIA scientific MVP | **Already covered** as backend `graph/graph.json`; it is distinct from the WANIA payload. | Preserve the backend/frontend separation. |
@@ -157,7 +157,40 @@ for the older combined `contacts/contact_edges.csv` and
 `contacts/contacts_perframe.csv`, whose schemas and layout remain unchanged.
 The accepted Stage 20.B spelling is `contacts_perframe` (without the second
 underscore); no parquet dependency or `contacts_per_frame` artifact is added.
-No new contact chemistry or full RIN edge semantics are introduced here.
+Stage 20.B itself introduced no new contact chemistry. Stage 20.C now feeds
+typed protein observations through this unchanged schema and aggregation path.
+
+#### Stage 20.C protein RIN edge semantics
+
+The sampled-frame protein contact pipeline now detects `hbond`, `disulfide`,
+`vdw`, `hydrophobic`, `ionic`, and `salt_bridge` alongside the existing
+`residue_contact`, `aromatic_pi`, and `cation_pi` observations. Overlapping
+types remain separate per-frame and aggregate observations. Graph export uses
+the single `EDGE_TYPE_PRIORITY` order and preserves all types; `backbone` is
+highest and `residue_contact` is the final generic fallback.
+
+The accepted backend criteria are:
+
+- `hbond`: N/O donor-to-N/O acceptor distance at most 3.5 Å and explicit
+  D–H···A angle at least 120°. The runtime topology must expose the donor's
+  bonded hydrogen through `atom.bonds`; missing hydrogen or bond data is
+  skipped, and no position or distance-only fallback is invented.
+- `disulfide`: CYS SG–SG distance at most 2.2 Å.
+- `vdw`: the residue-pair minimum heavy-atom distance is from 3.0 through
+  4.5 Å, inclusive.
+- `hydrophobic`: CB–CB distance at most 5.0 Å for ALA, VAL, ILE, LEU, MET,
+  PHE, TRP, PRO, or TYR pairs. Missing CB atoms are skipped.
+- `ionic`: minimum supported charged-atom distance at most 6.0 Å. Positive
+  atoms are LYS NZ, ARG NH1/NH2, and HIS/HID/HIE/HIP ND1/NE2; negative atoms
+  are ASP OD1/OD2 and GLU OE1/OE2.
+- `salt_bridge`: minimum charged donor/acceptor atom distance at most 4.0 Å,
+  restricted to LYS NZ or ARG NH1/NH2 against ASP OD1/OD2 or GLU OE1/OE2.
+  It is a distinct, potentially overlapping annotation rather than an alias
+  for `ionic`; histidine variants are not salt-bridge donors in this backend
+  criterion.
+
+These are backend/scientific annotations. They do not change the WANIA JSON
+contract, required payload fields, render coordinates, or capability flags.
 
 ### 4.2 RIN edge semantics
 
@@ -166,21 +199,21 @@ No new contact chemistry or full RIN edge semantics are introduced here.
 | `backbone` | MANIA scientific MVP | **Already covered** with backend-specific representative-Cα semantics. |
 | `aromatic_pi` | MANIA scientific MVP | **Already covered** with accepted backend-specific geometry. |
 | `cation_pi` | MANIA scientific MVP | **Already covered** with accepted backend-specific geometry. |
-| `hbond` | MANIA scientific MVP | **MVP target for future implementation.** Recognized vocabulary and notebook reference logic exist; production detection is missing. |
-| `disulfide` | MANIA scientific MVP | **MVP target for future implementation.** Recognized vocabulary and notebook reference logic exist; production detection is missing. |
-| `vdw` | MANIA scientific MVP | **MVP target for future implementation.** Recognized vocabulary and notebook reference logic exist; production detection is missing. |
-| `hydrophobic` | MANIA scientific MVP | **MVP target for future implementation.** Recognized vocabulary and notebook reference logic exist; production detection is missing. |
-| `ionic` | MANIA scientific MVP | **MVP target for future implementation.** Recognized vocabulary and notebook reference logic exist; production detection is missing. |
-| `salt_bridge` | MANIA scientific MVP | **MVP target for future implementation.** Recognized vocabulary and notebook reference logic exist; production detection is missing. Its distinction from `ionic` must be explicit before implementation. |
+| `hbond` | MANIA scientific MVP | **Covered at Stage 20.C with an explicit-hydrogen limitation.** Production detection requires topology-provided donor–hydrogen bonding and applies the accepted distance and angle cutoffs; it does not use the notebook's distance-only fallback. |
+| `disulfide` | MANIA scientific MVP | **Covered at Stage 20.C** by CYS SG–SG distance detection. |
+| `vdw` | MANIA scientific MVP | **Covered at Stage 20.C** by the protein residue-pair minimum heavy-atom distance window. |
+| `hydrophobic` | MANIA scientific MVP | **Covered at Stage 20.C** for the accepted residue set when both CB atoms are present. |
+| `ionic` | MANIA scientific MVP | **Covered at Stage 20.C** with explicit positive and negative residue atom groups. |
+| `salt_bridge` | MANIA scientific MVP | **Covered at Stage 20.C** as a narrower charged donor/acceptor group criterion distinct from, and allowed to overlap with, `ionic`. |
 | `protein_lipid` | Optional scientific artifact | **Not implemented.** Reference-only evidence; identity and chemistry contracts are required before promotion. |
 | `protein_glycan` | Optional scientific artifact | **Not implemented.** Reference-only evidence; identity and chemistry contracts are required before promotion. |
 | `glycan_anchor` | Optional scientific artifact | **Not implemented.** Reference-only evidence; anchor semantics require confirmation. |
 | `protein_ligand` | Optional scientific artifact | **Not implemented.** Reference-only evidence; identity and chemistry contracts are required before promotion. |
 
-Stage 20 owns later protein-edge parity. This freeze does not choose atom
-selection rules, cutoffs, overlap behavior, or a graph library, and does not
-claim full typed-RIN support. Specific interaction values remain optional
-scientific annotations in WANIA even when MANIA can compute them.
+Stage 20.C freezes the protein atom selections, cutoffs, and overlap behavior
+above. It does not claim full notebook or frontend typed-RIN support. Specific
+interaction values remain optional scientific annotations in WANIA even when
+MANIA can compute them.
 
 ### 4.3 Node attributes and coordinate roles
 
@@ -415,15 +448,13 @@ inside the relevant later-stage contract before implementation:
    supported through explicit adapter mappings?
 2. What algorithms, units, missing-value rules, and provenance are accepted
    for region, RMSF, SASA, DSSP/`ss`, and `tm_relative_z`?
-3. What exact distinction and overlap rules separate `ionic` from
-   `salt_bridge`?
-4. What schemas and dependency boundary apply to MWU, FDR-BH, Cohen's d, and
+3. What schemas and dependency boundary apply to MWU, FDR-BH, Cohen's d, and
    bootstrap confidence intervals?
-5. What within-run node mapping is required for condition comparison, NMI,
+4. What within-run node mapping is required for condition comparison, NMI,
    and ARI?
-6. Which temporal graph metrics and window boundary/time fields are included
+5. Which temporal graph metrics and window boundary/time fields are included
    in the Stage 22 artifact contract?
-7. Should any optional non-protein or enrichment artifact be promoted in a
+6. Should any optional non-protein or enrichment artifact be promoted in a
    later version after its identity and biological semantics are accepted?
 ## 13. Acceptance checklist for future stages
 

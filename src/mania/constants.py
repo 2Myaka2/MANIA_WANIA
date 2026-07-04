@@ -51,6 +51,7 @@ EDGE_TYPE_PRIORITY = (
     "aromatic_pi",
     "hydrophobic",
     "vdw",
+    "residue_contact",
 )
 
 EDGE_COLUMNS = (

@@ -202,6 +202,7 @@ def test_backbone_has_highest_edge_type_priority() -> None:
         "aromatic_pi",
         "hydrophobic",
         "vdw",
+        "residue_contact",
     )
 
     for lower_priority_type in ("vdw", "hydrophobic"):

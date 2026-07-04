@@ -44,6 +44,7 @@ EXPECTED_EDGE_TYPE_PRIORITY = (
     "aromatic_pi",
     "hydrophobic",
     "vdw",
+    "residue_contact",
 )
 
 EXPECTED_COLUMN_SCHEMAS = {

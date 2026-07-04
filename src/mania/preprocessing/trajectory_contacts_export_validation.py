@@ -58,8 +58,14 @@ _ATOM_FILTERS = ("heavy", "all")
 _TYPED_CONTACT_EDGE_TYPES = (
     "residue_contact",
     "backbone",
+    "hbond",
+    "disulfide",
+    "salt_bridge",
+    "ionic",
     "aromatic_pi",
     "cation_pi",
+    "hydrophobic",
+    "vdw",
 )
 _FREQUENCY_TOLERANCE = 1e-12
 
@@ -426,8 +432,7 @@ def _validate_perframe_row(
                 "invalid_edge_type",
                 row_number,
                 "edge_type",
-                "Edge type must be residue_contact, backbone, aromatic_pi, "
-                "or cation_pi.",
+                "Edge type must be a supported protein contact type.",
             )
         )
     if edge_type != "backbone" and not fields["atom_filter"]:
@@ -593,8 +598,7 @@ def _validate_edges_row(
                 "invalid_edge_type",
                 row_number,
                 "edge_type",
-                "Edge type must be residue_contact, backbone, aromatic_pi, "
-                "or cation_pi.",
+                "Edge type must be a supported protein contact type.",
             )
         )
 

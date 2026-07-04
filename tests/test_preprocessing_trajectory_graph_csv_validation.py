@@ -177,6 +177,7 @@ def test_existing_graph_exports_still_work() -> None:
         "aromatic_pi",
         "hydrophobic",
         "vdw",
+        "residue_contact",
     )
 
 
@@ -477,11 +478,11 @@ def test_duplicate_edge_key_fails(tmp_path: Path) -> None:
             "invalid_primary_edge_type",
         ),
         (
-            {
-                "edge_type": "vdw",
-                "all_edge_types": "vdw|residue_contact|custom_a",
-                "n_edge_types": "3",
-            },
+                {
+                    "edge_type": "vdw",
+                    "all_edge_types": "vdw|custom_a|residue_contact",
+                    "n_edge_types": "3",
+                },
             "invalid_edge_type_order",
         ),
         (
@@ -512,7 +513,7 @@ def test_unknown_edge_types_are_allowed_after_known_types_alphabetically(
         edge_rows=[
             edge_row(
                 edge_type="vdw",
-                all_edge_types="vdw|custom_a|custom_b|residue_contact",
+                all_edge_types="vdw|residue_contact|custom_a|custom_b",
                 n_edge_types="4",
             )
         ],

@@ -64,6 +64,9 @@ from mania.preprocessing.trajectory_contact_chemistry import (
     PiInteractionObservation as PiInteractionObservation,
 )
 from mania.preprocessing.trajectory_contact_chemistry import (
+    ProteinRinInteractionObservation as ProteinRinInteractionObservation,
+)
+from mania.preprocessing.trajectory_contact_chemistry import (
     ResidueChemistryCandidate as ResidueChemistryCandidate,
 )
 from mania.preprocessing.trajectory_contact_chemistry import (
@@ -74,6 +77,9 @@ from mania.preprocessing.trajectory_contact_chemistry import (
 )
 from mania.preprocessing.trajectory_contact_chemistry import (
     detect_pi_interactions as detect_pi_interactions,
+)
+from mania.preprocessing.trajectory_contact_chemistry import (
+    detect_protein_rin_interactions as detect_protein_rin_interactions,
 )
 from mania.preprocessing.trajectory_contacts import (
     ContactProgressCallback as ContactProgressCallback,
@@ -435,6 +441,7 @@ __all__ = [
     "PreprocessingProteinContactArtifact",
     "PreprocessingProteinContactCsvWriteIssue",
     "PreprocessingProteinContactCsvWriteResult",
+    "ProteinRinInteractionObservation",
     "PreprocessingResidueLibraryBridgeError",
     "PreprocessingResidueLibraryValidationIssue",
     "PreprocessingResidueLibraryValidationReport",
@@ -479,6 +486,7 @@ __all__ = [
     "compute_manifest_contacts",
     "compute_manifest_rg",
     "compute_preprocessing_graph_workflow_rg_contacts",
+    "detect_protein_rin_interactions",
     "export_preprocessing_graph_workflow_artifacts",
     "export_preprocessing_graph_workflow_scientific_csvs",
     "extract_condition_residue_names",

@@ -626,7 +626,11 @@ def test_protein_contact_selection_preserves_frame_sampling() -> None:
     assert result.frame_count == 2
     assert [frame.frame_index for frame in result.frame_results] == [0, 2]
     assert [frame.time_ps for frame in result.frame_results] == [0.0, 5.0]
-    assert [frame.contact_count for frame in result.frame_results] == [1, 0]
+    assert [frame.contact_count for frame in result.frame_results] == [2, 0]
+    assert {contact.edge_type for contact in result.frame_results[0].contacts} == {
+        "residue_contact",
+        "vdw",
+    }
     assert [
         len(frame.backbone_observations) for frame in result.frame_results
     ] == [1, 0]
@@ -1127,8 +1131,8 @@ def test_protein_backbone_observations_export_sampled_source_frames(
     assert [
         len(frame.backbone_observations) for frame in result.frame_results
     ] == [4, 4]
-    assert result.contact_count == 8
-    assert len(result.interaction_aggregates) == 4
+    assert result.contact_count == 16
+    assert len(result.interaction_aggregates) == 8
 
     output_path = tmp_path / "contacts_perframe.csv"
     write_result = write_contacts_perframe_csv(result, output_path)
@@ -1140,6 +1144,7 @@ def test_protein_backbone_observations_export_sampled_source_frames(
     contact_rows = [
         row for row in rows if row["edge_type"] == "residue_contact"
     ]
+    vdw_rows = [row for row in rows if row["edge_type"] == "vdw"]
     assert len(backbone_rows) == 8
     assert {row["frame_index"] for row in backbone_rows} == {"1", "3"}
     assert [
@@ -1153,6 +1158,8 @@ def test_protein_backbone_observations_export_sampled_source_frames(
     assert all(row["atom_filter"] == "" for row in backbone_rows)
     assert len(contact_rows) == 8
     assert {row["frame_index"] for row in contact_rows} == {"1", "3"}
+    assert len(vdw_rows) == 8
+    assert {row["frame_index"] for row in vdw_rows} == {"1", "3"}
 
 
 def test_protein_backbone_observation_respects_ca_cutoff() -> None:

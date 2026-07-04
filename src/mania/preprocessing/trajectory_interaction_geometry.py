@@ -165,6 +165,33 @@ def coordinate_distance(first: Coordinate, second: Coordinate) -> float:
     )
 
 
+def coordinate_angle_deg(
+    first: Coordinate,
+    vertex: Coordinate,
+    third: Coordinate,
+) -> float | None:
+    """Return the angle formed at ``vertex``, or ``None`` if degenerate."""
+    first_vector: Coordinate = (
+        first[0] - vertex[0],
+        first[1] - vertex[1],
+        first[2] - vertex[2],
+    )
+    third_vector: Coordinate = (
+        third[0] - vertex[0],
+        third[1] - vertex[1],
+        third[2] - vertex[2],
+    )
+    first_normalized = _normalized_vector(first_vector)
+    third_normalized = _normalized_vector(third_vector)
+    if first_normalized is None or third_normalized is None:
+        return None
+    cosine = sum(
+        left * right
+        for left, right in zip(first_normalized, third_normalized, strict=True)
+    )
+    return math.degrees(math.acos(max(-1.0, min(1.0, cosine))))
+
+
 def _normalized_vector(vector: Coordinate) -> Coordinate | None:
     if any(not math.isfinite(value) for value in vector):
         return None
@@ -266,6 +293,7 @@ __all__ = [
     "AromaticRingGeometry",
     "build_aromatic_ring_geometry",
     "classify_aromatic_pi_angle",
+    "coordinate_angle_deg",
     "coordinate_distance",
     "detect_aromatic_pi_geometry",
     "detect_cation_pi_distance",

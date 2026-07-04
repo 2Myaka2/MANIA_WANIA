@@ -43,6 +43,12 @@ _RESIDUE_CONTACT_EDGE_TYPE = "residue_contact"
 _BACKBONE_EDGE_TYPE = "backbone"
 _CONTACT_PAIR_EDGE_TYPES = (
     _RESIDUE_CONTACT_EDGE_TYPE,
+    "hbond",
+    "disulfide",
+    "vdw",
+    "hydrophobic",
+    "ionic",
+    "salt_bridge",
     "aromatic_pi",
     "cation_pi",
 )
@@ -534,7 +540,7 @@ class PreprocessingContactPairResult:
             raise ValueError("atom_filter must be 'heavy' or 'all'")
         if self.edge_type not in _CONTACT_PAIR_EDGE_TYPES:
             raise ValueError(
-                "edge_type must be residue_contact, aromatic_pi, or cation_pi"
+                "edge_type must be a supported protein contact type"
             )
         object.__setattr__(
             self,
@@ -1552,7 +1558,7 @@ def _compute_contact_frame(
                 )
 
     contacts.extend(
-        _pi_interaction_contacts(
+        _protein_rin_interaction_contacts(
             contact_atom_cache,
             options=options,
         )
@@ -1614,7 +1620,7 @@ def _finalize_condition_interactions(
     return accumulator.finalize(frame_count=len(frame_results))
 
 
-def _pi_interaction_contacts(
+def _protein_rin_interaction_contacts(
     atom_cache: tuple[ContactResidueAtomCacheEntry, ...],
     *,
     options: PreprocessingContactDetectionOptions,
@@ -1623,6 +1629,15 @@ def _pi_interaction_contacts(
         _residue_chemistry_candidate(entry)
         for entry in atom_cache
         if entry.resname is not None
+    )
+    observations = (
+        trajectory_contact_chemistry.detect_protein_rin_interactions(
+            residue_candidates
+        )
+        if options.contact_selection == "protein"
+        else trajectory_contact_chemistry.detect_pi_interactions(
+            residue_candidates
+        )
     )
     return tuple(
         PreprocessingContactPairResult(
@@ -1639,9 +1654,7 @@ def _pi_interaction_contacts(
             source_segid=observation.source.segid,
             target_segid=observation.target.segid,
         )
-        for observation in trajectory_contact_chemistry.detect_pi_interactions(
-            residue_candidates
-        )
+        for observation in observations
     )
 
 
@@ -1654,6 +1667,8 @@ def _residue_chemistry_candidate(
         else None
     )
     coordinates_by_name: dict[str, _Coordinate] = {}
+    heavy_coordinates_by_name: dict[str, _Coordinate] = {}
+    donor_hydrogens_by_name: dict[str, tuple[_Coordinate, ...]] = {}
     for atom_index, atom in enumerate(entry.all_atoms):
         raw_name, has_name = _read_attribute(atom, "name")
         if not has_name or raw_name is None:
@@ -1676,13 +1691,51 @@ def _residue_chemistry_candidate(
         coordinate = _coordinate(raw_position)
         if coordinate is not None:
             coordinates_by_name[atom_name] = coordinate
+            if not _is_hydrogen(atom):
+                heavy_coordinates_by_name[atom_name] = coordinate
+            bonded_hydrogens = _bonded_hydrogen_coordinates(atom)
+            if bonded_hydrogens:
+                donor_hydrogens_by_name[atom_name] = bonded_hydrogens
     return trajectory_contact_chemistry.ResidueChemistryCandidate(
         residue_index=entry.residue_index,
         residue_id=entry.residue_id,
         resname=cast(str, entry.resname),
         segid=entry.segid,
         atom_coordinates=tuple(coordinates_by_name.items()),
+        heavy_atom_coordinates=tuple(heavy_coordinates_by_name.items()),
+        donor_hydrogen_coordinates=tuple(donor_hydrogens_by_name.items()),
     )
+
+
+def _bonded_hydrogen_coordinates(atom: object) -> tuple[_Coordinate, ...]:
+    bonds, has_bonds = _read_attribute(atom, "bonds")
+    if not has_bonds or bonds is None:
+        return ()
+    coordinates: list[_Coordinate] = []
+    try:
+        bond_items = tuple(cast(Iterable[object], bonds))
+    except Exception:
+        return ()
+    for bond in bond_items:
+        partner_method = getattr(cast(Any, bond), "partner", None)
+        if not callable(partner_method):
+            continue
+        try:
+            partner = partner_method(atom)
+        except Exception:
+            continue
+        if partner is None or not _is_hydrogen(partner):
+            continue
+        raw_position, has_position = _read_attribute(
+            partner,
+            _POSITION_ATTRIBUTE,
+        )
+        if not has_position or raw_position is None:
+            continue
+        coordinate = _coordinate(raw_position)
+        if coordinate is not None and coordinate not in coordinates:
+            coordinates.append(coordinate)
+    return tuple(coordinates)
 
 
 def _atom_distance_evaluation_count(
