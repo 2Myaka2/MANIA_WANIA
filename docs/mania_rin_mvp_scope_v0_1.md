@@ -408,7 +408,26 @@ deferred. Edge comparison does not treat absent edges as zero, condition-local
 community IDs are not matched, and region enrichment is not compared through
 those IDs. These scopes receive deterministic unsupported-scope rows. This is
 a dependency-free MANIA backend/scientific artifact and does not alter the
-WANIA contract or implement Stage 21.F, temporal RIN, or conformation work.
+WANIA contract. Stage 21.F validation is described separately below; temporal
+RIN and conformation work remain unimplemented.
+
+#### Stage 21.F analysis validation and docs/tests alignment
+
+Stage 21.F is a consolidation pass over the accepted Stage 21.A–21.E
+artifacts. Focused synthetic contract tests validate fixed schemas,
+deterministic bytes and ordering, graph/centrality/community node identity,
+region/community references, comparison identity provenance, and statistical
+method/status rows. The tests also preserve truthful skipped behavior: the
+Stage 21.C fallback remains `greedy_modularity_unweighted`, Stage 21.D uses
+only existing non-empty graph region labels and raw Fisher p-values, and Stage
+21.E retains empty p-value fields, `correction = none`, and explicit
+`skipped_unsupported_scope` rows.
+
+No production analysis algorithm or accepted artifact schema changes in Stage
+21.F. The accepted WANIA JSON contract remains unchanged. Stage 22 temporal
+RIN is not implemented. Conformation/PCA/k-means/silhouette artifacts are not
+implemented. WANIA typed-RIN schema is not implemented. Full
+heterograph/non-protein inventory is not implemented.
 
 ### 4.6 Temporal RIN and conformation artifacts
 
@@ -526,7 +545,7 @@ This is planning-level ownership only; it does not create implementation tasks.
 | Future stage | Accepted high-level scope |
 | --- | --- |
 | Stage 20 — RIN preprocessing parity | Protein residue/edge artifacts, missing protein edge semantics, structural attributes, per-frame/static artifact parity, semantics/provenance manifests, and explicit handling of optional non-protein artifacts. |
-| Stage 21 — RIN analysis parity | Static/weighted metrics and community artifact parity, comparison/statistics targets, and optional enrichment/partition comparisons. |
+| Stage 21 — RIN analysis parity | **Completed through Stage 21.F:** accepted static graph, metrics, communities, enrichment, conservative node comparison/statistics, and validation/docs/tests alignment. |
 | Stage 22 — Temporal RIN + conformational artifacts | Temporal input/window contract, window-level graphs/metrics, contact fingerprints, conformation labels, and optional representative/PCA exports. |
 | Stage 23 — WANIA RIN alignment | Map only accepted and available MANIA outputs into optional WANIA annotations, capabilities, and portable artifact references without expanding the base render contract by implication. |
 

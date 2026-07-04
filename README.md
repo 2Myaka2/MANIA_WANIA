@@ -23,9 +23,10 @@ Stage 20 preprocessing parity is consolidated through Stage 20.F:
 - Stage 20.E explicitly defers optional non-protein node/contact inventory.
 - Stage 20.F validates these accepted artifacts and aligns their docs/tests.
 
-This status does not implement Stage 21 analysis parity, temporal RIN,
-non-protein inventory, a full heterograph, or a WANIA typed-RIN schema. The
-accepted WANIA JSON contract and required rendering fields remain unchanged.
+This Stage 20 status does not itself implement Stage 21 analysis parity,
+temporal RIN, non-protein inventory, a full heterograph, or a WANIA typed-RIN
+schema. Accepted Stage 21 outcomes are described below. The accepted WANIA
+JSON contract and required rendering fields remain unchanged.
 
 ## Stage 21.A Static RIN Graph Status
 
@@ -94,8 +95,8 @@ labeled/total node counts. Empty graphs, missing labels, one-community graphs,
 and insufficient region margins produce explicit skipped statuses with no
 invented p-values. This is a MANIA backend/scientific artifact; it does not
 change WANIA, implement cross-condition statistics, or start temporal or
-conformation analysis. Stage 21.E is described separately below; Stage 21.F
-and Stage 22 require separate approval.
+conformation analysis. Stages 21.E and 21.F are described separately below;
+Stage 22 requires separate approval.
 
 ## Stage 21.E Cross-Condition Comparison Status
 
@@ -113,8 +114,27 @@ variance is defined. No p-value method is implemented, so p-value and adjusted
 p-value fields remain empty and correction is explicitly `none`. Edge,
 condition-local community, and region-enrichment comparison scopes are
 explicitly skipped. This dependency-free backend/scientific analysis does not
-change the WANIA payload and does not implement Stage 21.F, temporal RIN, or
-conformation analysis.
+change the WANIA payload. Stage 21.F validation is described separately below;
+temporal RIN and conformation analysis remain unimplemented.
+
+## Stage 21.F Analysis Validation And Alignment Status
+
+Stage 21.F consolidates the accepted Stage 21.A–21.E outputs with focused
+synthetic contract tests. The tests validate fixed graph/CSV schemas,
+deterministic bytes and row ordering, graph-to-centrality and
+graph-to-community node identity, graph/community-to-enrichment labels and
+IDs, centrality-to-comparison stable residue identity, and
+comparison-to-statistics IDs and statuses. They also verify that Louvain is
+not claimed, region labels are not invented, unsupported scopes remain
+`skipped_unsupported_scope`, and `stats.csv` retains empty `p_value` and
+`p_adjusted` fields with `correction = none`.
+
+This is validation, documentation, and test alignment only; no accepted Stage
+21 schema or algorithm changes. Stage 22 temporal RIN is not implemented.
+Conformation/PCA/k-means/silhouette artifacts are not implemented. WANIA
+typed-RIN schema is not implemented. Full heterograph/non-protein inventory is
+not implemented. Frontend/API/Docker/database/production API work is not
+implemented. The accepted WANIA JSON contract remains unchanged.
 
 ## Current Backend Workflow
 
