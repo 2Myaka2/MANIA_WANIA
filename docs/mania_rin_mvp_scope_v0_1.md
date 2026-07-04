@@ -284,7 +284,7 @@ summaries may remain optional WANIA enrichment.
 
 | Capability or metric | Frozen scope | Coverage at Stage 19.2 |
 | --- | --- | --- |
-| Static RIN graph input/export | MANIA scientific MVP | **Already covered** by backend `graph/graph.json`. |
+| Static RIN graph input/export | MANIA scientific MVP | **Covered at the Stage 21.A analysis baseline.** `src/mania/analysis/static_rin_graph.py` builds a per-condition analysis graph directly from accepted Stage 20 residue/contact artifacts. The older backend `graph/graph.json` remains a separate accepted workflow artifact. |
 | `degree`, `strength`, `betweenness`, `closeness`, `eigenvector`, `pagerank` | MANIA scientific MVP | **Already covered** by `src/mania/analysis/graph_metrics.py` and tests. |
 | Weighted graph baseline | MANIA scientific MVP | **Already covered** for `strength` using numeric `contact_freq`; broader unspecified weighted metrics are not added by this freeze. |
 | `k_core` | MANIA scientific MVP | **Partially covered** under the production name `kcore`; canonical naming remains undecided. |
@@ -302,6 +302,32 @@ are separate MANIA scientific artifacts. They do not become required node,
 edge, or top-level fields in `wania_graph_payload.json`. Cross-protein
 comparison is not the cross-condition comparison targeted here and remains
 v2/future scope.
+
+#### Stage 21.A static analysis graph baseline
+
+`build_static_rin_graph(...)` consumes one condition's accepted
+`residue_table_{cond}.csv` and
+`protein_contact_edges_undirected_{cond}.csv`. Optional references to
+`edge_semantics.json`, `mania_manifest.json`, and
+`mania_residue_library.json` are validated and retained as portable filenames.
+It emits deterministic Stage 20.A residue nodes and one normalized undirected
+edge per Stage 20.B residue pair. Analysis node IDs use
+`{condition}:{residue_index}` and retain source `resid`, `resname`, and
+`segment_id` as separate identity fields.
+
+When a pair has multiple Stage 20.C interaction rows, the central
+`EDGE_TYPE_PRIORITY` selects the primary type while `all_edge_types` and the
+complete per-type aggregate records remain available. The primary aggregate's
+`contact_freq` is also the stored `weight`; when frequency is unavailable both
+fields are null. No metric is computed from that weight in Stage 21.A. The
+portable JSON target is a per-condition analysis `graph.json`, for example
+`analysis/normal/graph.json`.
+
+This is a MANIA backend/scientific artifact, not the WANIA frontend payload.
+It changes neither Stage 20 artifact schemas nor WANIA required fields,
+coordinates, or rendering semantics. Centrality, weighted metrics,
+communities, enrichment, cross-condition comparison, statistics, temporal RIN,
+and conformation artifacts remain outside Stage 21.A.
 
 ### 4.6 Temporal RIN and conformation artifacts
 

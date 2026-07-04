@@ -27,6 +27,23 @@ This status does not implement Stage 21 analysis parity, temporal RIN,
 non-protein inventory, a full heterograph, or a WANIA typed-RIN schema. The
 accepted WANIA JSON contract and required rendering fields remain unchanged.
 
+## Stage 21.A Static RIN Graph Status
+
+Stage 21.A adds a dependency-free MANIA static analysis RIN graph builder over
+the accepted per-condition Stage 20 residue table and protein contact edge
+artifacts. It preserves Stage 20 residue and residue-pair identity, collapses
+overlapping typed observations onto one undirected residue-pair edge, selects
+the primary type with the central `EDGE_TYPE_PRIORITY`, and retains every
+typed aggregate in priority order. The recommended output is a per-condition
+`analysis/{condition}/graph.json`; missing `contact_freq` produces explicit
+null `contact_freq` and `weight` values.
+
+This analysis artifact is not `wania_graph_payload.json` and does not change
+WANIA required fields or render-coordinate semantics. Stage 21.A does not
+compute centrality, weighted metrics, communities, enrichment, comparison,
+statistics, temporal RIN, or conformation artifacts. Stages 21.B–21.F and 22
+remain subject to separate explicit approval.
+
 ## Current Backend Workflow
 
 Accepted Stage 15 workflow:
