@@ -356,6 +356,28 @@ No required field, runtime payload behavior, adapter/writer behavior, artifact
 reference, demo payload, or Stage 20–22 artifact schema changes in Stage 23.B.
 Artifact-reference alignment and demo-payload policy remain Stage 23.C work.
 
+## Stage 23.C WANIA Artifact References And Demo Policy Status
+
+Stage 23.C defines artifact-reference semantics without changing the runtime
+mapping. Individual MANIA scientific references remain optional metadata in
+the required `artifacts` object. Condition-level Stage 20–22 outputs and
+run/root-level manifests, semantics, comparison, and statistics files may be
+referenced only through an explicitly accepted mapping. References are
+portable file paths, not artifact contents; scientific CSV/JSON rows are not
+inlined into `graph.nodes`, `graph.edges`, or the base payload. Missing
+optional science does not invalidate base graph rendering, and unavailable
+artifacts must not receive fake paths.
+
+The existing adapter keeps its narrower legacy reference shape and
+boolean/path-backed capability behavior. Stage 23.C adds no Stage 20–22 key,
+schema field, API URL, or adapter/writer behavior. The Stage 17.2 minimal
+fixture remains authoritative for required shape, while the Stage 16.12 rich
+frontend fixture remains the authoritative illustrative sample. Fixtures are
+regenerated only for an explicitly accepted contract/runtime/scenario change
+and must remain synthetic, small, deterministic, and safe for default CI.
+This policy-only stage does not regenerate any demo payload or add synthetic
+Stage 20–22 references. See `docs/wania_science_ui_boundary_v0_1.md`.
+
 ## Current Backend Workflow
 
 Accepted Stage 15 workflow:

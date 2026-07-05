@@ -531,3 +531,157 @@ The required WANIA fields remain unchanged. Scientific contents are not
 inlined into the base payload, scientific artifacts are not required for base
 rendering, and Stage 23.B changes no artifact reference, demo payload, or Stage
 20–22 artifact/schema behavior.
+
+## 16. Stage 23.C artifact references and demo payload policy
+
+### Reference boundary and current runtime model
+
+An **artifact reference** is portable metadata that identifies a separate
+artifact file. It is not artifact content:
+
+```text
+artifact reference != artifact content
+WANIA payload artifact reference != MANIA artifact file contents
+WANIA base graph render validity != full scientific artifact availability
+```
+
+The top-level `artifacts` object remains required by the WANIA required-fields
+contract, but every MANIA scientific artifact reference inside it is optional.
+A payload with the required render fields and no optional scientific
+references can still be valid and renderable. Scientific CSV rows, JSON
+tables, and other artifact contents must not be copied into `artifacts`,
+`graph.nodes`, or `graph.edges`.
+
+The existing adapter has a narrower legacy mapping than the accepted Stage
+20–22 artifact inventory. Its fixed reference slots are relative path strings
+or `null`; its existing analysis metrics and communities references are
+condition-keyed maps and are omitted with the `analysis` group when none are
+supplied. This is the current artifact reference model, not a new generic
+reference schema. Stage 23.C documents which accepted MANIA outputs are
+eligible for later references but adds no adapter input, payload key, alias,
+or runtime mapping for them.
+
+The graph JSON consumed to construct the WANIA render graph is still a
+required assembler input. That requirement is distinct from optional links to
+additional MANIA scientific outputs after the base graph has been assembled.
+
+### Condition-level reference policy
+
+The following accepted MANIA artifacts are condition-specific and may receive
+condition-keyed WANIA references when a mapping is explicitly accepted:
+
+- `residue_table_{condition}.csv`;
+- `protein_contact_edges_undirected_{condition}.csv`;
+- `contacts_perframe_{condition}.csv`;
+- `analysis/{condition}/graph.json`;
+- `analysis/{condition}/centrality_{condition}.csv`;
+- `analysis/{condition}/communities_{condition}.csv`;
+- `analysis/{condition}/region_enrichment_{condition}.csv`;
+- `analysis/{condition}/temporal_rin_{condition}.csv`;
+- `analysis/{condition}/conformation_pca_{condition}.csv`;
+- `analysis/{condition}/conformation_labels_{condition}.csv`.
+
+No condition is required to provide every artifact. A condition-level
+reference identifies the separate file for that condition; it does not turn
+the file's rows into node or edge attributes and does not affect base-render
+validity. Stage 23.C does not silently map Stage 21
+`centrality_{condition}.csv` to the legacy adapter's `metrics_csv` name or add
+references for Stage 22 outputs.
+
+### Run/root-level reference policy
+
+The following accepted MANIA artifacts are run/root-level and may receive
+scalar WANIA references when a mapping is explicitly accepted:
+
+- `edge_semantics.json`;
+- `mania_manifest.json`;
+- `mania_residue_library.json`;
+- `analysis/comparison.csv`;
+- `analysis/stats.csv`.
+
+These references are run metadata links, not node or edge fields. They remain
+optional, their contents remain out of the base payload, and Stage 23.C adds
+no runtime mapping for them.
+
+### Missing and unavailable artifacts
+
+An optional reference is emitted only through an already-supported input when
+the caller supplies an available artifact path. Under the existing shape, an
+unsupplied fixed slot remains `null`, while an unsupplied condition-keyed
+analysis group is omitted. Either representation means that WANIA must not
+expect that optional artifact. Implementations must not invent a path, use a
+placeholder path, or set a path-backed capability to `true` for an unavailable
+artifact.
+
+The current adapter derives path-backed booleans from supplied paths; most
+optional scientific paths are not existence-validated by the assembler.
+Callers must therefore supply only paths to artifacts that are actually
+available. Missing optional science is not a diagnostics failure and does not
+invalidate the base render graph. A future availability/status model would
+need separate explicit approval; it must not be simulated with fake paths.
+
+Artifact references remain relative to the declared output root and must obey
+the existing portability rules: no absolute paths, parent traversal, raw
+trajectory paths, machine-local paths, API endpoint URLs, or local/generated
+output roots. References point to files; they do not embed file contents.
+
+### Interaction with boolean capabilities
+
+Stage 23.B remains authoritative for capability meaning. A current
+path-backed capability can be `true` when its corresponding supported path is
+supplied. It says only that the payload advertises that optional feature; it
+does not say that the artifact contents are inline, make the reference or file
+required for base rendering, or claim an unimplemented algorithm.
+
+In particular, `centrality_metrics` does not make centrality values required
+node fields; `temporal_rin` does not inline temporal rows; and
+`conformational_states` does not claim computed PCA. Missing optional
+references leave the relevant path-backed capability false under current
+assembly rules and never make the required base graph invalid. The current
+boolean model still cannot represent `partial` directly.
+
+### Demo payload regeneration policy
+
+The authoritative required fixture shape is the Stage 17.2 minimal fixture,
+`tests/fixtures/wania_mvp_minimal_payload_v0_1.json`, together with the
+required-fields contract. The Stage 16.12
+`tests/fixtures/wania_graph_payload_frontend_sample_v0_1.json` fixture is the
+authoritative rich illustrative sample, not the minimal contract and not a
+real-MD result. Runtime assembly behavior remains authoritative in the
+adapter/writer and its focused tests. A generated `wania_graph_payload.json`
+is an export product, not a third authoritative fixture.
+
+Regenerate a committed fixture only when an explicitly accepted contract,
+adapter/writer behavior, or deliberate fixture scenario changes its expected
+bytes. Regeneration must use the accepted deterministic writer or demo export
+flow, and the resulting diff must be reviewed by contract tests. A
+documentation-only policy change is not a reason to regenerate a fixture.
+
+Every committed demo payload must remain synthetic, small, deterministic, and
+safe for default CI. It must not contain real MD output, raw/local/generated
+MD paths, heavy generated scientific artifacts, inlined CSV rows or
+scientific tables, secrets, or API endpoint URLs. Synthetic Stage 20–22
+artifact references are deferred until their exact runtime mapping is
+explicitly accepted and tested; unsupported or unavailable paths must not be
+added merely to illustrate future support.
+
+Therefore Stage 23.C is policy-only. The existing minimal fixture, rich
+frontend sample, assembly fixtures, and any generated
+`wania_graph_payload.json` remain unchanged. Their current synthetic artifact
+references remain illustrative under the legacy mapping; no new Stage 20–22
+reference is fabricated.
+
+### Preserved scientific and stage limits
+
+Computed PCA and PCA coordinates remain unavailable. Conformation labels are
+fingerprint-based; PCA-based clustering and notebook PCA-to-k-means parity are
+not claimed. Louvain is not implemented. MWU, bootstrap CI, p-values, and
+FDR-BH are not implemented, and cross-condition statistics remain limited to
+the accepted node-metric comparison rather than full statistical parity.
+Non-protein heterograph support remains deferred.
+
+WANIA temporal animation, WANIA conformation UI, and a WANIA typed-RIN schema
+remain unimplemented. API, Docker, database, frontend implementation, and
+production workers are not implemented. No dependency is added. Stage 20,
+Stage 21, and Stage 22 artifacts and scientific behavior are unchanged. Stage
+23.D and Stage 23.E have not started. Stage 24 has not started.

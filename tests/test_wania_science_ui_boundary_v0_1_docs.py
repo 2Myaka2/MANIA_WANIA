@@ -331,3 +331,117 @@ def test_stage23b_keeps_science_out_of_required_render_fields() -> None:
         ),
     ):
         assert phrase in text
+
+
+def test_stage23c_defines_optional_non_inline_reference_semantics() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "Stage 23.C artifact references and demo payload policy",
+        "artifact reference != artifact content",
+        "WANIA payload artifact reference != MANIA artifact file contents",
+        "WANIA base graph render validity != full scientific artifact availability",
+        "every MANIA scientific artifact reference inside it is optional",
+        "Scientific CSV rows, JSON tables, and other artifact contents",
+        "must not be copied into `artifacts`, `graph.nodes`, or `graph.edges`",
+        "fixed reference slots are relative path strings or `null`",
+        "condition-keyed maps",
+        "adds no adapter input, payload key, alias, or runtime mapping",
+    ):
+        assert phrase in text
+
+
+def test_stage23c_classifies_condition_and_run_level_references() -> None:
+    text = doc_text()
+
+    for artifact in (
+        "residue_table_{condition}.csv",
+        "protein_contact_edges_undirected_{condition}.csv",
+        "contacts_perframe_{condition}.csv",
+        "analysis/{condition}/graph.json",
+        "analysis/{condition}/centrality_{condition}.csv",
+        "analysis/{condition}/communities_{condition}.csv",
+        "analysis/{condition}/region_enrichment_{condition}.csv",
+        "analysis/{condition}/temporal_rin_{condition}.csv",
+        "analysis/{condition}/conformation_pca_{condition}.csv",
+        "analysis/{condition}/conformation_labels_{condition}.csv",
+        "edge_semantics.json",
+        "mania_manifest.json",
+        "mania_residue_library.json",
+        "analysis/comparison.csv",
+        "analysis/stats.csv",
+    ):
+        assert f"`{artifact}`" in text
+
+    for phrase in (
+        "No condition is required to provide every artifact",
+        "does not affect base-render validity",
+        "run metadata links, not node or edge fields",
+        "Stage 23.C adds no runtime mapping for them",
+    ):
+        assert phrase in text
+
+
+def test_stage23c_defines_missing_and_capability_behavior() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "unsupplied fixed slot remains `null`",
+        "unsupplied condition-keyed analysis group is omitted",
+        "must not invent a path, use a placeholder path",
+        "most optional scientific paths are not existence-validated",
+        "Missing optional science is not a diagnostics failure",
+        "no absolute paths, parent traversal, raw trajectory paths",
+        "API endpoint URLs",
+        "References point to files; they do not embed file contents",
+        "Stage 23.B remains authoritative for capability meaning",
+        "does not make centrality values required node fields",
+        "does not inline temporal rows",
+        "does not claim computed PCA",
+        "boolean model still cannot represent `partial` directly",
+    ):
+        assert phrase in text
+
+
+def test_stage23c_defines_authoritative_fixture_and_regeneration_policy(
+) -> None:
+    text = doc_text()
+
+    for phrase in (
+        "authoritative required fixture shape is the Stage 17.2 minimal fixture",
+        "wania_mvp_minimal_payload_v0_1.json",
+        "authoritative rich illustrative sample",
+        "wania_graph_payload_frontend_sample_v0_1.json",
+        "A generated `wania_graph_payload.json` is an export product",
+        "Regenerate a committed fixture only when an explicitly accepted contract",
+        "accepted deterministic writer or demo export flow",
+        "documentation-only policy change is not a reason to regenerate",
+        "synthetic, small, deterministic, and safe for default CI",
+        "must not contain real MD output",
+        "heavy generated scientific artifacts",
+        "inlined CSV rows or scientific tables",
+        "Synthetic Stage 20–22 artifact references are deferred",
+        "Stage 23.C is policy-only",
+        "remain unchanged",
+    ):
+        assert phrase in text
+
+
+def test_stage23c_preserves_scientific_runtime_and_later_stage_limits() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "Computed PCA and PCA coordinates remain unavailable",
+        "Conformation labels are fingerprint-based",
+        "PCA-based clustering and notebook PCA-to-k-means parity are not claimed",
+        "Louvain is not implemented",
+        "MWU, bootstrap CI, p-values, and FDR-BH are not implemented",
+        "cross-condition statistics remain limited",
+        "Non-protein heterograph support remains deferred",
+        "API, Docker, database, frontend implementation",
+        "No dependency is added",
+        "Stage 20, Stage 21, and Stage 22 artifacts",
+        "Stage 23.D and Stage 23.E have not started",
+        "Stage 24 has not started",
+    ):
+        assert phrase in text
