@@ -232,6 +232,31 @@ silhouette, representative frames, or conformation artifacts. It does not
 change `temporal_rin_{condition}.csv`, any Stage 20/21/22.A–C behavior, or the
 accepted WANIA payload contract.
 
+## Stage 22.E Contact Fingerprint PCA Export Status
+
+Stage 22.E consumes the accepted Stage 22.D binary contact fingerprint matrix
+and writes the deterministic backend/scientific artifact
+`analysis/{condition}/conformation_pca_{condition}.csv`. The artifact preserves
+condition, sampled-frame order, `frame_index`, optional `time_ps`, and feature
+count. It reserves stable `pc1`/`pc2`/`pc3` and explained-variance-ratio
+columns and is written atomically with stable float and line formatting.
+
+The accepted dependency boundary does not directly provide NumPy or another
+numerical linear-algebra backend. Stage 22.E therefore does not fake PCA.
+Nonconstant matrices receive `pca_unavailable`; zero-frame, zero-feature,
+one-frame, and constant centered matrices receive explicit statuses. All such
+rows have `n_components = 0` and empty component and explained-variance
+fields. Header-only fingerprint input produces a header-only artifact. A later
+explicit dependency decision is required before centered SVD, up to three
+components, explained variance, and deterministic loading-sign stabilization
+can emit computed coordinates.
+
+Stage 22.E does not implement k-means, silhouette selection, cluster labels,
+representative frames, or `conformation_labels_{condition}.csv`. It does not
+use temporal RINs, distances, frequencies, or trajectories as PCA input and
+does not change Stage 20/21/22.A–D artifacts or the accepted WANIA payload
+contract.
+
 ## Current Backend Workflow
 
 Accepted Stage 15 workflow:

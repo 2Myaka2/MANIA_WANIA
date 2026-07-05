@@ -439,10 +439,11 @@ heterograph/non-protein inventory is not implemented.
 | Window-level RIN construction / `temporal_rin_{cond}.csv` | MANIA scientific MVP | **Stage 22.B covers internal graph construction and Stage 22.C covers the public summary export.** Passing types are priority ordered, the primary type supplies edge weight, available distances receive deterministic summaries, and empty windows remain explicit. Stage 22.C writes one deterministic row per accepted window to `analysis/{condition}/temporal_rin_{condition}.csv`. |
 | Temporal graph metrics | MANIA scientific MVP | **Stage 22.C covered.** Counts, density, mean degree, mean strength, unweighted betweenness/closeness summaries, and deterministic unweighted community/modularity summaries are computed from accepted Stage 22.B graphs. Empty/no-passing windows remain explicit with missing derived metrics. |
 | Contact fingerprint matrix | MANIA scientific MVP | **Stage 22.D covered as an internal representation.** Accepted Stage 22.A per-frame observations become sampled-frame rows and normalized pair/type columns in deterministic order. Values are binary observed/not-observed membership; no public artifact is added. |
-| PCA, k-means, silhouette selection | MANIA scientific MVP | **MVP targets for future implementation** as the accepted conformation-label pipeline, subject to a separate dependency and determinism decision. |
+| PCA projection | MANIA scientific MVP | **Stage 22.E unavailable contract covered.** The accepted dependency boundary has no direct numerical linear-algebra backend, so Stage 22.E consumes Stage 22.D matrices, distinguishes centered zero-variance and other skipped cases, and never invents coordinates. Computed centered SVD, up to three components, explained variance, and loading-sign stabilization remain pending an explicit dependency decision. |
+| k-means and silhouette selection | MANIA scientific MVP | **MVP targets for future Stage 22.F implementation** subject to separate approval. |
 | Conformation labels | MANIA scientific MVP | **MVP target for future implementation.** Historical `conformation_labels_{cond}.csv` does not match the planned backend name/schema. |
 | Representative frames | Optional scientific artifact | **Not implemented.** Must not be confused with first-sampled-frame Cα coordinate provenance. |
-| Conformation PCA export | Optional scientific artifact | **Not implemented.** No production artifact/schema is accepted. |
+| Conformation PCA export | Optional scientific artifact | **Stage 22.E covered.** `analysis/{condition}/conformation_pca_{condition}.csv` preserves frame metadata and feature count with stable component/variance columns. Current rows use explicit empty/one-frame/no-feature/constant/unavailable statuses, `n_components = 0`, and blank numerical fields because no accepted PCA backend exists. |
 
 These Stage 22 roadmap items are part of the complete MANIA scientific MVP.
 Stage 22.A covers only the input/configuration/window contract. Stage 22.B
@@ -451,9 +452,10 @@ graphs, uses primary `window_contact_freq` only for strength, keeps shortest
 paths and the `greedy_modularity_unweighted` fallback unweighted, and writes
 the public temporal summary artifact. Stage 22.D builds condition-local binary
 contact fingerprints directly from validated per-frame contacts without
-inferring frames or using distances/frequencies as values. PCA, k-means,
-silhouette, representative frames, and conformation artifacts remain
-unimplemented. None
+inferring frames or using distances/frequencies as values. Stage 22.E adds the
+deterministic PCA artifact contract but emits no fake coordinates while the
+accepted dependency boundary lacks a numerical backend. K-means, silhouette,
+conformation labels, and representative frames remain unimplemented. None
 of these items is required for WANIA base graph rendering. Interactive
 temporal playback and a required inline WANIA temporal model remain v2/future
 product scope.

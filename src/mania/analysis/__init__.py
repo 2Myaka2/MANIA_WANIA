@@ -1,5 +1,18 @@
 """Dependency-light graph analysis APIs."""
 
+from mania.analysis.conformation_pca import (
+    CONFORMATION_PCA_COLUMNS,
+    CONFORMATION_PCA_STATUS_CONSTANT_MATRIX,
+    CONFORMATION_PCA_STATUS_EMPTY_INPUT,
+    CONFORMATION_PCA_STATUS_NO_FEATURES,
+    CONFORMATION_PCA_STATUS_ONE_FRAME,
+    CONFORMATION_PCA_STATUS_UNAVAILABLE,
+    ConformationPcaError,
+    ConformationPcaProjection,
+    ConformationPcaRow,
+    build_conformation_pca_projection,
+    write_conformation_pca_csv,
+)
 from mania.analysis.contact_fingerprints import (
     CONTACT_FINGERPRINT_STATUS_COMPUTED,
     CONTACT_FINGERPRINT_STATUS_EMPTY_INPUT,
@@ -134,6 +147,12 @@ __all__ = [
     "CONTACT_FINGERPRINT_STATUS_COMPUTED",
     "CONTACT_FINGERPRINT_STATUS_EMPTY_INPUT",
     "CONTACT_FINGERPRINT_STATUS_ZERO_FEATURES",
+    "CONFORMATION_PCA_COLUMNS",
+    "CONFORMATION_PCA_STATUS_CONSTANT_MATRIX",
+    "CONFORMATION_PCA_STATUS_EMPTY_INPUT",
+    "CONFORMATION_PCA_STATUS_NO_FEATURES",
+    "CONFORMATION_PCA_STATUS_ONE_FRAME",
+    "CONFORMATION_PCA_STATUS_UNAVAILABLE",
     "COMPARISON_STATUS_COMPUTED",
     "COMPARISON_STATUS_SKIPPED_IDENTITY_CONFLICT",
     "COMPARISON_STATUS_SKIPPED_INSUFFICIENT_DATA",
@@ -146,6 +165,9 @@ __all__ = [
     "ContactFingerprintFeature",
     "ContactFingerprintFrame",
     "ContactFingerprintMatrix",
+    "ConformationPcaError",
+    "ConformationPcaProjection",
+    "ConformationPcaRow",
     "GraphMetricsError",
     "GraphTopologyMetrics",
     "NodeTopologyMetrics",
@@ -208,6 +230,7 @@ __all__ = [
     "TemporalRinWindowMetrics",
     "TemporalRinWindowNode",
     "build_contact_fingerprint_matrix",
+    "build_conformation_pca_projection",
     "build_static_rin_graph",
     "build_temporal_rin_window_graphs",
     "compute_analysis_graph_metrics_from_graph_json",
@@ -230,4 +253,5 @@ __all__ = [
     "write_static_rin_metrics_csv",
     "write_static_rin_region_enrichment_csv",
     "write_temporal_rin_csv",
+    "write_conformation_pca_csv",
 ]
