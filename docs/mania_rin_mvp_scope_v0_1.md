@@ -584,7 +584,7 @@ This is planning-level ownership only; it does not create implementation tasks.
 | Stage 20 — RIN preprocessing parity | Protein residue/edge artifacts, missing protein edge semantics, structural attributes, per-frame/static artifact parity, semantics/provenance manifests, and explicit handling of optional non-protein artifacts. |
 | Stage 21 — RIN analysis parity | **Completed through Stage 21.F:** accepted static graph, metrics, communities, enrichment, conservative node comparison/statistics, and validation/docs/tests alignment. |
 | Stage 22 — Temporal RIN + conformational artifacts | **Completed through Stage 22.G:** accepted temporal input/windows, window graphs/metrics, contact fingerprints, PCA-unavailable and fingerprint-clustering artifacts, representatives, and validation/docs/tests alignment. |
-| Stage 23 — WANIA RIN alignment | Map only accepted and available MANIA outputs into optional WANIA annotations, capabilities, and portable artifact references without expanding the base render contract by implication. |
+| Stage 23 — WANIA RIN alignment | **Completed through Stage 23.E:** accepted MANIA/WANIA boundary, conservative capabilities, optional file-reference policy, deterministic contract protection, and documentation acceptance checklist without expanding the base render contract. |
 
 ## 10. Non-goals
 

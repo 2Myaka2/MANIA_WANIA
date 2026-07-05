@@ -441,7 +441,57 @@ def test_stage23c_preserves_scientific_runtime_and_later_stage_limits() -> None:
         "API, Docker, database, frontend implementation",
         "No dependency is added",
         "Stage 20, Stage 21, and Stage 22 artifacts",
-        "Stage 23.D and Stage 23.E have not started",
+        "Stage 23.D added contract-test protection without runtime changes",
+        "Stage 23.E closes the documentation and acceptance checklist",
         "Stage 24 has not started",
     ):
         assert phrase in text
+
+
+def test_stage23e_documents_end_to_end_alignment_and_contract_tests() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "Stage 23 completion and acceptance checklist",
+        "Stage 23 is complete as a WANIA contract, policy, tests",
+        "The WANIA base render contract is unchanged",
+        "frontend render coordinates `x/y/z`",
+        "boolean `diagnostics.passed`",
+        "Scientific C-alpha coordinates",
+        "References identify separate files",
+        "Missing optional science is not a base-render diagnostics failure",
+        "temporal RIN metrics artifact, not inline temporal payload data",
+        "derived from binary contact fingerprints",
+        "tests/test_wania_stage23_contract_alignment.py",
+        "Stage 23.A–23.C policy language",
+        "do not regenerate the demo payload",
+    ):
+        assert phrase in text
+
+
+def test_stage23e_acceptance_checklist_closes_only_stage23_scope() -> None:
+    text = doc_text()
+
+    for item in (
+        "WANIA required fields are unchanged",
+        "The WANIA base runtime schema is unchanged",
+        "WANIA adapter/writer behavior is unchanged",
+        "Capabilities are aligned conservatively",
+        "Artifact-reference policy is aligned",
+        "MANIA scientific artifacts remain optional",
+        "Scientific artifact contents are not inlined",
+        "WANIA contract tests were updated in Stage 23.D",
+        "Computed PCA was not implemented",
+        "PCA-based clustering is not claimed",
+        "Notebook PCA-to-k-means parity is not claimed",
+        "Louvain is not claimed",
+        "MWU, FDR-BH, bootstrap confidence intervals, p-values, and full",
+        "Stage 20 artifacts are unchanged",
+        "Stage 21 artifacts are unchanged",
+        "Stage 22 artifacts are unchanged",
+        "Stage 23 is complete",
+        "Stage 24 has not started",
+        "No API, Docker, frontend, database, worker, or dependency work",
+        "No raw, local, or generated MD outputs were committed",
+    ):
+        assert f"[x] {item}" in text

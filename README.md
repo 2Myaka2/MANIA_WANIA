@@ -378,6 +378,29 @@ and must remain synthetic, small, deterministic, and safe for default CI.
 This policy-only stage does not regenerate any demo payload or add synthetic
 Stage 20–22 references. See `docs/wania_science_ui_boundary_v0_1.md`.
 
+## Stage 23 Completion Status
+
+Stage 23.D adds focused WANIA contract tests for the unchanged required fields,
+frontend render `x/y/z`, boolean `diagnostics.passed`, optional file
+references, non-inlined scientific contents, conservative capabilities, and
+deterministic demo export. Stage 23.E closes the documentation alignment and
+records the acceptance checklist in
+`docs/wania_science_ui_boundary_v0_1.md`.
+
+Stage 23 is complete as a contract, policy, tests, and documentation alignment
+stage. It does not change the WANIA base runtime schema, required fields,
+adapter/writer behavior, capability derivation, artifact-reference mapping, or
+demo payload. MANIA static, temporal, PCA, and conformation-label artifacts
+remain separate optional scientific files. Their contents are not copied into
+`graph.nodes` or `graph.edges`, and missing optional science is not a
+base-render diagnostics failure.
+
+Computed PCA remains unavailable, and conformation labels remain
+fingerprint-based rather than PCA-based. Notebook PCA-to-k-means parity,
+Louvain, MWU, bootstrap confidence intervals, p-values, FDR-BH, and full
+statistical parity are not claimed. Stage 24 has not started. API, Docker,
+database, frontend implementation, and production workers remain future scope.
+
 ## Current Backend Workflow
 
 Accepted Stage 15 workflow:
@@ -846,10 +869,11 @@ The planning-level scientific roadmap is:
 - **Stage 22 — Temporal RIN + conformational artifacts.**
 - **Stage 23 — WANIA RIN alignment.**
 
-Stages 20–23 are future implementation/alignment stages and are not started by
-the Stage 19 scope freeze. FastAPI/upload/job API, Docker/demo packaging,
-database models, production API serving, and frontend implementation remain
-separately scoped later work.
+The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
+Stages 20–23 are now complete within their accepted boundaries. FastAPI/upload
+and job APIs, Docker/demo packaging, database models, production API serving,
+and frontend implementation remain separately scoped later work; Stage 24 has
+not started.
 
 ## Documentation
 
@@ -867,7 +891,7 @@ separately scoped later work.
   fields and minimal valid payload rules.
 - `docs/wania_science_ui_boundary_v0_1.md`: science-vs-UI layer ownership for
   display fields, optional science, backend internals, future capability, and
-  the Stage 23.A WANIA RIN profile/scientific-artifact boundary.
+  the complete Stage 23 WANIA RIN alignment and acceptance checklist.
 - `docs/wania_json_assembly_profile_v0_1.md`: Stage 18.1 inputs, demo-ready
   output expectations, portable references, and Stage 17 alignment.
 - `docs/mania_rin_mvp_gap_matrix.md`: Stage 19.1 inventory of RIN requirements,

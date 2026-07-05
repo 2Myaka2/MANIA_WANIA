@@ -684,4 +684,92 @@ WANIA temporal animation, WANIA conformation UI, and a WANIA typed-RIN schema
 remain unimplemented. API, Docker, database, frontend implementation, and
 production workers are not implemented. No dependency is added. Stage 20,
 Stage 21, and Stage 22 artifacts and scientific behavior are unchanged. Stage
-23.D and Stage 23.E have not started. Stage 24 has not started.
+23.D added contract-test protection without runtime changes, and Stage 23.E
+closes the documentation and acceptance checklist. Stage 24 has not started.
+
+## 17. Stage 23 completion and acceptance checklist
+
+### End-to-end alignment
+
+Stage 23 is complete as a WANIA contract, policy, tests, and documentation
+alignment stage. The accepted boundary remains:
+
+```text
+MANIA = backend/scientific RIN preprocessing and analysis artifacts
+WANIA = stable frontend-facing JSON contract for graph rendering
+```
+
+The WANIA base render contract is unchanged. `graph.nodes`, `graph.edges`,
+frontend render coordinates `x/y/z`, `interaction.primary_type`,
+`capabilities`, `artifacts`, and boolean `diagnostics.passed` keep their
+accepted roles. Scientific C-alpha coordinates such as `x_ca/y_ca/z_ca` and
+scientific metrics are not required WANIA render coordinates or required node
+or edge fields.
+
+WANIA can expose MANIA scientific availability through conservative
+capabilities and optional artifact references. References identify separate
+files; they do not copy scientific rows or tables into `artifacts`,
+`graph.nodes`, or `graph.edges`. Missing optional science is not a base-render
+diagnostics failure. The current legacy reference shape and path-backed
+capability derivation remain unchanged, and newer Stage 20–22 artifact names
+have not been added to the runtime mapping.
+
+The separate contracts remain distinct:
+
+- `wania_graph_payload.json` is the WANIA frontend-facing graph render payload;
+- `analysis/{condition}/graph.json` is the MANIA static analysis graph;
+- `analysis/{condition}/temporal_rin_{condition}.csv` is the optional MANIA
+  temporal RIN metrics artifact, not inline temporal payload data;
+- `analysis/{condition}/conformation_pca_{condition}.csv` is the MANIA PCA
+  artifact with computed coordinates unavailable under the current dependency
+  boundary;
+- `analysis/{condition}/conformation_labels_{condition}.csv` is the MANIA
+  conformation-label artifact derived from binary contact fingerprints.
+
+Stage 23.D protects this boundary in
+`tests/test_wania_stage23_contract_alignment.py`. Its focused tests cover
+required fields, render-coordinate semantics, optional file references,
+non-inlined scientific contents, conservative capabilities, deterministic demo
+export, and the Stage 23.A–23.C policy language. Stage 23.C, Stage 23.D, and
+Stage 23.E do not regenerate the demo payload; regeneration remains controlled
+by an explicitly accepted contract, runtime, or fixture-scenario change.
+
+Computed PCA and PCA coordinates remain unavailable. Clustering remains
+fingerprint-based, PCA-based clustering is not claimed, and notebook
+PCA-to-k-means parity is not claimed. Louvain is not claimed. MWU, bootstrap
+confidence intervals, p-values, FDR-BH, and full statistical parity are not
+claimed. Stage 24 has not started; API, Docker, database, frontend
+implementation, production workers, and new dependencies remain future scope.
+
+### Accepted Stage 23 checklist
+
+- [x] WANIA required fields are unchanged.
+- [x] The WANIA base runtime schema is unchanged.
+- [x] WANIA adapter/writer behavior is unchanged.
+- [x] WANIA `x/y/z` frontend render-coordinate semantics are unchanged.
+- [x] `diagnostics.passed` remains boolean in the accepted contract and demo
+  export.
+- [x] Capabilities are aligned conservatively without changing runtime
+  derivation.
+- [x] Artifact-reference policy is aligned without changing runtime mapping.
+- [x] MANIA scientific artifacts remain optional for WANIA base rendering.
+- [x] Scientific artifact contents are not inlined into the WANIA payload.
+- [x] Demo payload regeneration policy is defined and remains deferred.
+- [x] The demo payload was not regenerated in Stage 23.C, Stage 23.D, or Stage
+  23.E.
+- [x] WANIA contract tests were updated in Stage 23.D.
+- [x] WANIA alignment documentation is updated in Stage 23.E.
+- [x] Computed PCA was not implemented.
+- [x] PCA-based clustering is not claimed.
+- [x] Notebook PCA-to-k-means parity is not claimed.
+- [x] Louvain is not claimed.
+- [x] MWU, FDR-BH, bootstrap confidence intervals, p-values, and full
+  statistical parity are not claimed.
+- [x] Stage 20 artifacts are unchanged.
+- [x] Stage 21 artifacts are unchanged.
+- [x] Stage 22 artifacts are unchanged.
+- [x] Stage 23 is complete.
+- [x] Stage 24 has not started.
+- [x] No API, Docker, frontend, database, worker, or dependency work was
+  introduced.
+- [x] No raw, local, or generated MD outputs were committed.

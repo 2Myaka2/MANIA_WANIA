@@ -605,11 +605,12 @@ Current backend `graph/graph.json` is not the final frontend/API payload.
 
 ## Future scope
 
-Stage 19 is the documentation-only MANIA RIN MVP scope freeze. The
-planning-level scientific roadmap is Stage 20 RIN preprocessing parity, Stage
-21 RIN analysis parity, Stage 22 temporal RIN plus conformational artifacts,
-and Stage 23 WANIA RIN alignment. These future stages do not expand the
-accepted WANIA base render contract by implication.
+Stage 19 is the documentation-only MANIA RIN MVP scope freeze. Its
+planning-level scientific roadmap recorded Stage 20 RIN preprocessing parity,
+Stage 21 RIN analysis parity, Stage 22 temporal RIN plus conformational
+artifacts, and Stage 23 WANIA RIN alignment. Stages 20–23 are now complete
+within their accepted boundaries and did not expand the accepted WANIA base
+render contract by implication.
 
 FastAPI/upload/job API, Docker/demo packaging, database models, production API
 serving, and frontend implementation remain separately scoped later work.
