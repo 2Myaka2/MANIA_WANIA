@@ -133,3 +133,105 @@ def test_boundary_is_linked_from_required_docs() -> None:
         assert "wania_science_ui_boundary_v0_1.md" in path.read_text(
             encoding="utf-8"
         )
+
+
+def test_stage23a_defines_wania_rin_profile_and_unchanged_render_contract(
+) -> None:
+    text = doc_text()
+
+    for phrase in (
+        "Stage 23.A WANIA RIN profile",
+        "MANIA = backend/scientific RIN preprocessing and analysis artifacts",
+        "WANIA = stable frontend-facing JSON contract for graph rendering",
+        "WANIA base render contract is unchanged",
+        "WANIA required fields are unchanged",
+        "graph.nodes",
+        "graph.edges",
+        "x`, `y`, `z` render coordinates",
+        "interaction.primary_type",
+        "capabilities",
+        "artifacts",
+        "diagnostics.passed",
+    ):
+        assert phrase in text
+
+
+def test_stage23a_distinguishes_static_temporal_and_conformation_artifacts(
+) -> None:
+    text = doc_text()
+
+    for phrase in (
+        "wania_graph_payload.json != analysis/{condition}/graph.json",
+        "MANIA backend/scientific static RIN artifact",
+        (
+            "wania_graph_payload.json != "
+            "analysis/{condition}/temporal_rin_{condition}.csv"
+        ),
+        "MANIA backend/scientific per-window metrics artifact",
+        (
+            "wania_graph_payload.json != "
+            "analysis/{condition}/conformation_pca_{condition}.csv"
+        ),
+        "!= analysis/{condition}/conformation_labels_{condition}.csv",
+        "computed PCA is not implemented",
+        "n_components = 0",
+        "fingerprint-based clustering labels",
+        "PCA-based clustering is not claimed",
+        "notebook PCA-to-k-means parity is not claimed",
+    ):
+        assert phrase in text
+
+
+def test_stage23a_freezes_optional_scientific_artifact_boundary() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "Scientific artifacts may be referenced",
+        (
+            "Scientific artifacts must not be inlined into the base WANIA "
+            "graph payload"
+        ),
+        "Scientific artifacts must not become required for base graph rendering",
+        "centrality values",
+        "community IDs",
+        "region-enrichment values",
+        "temporal window rows",
+        "PCA coordinates",
+        "conformation labels",
+        "selected_k",
+        "silhouette_score",
+        "representative-frame flags",
+        "raw per-frame contact rows",
+        "Louvain is not implemented",
+        "full statistical parity is not claimed",
+    ):
+        assert phrase in text
+
+
+def test_stage23a_preserves_later_stage_and_runtime_boundaries() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "Stage 23.A defines no reference mapping",
+        "Capabilities alignment belongs to Stage 23.B",
+        (
+            "artifact-reference alignment and demo payload policy belong "
+            "to Stage 23.C"
+        ),
+        "WANIA contract-test updates belong to Stage 23.D",
+        "documentation acceptance checklist belongs to Stage 23.E",
+        "Capabilities are not changed",
+        "artifact references are not changed",
+        "demo payload is not regenerated",
+        (
+            "Stages 20, 21, and 22 artifact schemas and scientific behavior "
+            "remain unchanged"
+        ),
+        "No numerical backend dependency is added",
+        "Stage 24 has not started",
+        (
+            "API, Docker, database, frontend implementation, and production "
+            "workers remain unimplemented"
+        ),
+    ):
+        assert phrase in text

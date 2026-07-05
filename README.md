@@ -308,11 +308,30 @@ binary contact fingerprints; Stage 22.F does not use PCA coordinates and does
 not claim notebook PCA-to-k-means parity. Computed PCA and full notebook parity
 require future explicit numerical-backend approval.
 
-The accepted WANIA payload contract remains unchanged, and Stage 23 has not
-started. WANIA temporal animation, WANIA conformation UI, and a WANIA typed-RIN
-schema remain deferred. API, Docker, database, frontend, and production workers
-also remain deferred, as do cross-protein comparison and non-protein
-heterograph support.
+The accepted WANIA payload contract remains unchanged. WANIA temporal
+animation, WANIA conformation UI, and a WANIA typed-RIN schema remain deferred.
+API, Docker, database, frontend, and production workers also remain deferred,
+as do cross-protein comparison and non-protein heterograph support.
+
+## Stage 23.A WANIA RIN Profile And Scientific Boundary Status
+
+Stage 23.A defines the WANIA RIN profile as the unchanged, stable
+frontend-facing graph render contract after accepted Stages 20–22. MANIA owns
+backend/scientific preprocessing, static-analysis, temporal-analysis, and
+conformation artifacts; WANIA owns the render payload with `graph.nodes`,
+`graph.edges`, node `x/y/z`, edge `interaction.primary_type`, capabilities,
+diagnostics, and the artifact-reference object.
+
+`wania_graph_payload.json` is not
+`analysis/{condition}/graph.json`,
+`analysis/{condition}/temporal_rin_{condition}.csv`,
+`analysis/{condition}/conformation_pca_{condition}.csv`, or
+`analysis/{condition}/conformation_labels_{condition}.csv`. Scientific
+artifacts may be referenced but are not inlined and are not required for base
+graph rendering. This docs/profile block changes no required fields, runtime
+payload behavior, capabilities, artifact-reference mapping, demo payload, or
+Stage 20–22 artifact schema. See
+`docs/wania_science_ui_boundary_v0_1.md`.
 
 ## Current Backend Workflow
 
@@ -802,7 +821,8 @@ separately scoped later work.
 - `docs/wania_required_fields_contract_v0_1.md`: exact required WANIA MVP
   fields and minimal valid payload rules.
 - `docs/wania_science_ui_boundary_v0_1.md`: science-vs-UI layer ownership for
-  display fields, optional science, backend internals, and future capability.
+  display fields, optional science, backend internals, future capability, and
+  the Stage 23.A WANIA RIN profile/scientific-artifact boundary.
 - `docs/wania_json_assembly_profile_v0_1.md`: Stage 18.1 inputs, demo-ready
   output expectations, portable references, and Stage 17 alignment.
 - `docs/mania_rin_mvp_gap_matrix.md`: Stage 19.1 inventory of RIN requirements,

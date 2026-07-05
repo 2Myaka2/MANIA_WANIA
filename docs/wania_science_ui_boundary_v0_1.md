@@ -136,12 +136,13 @@ portable artifact references follow the rules in Section 9.
 
 ## 6. Future capabilities
 
-The following remain future or deferred:
+The following remain future or deferred WANIA capabilities, even where MANIA
+now emits a related backend/scientific artifact:
 
-- temporal RIN and interactive temporal playback;
+- temporal RIN UI and interactive temporal playback;
 - full typed RIN schema (also described as the typed RIN full schema);
-- formal statistics;
-- conformational clustering, including PCA/k-means/silhouette;
+- formal statistics UI;
+- conformation UI, including PCA/k-means/silhouette presentation;
 - cross-protein comparison and multi-protein alignment/comparison;
 - production FastAPI/upload/job API;
 - a database-backed job model and background workers;
@@ -283,3 +284,168 @@ Stage 18.1 carries this ownership boundary into artifact assembly: a
 demo-ready payload may preserve optional science but must not expose
 backend-only details as frontend requirements. See the
 [`WANIA JSON assembly profile`](wania_json_assembly_profile_v0_1.md).
+
+## 14. Stage 23.A WANIA RIN profile
+
+### Profile definition and ownership boundary
+
+After accepted Stages 20–22, the **WANIA RIN profile** means the existing,
+stable frontend-facing graph render contract. It is the small payload shape a
+frontend can use to identify a run, render nodes and edges, inspect capability
+signals and diagnostics, and offer portable artifact links. It is not a dump
+of MANIA preprocessing, static-analysis, temporal-analysis, or conformation
+outputs.
+
+The ownership boundary is:
+
+```text
+MANIA = backend/scientific RIN preprocessing and analysis artifacts
+WANIA = stable frontend-facing JSON contract for graph rendering
+```
+
+MANIA scientific artifacts may contain richer tables, metrics, method status,
+and provenance than the frontend needs. WANIA may reference such artifacts,
+but scientific CSV/JSON contents must not be inlined into the base WANIA graph
+payload and must not become prerequisites for base graph rendering. Stage
+23.A freezes that policy only; it does not add or change an artifact-reference
+key or mapping.
+
+### Unchanged base render contract
+
+The WANIA base render contract is unchanged, and the WANIA required fields are
+unchanged. The authoritative field-level rules remain in the
+[`Required WANIA fields contract`](wania_required_fields_contract_v0_1.md).
+The required render profile remains:
+
+| Area | Required fields |
+|---|---|
+| Top level | `schema_version`, `run`, `capabilities`, `graph`, `artifacts`, `diagnostics` |
+| Run | `run_name`, `protein_id`, `protein_name`, `condition_names` |
+| Graph | `graph.nodes`, `graph.edges` |
+| Node | `id`, `condition`, `residue.index`, `residue.name`, `x`, `y`, `z` render coordinates |
+| Edge | `id`, `source`, `target`, `condition`, `interaction.primary_type` |
+| Diagnostics | `diagnostics.passed` |
+
+The `artifacts` object is required, while every individual artifact reference
+inside it remains optional. The presence or absence of an optional MANIA
+artifact does not expand or reduce the required WANIA render field set.
+
+In particular, none of the following become required WANIA node, edge, or
+top-level render fields: centrality values, community IDs, region-enrichment
+values, temporal window rows, temporal RIN metrics, PCA coordinates,
+conformation labels, `selected_k`, `silhouette_score`, representative-frame
+flags, MANIA statistics tables, or raw per-frame contact rows.
+
+### Static RIN distinction
+
+The frontend payload and MANIA static analysis graph have different purposes:
+
+```text
+wania_graph_payload.json
+!= analysis/{condition}/graph.json
+```
+
+`wania_graph_payload.json` is the stable frontend-facing render contract. It
+contains the accepted WANIA graph fields, render coordinates, capabilities,
+diagnostics, and artifact-reference object.
+
+`analysis/{condition}/graph.json` is the MANIA backend/scientific static RIN
+artifact built from accepted Stage 20 residue and protein-contact artifacts.
+Its scientific topology, aggregate typed-contact data, and provenance do not
+replace the WANIA payload and do not become required WANIA fields.
+
+Stage 21 scientific outputs are optional artifacts at this boundary:
+
+- `analysis/{condition}/graph.json`;
+- `analysis/{condition}/centrality_{condition}.csv`;
+- `analysis/{condition}/communities_{condition}.csv`;
+- `analysis/{condition}/region_enrichment_{condition}.csv`;
+- `analysis/comparison.csv`;
+- `analysis/stats.csv`.
+
+Centrality, community, enrichment, comparison, and statistics rows may be
+offered through later accepted artifact references, but they are not inlined
+base graph state. Louvain is not implemented; community output uses the
+truthful deterministic `greedy_modularity_unweighted` fallback. NMI and ARI
+are not implemented. For cross-condition statistics, MWU, bootstrap CI,
+p-values, and FDR-BH are not implemented; full statistical parity is not
+claimed.
+
+### Temporal RIN distinction
+
+The temporal artifact is also separate from the WANIA graph payload:
+
+```text
+wania_graph_payload.json
+!= analysis/{condition}/temporal_rin_{condition}.csv
+```
+
+`analysis/{condition}/temporal_rin_{condition}.csv` is a MANIA
+backend/scientific per-window metrics artifact. Its rows describe sampled-frame
+windows and derived graph summaries. Temporal window rows and temporal RIN
+metrics are not required WANIA node or edge fields, are not required for base
+rendering, and must not be embedded as base graph arrays. WANIA temporal
+animation remains unimplemented.
+
+The temporal source of truth remains the accepted Stage 20
+`contacts_perframe_{condition}.csv`; the Stage 22 ordinal sampled-frame,
+inclusive `frame_start`/`frame_end`, and `sampled_frame_count` denominator
+semantics are unchanged by this profile.
+
+### Conformation artifact distinction
+
+The conformation artifacts remain separate backend/scientific outputs:
+
+```text
+wania_graph_payload.json
+!= analysis/{condition}/conformation_pca_{condition}.csv
+!= analysis/{condition}/conformation_labels_{condition}.csv
+```
+
+`analysis/{condition}/conformation_pca_{condition}.csv` exists, but computed
+PCA is not implemented under the accepted dependency boundary. PCA coordinates
+and explained-variance ratios remain unavailable and blank, `n_components =
+0`, and applicable rows report `pca_unavailable` or an explicit skipped
+status. No fake PCA coordinates are emitted.
+
+`analysis/{condition}/conformation_labels_{condition}.csv` contains MANIA
+backend/scientific fingerprint-based clustering labels. Its deterministic
+k-means input is the binary `ContactFingerprintMatrix.values`, not PCA
+coordinates and not rows from the PCA artifact. PCA-based clustering is not
+claimed, and notebook PCA-to-k-means parity is not claimed. WANIA conformation
+UI remains unimplemented.
+
+### Optional scientific artifact boundary
+
+The optional scientific-artifact boundary includes accepted Stage 20
+preprocessing CSV/JSON artifacts, Stage 21 static-analysis artifacts, and Stage
+22 temporal/conformation artifacts. These outputs are optional from the WANIA
+base-render perspective even when MANIA requires or produces them for a
+scientific workflow.
+
+Stage 20 optional scientific artifacts at this WANIA boundary include
+`residue_table_{condition}.csv`,
+`protein_contact_edges_undirected_{condition}.csv`,
+`contacts_perframe_{condition}.csv`, `edge_semantics.json`,
+`mania_manifest.json`, and `mania_residue_library.json`. Stage 22 optional
+scientific artifacts include `temporal_rin_{condition}.csv`,
+`conformation_pca_{condition}.csv`, and
+`conformation_labels_{condition}.csv` under `analysis/{condition}/`. The Stage
+21 optional artifact list is defined in the static RIN distinction above.
+
+Scientific artifacts may be referenced. Scientific artifacts must not be
+inlined into the base WANIA graph payload. Scientific artifacts must not become
+required for base graph rendering. Any future reference must remain portable
+and relative under the existing artifact safety rules.
+
+Stage 23.A defines no reference mapping. Capabilities alignment belongs to
+Stage 23.B, artifact-reference alignment and demo payload policy belong to
+Stage 23.C, WANIA contract-test updates belong to Stage 23.D, and the full
+documentation acceptance checklist belongs to Stage 23.E. Capabilities are
+not changed, artifact references are not changed, and the demo payload is not
+regenerated here.
+
+Stages 20, 21, and 22 artifact schemas and scientific behavior remain
+unchanged. Computed PCA is not added. No numerical backend dependency is added.
+Stage 24 has not started. API, Docker, database, frontend implementation, and
+production workers remain unimplemented.
