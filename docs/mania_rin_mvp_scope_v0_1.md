@@ -436,8 +436,8 @@ heterograph/non-protein inventory is not implemented.
 | Temporal RIN input contract | MANIA scientific MVP | **Stage 22.A covered.** The dependency-free loader consumes accepted `contacts_perframe_{condition}.csv`, validates condition/frame/residue-pair/edge-type identity, normalizes undirected pairs, rejects duplicate frame/pair/type keys, and treats only observed sorted frame indexes as sampled frames. |
 | Sliding-window configuration (`TEMP_WINDOW`, `TEMP_STEP`, `TEMP_MIN_FREQ`) | MANIA scientific MVP | **Stage 22.A covered.** Accepted defaults are `10`, `10`, and `0.25`; windows use zero-based IDs, ordinal sampled-frame membership, inclusive first/last source-frame boundaries, and non-empty partial trailing windows. Later window contact frequency uses `sampled_frame_count` as its denominator. |
 | Window-level contact frequency | MANIA scientific MVP | **Stage 22.B covered.** Validated observations are grouped per accepted sampled-frame window, normalized pair, and type. Frequency uses `observed sampled frames / sampled_frame_count`; inclusive `TEMP_MIN_FREQ` filtering applies only to typed-contact inclusion. |
-| Window-level RIN construction / `temporal_rin_{cond}.csv` | MANIA scientific MVP | **Stage 22.B covers internal graph construction only.** Passing types are priority ordered, the primary type supplies edge weight, available distances receive deterministic summaries, and empty windows remain explicit. Temporal metrics and public `temporal_rin_{condition}.csv` export remain Stage 22.C work. |
-| Temporal graph metrics | MANIA scientific MVP | **MVP target for future implementation.** The exact metric set and artifact shape remain open for Stage 22. |
+| Window-level RIN construction / `temporal_rin_{cond}.csv` | MANIA scientific MVP | **Stage 22.B covers internal graph construction and Stage 22.C covers the public summary export.** Passing types are priority ordered, the primary type supplies edge weight, available distances receive deterministic summaries, and empty windows remain explicit. Stage 22.C writes one deterministic row per accepted window to `analysis/{condition}/temporal_rin_{condition}.csv`. |
+| Temporal graph metrics | MANIA scientific MVP | **Stage 22.C covered.** Counts, density, mean degree, mean strength, unweighted betweenness/closeness summaries, and deterministic unweighted community/modularity summaries are computed from accepted Stage 22.B graphs. Empty/no-passing windows remain explicit with missing derived metrics. |
 | Contact fingerprint matrix | MANIA scientific MVP | **Partially covered.** Per-frame observations exist as possible input; matrix construction/export is missing. |
 | PCA, k-means, silhouette selection | MANIA scientific MVP | **MVP targets for future implementation** as the accepted conformation-label pipeline, subject to a separate dependency and determinism decision. |
 | Conformation labels | MANIA scientific MVP | **MVP target for future implementation.** Historical `conformation_labels_{cond}.csv` does not match the planned backend name/schema. |
@@ -446,8 +446,10 @@ heterograph/non-protein inventory is not implemented.
 
 These Stage 22 roadmap items are part of the complete MANIA scientific MVP.
 Stage 22.A covers only the input/configuration/window contract. Stage 22.B
-constructs deterministic in-memory window RINs without temporal metrics or a
-public temporal artifact. Contact fingerprints, PCA, k-means, silhouette,
+constructs deterministic in-memory window RINs. Stage 22.C consumes those
+graphs, uses primary `window_contact_freq` only for strength, keeps shortest
+paths and the `greedy_modularity_unweighted` fallback unweighted, and writes
+the public temporal summary artifact. Contact fingerprints, PCA, k-means, silhouette,
 representative frames, and conformation artifacts remain unimplemented. None
 of these items is required for WANIA base graph rendering. Interactive
 temporal playback and a required inline WANIA temporal model remain v2/future

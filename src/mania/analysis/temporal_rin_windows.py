@@ -184,6 +184,7 @@ class TemporalRinWindowGraph:
     frame_start: int
     frame_end: int
     sampled_frame_count: int
+    active_frame_count: int
     frame_indexes: tuple[int, ...]
     status: str
     nodes: tuple[TemporalRinWindowNode, ...]
@@ -197,6 +198,7 @@ class TemporalRinWindowGraph:
             "frame_start": self.frame_start,
             "frame_end": self.frame_end,
             "sampled_frame_count": self.sampled_frame_count,
+            "active_frame_count": self.active_frame_count,
             "frame_indexes": list(self.frame_indexes),
             "status": self.status,
             "directed": False,
@@ -341,6 +343,7 @@ def _build_window_graph(
         frame_start=window.frame_start,
         frame_end=window.frame_end,
         sampled_frame_count=window.sampled_frame_count,
+        active_frame_count=len({row.frame_index for row in rows}),
         frame_indexes=window.frame_indexes,
         status=status,
         nodes=nodes,

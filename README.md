@@ -183,10 +183,33 @@ window with no rows or no passing typed contacts remains an explicit empty
 graph with a deterministic status.
 
 Stage 22.B is an internal backend/scientific graph construction layer. It does
-not compute temporal graph metrics, export `temporal_rin_{condition}.csv`,
+not compute temporal graph metrics or export `temporal_rin_{condition}.csv`;
+those operations are provided separately by Stage 22.C. Stage 22.B does not
 construct contact fingerprints, or implement PCA, k-means, silhouette,
 representative frames, or conformation artifacts. Stage 20 and Stage 21
 artifacts and the accepted WANIA payload contract remain unchanged.
+
+## Stage 22.C Temporal Graph Metrics And Export Status
+
+Stage 22.C consumes the accepted Stage 22.B window graphs and emits one stable
+summary row per window in
+`analysis/{condition}/temporal_rin_{condition}.csv`. Window and condition
+identity remain unchanged. `active_frame_count` is the number of sampled
+frames containing at least one accepted contact row before `TEMP_MIN_FREQ`
+filtering. Empty and no-passing-contact windows retain explicit statuses and
+have empty derived-metric fields.
+
+Node and edge counts use the active Stage 22.B topology. Density and mean
+degree are unweighted; mean strength uses the primary edge's
+`window_contact_freq`. Betweenness and closeness remain unweighted, so contact
+frequency is never interpreted as distance or cost. Community count and
+modularity reuse the truthful deterministic Stage 21.C
+`greedy_modularity_unweighted` fallback and do not claim Louvain.
+
+Stage 22.C does not construct contact fingerprints or implement PCA, k-means,
+silhouette, representative frames, or conformation artifacts. It changes no
+Stage 20 or Stage 21 artifact schema, no Stage 22.A/B frequency or window
+semantics, and no accepted WANIA payload contract.
 
 ## Current Backend Workflow
 
