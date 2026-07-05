@@ -1,5 +1,15 @@
 """Dependency-light graph analysis APIs."""
 
+from mania.analysis.contact_fingerprints import (
+    CONTACT_FINGERPRINT_STATUS_COMPUTED,
+    CONTACT_FINGERPRINT_STATUS_EMPTY_INPUT,
+    CONTACT_FINGERPRINT_STATUS_ZERO_FEATURES,
+    ContactFingerprintError,
+    ContactFingerprintFeature,
+    ContactFingerprintFrame,
+    ContactFingerprintMatrix,
+    build_contact_fingerprint_matrix,
+)
 from mania.analysis.graph_metrics import (
     AnalysisGraphMetricsIssue,
     AnalysisGraphMetricsOptions,
@@ -121,6 +131,9 @@ __all__ = [
     "AnalysisGraphMetricsIssue",
     "AnalysisGraphMetricsOptions",
     "AnalysisGraphMetricsResult",
+    "CONTACT_FINGERPRINT_STATUS_COMPUTED",
+    "CONTACT_FINGERPRINT_STATUS_EMPTY_INPUT",
+    "CONTACT_FINGERPRINT_STATUS_ZERO_FEATURES",
     "COMPARISON_STATUS_COMPUTED",
     "COMPARISON_STATUS_SKIPPED_IDENTITY_CONFLICT",
     "COMPARISON_STATUS_SKIPPED_INSUFFICIENT_DATA",
@@ -129,6 +142,10 @@ __all__ = [
     "COMPARISON_STATUS_SKIPPED_UNMATCHED_CONDITION_A",
     "COMPARISON_STATUS_SKIPPED_UNMATCHED_CONDITION_B",
     "COMPARISON_STATUS_SKIPPED_UNSUPPORTED_SCOPE",
+    "ContactFingerprintError",
+    "ContactFingerprintFeature",
+    "ContactFingerprintFrame",
+    "ContactFingerprintMatrix",
     "GraphMetricsError",
     "GraphTopologyMetrics",
     "NodeTopologyMetrics",
@@ -190,6 +207,7 @@ __all__ = [
     "TemporalRinWindowInteraction",
     "TemporalRinWindowMetrics",
     "TemporalRinWindowNode",
+    "build_contact_fingerprint_matrix",
     "build_static_rin_graph",
     "build_temporal_rin_window_graphs",
     "compute_analysis_graph_metrics_from_graph_json",

@@ -211,6 +211,27 @@ silhouette, representative frames, or conformation artifacts. It changes no
 Stage 20 or Stage 21 artifact schema, no Stage 22.A/B frequency or window
 semantics, and no accepted WANIA payload contract.
 
+## Stage 22.D Contact Fingerprint Matrix Status
+
+Stage 22.D consumes accepted Stage 22.A validated
+`contacts_perframe_{condition}.csv` observations and builds an internal,
+condition-local binary contact fingerprint matrix. Rows are sampled frames in
+numeric `frame_index` order. Columns are normalized residue-pair/`edge_type`
+features ordered by residue indexes and `EDGE_TYPE_PRIORITY`; distinct types
+for the same pair remain distinct columns. Values are exactly `1` when the
+feature is observed in the frame and `0` otherwise.
+
+Frame timing and feature residue identity remain metadata outside the matrix.
+Numeric frame gaps do not create inferred frames, and distances, counts,
+contact frequencies, window frequencies, and temporal metrics are not matrix
+values. Header-only, one-frame, one-feature, and representable zero-feature
+inputs have deterministic in-memory results. Stage 22.D adds no public CSV.
+
+Stage 22.D does not implement PCA, SVD, explained variance, k-means,
+silhouette, representative frames, or conformation artifacts. It does not
+change `temporal_rin_{condition}.csv`, any Stage 20/21/22.A–C behavior, or the
+accepted WANIA payload contract.
+
 ## Current Backend Workflow
 
 Accepted Stage 15 workflow:
