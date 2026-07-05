@@ -466,6 +466,26 @@ None of these items is required for WANIA base graph rendering. Interactive
 temporal playback and a required inline WANIA temporal model remain v2/future
 product scope.
 
+#### Stage 22.G temporal/conformation validation and docs/tests alignment
+
+Stage 22.G adds focused synthetic contract coverage without changing accepted
+Stage 22 schemas or algorithms. It validates deterministic field and row
+ordering for `temporal_rin_{condition}.csv`,
+`conformation_pca_{condition}.csv`, and
+`conformation_labels_{condition}.csv`; cross-artifact condition, frame, and
+optional `time_ps` consistency; fingerprint/PCA/label frame coverage; explicit
+skipped and unavailable values; and header-only empty outputs.
+
+The validation preserves `pca_unavailable` with zero components and blank PCA
+and explained-variance fields. Labels remain fingerprint-based: Stage 22.F
+does not use PCA coordinates and does not claim notebook PCA-to-k-means parity.
+Computed PCA and full notebook parity still require future explicit
+numerical-backend approval. The accepted WANIA payload contract remains
+unchanged, and Stage 23 has not started. WANIA temporal animation, WANIA
+conformation UI, a WANIA typed-RIN schema, API, Docker, database, frontend, and
+production workers remain deferred. Cross-protein comparison and non-protein
+heterograph support also remain outside this stage.
+
 ## 5. Out of MANIA scientific MVP / v2 scope
 
 The following are not required to complete the RIN MVP defined here:
@@ -563,7 +583,7 @@ This is planning-level ownership only; it does not create implementation tasks.
 | --- | --- |
 | Stage 20 — RIN preprocessing parity | Protein residue/edge artifacts, missing protein edge semantics, structural attributes, per-frame/static artifact parity, semantics/provenance manifests, and explicit handling of optional non-protein artifacts. |
 | Stage 21 — RIN analysis parity | **Completed through Stage 21.F:** accepted static graph, metrics, communities, enrichment, conservative node comparison/statistics, and validation/docs/tests alignment. |
-| Stage 22 — Temporal RIN + conformational artifacts | Temporal input/window contract, window-level graphs/metrics, contact fingerprints, conformation labels, and optional representative/PCA exports. |
+| Stage 22 — Temporal RIN + conformational artifacts | **Completed through Stage 22.G:** accepted temporal input/windows, window graphs/metrics, contact fingerprints, PCA-unavailable and fingerprint-clustering artifacts, representatives, and validation/docs/tests alignment. |
 | Stage 23 — WANIA RIN alignment | Map only accepted and available MANIA outputs into optional WANIA annotations, capabilities, and portable artifact references without expanding the base render contract by implication. |
 
 ## 10. Non-goals

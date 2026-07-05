@@ -289,6 +289,31 @@ computed PCA, change `conformation_pca_{condition}.csv` or
 `temporal_rin_{condition}.csv`, alter prior Stage 20–22 artifacts, or change
 the accepted WANIA payload contract.
 
+## Stage 22.G Temporal/Conformation Validation And Alignment Status
+
+Stage 22.G consolidates the accepted Stage 22.A–22.F outcomes with focused
+synthetic schema, deterministic-output, skipped-state, and cross-artifact
+tests. The tests validate `temporal_rin_{condition}.csv`,
+`conformation_pca_{condition}.csv`, and
+`conformation_labels_{condition}.csv` field order and stable bytes. They also
+check temporal window identity, fingerprint/PCA/label frame coverage and
+ordering, optional `time_ps`, explicit status/notes behavior, and header-only
+empty artifacts. No accepted Stage 22 schema or scientific algorithm changes
+in this consolidation pass.
+
+PCA coordinates remain unavailable under the current dependency boundary:
+`pca_unavailable` rows keep `n_components = 0`, blank component coordinates,
+and blank explained-variance ratios. Conformation labels remain derived from
+binary contact fingerprints; Stage 22.F does not use PCA coordinates and does
+not claim notebook PCA-to-k-means parity. Computed PCA and full notebook parity
+require future explicit numerical-backend approval.
+
+The accepted WANIA payload contract remains unchanged, and Stage 23 has not
+started. WANIA temporal animation, WANIA conformation UI, and a WANIA typed-RIN
+schema remain deferred. API, Docker, database, frontend, and production workers
+also remain deferred, as do cross-protein comparison and non-protein
+heterograph support.
+
 ## Current Backend Workflow
 
 Accepted Stage 15 workflow:
