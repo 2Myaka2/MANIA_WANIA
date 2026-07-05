@@ -164,6 +164,30 @@ window-level contact frequencies, calculate temporal metrics, export
 silhouette, representative frames, or conformation artifacts. It changes no
 Stage 20/21 artifact schema and no WANIA payload behavior.
 
+## Stage 22.B Window-level Contact Frequency And RIN Status
+
+Stage 22.B consumes the validated Stage 22.A rows and sampled-frame windows to
+build one deterministic in-memory RIN graph per window. Typed contacts are
+grouped by normalized residue pair and `edge_type`; their
+`window_contact_freq` is the number of observed sampled frames divided by the
+window's `sampled_frame_count`. Numeric frame spans and inferred unsampled
+frames are never used. `TEMP_MIN_FREQ` is applied only to typed-contact
+inclusion and is inclusive: `window_contact_freq >= min_frequency`.
+
+Passing interaction types are retained in `EDGE_TYPE_PRIORITY` order. The
+first passing type is the primary edge type, and its window contact frequency
+is the edge weight. Mean, population-standard-deviation, minimum, and maximum
+distance summaries use available observed distances only; missing distances
+are not treated as zero. Header-only input produces no window graphs, while a
+window with no rows or no passing typed contacts remains an explicit empty
+graph with a deterministic status.
+
+Stage 22.B is an internal backend/scientific graph construction layer. It does
+not compute temporal graph metrics, export `temporal_rin_{condition}.csv`,
+construct contact fingerprints, or implement PCA, k-means, silhouette,
+representative frames, or conformation artifacts. Stage 20 and Stage 21
+artifacts and the accepted WANIA payload contract remain unchanged.
+
 ## Current Backend Workflow
 
 Accepted Stage 15 workflow:

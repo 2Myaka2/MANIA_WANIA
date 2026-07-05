@@ -93,6 +93,18 @@ from mania.analysis.temporal import (
     generate_temporal_windows,
     load_temporal_rin_input,
 )
+from mania.analysis.temporal_rin_windows import (
+    TEMPORAL_RIN_STATUS_COMPUTED,
+    TEMPORAL_RIN_STATUS_EMPTY_INPUT,
+    TEMPORAL_RIN_STATUS_EMPTY_WINDOW,
+    TEMPORAL_RIN_STATUS_NO_CONTACTS_PASSING_THRESHOLD,
+    TemporalRinWindowEdge,
+    TemporalRinWindowGraph,
+    TemporalRinWindowGraphBundle,
+    TemporalRinWindowInteraction,
+    TemporalRinWindowNode,
+    build_temporal_rin_window_graphs,
+)
 
 __all__ = [
     "AnalysisGraphMetricsArtifacts",
@@ -129,6 +141,10 @@ __all__ = [
     "TEMP_MIN_FREQ",
     "TEMP_STEP",
     "TEMP_WINDOW",
+    "TEMPORAL_RIN_STATUS_COMPUTED",
+    "TEMPORAL_RIN_STATUS_EMPTY_INPUT",
+    "TEMPORAL_RIN_STATUS_EMPTY_WINDOW",
+    "TEMPORAL_RIN_STATUS_NO_CONTACTS_PASSING_THRESHOLD",
     "StaticRinEdge",
     "StaticRinCommunities",
     "StaticRinCommunitiesError",
@@ -153,7 +169,13 @@ __all__ = [
     "TemporalRinInput",
     "TemporalRinInputError",
     "TemporalWindow",
+    "TemporalRinWindowEdge",
+    "TemporalRinWindowGraph",
+    "TemporalRinWindowGraphBundle",
+    "TemporalRinWindowInteraction",
+    "TemporalRinWindowNode",
     "build_static_rin_graph",
+    "build_temporal_rin_window_graphs",
     "compute_analysis_graph_metrics_from_graph_json",
     "compute_graph_topology_metrics",
     "compute_static_rin_communities",
