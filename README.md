@@ -136,6 +136,34 @@ typed-RIN schema is not implemented. Full heterograph/non-protein inventory is
 not implemented. Frontend/API/Docker/database/production API work is not
 implemented. The accepted WANIA JSON contract remains unchanged.
 
+## Stage 22.A Temporal RIN Input And Window Contract Status
+
+Stage 22.A defines a dependency-free temporal input contract over the accepted
+Stage 20 `contacts_perframe_{condition}.csv` artifact. `TemporalRinConfig`
+exposes the accepted defaults `TEMP_WINDOW = 10`, `TEMP_STEP = 10`, and
+`TEMP_MIN_FREQ = 0.25`, with positive window/step validation and frequency
+validation in `[0, 1]`. The loader validates condition, non-negative integer
+frame indexes, stable residue identity, normalized undirected residue pairs,
+and `edge_type` against `EDGE_TYPE_PRIORITY`. Because Stage 20 already emits
+one minimum-distance observation per frame/pair/type, duplicate normalized
+keys are rejected as invalid artifacts.
+
+Windows use the sorted unique frame indexes that actually occur in the
+per-frame contact artifact. Window membership is ordinal: numeric gaps do not
+imply unsampled frames. `window_id` is zero-based; `frame_start` and
+`frame_end` are the first and last assigned source frame indexes and are both
+inclusive. A reached trailing window is emitted when it contains at least one
+sampled frame. The denominator reserved for later window-level
+`contact_freq` is `sampled_frame_count`, never the numeric frame span.
+Header-only input has no sampled frames or windows; one-frame and
+fewer-than-window inputs produce one partial window.
+
+Stage 22.A does not build window-level RIN graphs, compute or filter
+window-level contact frequencies, calculate temporal metrics, export
+`temporal_rin_{condition}.csv`, or implement fingerprints, PCA, k-means,
+silhouette, representative frames, or conformation artifacts. It changes no
+Stage 20/21 artifact schema and no WANIA payload behavior.
+
 ## Current Backend Workflow
 
 Accepted Stage 15 workflow:

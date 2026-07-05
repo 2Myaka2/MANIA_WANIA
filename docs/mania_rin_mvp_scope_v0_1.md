@@ -433,8 +433,8 @@ heterograph/non-protein inventory is not implemented.
 
 | Capability or artifact | Frozen scope | Coverage at Stage 19.2 |
 | --- | --- | --- |
-| Temporal RIN input contract | MANIA scientific MVP | **Partially covered.** Per-frame contacts are a possible input, but there is no accepted temporal input contract. |
-| Sliding-window configuration (`TEMP_WINDOW`, `TEMP_STEP`, `TEMP_MIN_FREQ`) | MANIA scientific MVP | **MVP target for future implementation.** Reference parameters exist; backend config/validation does not. |
+| Temporal RIN input contract | MANIA scientific MVP | **Stage 22.A covered.** The dependency-free loader consumes accepted `contacts_perframe_{condition}.csv`, validates condition/frame/residue-pair/edge-type identity, normalizes undirected pairs, rejects duplicate frame/pair/type keys, and treats only observed sorted frame indexes as sampled frames. |
+| Sliding-window configuration (`TEMP_WINDOW`, `TEMP_STEP`, `TEMP_MIN_FREQ`) | MANIA scientific MVP | **Stage 22.A covered.** Accepted defaults are `10`, `10`, and `0.25`; windows use zero-based IDs, ordinal sampled-frame membership, inclusive first/last source-frame boundaries, and non-empty partial trailing windows. Later window contact frequency uses `sampled_frame_count` as its denominator. |
 | Window-level contact frequency | MANIA scientific MVP | **MVP target for future implementation.** Aggregate whole-run contact frequency is not window-level frequency. |
 | Window-level RIN construction / `temporal_rin_{cond}.csv` | MANIA scientific MVP | **MVP target for future implementation.** Per-frame contacts do not establish temporal RIN coverage. |
 | Temporal graph metrics | MANIA scientific MVP | **MVP target for future implementation.** The exact metric set and artifact shape remain open for Stage 22. |
@@ -444,8 +444,10 @@ heterograph/non-protein inventory is not implemented.
 | Representative frames | Optional scientific artifact | **Not implemented.** Must not be confused with first-sampled-frame Cα coordinate provenance. |
 | Conformation PCA export | Optional scientific artifact | **Not implemented.** No production artifact/schema is accepted. |
 
-These Stage 22 roadmap items are part of the complete MANIA scientific MVP,
-but none is required for WANIA base graph rendering. Interactive temporal
+These Stage 22 roadmap items are part of the complete MANIA scientific MVP.
+Stage 22.A covers only the input/configuration/window contract; it does not
+construct a window-level RIN or any temporal/conformation artifact. None of
+these items is required for WANIA base graph rendering. Interactive temporal
 playback and a required inline WANIA temporal model remain v2/future product
 scope.
 
