@@ -257,6 +257,38 @@ use temporal RINs, distances, frequencies, or trajectories as PCA input and
 does not change Stage 20/21/22.A–D artifacts or the accepted WANIA payload
 contract.
 
+## Stage 22.F Contact Fingerprint Clustering Status
+
+Stage 22.F consumes `ContactFingerprintMatrix.values` from Stage 22.D and
+writes the deterministic backend/scientific artifact
+`analysis/{condition}/conformation_labels_{condition}.csv`. It uses
+deterministic dependency-free k-means directly on binary contact fingerprint
+vectors: farthest-first initialization, lowest-cluster assignment tie breaks,
+arithmetic-mean centroids, and assignment-stability or bounded-iteration
+stopping. It does not read `conformation_pca_{condition}.csv`, temporal RIN
+metrics, contact distances, or contact frequencies.
+
+Candidate `k` values run from 2 through the lower of 10 and one less than the
+frame count. Only candidates with mathematically valid silhouette labels are
+scored with Euclidean fingerprint distance. The highest silhouette score wins,
+with the lowest `k` winning exact score ties. States are relabeled by their
+minimum `frame_index`. Each computed state has exactly one representative:
+the frame nearest its final centroid by squared Euclidean distance, with the
+lowest `frame_index` breaking distance ties. Empty, featureless, insufficient,
+constant, and no-valid-candidate inputs receive explicit statuses and no
+invented labels, scores, representatives, or centroid distances.
+
+PCA coordinates remain unavailable under the accepted dependency boundary,
+so Stage 22.F does not use PCA coordinates and does not claim notebook PCA to
+k-means parity. The artifact records `algorithm =
+deterministic_kmeans_fingerprint`, `input_source =
+contact_fingerprint_matrix`, `pca_status = pca_unavailable`, and
+`notebook_parity = not_pca_kmeans_parity`. Full notebook parity remains a
+future explicit numerical-backend decision. Stage 22.F does not implement
+computed PCA, change `conformation_pca_{condition}.csv` or
+`temporal_rin_{condition}.csv`, alter prior Stage 20–22 artifacts, or change
+the accepted WANIA payload contract.
+
 ## Current Backend Workflow
 
 Accepted Stage 15 workflow:

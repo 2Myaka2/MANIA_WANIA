@@ -440,9 +440,9 @@ heterograph/non-protein inventory is not implemented.
 | Temporal graph metrics | MANIA scientific MVP | **Stage 22.C covered.** Counts, density, mean degree, mean strength, unweighted betweenness/closeness summaries, and deterministic unweighted community/modularity summaries are computed from accepted Stage 22.B graphs. Empty/no-passing windows remain explicit with missing derived metrics. |
 | Contact fingerprint matrix | MANIA scientific MVP | **Stage 22.D covered as an internal representation.** Accepted Stage 22.A per-frame observations become sampled-frame rows and normalized pair/type columns in deterministic order. Values are binary observed/not-observed membership; no public artifact is added. |
 | PCA projection | MANIA scientific MVP | **Stage 22.E unavailable contract covered.** The accepted dependency boundary has no direct numerical linear-algebra backend, so Stage 22.E consumes Stage 22.D matrices, distinguishes centered zero-variance and other skipped cases, and never invents coordinates. Computed centered SVD, up to three components, explained variance, and loading-sign stabilization remain pending an explicit dependency decision. |
-| k-means and silhouette selection | MANIA scientific MVP | **MVP targets for future Stage 22.F implementation** subject to separate approval. |
-| Conformation labels | MANIA scientific MVP | **MVP target for future implementation.** Historical `conformation_labels_{cond}.csv` does not match the planned backend name/schema. |
-| Representative frames | Optional scientific artifact | **Not implemented.** Must not be confused with first-sampled-frame Cα coordinate provenance. |
+| k-means and silhouette selection | MANIA scientific MVP | **Stage 22.F covered from fingerprints.** Deterministic dependency-free k-means consumes binary contact fingerprint values directly. Candidate `k` values are bounded by frame count and the default maximum of 10; only valid label sets receive Euclidean silhouette scores, and the lowest `k` wins score ties. PCA coordinates are unavailable and are not used. |
+| Conformation labels | MANIA scientific MVP | **Stage 22.F covered.** `analysis/{condition}/conformation_labels_{condition}.csv` preserves condition, frame order, `frame_index`, and optional `time_ps`, and explicitly records fingerprint input, unavailable PCA, and lack of notebook PCA-to-k-means parity. Skipped rows contain no invented clustering values. |
+| Representative frames | Optional scientific artifact | **Stage 22.F covered for computed clusters.** The frame nearest each final fingerprint centroid is selected, with `frame_index` breaking ties. This is not first-sampled-frame Cα coordinate provenance. |
 | Conformation PCA export | Optional scientific artifact | **Stage 22.E covered.** `analysis/{condition}/conformation_pca_{condition}.csv` preserves frame metadata and feature count with stable component/variance columns. Current rows use explicit empty/one-frame/no-feature/constant/unavailable statuses, `n_components = 0`, and blank numerical fields because no accepted PCA backend exists. |
 
 These Stage 22 roadmap items are part of the complete MANIA scientific MVP.
@@ -455,8 +455,14 @@ contact fingerprints directly from validated per-frame contacts without
 inferring frames or using distances/frequencies as values. Stage 22.E adds the
 deterministic PCA artifact contract but emits no fake coordinates while the
 accepted dependency boundary lacks a numerical backend. K-means, silhouette,
-conformation labels, and representative frames remain unimplemented. None
-of these items is required for WANIA base graph rendering. Interactive
+conformation labels, and representative frames are covered separately by Stage
+22.F using deterministic dependency-free k-means directly on the binary contact
+fingerprint matrix. PCA coordinates are unavailable and not used, and Stage
+22.F does not claim notebook PCA-to-k-means parity. It exports
+`conformation_labels_{condition}.csv`, selects `k` by valid silhouette scores,
+and selects centroid-nearest representatives only for computed clusters. Full
+notebook parity requires a future explicit numerical-backend approval stage.
+None of these items is required for WANIA base graph rendering. Interactive
 temporal playback and a required inline WANIA temporal model remain v2/future
 product scope.
 
