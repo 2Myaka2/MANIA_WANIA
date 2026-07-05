@@ -449,3 +449,85 @@ Stages 20, 21, and 22 artifact schemas and scientific behavior remain
 unchanged. Computed PCA is not added. No numerical backend dependency is added.
 Stage 24 has not started. API, Docker, database, frontend implementation, and
 production workers remain unimplemented.
+
+## 15. Stage 23.B capability alignment
+
+### Boolean capability model
+
+The current WANIA capability model is boolean-only and payload-specific. A
+capability may indicate that the base render function exists, that the current
+payload was assembled with an optional artifact path already supported by the
+adapter, or that related backend/scientific support exists. These meanings must
+be read with the capability-specific limitations below.
+
+In the current payload:
+
+- `true` means that the payload advertises the named capability under the
+  existing adapter rules;
+- `false` means that the payload does not advertise that capability; it does
+  not by itself prove that related MANIA backend/scientific work is absent;
+- an absent key is not an availability claim.
+
+The boolean model cannot encode `partial` by itself. Partial and limited
+behavior is therefore defined by this document rather than by changing a
+boolean into a new object. A capability may indicate backend/scientific
+artifact availability. A capability does not mean scientific contents are
+embedded in the base WANIA graph payload. It also does not make a scientific
+artifact required for base graph rendering.
+
+Stage 23.B does not change the existing boolean keys, their runtime derivation,
+the payload schema, or adapter/writer behavior. In particular, a MANIA artifact
+that has no accepted WANIA reference input yet does not cause its current
+payload flag to become `true`. Artifact-reference mapping and demo-payload
+policy remain Stage 23.C work.
+
+### Capability status and meaning
+
+| Exact WANIA key | Accepted MANIA/WANIA status | Current payload interpretation and limits |
+|---|---|---|
+| `static_contact_graph` | available | WANIA can render its static graph payload. The MANIA `analysis/{condition}/graph.json` scientific artifact is a different graph contract. |
+| `rg_timeseries` | available when its existing optional path is supplied | Advertises the existing optional Rg reference only; it does not inline Rg rows. |
+| `aggregate_contacts` | available when its existing optional path is supplied | Advertises the existing aggregate-contact reference only; it does not inline contact rows. |
+| `contacts_perframe` | available when its existing optional path is supplied | MANIA per-frame preprocessing is available. Raw per-frame rows are not embedded in `graph.nodes` or `graph.edges`. |
+| `typed_rin_interactions` | backend semantics available; current WANIA capability unavailable | Stage 20/21 support the accepted protein interaction vocabulary and priority, while the current payload flag remains `false`. `interaction.primary_type` remains the only required edge interaction field; this flag does not promise a WANIA typed-RIN schema. |
+| `centrality_metrics` | available as optional MANIA science; current adapter support is limited to its existing analysis-metrics paths | `centrality_{condition}.csv` is an optional Stage 21 artifact. Centrality values do not become required `graph.nodes` fields. Stage 23.B adds no mapping for the Stage 21 filename. |
+| `community_detection` | available with a limited deterministic fallback; current adapter support is limited to its existing community paths | `communities_{condition}.csv` uses `greedy_modularity_unweighted`. Louvain is not implemented, and community IDs are not required node fields. |
+| `node_structural_metrics` | limited backend availability; current WANIA capability unavailable | Stage 20 `residue_table_{condition}.csv` can carry `x_ca/y_ca/z_ca`, `tm_relative_z`, `rmsf_A`, `sasa_A2`, and `ss` to the extent values exist. This does not make them required node fields and does not redefine WANIA render `x/y/z`. |
+| `conformational_states` | partial/limited backend availability; current WANIA capability unavailable | Fingerprint-based `conformation_labels_{condition}.csv` is available, but computed PCA and PCA coordinates are unavailable. Clustering does not use PCA coordinates, and notebook PCA-to-k-means parity is not claimed. |
+| `cross_condition_statistics` | partial/limited backend availability; current WANIA capability unavailable | Stage 21.E supports conservative node-metric comparison in `comparison.csv` and `stats.csv`. It does not support MWU, bootstrap CI, p-values, FDR-BH, NMI/ARI, or edge/community/region-enrichment comparison, and it does not claim full statistical notebook parity. |
+| `temporal_rin` | available as optional MANIA science; current WANIA capability unavailable | `temporal_rin_{condition}.csv` provides per-window scientific metrics. Its rows are not inlined in nodes or edges, and WANIA temporal animation is not implemented. |
+| `inter_component_interactions` | unavailable/deferred | Stage 20 deferred non-protein inventory and heterograph support. No inter-component or full heterograph support is claimed. |
+| `cross_protein_comparison` | unavailable/future scope | Cross-protein identity, alignment, and comparison support are not implemented. |
+
+The exact current adapter keys are the names in this table. In particular,
+`cross_condition_statistics` is the current key rather than
+`analysis_statistics`; `temporal_rin` is the current key rather than
+`temporal_interactions`; and `conformational_states` is the current key even
+though the accepted backend artifact is named
+`conformation_labels_{condition}.csv`. Stage 23.B introduces no aliases or new
+capability keys.
+
+### Preserved limitations and boundaries
+
+`conformational_states` must not be read as a computed-PCA claim. The accepted
+PCA artifact keeps `n_components = 0`, blank PCA coordinates, blank
+explained-variance ratios, and `pca_unavailable` or an explicit skipped status.
+The labels are deterministic k-means results over binary contact fingerprints,
+not PCA-based clustering, and notebook PCA-to-k-means parity is not claimed.
+
+`community_detection` must not be read as a Louvain claim.
+`cross_condition_statistics` must not be read as an MWU, bootstrap CI,
+p-value, FDR-BH, NMI/ARI, edge/community/region-enrichment comparison, or full
+statistical parity claim. `node_structural_metrics` must not be read as a
+change to WANIA `x/y/z` render-coordinate semantics.
+
+Non-protein heterograph support, inter-component interactions, and
+cross-protein comparison remain deferred. WANIA temporal animation, WANIA
+conformation UI, and a WANIA typed-RIN schema remain unimplemented. API,
+Docker, database, frontend implementation, and production workers are not
+implemented. Stage 24 has not started.
+
+The required WANIA fields remain unchanged. Scientific contents are not
+inlined into the base payload, scientific artifacts are not required for base
+rendering, and Stage 23.B changes no artifact reference, demo payload, or Stage
+20–22 artifact/schema behavior.

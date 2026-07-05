@@ -333,6 +333,29 @@ payload behavior, capabilities, artifact-reference mapping, demo payload, or
 Stage 20–22 artifact schema. See
 `docs/wania_science_ui_boundary_v0_1.md`.
 
+## Stage 23.B WANIA Capabilities Alignment Status
+
+Stage 23.B documents the existing boolean-only, payload-specific capability
+model without changing runtime flags or schema. A capability may advertise
+base render support, an optional artifact path already supported by the
+adapter, or related MANIA backend/scientific support. It never means that
+scientific CSV/JSON contents are inlined into the base WANIA graph payload or
+required for base rendering.
+
+Static rendering and existing path-backed Rg/contact capabilities are
+available. MANIA typed protein-RIN semantics, centrality, deterministic
+`greedy_modularity_unweighted` communities, temporal RIN artifacts, and
+fingerprint-based conformation labels exist with the limitations documented in
+`docs/wania_science_ui_boundary_v0_1.md`. Cross-condition statistics remain
+limited to the accepted node-metric comparison. Computed PCA, PCA-based
+clustering, notebook PCA-to-k-means parity, Louvain, MWU, bootstrap CI,
+p-values, FDR-BH, full statistical parity, non-protein heterograph support,
+inter-component interactions, and cross-protein comparison are not claimed.
+
+No required field, runtime payload behavior, adapter/writer behavior, artifact
+reference, demo payload, or Stage 20–22 artifact schema changes in Stage 23.B.
+Artifact-reference alignment and demo-payload policy remain Stage 23.C work.
+
 ## Current Backend Workflow
 
 Accepted Stage 15 workflow:

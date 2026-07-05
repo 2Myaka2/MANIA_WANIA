@@ -235,3 +235,99 @@ def test_stage23a_preserves_later_stage_and_runtime_boundaries() -> None:
         ),
     ):
         assert phrase in text
+
+
+def test_stage23b_defines_boolean_capability_semantics() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "Stage 23.B capability alignment",
+        "boolean-only and payload-specific",
+        "The boolean model cannot encode `partial` by itself",
+        "A capability may indicate backend/scientific artifact availability",
+        (
+            "A capability does not mean scientific contents are embedded in "
+            "the base WANIA graph payload"
+        ),
+        "does not make a scientific artifact required for base graph rendering",
+        "does not change the existing boolean keys",
+        "Artifact-reference mapping and demo-payload policy remain Stage 23.C",
+    ):
+        assert phrase in text
+
+
+def test_stage23b_aligns_every_current_adapter_capability() -> None:
+    text = doc_text()
+
+    for capability in (
+        "static_contact_graph",
+        "rg_timeseries",
+        "aggregate_contacts",
+        "contacts_perframe",
+        "typed_rin_interactions",
+        "centrality_metrics",
+        "community_detection",
+        "node_structural_metrics",
+        "conformational_states",
+        "cross_condition_statistics",
+        "temporal_rin",
+        "inter_component_interactions",
+        "cross_protein_comparison",
+    ):
+        assert f"`{capability}`" in text
+
+    for phrase in (
+        "available when its existing optional path is supplied",
+        "backend semantics available; current WANIA capability unavailable",
+        "available with a limited deterministic fallback",
+        "limited backend availability; current WANIA capability unavailable",
+        "partial/limited backend availability",
+        "unavailable/deferred",
+        "unavailable/future scope",
+    ):
+        assert phrase in text
+
+
+def test_stage23b_preserves_partial_and_unavailable_limitations() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "Louvain is not implemented",
+        "computed PCA and PCA coordinates are unavailable",
+        "Clustering does not use PCA coordinates",
+        "notebook PCA-to-k-means parity is not claimed",
+        "does not support MWU, bootstrap CI, p-values, FDR-BH, NMI/ARI",
+        "does not claim full statistical notebook parity",
+        "does not redefine WANIA render `x/y/z`",
+        "No inter-component or full heterograph support is claimed",
+        (
+            "Cross-protein identity, alignment, and comparison support are "
+            "not implemented"
+        ),
+        (
+            "API, Docker, database, frontend implementation, and production "
+            "workers are not implemented"
+        ),
+        "Stage 24 has not started",
+    ):
+        assert phrase in text
+
+
+def test_stage23b_keeps_science_out_of_required_render_fields() -> None:
+    text = doc_text()
+
+    for phrase in (
+        "Centrality values do not become required `graph.nodes` fields",
+        "community IDs are not required node fields",
+        "Raw per-frame rows are not embedded in `graph.nodes` or `graph.edges`",
+        "Its rows are not inlined in nodes or edges",
+        "does not redefine WANIA render `x/y/z`",
+        "The required WANIA fields remain unchanged",
+        "Scientific contents are not inlined into the base payload",
+        "scientific artifacts are not required for base rendering",
+        (
+            "changes no artifact reference, demo payload, or Stage 20–22 "
+            "artifact/schema behavior"
+        ),
+    ):
+        assert phrase in text
