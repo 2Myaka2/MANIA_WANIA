@@ -633,13 +633,45 @@ fabricated. For multiple conditions, the accepted conservative Stage 21.E
 node-metric comparison and stats writer is used. Successful runs print one
 deterministic JSON object to stdout with portable relative artifact paths,
 requested PCA/clustering settings, skipped steps, and diagnostics. That JSON
-is a CLI summary only; it is not `extended_metrics.json` and not a Stage 24.D
-analysis manifest.
+is a CLI summary only; it is not the full Stage 24.D analysis manifest.
+
+Stage 24.D adds the MANIA-only manifest
+`analysis/extended_metrics.json` with schema version
+`mania.extended_metrics.v0.1`. The file is written automatically after a
+successful `mania analyze` run from authoritative `AnalyzeRunResult`
+current-run artifact records, not by parsing stdout and not by scanning the
+output tree. Artifact paths are portable, forward-slash paths relative to the
+run output root and remain under `analysis/`.
+
+The manifest is a compact index and status summary. It records request-order
+conditions, PCA/clustering configuration, condition-level statuses for static
+RIN, centrality, communities, region enrichment, temporal RIN, PCA, and
+clustering, run-level cross-condition status, diagnostics, and deterministic
+limitations. It distinguishes default disabled PCA (`not_requested`) from the
+compatibility `conformation_pca_{condition}.csv` rows, reports computed PCA as
+`numpy_svd` with the actual component count, and records fingerprint versus
+PCA clustering provenance with requested and used PCA component counts. A
+single-condition run records cross-condition analysis as `not_applicable`
+while still referencing header-only current-run comparison/stat artifacts.
+Partial scientific outcomes such as unavailable region labels, degenerate
+PCA, or skipped clustering are represented by compact status/reason fields.
+
+The manifest uses deterministic JSON serialization and does not embed
+centrality rows, community rows, temporal windows, PCA frame-coordinate rows,
+conformation labels, comparison/stat rows, graph nodes, graph edges, raw MD
+data, or preprocessing tables. Its limitation identifiers are compact and
+stable: API/frontend integration is not implemented, fingerprint and PCA
+clustering are distinct, full statistical parity and Louvain remain
+unavailable, notebook PCA parity is not claimed, PCA clustering uses internal
+deterministic k-means, and WANIA integration is not implemented.
+
+`extended_metrics.json` is not WANIA JSON. Stage 24 does not add it to WANIA
+artifacts, capabilities, adapters, fixtures, or `wania_graph_payload.json`.
+API/frontend integration remains future scope, and Stage 25 has not started.
 
 Stage 24.C adds no dependency and changes no Stage 20, Stage 21, Stage 22, or
 Stage 23 WANIA contract. It does not implement API/frontend/Docker/database
-or worker code, final biological interpretation, Stage 24.D, Stage 24.E, or
-Stage 25.
+or worker code, final biological interpretation, Stage 24.E, or Stage 25.
 
 ## 5. Out of MANIA scientific MVP / v2 scope
 

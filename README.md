@@ -582,8 +582,46 @@ fabricated. For two or more conditions, the accepted conservative Stage 21.E
 node-metric comparison and stats writer is used. On success, stdout contains
 one deterministic JSON object with the requested conditions, PCA/clustering
 configuration, portable relative artifact paths, skipped steps, and
-diagnostic issues. It is a CLI summary only; it is not
-`extended_metrics.json` and not a Stage 24.D manifest.
+diagnostic issues. It is a CLI summary only and is separate from the persisted
+Stage 24.D manifest.
+
+Each successful `mania analyze` run also writes the MANIA-only analysis
+manifest:
+
+```text
+analysis/extended_metrics.json
+```
+
+The manifest schema version is `mania.extended_metrics.v0.1`. It is a compact
+index over the current run's scientific outputs, not a data table dump and not
+WANIA JSON. Artifact references are portable paths relative to the run output
+root, always under `analysis/`, and are derived from `AnalyzeRunResult`
+current-run artifact ownership rather than from scanning the output tree.
+
+The manifest records requested conditions in request order, the PCA and
+clustering configuration, per-condition analysis statuses and artifact
+references, run-level cross-condition status, diagnostics, and a stable
+limitations list. PCA intent is separate from compatibility CSV status: with
+default `--enable-pca` omitted, the PCA analysis status is `not_requested`
+even though `conformation_pca_{condition}.csv` is still written with blank
+compatibility rows. When PCA computes, the manifest reports backend
+`numpy_svd` and the actual component count. PCA clustering records its
+`deterministic_kmeans_pca` provenance plus requested and used PCA component
+counts; fingerprint clustering records `deterministic_kmeans_fingerprint`.
+
+For one condition, `comparison.csv` and `stats.csv` may be referenced as
+header-only current-run artifacts while cross-condition status is
+`not_applicable` with reason `single_condition`. Optional scientific outcomes
+such as missing region labels, degenerate PCA, or unavailable clustering are
+represented with skipped/unavailable statuses and compact reasons. The
+manifest is deterministic UTF-8 JSON with sorted keys, two-space indentation,
+one trailing newline, no timestamps, and no embedded centrality/community/
+temporal/PCA/label/comparison/stat rows or graph node/edge arrays.
+
+`extended_metrics.json` is not consumed by WANIA in Stage 24. WANIA required
+fields, runtime schema, capabilities, artifact mapping, adapters, fixtures,
+and `wania_graph_payload.json` remain unchanged. API/frontend integration is
+future scope, and Stage 25 has not started.
 
 This orchestration layer calls the accepted Stage 21 and Stage 22 Python APIs
 directly. It adds no dependency, no WANIA schema/runtime/capability/artifact

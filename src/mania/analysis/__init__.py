@@ -59,6 +59,16 @@ from mania.analysis.contact_fingerprints import (
     ContactFingerprintMatrix,
     build_contact_fingerprint_matrix,
 )
+from mania.analysis.extended_metrics import (
+    EXTENDED_METRICS_FILENAME,
+    EXTENDED_METRICS_KIND,
+    EXTENDED_METRICS_LIMITATIONS,
+    EXTENDED_METRICS_SCHEMA_VERSION,
+    EXTENDED_METRICS_STAGE,
+    ExtendedMetricsError,
+    build_extended_metrics_manifest,
+    write_extended_metrics_manifest,
+)
 from mania.analysis.graph_metrics import (
     AnalysisGraphMetricsIssue,
     AnalysisGraphMetricsOptions,
@@ -235,6 +245,11 @@ __all__ = [
     "CONFORMATION_PCA_STATUS_NO_FEATURES",
     "CONFORMATION_PCA_STATUS_ONE_FRAME",
     "CONFORMATION_PCA_STATUS_UNAVAILABLE",
+    "EXTENDED_METRICS_FILENAME",
+    "EXTENDED_METRICS_KIND",
+    "EXTENDED_METRICS_LIMITATIONS",
+    "EXTENDED_METRICS_SCHEMA_VERSION",
+    "EXTENDED_METRICS_STAGE",
     "COMPARISON_STATUS_COMPUTED",
     "COMPARISON_STATUS_SKIPPED_IDENTITY_CONFLICT",
     "COMPARISON_STATUS_SKIPPED_INSUFFICIENT_DATA",
@@ -256,6 +271,7 @@ __all__ = [
     "ConformationPcaError",
     "ConformationPcaProjection",
     "ConformationPcaRow",
+    "ExtendedMetricsError",
     "GraphMetricsError",
     "GraphTopologyMetrics",
     "NodeTopologyMetrics",
@@ -320,6 +336,7 @@ __all__ = [
     "build_contact_fingerprint_matrix",
     "build_conformation_clusters",
     "build_conformation_pca_projection",
+    "build_extended_metrics_manifest",
     "build_static_rin_graph",
     "build_temporal_rin_window_graphs",
     "compute_analysis_graph_metrics_from_graph_json",
@@ -344,6 +361,7 @@ __all__ = [
     "write_temporal_rin_csv",
     "write_conformation_pca_csv",
     "write_conformation_labels_csv",
+    "write_extended_metrics_manifest",
     "run_analysis",
     "summary_to_json_payload",
 ]

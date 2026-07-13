@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +25,10 @@ from mania.analysis.conformation_pca import (
 from mania.analysis.contact_fingerprints import (
     ContactFingerprintMatrix,
     build_contact_fingerprint_matrix,
+)
+from mania.analysis.extended_metrics import (
+    clustering_metadata_for_basis,
+    write_extended_metrics_manifest,
 )
 from mania.analysis.static_rin_communities import (
     StaticRinCommunities,
@@ -140,8 +144,15 @@ class AnalyzeConditionResult:
     conformation_pca_csv: Path
     conformation_labels_csv: Path
     temporal_status: str
+    region_enrichment_status: str
     pca_status: str
+    pca_n_components: int
     clustering_status: str
+    clustering_algorithm: str
+    clustering_input_source: str
+    clustering_pca_status: str
+    clustering_selected_k: int | None
+    pca_components_used_for_clustering: int | None
 
     @property
     def artifacts(self) -> tuple[Path, ...]:
@@ -159,25 +170,33 @@ class AnalyzeConditionResult:
 
 @dataclass(frozen=True)
 class AnalyzeRunResult:
-    """Completed Stage 24.C run summary."""
+    """Completed Stage 24.C/24.D run summary."""
 
     request: AnalyzeRequest
     analysis_root: Path
     condition_results: tuple[AnalyzeConditionResult, ...]
     comparison_csv: Path
     stats_csv: Path
+    extended_metrics_json: Path | None = None
     skipped: tuple[AnalyzeSkip, ...] = ()
     diagnostics_issues: tuple[AnalyzeDiagnosticIssue, ...] = ()
 
     @property
-    def artifacts(self) -> tuple[Path, ...]:
-        """Return all owned artifacts in deterministic order."""
+    def current_run_artifacts(self) -> tuple[Path, ...]:
+        """Return current-run scientific artifacts before the manifest."""
         condition_artifacts = tuple(
             artifact
             for result in self.condition_results
             for artifact in result.artifacts
         )
         return condition_artifacts + (self.comparison_csv, self.stats_csv)
+
+    @property
+    def artifacts(self) -> tuple[Path, ...]:
+        """Return all owned artifacts in deterministic order."""
+        if self.extended_metrics_json is None:
+            return self.current_run_artifacts
+        return self.current_run_artifacts + (self.extended_metrics_json,)
 
     def to_summary(self) -> dict[str, object]:
         """Return the compact deterministic stdout JSON payload."""
@@ -263,7 +282,11 @@ def run_analysis(request: AnalyzeRequest) -> AnalyzeRunResult:
     analysis_root = _analysis_root(request.output_root)
     _validate_owned_output_dirs(analysis_root, request.conditions)
     condition_results = tuple(
-        _write_condition_artifacts(computation, analysis_root)
+        _write_condition_artifacts(
+            computation,
+            analysis_root,
+            request=request,
+        )
         for computation in computations
     )
     comparison_csv, stats_csv, comparison_skip = _write_comparison_artifacts(
@@ -272,7 +295,7 @@ def run_analysis(request: AnalyzeRequest) -> AnalyzeRunResult:
         condition_results,
     )
     skipped = () if comparison_skip is None else (comparison_skip,)
-    return AnalyzeRunResult(
+    result = AnalyzeRunResult(
         request=request,
         analysis_root=analysis_root,
         condition_results=condition_results,
@@ -280,6 +303,8 @@ def run_analysis(request: AnalyzeRequest) -> AnalyzeRunResult:
         stats_csv=stats_csv,
         skipped=skipped,
     )
+    manifest_path = write_extended_metrics_manifest(result)
+    return replace(result, extended_metrics_json=manifest_path)
 
 
 def _validate_request(request: AnalyzeRequest) -> None:
@@ -513,6 +538,8 @@ def _validate_owned_output_dirs(
 def _write_condition_artifacts(
     computation: _ConditionComputation,
     analysis_root: Path,
+    *,
+    request: AnalyzeRequest,
 ) -> AnalyzeConditionResult:
     condition_root = analysis_root / computation.condition
     try:
@@ -549,6 +576,14 @@ def _write_condition_artifacts(
             f"analysis artifact write failed for condition "
             f"{computation.condition!r}: {error}"
         ) from error
+    (
+        clustering_algorithm,
+        clustering_input_source,
+        clustering_pca_status,
+    ) = clustering_metadata_for_basis(request.clustering_basis)
+    pca_components_used_for_clustering = (
+        _pca_components_used_for_clustering(computation, request=request)
+    )
     return AnalyzeConditionResult(
         condition=computation.condition,
         graph_json=graph_json,
@@ -559,8 +594,15 @@ def _write_condition_artifacts(
         conformation_pca_csv=conformation_pca_csv,
         conformation_labels_csv=conformation_labels_csv,
         temporal_status=computation.window_graphs.status,
+        region_enrichment_status=_region_enrichment_status(computation.enrichment),
         pca_status=computation.pca_projection.status,
+        pca_n_components=computation.pca_projection.n_components,
         clustering_status=computation.clustering.status,
+        clustering_algorithm=clustering_algorithm,
+        clustering_input_source=clustering_input_source,
+        clustering_pca_status=clustering_pca_status,
+        clustering_selected_k=computation.clustering.selected_k,
+        pca_components_used_for_clustering=pca_components_used_for_clustering,
     )
 
 
@@ -602,6 +644,31 @@ def _write_comparison_artifacts(
             f"cross-condition comparison artifact write failed: {error}"
         ) from error
     return artifacts.comparison_csv, artifacts.stats_csv, skip
+
+
+def _region_enrichment_status(enrichment: StaticRinRegionEnrichment) -> str:
+    statuses = tuple(row.status for row in enrichment.rows)
+    if "computed" in statuses:
+        return "computed"
+    if statuses:
+        return statuses[0]
+    return "skipped_empty_graph"
+
+
+def _pca_components_used_for_clustering(
+    computation: _ConditionComputation,
+    *,
+    request: AnalyzeRequest,
+) -> int | None:
+    if request.clustering_basis != CONFORMATION_CLUSTERING_BASIS_PCA:
+        return None
+    if computation.pca_projection.n_components <= 0:
+        return None
+    return (
+        request.pca_components_for_clustering
+        if request.pca_components_for_clustering is not None
+        else computation.pca_projection.n_components
+    )
 
 
 def _analysis_root(output_root: Path) -> Path:

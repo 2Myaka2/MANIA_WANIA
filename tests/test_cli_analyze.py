@@ -344,6 +344,7 @@ def test_default_analyze_run_writes_accepted_layout_without_wania_or_raw_md(
         "analysis/tumor/conformation_labels_tumor.csv",
         "analysis/comparison.csv",
         "analysis/stats.csv",
+        "analysis/extended_metrics.json",
     }
     assert set(summary["artifacts"]["written"]) == expected
     assert summary["artifacts"]["count"] == len(expected)
@@ -351,7 +352,7 @@ def test_default_analyze_run_writes_accepted_layout_without_wania_or_raw_md(
         path.removeprefix("analysis/") for path in expected
     }
     assert not (output_root / "wania_graph_payload.json").exists()
-    assert not list(output_root.rglob("extended_metrics.json"))
+    assert (output_root / "analysis" / "extended_metrics.json").is_file()
 
     _, pca_rows = _read_csv(
         output_root / "analysis" / "normal" / "conformation_pca_normal.csv"
