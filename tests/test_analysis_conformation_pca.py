@@ -1,14 +1,19 @@
 import csv
+import math
+import tomllib
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 import mania.analysis
+import mania.analysis.conformation_pca as pca_module
 from mania.analysis import (
     CONFORMATION_PCA_COLUMNS,
+    CONFORMATION_PCA_STATUS_COMPUTED,
     CONFORMATION_PCA_STATUS_CONSTANT_MATRIX,
     CONFORMATION_PCA_STATUS_EMPTY_INPUT,
+    CONFORMATION_PCA_STATUS_FAILED,
     CONFORMATION_PCA_STATUS_NO_FEATURES,
     CONFORMATION_PCA_STATUS_ONE_FRAME,
     CONFORMATION_PCA_STATUS_UNAVAILABLE,
@@ -22,6 +27,7 @@ from mania.analysis import (
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = REPO_ROOT / "src" / "mania" / "analysis" / "conformation_pca.py"
+PYPROJECT_PATH = REPO_ROOT / "pyproject.toml"
 
 
 def _feature(column_index: int) -> ContactFingerprintFeature:
@@ -73,7 +79,7 @@ def _matrix(
     )
 
 
-def test_nonconstant_binary_fingerprints_have_truthful_unavailable_projection(
+def test_nonconstant_binary_fingerprints_have_default_disabled_projection(
 ) -> None:
     fingerprints = _matrix()
     projection = build_conformation_pca_projection(fingerprints)
@@ -98,7 +104,140 @@ def test_nonconstant_binary_fingerprints_have_truthful_unavailable_projection(
         == (None, None, None, None, None, None)
         for row in projection.rows
     )
-    assert "no accepted numerical PCA backend" in projection.notes
+    assert "not requested" in projection.notes
+
+
+def test_numpy_is_direct_dependency_without_broader_numerical_stack() -> None:
+    with PYPROJECT_PATH.open("rb") as pyproject_file:
+        project = tomllib.load(pyproject_file)["project"]
+
+    dependencies = project["dependencies"]
+    assert isinstance(dependencies, list)
+    dependency_names = {
+        requirement.split(">=", maxsplit=1)[0].split("<", maxsplit=1)[0].lower()
+        for requirement in dependencies
+        if isinstance(requirement, str)
+    }
+
+    assert "numpy" in dependency_names
+    assert dependency_names.isdisjoint({"scikit-learn", "scipy", "pandas"})
+
+
+def test_disabled_pca_does_not_import_numpy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_import(name: str) -> object:
+        raise AssertionError(f"unexpected import: {name}")
+
+    monkeypatch.setattr(pca_module.importlib, "import_module", fail_import)
+
+    projection = build_conformation_pca_projection(_matrix())
+
+    assert projection.status == CONFORMATION_PCA_STATUS_UNAVAILABLE
+    assert projection.n_components == 0
+
+
+def test_explicit_pca_computes_centered_rank_one_projection() -> None:
+    fingerprints = _matrix(
+        values=((1,), (0,), (0,)),
+        frame_indexes=(10, 20, 30),
+        times=(0.0, 1.0, 2.0),
+    )
+
+    projection = build_conformation_pca_projection(fingerprints, enable_pca=True)
+
+    assert projection.status == CONFORMATION_PCA_STATUS_COMPUTED
+    assert projection.n_components == 1
+    assert projection.n_features == 1
+    assert projection.n_frames == 3
+    assert "centered NumPy SVD" in projection.notes
+    assert "parity not claimed" in projection.notes
+    assert [row.pc1 for row in projection.rows] == pytest.approx(
+        [2.0 / 3.0, -1.0 / 3.0, -1.0 / 3.0]
+    )
+    assert all(row.pc2 is None and row.pc3 is None for row in projection.rows)
+    assert [
+        row.explained_variance_ratio_pc1 for row in projection.rows
+    ] == pytest.approx([1.0, 1.0, 1.0])
+    assert all(
+        row.explained_variance_ratio_pc2 is None
+        and row.explained_variance_ratio_pc3 is None
+        for row in projection.rows
+    )
+
+
+def test_explicit_pca_limits_components_to_numerical_rank() -> None:
+    rank_deficient = _matrix(
+        values=((1, 1), (0, 0), (0, 0)),
+        frame_indexes=(10, 20, 30),
+        times=(None, None, None),
+    )
+    rank_three = _matrix(
+        values=(
+            (1, 0, 0),
+            (0, 1, 0),
+            (0, 0, 1),
+            (1, 1, 1),
+            (1, 0, 1),
+        ),
+        frame_indexes=(0, 1, 2, 3, 4),
+        times=(None, None, None, None, None),
+    )
+
+    rank_deficient_projection = build_conformation_pca_projection(
+        rank_deficient,
+        enable_pca=True,
+    )
+    rank_three_projection = build_conformation_pca_projection(
+        rank_three,
+        enable_pca=True,
+    )
+
+    assert rank_deficient_projection.n_components == 1
+    assert all(
+        row.pc1 is not None and row.pc2 is None and row.pc3 is None
+        for row in rank_deficient_projection.rows
+    )
+    assert rank_three_projection.n_components == 3
+    assert all(
+        row.pc1 is not None and row.pc2 is not None and row.pc3 is not None
+        for row in rank_three_projection.rows
+    )
+
+
+def test_explicit_pca_is_deterministic_and_csv_is_byte_stable(
+    tmp_path: Path,
+) -> None:
+    first_projection = build_conformation_pca_projection(
+        _matrix(),
+        enable_pca=True,
+    )
+    second_projection = build_conformation_pca_projection(
+        _matrix(),
+        enable_pca=True,
+    )
+    output_dir = tmp_path / "analysis" / "normal"
+    output = write_conformation_pca_csv(first_projection, output_dir)
+    first_bytes = output.read_bytes()
+    write_conformation_pca_csv(second_projection, output_dir)
+    text = output.read_text(encoding="utf-8").lower()
+
+    assert first_projection == second_projection
+    assert output.read_bytes() == first_bytes
+    assert "nan" not in text
+    assert "inf" not in text
+    assert all(
+        value is None or math.isfinite(value)
+        for row in first_projection.rows
+        for value in (
+            row.pc1,
+            row.pc2,
+            row.pc3,
+            row.explained_variance_ratio_pc1,
+            row.explained_variance_ratio_pc2,
+            row.explained_variance_ratio_pc3,
+        )
+    )
 
 
 def test_centered_binary_values_distinguish_constant_and_nonconstant_inputs(
@@ -208,18 +347,48 @@ def test_invalid_fingerprint_values_and_shape_are_rejected(tmp_path: Path) -> No
         )
 
 
-def test_public_api_and_dependency_boundary_are_stage22e_only() -> None:
+def test_enabled_pca_failure_is_explicit_without_fake_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_compute(
+        fingerprints: ContactFingerprintMatrix,
+    ) -> object:
+        raise RuntimeError("synthetic SVD failure")
+
+    monkeypatch.setattr(pca_module, "_compute_pca_values", fail_compute)
+
+    projection = build_conformation_pca_projection(_matrix(), enable_pca=True)
+
+    assert projection.status == CONFORMATION_PCA_STATUS_FAILED
+    assert projection.n_components == 0
+    assert all(
+        (
+            row.pc1,
+            row.pc2,
+            row.pc3,
+            row.explained_variance_ratio_pc1,
+            row.explained_variance_ratio_pc2,
+            row.explained_variance_ratio_pc3,
+        )
+        == (None, None, None, None, None, None)
+        for row in projection.rows
+    )
+
+
+def test_public_api_and_forbidden_dependency_boundaries() -> None:
     assert (
         mania.analysis.build_conformation_pca_projection
         is build_conformation_pca_projection
     )
     assert mania.analysis.write_conformation_pca_csv is write_conformation_pca_csv
+    assert (
+        mania.analysis.CONFORMATION_PCA_STATUS_COMPUTED
+        == CONFORMATION_PCA_STATUS_COMPUTED
+    )
     source = MODULE_PATH.read_text(encoding="utf-8")
 
     for forbidden in (
         "MDAnalysis",
-        "import numpy",
-        "from numpy",
         "pandas",
         "pyarrow",
         "sklearn",

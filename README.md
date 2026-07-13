@@ -251,6 +251,13 @@ explicit dependency decision is required before centered SVD, up to three
 components, explained variance, and deterministic loading-sign stabilization
 can emit computed coordinates.
 
+Stage 24.A provides that explicit dependency decision for MANIA only. NumPy is
+now an accepted direct dependency, and computed PCA is available only when the
+analysis API is called with `enable_pca=True`. The default
+`enable_pca=False` path preserves the Stage 22.E fallback: no PCA computation,
+no fake coordinates, blank explained-variance fields, and the existing
+`pca_unavailable` status for nonconstant inputs.
+
 Stage 22.E does not implement k-means, silhouette selection, cluster labels,
 representative frames, or `conformation_labels_{condition}.csv`. It does not
 use temporal RINs, distances, frequencies, or trajectories as PCA input and
@@ -278,16 +285,16 @@ lowest `frame_index` breaking distance ties. Empty, featureless, insufficient,
 constant, and no-valid-candidate inputs receive explicit statuses and no
 invented labels, scores, representatives, or centroid distances.
 
-PCA coordinates remain unavailable under the accepted dependency boundary,
-so Stage 22.F does not use PCA coordinates and does not claim notebook PCA to
+Stage 22.F does not use PCA coordinates and does not claim notebook PCA to
 k-means parity. The artifact records `algorithm =
 deterministic_kmeans_fingerprint`, `input_source =
 contact_fingerprint_matrix`, `pca_status = pca_unavailable`, and
 `notebook_parity = not_pca_kmeans_parity`. Full notebook parity remains a
-future explicit numerical-backend decision. Stage 22.F does not implement
-computed PCA, change `conformation_pca_{condition}.csv` or
-`temporal_rin_{condition}.csv`, alter prior Stage 20–22 artifacts, or change
-the accepted WANIA payload contract.
+future explicit decision. Stage 24.A does not change fingerprint clustering:
+PCA-based clustering remains unimplemented and belongs to Stage 24.B only
+after explicit approval. Stage 22.F does not change
+`conformation_pca_{condition}.csv` or `temporal_rin_{condition}.csv`, alter
+prior Stage 20–22 artifacts, or change the accepted WANIA payload contract.
 
 ## Stage 22.G Temporal/Conformation Validation And Alignment Status
 
@@ -301,12 +308,13 @@ ordering, optional `time_ps`, explicit status/notes behavior, and header-only
 empty artifacts. No accepted Stage 22 schema or scientific algorithm changes
 in this consolidation pass.
 
-PCA coordinates remain unavailable under the current dependency boundary:
-`pca_unavailable` rows keep `n_components = 0`, blank component coordinates,
-and blank explained-variance ratios. Conformation labels remain derived from
-binary contact fingerprints; Stage 22.F does not use PCA coordinates and does
-not claim notebook PCA-to-k-means parity. Computed PCA and full notebook parity
-require future explicit numerical-backend approval.
+Default PCA output remains disabled: `pca_unavailable` rows keep
+`n_components = 0`, blank component coordinates, and blank explained-variance
+ratios unless PCA is explicitly enabled. Conformation labels remain derived
+from binary contact fingerprints; Stage 22.F does not use PCA coordinates and
+does not claim notebook PCA-to-k-means parity. Computed PCA is implemented
+only for the Stage 24.A opt-in MANIA path, and full notebook parity is not
+claimed.
 
 The accepted WANIA payload contract remains unchanged. WANIA temporal
 animation, WANIA conformation UI, and a WANIA typed-RIN schema remain deferred.
@@ -395,11 +403,51 @@ remain separate optional scientific files. Their contents are not copied into
 `graph.nodes` or `graph.edges`, and missing optional science is not a
 base-render diagnostics failure.
 
-Computed PCA remains unavailable, and conformation labels remain
-fingerprint-based rather than PCA-based. Notebook PCA-to-k-means parity,
-Louvain, MWU, bootstrap confidence intervals, p-values, FDR-BH, and full
-statistical parity are not claimed. Stage 24 has not started. API, Docker,
-database, frontend implementation, and production workers remain future scope.
+At Stage 23 close, computed PCA remained unavailable and conformation labels
+remained fingerprint-based rather than PCA-based. Stage 24.A now adds optional
+computed PCA for MANIA only; fingerprint clustering remains the default and
+does not use PCA coordinates. Notebook PCA-to-k-means parity, Louvain, MWU,
+bootstrap confidence intervals, p-values, FDR-BH, and full statistical parity
+are not claimed. API, Docker, database, frontend implementation, production
+workers, and the postponed Stage 25 Minimal API layer remain future scope.
+
+## Stage 24.A Optional Computed PCA Status
+
+Stage 24.A approves NumPy as a direct project dependency for optional MANIA
+computed PCA. PCA is not part of the default analysis path: callers must pass
+`enable_pca=True` to `build_conformation_pca_projection(...)` to compute
+coordinates. With the default `enable_pca=False`, MANIA does not import or run
+NumPy PCA code and continues to emit blank coordinates and blank explained
+variance values for nonconstant inputs.
+
+The PCA input contract is unchanged:
+`ContactFingerprintMatrix.values` is the only accepted matrix. Rows are
+sampled frames, columns are deterministic normalized residue-pair/type
+features, and values are binary 0/1 contact fingerprints. PCA does not use
+temporal metrics, contact frequencies, distance summaries, WANIA render
+coordinates, graph coordinates, C-alpha coordinates, or Stage 21 metrics.
+
+When explicitly enabled, MANIA computes PCA with centered NumPy SVD. It
+subtracts each feature mean, computes up to three rank-supported components,
+stabilizes each component sign by the largest absolute loading with the lowest
+feature-index tie break, and writes finite deterministic coordinates and
+explained-variance ratios to the existing
+`analysis/{condition}/conformation_pca_{condition}.csv` schema. Unavailable
+components remain blank. Empty, one-frame, zero-feature, constant/all-zero, and
+failed numerical inputs are skipped honestly with explicit statuses and no fake
+coordinates or explained-variance ratios.
+
+The original v1.2 notebook was inspected. Its conformation cell builds dense
+binary fingerprints, centers them with `StandardScaler(with_std=False)`, does
+not standardize them, uses scikit-learn `PCA`, and performs k-means on PCA
+coordinates. The notebook code does not show deterministic component-sign
+stabilization. Stage 24.A therefore implements centered NumPy SVD and does not
+claim exact notebook parity.
+
+Stage 24.A does not implement PCA-based clustering, `mania analyze`,
+`extended_metrics.json`, WANIA schema or payload changes, API/frontend work,
+Docker, database models, or production workers. Stage 25 Minimal API is
+postponed.
 
 ## Current Backend Workflow
 
@@ -868,12 +916,14 @@ The planning-level scientific roadmap is:
 - **Stage 21 — RIN analysis parity.**
 - **Stage 22 — Temporal RIN + conformational artifacts.**
 - **Stage 23 — WANIA RIN alignment.**
+- **Stage 24.A — Optional computed PCA with direct NumPy dependency.**
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
-Stages 20–23 are now complete within their accepted boundaries. FastAPI/upload
-and job APIs, Docker/demo packaging, database models, production API serving,
-and frontend implementation remain separately scoped later work; Stage 24 has
-not started.
+Stages 20–23 are now complete within their accepted boundaries, and Stage 24.A
+adds opt-in computed PCA without changing WANIA or clustering defaults.
+FastAPI/upload and job APIs, Docker/demo packaging, database models,
+production API serving, frontend implementation, and Stage 25 remain
+separately scoped later work.
 
 ## Documentation
 

@@ -48,11 +48,12 @@ def test_stage22_docs_preserve_pca_clustering_and_future_boundaries() -> None:
     text = _text()
 
     for phrase in (
-        "PCA coordinates remain unavailable",
+        "NumPy is now an accepted direct dependency",
+        "computed PCA is available only when",
+        "enable_pca=True",
         "does not use PCA coordinates",
         "does not claim notebook PCA",
-        "future explicit numerical-backend approval",
-        "Stage 23 has not started",
+        "PCA-based clustering remains unimplemented",
         "WANIA temporal animation",
         "WANIA conformation UI",
         "WANIA typed-RIN schema",
@@ -60,16 +61,18 @@ def test_stage22_docs_preserve_pca_clustering_and_future_boundaries() -> None:
         "cross-protein comparison",
         "non-protein heterograph support",
         "accepted WANIA payload contract remains unchanged",
+        "Stage 25 Minimal API is postponed",
     ):
         assert phrase in text
 
     for forbidden_claim in (
-        "computed PCA is implemented",
         "PCA-based clustering is implemented",
         "notebook PCA-to-k-means parity is achieved",
         "Louvain is implemented",
         "WANIA temporal UI is implemented",
         "WANIA conformation UI is implemented",
-        "Stage 23 is implemented",
+        "mania analyze is implemented",
+        "extended_metrics.json is implemented",
+        "Stage 25 Minimal API is implemented",
     ):
         assert forbidden_claim not in text
