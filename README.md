@@ -286,13 +286,17 @@ constant, and no-valid-candidate inputs receive explicit statuses and no
 invented labels, scores, representatives, or centroid distances.
 
 Stage 22.F does not use PCA coordinates and does not claim notebook PCA to
-k-means parity. The artifact records `algorithm =
+k-means parity. The default artifact records `algorithm =
 deterministic_kmeans_fingerprint`, `input_source =
 contact_fingerprint_matrix`, `pca_status = pca_unavailable`, and
-`notebook_parity = not_pca_kmeans_parity`. Full notebook parity remains a
-future explicit decision. Stage 24.A does not change fingerprint clustering:
-PCA-based clustering remains unimplemented and belongs to Stage 24.B only
-after explicit approval. Stage 22.F does not change
+`notebook_parity = not_pca_kmeans_parity`. Stage 24.B adds an optional
+explicit PCA clustering basis without changing this default: callers must pass
+`clustering_basis="pca"` and a computed in-memory `ConformationPcaProjection`.
+Supplying a projection alone does not switch modes, PCA is not silently
+enabled, and no silent fallback to fingerprints occurs. PCA-mode metadata
+records `algorithm = deterministic_kmeans_pca`, `input_source =
+conformation_pca_coordinates`, `pca_status = computed`, and a truthful
+notebook-parity-not-claimed value. Stage 22.F does not change
 `conformation_pca_{condition}.csv` or `temporal_rin_{condition}.csv`, alter
 prior Stage 20–22 artifacts, or change the accepted WANIA payload contract.
 
@@ -311,10 +315,10 @@ in this consolidation pass.
 Default PCA output remains disabled: `pca_unavailable` rows keep
 `n_components = 0`, blank component coordinates, and blank explained-variance
 ratios unless PCA is explicitly enabled. Conformation labels remain derived
-from binary contact fingerprints; Stage 22.F does not use PCA coordinates and
-does not claim notebook PCA-to-k-means parity. Computed PCA is implemented
-only for the Stage 24.A opt-in MANIA path, and full notebook parity is not
-claimed.
+from binary contact fingerprints by default; Stage 22.F does not use PCA
+coordinates and does not claim notebook PCA-to-k-means parity. Stage 24.A adds
+opt-in computed PCA, and Stage 24.B adds opt-in PCA clustering. Full notebook
+parity is not claimed.
 
 The accepted WANIA payload contract remains unchanged. WANIA temporal
 animation, WANIA conformation UI, and a WANIA typed-RIN schema remain deferred.
@@ -448,6 +452,48 @@ Stage 24.A does not implement PCA-based clustering, `mania analyze`,
 `extended_metrics.json`, WANIA schema or payload changes, API/frontend work,
 Docker, database models, or production workers. Stage 25 Minimal API is
 postponed.
+
+## Stage 24.B Optional PCA-Based Clustering Status
+
+Stage 24.B adds a second conformation clustering basis to
+`build_conformation_clusters(...)`: `fingerprint` remains the default, and
+`pca` is explicit opt-in only through `clustering_basis="pca"`. Fingerprint
+clustering continues to use direct binary residue-contact-pattern similarity
+from `ContactFingerprintMatrix.values`. PCA clustering uses proximity in the
+reduced PCA feature space from a successfully computed in-memory
+`ConformationPcaProjection`.
+
+PCA mode requires a supplied projection with `status = computed`, at least one
+retained component, finite coordinates, matching condition, matching frame
+count, matching frame order and `frame_index`, and non-conflicting `time_ps`
+where both sides provide time. Invalid PCA configuration fails explicitly; it
+does not fall back to fingerprint clustering. Supplying a computed projection
+while leaving the basis at the default does not switch modes, and PCA is not
+silently enabled.
+
+By default, PCA clustering uses all successfully computed components retained
+by the accepted Stage 24.A projection artifact, currently up to PC1-PC3.
+Callers may pass `pca_components_for_clustering=N` to use the first `N`
+computed components. `N` must be an integer from 1 through
+`projection.n_components`; unavailable component columns are not filled or
+silently ignored.
+
+Both bases reuse the same deterministic dependency-free k-means framework,
+candidate-k range, Euclidean silhouette calculation, selected-k tie behavior,
+state relabeling, CSV serialization, and no-fake-value skipped behavior. The
+active feature vectors are the only difference. Representative frames and
+`distance_to_centroid` are computed in the active clustering space. PCA-mode
+CSV metadata uses `deterministic_kmeans_pca`,
+`conformation_pca_coordinates`, `computed`, and a notebook parity value that
+states parity is not claimed.
+
+The v1.2 notebook clusters over all PCA score columns from
+`n_comp = min(10, n_frames - 1, len(all_pairs) - 1)` after centering with
+`StandardScaler(with_std=False)`, while it exports only PC1/PC2/PC3 for
+visualization. MANIA Stage 24.B therefore implements PCA-based clustering but
+does not claim exact notebook parity. `mania analyze`, `extended_metrics.json`,
+WANIA changes, API/frontend work, Docker, database models, production workers,
+and Stage 25 Minimal API remain unimplemented.
 
 ## Current Backend Workflow
 
@@ -917,10 +963,12 @@ The planning-level scientific roadmap is:
 - **Stage 22 — Temporal RIN + conformational artifacts.**
 - **Stage 23 — WANIA RIN alignment.**
 - **Stage 24.A — Optional computed PCA with direct NumPy dependency.**
+- **Stage 24.B — Optional explicit PCA-based clustering mode.**
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
-Stages 20–23 are now complete within their accepted boundaries, and Stage 24.A
-adds opt-in computed PCA without changing WANIA or clustering defaults.
+Stages 20–23 are now complete within their accepted boundaries. Stage 24.A
+adds opt-in computed PCA, and Stage 24.B adds opt-in PCA clustering without
+changing WANIA or fingerprint clustering defaults.
 FastAPI/upload and job APIs, Docker/demo packaging, database models,
 production API serving, frontend implementation, and Stage 25 remain
 separately scoped later work.

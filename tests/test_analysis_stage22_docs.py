@@ -53,7 +53,14 @@ def test_stage22_docs_preserve_pca_clustering_and_future_boundaries() -> None:
         "enable_pca=True",
         "does not use PCA coordinates",
         "does not claim notebook PCA",
-        "PCA-based clustering remains unimplemented",
+        "Stage 24.B",
+        "clustering_basis=\"pca\"",
+        "`fingerprint` remains the default",
+        "PCA clustering uses all successfully computed components",
+        "PCA is not silently enabled",
+        "no silent fallback to fingerprints",
+        "PCA-based clustering over the accepted MANIA projection artifact",
+        "does not claim exact notebook parity",
         "WANIA temporal animation",
         "WANIA conformation UI",
         "WANIA typed-RIN schema",
@@ -66,7 +73,6 @@ def test_stage22_docs_preserve_pca_clustering_and_future_boundaries() -> None:
         assert phrase in text
 
     for forbidden_claim in (
-        "PCA-based clustering is implemented",
         "notebook PCA-to-k-means parity is achieved",
         "Louvain is implemented",
         "WANIA temporal UI is implemented",
