@@ -671,7 +671,95 @@ API/frontend integration remains future scope, and Stage 25 has not started.
 
 Stage 24.C adds no dependency and changes no Stage 20, Stage 21, Stage 22, or
 Stage 23 WANIA contract. It does not implement API/frontend/Docker/database
-or worker code, final biological interpretation, Stage 24.E, or Stage 25.
+or worker code, final biological interpretation, or Stage 25.
+
+#### Stage 24.E validation and acceptance
+
+Stage 24.E validates the integrated Stage 24.A-24.D behavior and closes
+Stage 24 without adding production behavior. The validation uses small
+synthetic Stage 20-style inputs, not real MD data. It confirms default
+analysis, explicit PCA computation with fingerprint clustering,
+explicit PCA clustering, single-condition and multi-condition runs,
+degenerate optional PCA, deterministic stdout/artifact bytes, and the
+MANIA/WANIA boundary.
+
+`mania analyze` remains a MANIA analysis command over already generated
+Stage 20 artifacts. It remains separate from preprocessing and WANIA: raw MD
+trajectories are not read, Stage 20 preprocessing is not rerun, WANIA payload
+assembly is not invoked, and `wania_graph_payload.json` is not written.
+
+`analysis/extended_metrics.json` remains MANIA-only. It has schema version
+`mania.extended_metrics.v0.1`, is generated automatically by `mania analyze`,
+is built from `AnalyzeRunResult` and current-run artifact ownership, does not
+parse stdout, does not scan arbitrary output files, references only current-run
+artifacts, uses paths relative to the run output root, and does not inline
+scientific tables.
+
+PCA status terminology is intentionally two-layered. When `enable_pca=False`,
+`conformation_pca_{condition}.csv` may use the accepted compatibility status
+`pca_unavailable`, while `analysis/extended_metrics.json` represents the run
+intent as `enabled = false` and `status = not_requested`. Default-disabled PCA
+is not a failed numerical attempt.
+
+Fingerprint and PCA clustering answer different scientific questions and are
+not scientifically interchangeable. Fingerprint clustering clusters frames by
+direct binary residue-contact-pattern similarity. PCA clustering clusters
+frames by proximity in reduced PCA feature space. Fingerprint remains the
+default, PCA clustering is explicit opt-in, and no silent fallback occurs.
+
+PCA input preparation is aligned with centered, non-standardized fingerprint
+input observed in the notebook. Repository PCA uses centered NumPy SVD.
+Repository clustering uses deterministic internal k-means. Exact notebook PCA
+parity, exact sklearn KMeans parity, and exact notebook label parity are not
+claimed.
+
+##### Completed Stage 24 acceptance checklist
+
+- [x] NumPy is an accepted direct dependency.
+- [x] No scikit-learn, SciPy, or pandas dependency was added.
+- [x] PCA is optional.
+- [x] PCA is disabled by default.
+- [x] PCA requires explicit enablement.
+- [x] PCA input is `ContactFingerprintMatrix.values`.
+- [x] PCA uses centered NumPy SVD.
+- [x] PCA component signs are stabilized deterministically.
+- [x] Degenerate PCA inputs emit honest statuses.
+- [x] No fake PCA values are emitted.
+- [x] No NaN or Infinity values are emitted.
+- [x] Fingerprint clustering remains default.
+- [x] PCA clustering is explicit opt-in.
+- [x] No silent clustering fallback occurs.
+- [x] Both clustering modes have truthful provenance.
+- [x] Representative frames use the active clustering space.
+- [x] `mania analyze` is implemented.
+- [x] `mania analyze` is separate from preprocessing.
+- [x] `mania analyze` is separate from WANIA.
+- [x] Raw MD trajectories are not read by `mania analyze`.
+- [x] Stage 20 preprocessing is not rerun.
+- [x] Stage 21/22 outputs are available through the CLI.
+- [x] Single-condition behavior is truthful.
+- [x] Multi-condition behavior is deterministic.
+- [x] Stdout summary is deterministic and machine-readable.
+- [x] `analysis/extended_metrics.json` is implemented.
+- [x] Manifest schema is `mania.extended_metrics.v0.1`.
+- [x] Manifest references current-run artifacts only.
+- [x] Manifest paths are relative and portable.
+- [x] Manifest does not inline scientific tables.
+- [x] PCA intent and computation status are distinguished.
+- [x] WANIA JSON is unchanged.
+- [x] WANIA runtime schema is unchanged.
+- [x] WANIA adapter/writer behavior is unchanged.
+- [x] WANIA capability derivation is unchanged.
+- [x] WANIA artifact mapping is unchanged.
+- [x] WANIA fixtures are unchanged.
+- [x] `wania_graph_payload.json` is unchanged.
+- [x] Stage 20 schemas are unchanged.
+- [x] Stage 21 schemas and algorithms are unchanged.
+- [x] Stage 22 schemas remain compatible.
+- [x] Stage 23 MANIA/WANIA boundary is preserved.
+- [x] Stage 25 has not started.
+- [x] No API, Docker, database, frontend, or worker work was added.
+- [x] No raw/local/generated MD outputs were committed.
 
 ## 5. Out of MANIA scientific MVP / v2 scope
 
@@ -772,7 +860,7 @@ This is planning-level ownership only; it does not create implementation tasks.
 | Stage 21 — RIN analysis parity | **Completed through Stage 21.F:** accepted static graph, metrics, communities, enrichment, conservative node comparison/statistics, and validation/docs/tests alignment. |
 | Stage 22 — Temporal RIN + conformational artifacts | **Completed through Stage 22.G:** accepted temporal input/windows, window graphs/metrics, contact fingerprints, PCA-unavailable and fingerprint-clustering artifacts, representatives, and validation/docs/tests alignment. |
 | Stage 23 — WANIA RIN alignment | **Completed through Stage 23.E:** accepted MANIA/WANIA boundary, conservative capabilities, optional file-reference policy, deterministic contract protection, and documentation acceptance checklist without expanding the base render contract. |
-| Stage 24 — Optional PCA refinement and analysis orchestration | **Completed through Stage 24.C:** explicit opt-in computed PCA, explicit opt-in PCA clustering, and the `mania analyze` orchestration CLI, with PCA disabled by default, fingerprint clustering as default, and WANIA defaults unchanged. |
+| Stage 24 — Optional PCA refinement and analysis orchestration | **Completed through Stage 24.E:** explicit opt-in computed PCA, explicit opt-in PCA clustering, the `mania analyze` orchestration CLI, the MANIA-only `analysis/extended_metrics.json` manifest, and validation/docs/acceptance closure, with PCA disabled by default, fingerprint clustering as default, Stage 25 not started, and WANIA unchanged. |
 
 ## 10. Non-goals
 

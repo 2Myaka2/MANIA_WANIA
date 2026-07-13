@@ -517,19 +517,24 @@ root metadata files such as `edge_semantics.json`, `mania_manifest.json`, and
 read raw trajectories, does not rerun preprocessing or contact generation, and
 does not invoke WANIA payload assembly.
 
-`--output` is the run root. Accepted analysis artifacts are written below
-`<output>/analysis/` without recursively cleaning that directory:
+`--output` is the run root. Scientific artifacts are written below
+`<output>/analysis/` without recursively cleaning that directory. The
+canonical Stage 24 analysis layout is:
 
 ```text
-analysis/{condition}/graph.json
-analysis/{condition}/centrality_{condition}.csv
-analysis/{condition}/communities_{condition}.csv
-analysis/{condition}/region_enrichment_{condition}.csv
-analysis/{condition}/temporal_rin_{condition}.csv
-analysis/{condition}/conformation_pca_{condition}.csv
-analysis/{condition}/conformation_labels_{condition}.csv
-analysis/comparison.csv
-analysis/stats.csv
+<output>/
+`-- analysis/
+    |-- extended_metrics.json
+    |-- comparison.csv
+    |-- stats.csv
+    `-- {condition}/
+        |-- graph.json
+        |-- centrality_{condition}.csv
+        |-- communities_{condition}.csv
+        |-- region_enrichment_{condition}.csv
+        |-- temporal_rin_{condition}.csv
+        |-- conformation_pca_{condition}.csv
+        `-- conformation_labels_{condition}.csv
 ```
 
 The default run keeps PCA disabled and clusters directly from contact
@@ -628,6 +633,15 @@ directly. It adds no dependency, no WANIA schema/runtime/capability/artifact
 mapping change, no API/frontend/Docker/database/worker code, and no final
 biological interpretation. Repeated runs over identical inputs and options are
 intended to produce byte-identical analysis artifacts and stdout JSON.
+
+Stage 24.E validates this integrated workflow with small synthetic Stage
+20-style inputs and closes Stage 24 as a MANIA-only backend/scientific stage.
+The closure keeps PCA optional and disabled by default, keeps fingerprint
+clustering as the default, keeps PCA clustering explicit opt-in with no silent
+fallback, and preserves the distinction between the stdout summary and
+`analysis/extended_metrics.json`. WANIA JSON, runtime schema, adapter/writer
+behavior, capabilities, artifact mapping, fixtures, and
+`wania_graph_payload.json` remain unchanged. Stage 25 has not started.
 
 ## Current Backend Workflow
 
@@ -1099,13 +1113,16 @@ The planning-level scientific roadmap is:
 - **Stage 24.A — Optional computed PCA with direct NumPy dependency.**
 - **Stage 24.B — Optional explicit PCA-based clustering mode.**
 - **Stage 24.C — Analysis orchestration CLI.**
+- **Stage 24.D — MANIA-only `analysis/extended_metrics.json` manifest.**
+- **Stage 24.E — Validation, documentation, and Stage 24 acceptance.**
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
 Stages 20–23 are now complete within their accepted boundaries. Stage 24.A
 adds opt-in computed PCA, Stage 24.B adds opt-in PCA clustering without
-changing WANIA or fingerprint clustering defaults, and Stage 24.C wires the
+changing WANIA or fingerprint clustering defaults, Stage 24.C wires the
 accepted preprocessing-input-to-analysis-artifact workflow through
-`mania analyze`.
+`mania analyze`, Stage 24.D writes the MANIA-only manifest, and Stage 24.E
+validates and closes the integrated Stage 24 workflow.
 FastAPI/upload and job APIs, Docker/demo packaging, database models,
 production API serving, frontend implementation, and Stage 25 remain
 separately scoped later work.
@@ -1132,7 +1149,8 @@ separately scoped later work.
 - `docs/mania_rin_mvp_gap_matrix.md`: Stage 19.1 inventory of RIN requirements,
   repository evidence, coverage, and unresolved naming/contract gaps.
 - `docs/mania_rin_mvp_scope_v0_1.md`: Stage 19.2 MANIA scientific MVP scope
-  freeze, WANIA boundary, and planning-level Stage 20–23 ownership.
+  freeze, WANIA boundary, planning-level ownership, and the completed Stage 24
+  acceptance checklist.
 - `docs/preprocessing_graph_workflow_contract.md`: workflow APIs, options, and
   output layout.
 - `docs/local_scientific_integration_tests.md`: local-only real MD smoke test
