@@ -554,9 +554,92 @@ The v1.2 notebook uses `n_comp = min(10, n_frames - 1, len(all_pairs) - 1)`,
 runs k-means and silhouette over all PCA score columns, and exports only up to
 PC1/PC2/PC3 for visualization. Stage 24.B implements PCA-based clustering over
 the accepted MANIA projection artifact but does not claim exact notebook
-parity. `mania analyze`, `extended_metrics.json`, WANIA changes, API, Docker,
-database, frontend, production workers, and Stage 25 Minimal API remain
-unimplemented.
+parity. Stage 24.C handles analysis orchestration separately;
+`extended_metrics.json`, WANIA changes, API, Docker, database, frontend,
+production workers, and Stage 25 Minimal API remain unimplemented.
+
+#### Stage 24.C analysis orchestration CLI
+
+Stage 24.C adds `mania analyze` as a top-level MANIA command that consumes
+already generated Stage 20 preprocessing artifacts and orchestrates the
+accepted Stage 21 and Stage 22 analysis APIs. It remains separate from
+`mania preprocessing run-graph-export` and `mania wania build-payload`: it
+does not read raw trajectories, does not rerun preprocessing/contact
+generation, does not invoke WANIA payload assembly, and does not write
+`wania_graph_payload.json`.
+
+The command accepts a preprocessing input root, a run output root, and one or
+more repeated conditions:
+
+```bash
+mania analyze \
+  --input ./mania_output \
+  --output ./mania_output \
+  --condition normal \
+  --condition tumor
+```
+
+`--input` must contain `residue_table_{condition}.csv`,
+`protein_contact_edges_undirected_{condition}.csv`, and
+`contacts_perframe_{condition}.csv` for every requested condition. Optional
+root metadata files are validated when present. `--output` is the run root,
+and accepted analysis artifacts are written under `<output>/analysis/`:
+per-condition `graph.json`, `centrality`, `communities`,
+`region_enrichment`, `temporal_rin`, `conformation_pca`, and
+`conformation_labels` artifacts, plus root-level `comparison.csv` and
+`stats.csv`.
+
+Default CLI behavior preserves the accepted analysis defaults: PCA is
+disabled and clustering uses the fingerprint basis. The command still writes
+`conformation_pca_{condition}.csv` in disabled mode using the accepted
+Stage 22.E compatibility rows with blank numerical PCA fields.
+
+Explicit PCA computation is requested with:
+
+```bash
+mania analyze \
+  --input ./mania_output \
+  --output ./mania_output \
+  --condition normal \
+  --condition tumor \
+  --enable-pca
+```
+
+This computes and writes the accepted PCA projection when the fingerprint
+matrix is valid, while keeping fingerprint clustering as the default. PCA
+clustering requires both enabled PCA and an explicit basis:
+
+```bash
+mania analyze \
+  --input ./mania_output \
+  --output ./mania_output \
+  --condition normal \
+  --condition tumor \
+  --enable-pca \
+  --clustering-basis pca
+```
+
+`--pca-components-for-clustering N` is accepted only with
+`--clustering-basis pca`, and `N` must be available in the computed
+projection. PCA basis without enabled PCA, PCA components with the
+fingerprint basis, duplicate/unsafe condition names, missing Stage 20 inputs,
+condition/artifact mismatches, and invalid artifact schemas are fatal
+configuration or input errors. There is no silent PCA enablement and no silent
+fallback between clustering bases.
+
+For a single condition, per-condition outputs are written and
+`comparison.csv` / `stats.csv` are header-only; no self-comparison is
+fabricated. For multiple conditions, the accepted conservative Stage 21.E
+node-metric comparison and stats writer is used. Successful runs print one
+deterministic JSON object to stdout with portable relative artifact paths,
+requested PCA/clustering settings, skipped steps, and diagnostics. That JSON
+is a CLI summary only; it is not `extended_metrics.json` and not a Stage 24.D
+analysis manifest.
+
+Stage 24.C adds no dependency and changes no Stage 20, Stage 21, Stage 22, or
+Stage 23 WANIA contract. It does not implement API/frontend/Docker/database
+or worker code, final biological interpretation, Stage 24.D, Stage 24.E, or
+Stage 25.
 
 ## 5. Out of MANIA scientific MVP / v2 scope
 
@@ -657,7 +740,7 @@ This is planning-level ownership only; it does not create implementation tasks.
 | Stage 21 — RIN analysis parity | **Completed through Stage 21.F:** accepted static graph, metrics, communities, enrichment, conservative node comparison/statistics, and validation/docs/tests alignment. |
 | Stage 22 — Temporal RIN + conformational artifacts | **Completed through Stage 22.G:** accepted temporal input/windows, window graphs/metrics, contact fingerprints, PCA-unavailable and fingerprint-clustering artifacts, representatives, and validation/docs/tests alignment. |
 | Stage 23 — WANIA RIN alignment | **Completed through Stage 23.E:** accepted MANIA/WANIA boundary, conservative capabilities, optional file-reference policy, deterministic contract protection, and documentation acceptance checklist without expanding the base render contract. |
-| Stage 24 — Optional PCA refinement | **Completed through Stage 24.B:** explicit opt-in computed PCA and explicit opt-in PCA clustering, with fingerprint clustering and WANIA defaults unchanged. |
+| Stage 24 — Optional PCA refinement and analysis orchestration | **Completed through Stage 24.C:** explicit opt-in computed PCA, explicit opt-in PCA clustering, and the `mania analyze` orchestration CLI, with PCA disabled by default, fingerprint clustering as default, and WANIA defaults unchanged. |
 
 ## 10. Non-goals
 

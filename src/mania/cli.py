@@ -9,6 +9,13 @@ from pathlib import Path
 from typing import Any, NoReturn, cast
 
 from mania import __version__
+from mania.analysis import (
+    CONFORMATION_CLUSTERING_BASES,
+    CONFORMATION_CLUSTERING_BASIS_FINGERPRINT,
+    AnalyzeError,
+    AnalyzeRequest,
+    run_analysis,
+)
 from mania.config import load_config
 from mania.pipeline import build_pipeline_plan, format_pipeline_plan
 from mania.pipeline_steps import (
@@ -77,6 +84,18 @@ def _positive_contact_limit_value(value: str) -> int:
     return parsed
 
 
+def _positive_pca_component_value(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "must be a positive integer"
+        ) from exc
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
+
+
 def _exit_with_error(message: str) -> NoReturn:
     """Print a readable CLI error and exit with status 1."""
     raise SystemExit(message)
@@ -115,6 +134,53 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         required=True,
         help="Path to a MANIA YAML configuration file.",
+    )
+
+    analyze_parser = subparsers.add_parser(
+        "analyze",
+        help="Run accepted MANIA analysis over existing preprocessing artifacts.",
+    )
+    analyze_parser.add_argument(
+        "--input",
+        type=Path,
+        required=True,
+        help="Preprocessing output root containing accepted Stage 20 artifacts.",
+    )
+    analyze_parser.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="Run output root; analysis artifacts are written under analysis/.",
+    )
+    analyze_parser.add_argument(
+        "--condition",
+        action="append",
+        dest="conditions",
+        required=True,
+        help="Condition to analyze. Repeat for each condition.",
+    )
+    analyze_parser.add_argument(
+        "--enable-pca",
+        action="store_true",
+        help="Compute the accepted optional PCA projection.",
+    )
+    analyze_parser.add_argument(
+        "--clustering-basis",
+        choices=CONFORMATION_CLUSTERING_BASES,
+        default=CONFORMATION_CLUSTERING_BASIS_FINGERPRINT,
+        help=(
+            "Conformation clustering basis. Defaults to fingerprint; pca "
+            "requires --enable-pca."
+        ),
+    )
+    analyze_parser.add_argument(
+        "--pca-components-for-clustering",
+        type=_positive_pca_component_value,
+        default=None,
+        help=(
+            "Positive PCA component count for pca clustering. Requires "
+            "--clustering-basis pca."
+        ),
     )
 
     workflow_parser = subparsers.add_parser(
@@ -912,6 +978,28 @@ def _run_wania_build_payload_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_analyze_command(args: argparse.Namespace) -> int:
+    try:
+        request = AnalyzeRequest(
+            input_root=args.input,
+            output_root=args.output,
+            conditions=tuple(args.conditions or ()),
+            enable_pca=args.enable_pca,
+            clustering_basis=args.clustering_basis,
+            pca_components_for_clustering=args.pca_components_for_clustering,
+        )
+        result = run_analysis(request)
+    except AnalyzeError as exc:
+        print(f"Analyze failed: {exc}", file=sys.stderr)
+        return 1
+    except Exception as exc:
+        print(f"Analyze failed: {exc}", file=sys.stderr)
+        return 1
+
+    print(json.dumps(result.to_summary(), sort_keys=True))
+    return 0
+
+
 def main() -> None:
     """Run the MANIA command-line interface."""
     parser = build_parser()
@@ -932,6 +1020,12 @@ def main() -> None:
             _exit_with_error(f"Config is invalid: {args.config}\n{exc}")
         plan = build_pipeline_plan(config)
         print(format_pipeline_plan(plan))
+        return
+
+    if args.command == "analyze":
+        exit_code = _run_analyze_command(args)
+        if exit_code != 0:
+            raise SystemExit(exit_code)
         return
 
     if args.command == "workflow" and args.workflow_command == "run":

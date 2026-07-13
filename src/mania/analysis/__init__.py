@@ -74,6 +74,18 @@ from mania.analysis.graph_metrics_export import (
     AnalysisGraphMetricsArtifacts,
     write_analysis_graph_metrics_artifacts,
 )
+from mania.analysis.orchestration import (
+    ANALYZE_COMMAND,
+    ANALYZE_STAGE,
+    AnalyzeConditionResult,
+    AnalyzeDiagnosticIssue,
+    AnalyzeError,
+    AnalyzeRequest,
+    AnalyzeRunResult,
+    AnalyzeSkip,
+    run_analysis,
+    summary_to_json_payload,
+)
 from mania.analysis.static_rin_communities import (
     STATIC_RIN_COMMUNITIES_COLUMNS,
     STATIC_RIN_COMMUNITY_ALGORITHM,
@@ -180,6 +192,14 @@ __all__ = [
     "AnalysisGraphMetricsIssue",
     "AnalysisGraphMetricsOptions",
     "AnalysisGraphMetricsResult",
+    "ANALYZE_COMMAND",
+    "ANALYZE_STAGE",
+    "AnalyzeConditionResult",
+    "AnalyzeDiagnosticIssue",
+    "AnalyzeError",
+    "AnalyzeRequest",
+    "AnalyzeRunResult",
+    "AnalyzeSkip",
     "CONTACT_FINGERPRINT_STATUS_COMPUTED",
     "CONTACT_FINGERPRINT_STATUS_EMPTY_INPUT",
     "CONTACT_FINGERPRINT_STATUS_ZERO_FEATURES",
@@ -324,4 +344,6 @@ __all__ = [
     "write_temporal_rin_csv",
     "write_conformation_pca_csv",
     "write_conformation_labels_csv",
+    "run_analysis",
+    "summary_to_json_payload",
 ]
