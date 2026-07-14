@@ -247,8 +247,8 @@ Nonconstant matrices receive `pca_unavailable`; zero-frame, zero-feature,
 one-frame, and constant centered matrices receive explicit statuses. All such
 rows have `n_components = 0` and empty component and explained-variance
 fields. Header-only fingerprint input produces a header-only artifact. A later
-explicit dependency decision is required before centered SVD, up to three
-components, explained variance, and deterministic loading-sign stabilization
+explicit dependency decision is required before centered SVD, public PC1-PC3
+coordinates, explained variance, and deterministic loading-sign stabilization
 can emit computed coordinates.
 
 Stage 24.A provides that explicit dependency decision for MANIA only. NumPy is
@@ -432,14 +432,17 @@ temporal metrics, contact frequencies, distance summaries, WANIA render
 coordinates, graph coordinates, C-alpha coordinates, or Stage 21 metrics.
 
 When explicitly enabled, MANIA computes PCA with centered NumPy SVD. It
-subtracts each feature mean, computes up to three rank-supported components,
-stabilizes each component sign by the largest absolute loading with the lowest
-feature-index tie break, and writes finite deterministic coordinates and
-explained-variance ratios to the existing
-`analysis/{condition}/conformation_pca_{condition}.csv` schema. Unavailable
-components remain blank. Empty, one-frame, zero-feature, constant/all-zero, and
-failed numerical inputs are skipped honestly with explicit statuses and no fake
-coordinates or explained-variance ratios.
+subtracts each feature mean, retains up to the internal default maximum of 10
+rank-supported components, stabilizes each component sign by the largest
+absolute loading with the lowest feature-index tie break, and writes finite
+deterministic coordinates and explained-variance ratios to the existing
+`analysis/{condition}/conformation_pca_{condition}.csv` schema. The public CSV
+schema remains limited to PC1-PC3, and unavailable exported components remain
+blank. Empty, one-frame, zero-feature, and constant/all-zero inputs are
+skipped honestly with explicit statuses and no fake coordinates or
+explained-variance ratios. A requested numerical PCA failure records
+`pca_failed`; `mania analyze` treats that status as fatal before writing
+current-run Stage 24 artifacts.
 
 The original v1.2 notebook was inspected. Its conformation cell builds dense
 binary fingerprints, centers them with `StandardScaler(with_std=False)`, does
@@ -472,7 +475,8 @@ while leaving the basis at the default does not switch modes, and PCA is not
 silently enabled.
 
 By default, PCA clustering uses all successfully computed components retained
-by the accepted Stage 24.A projection artifact, currently up to PC1-PC3.
+internally by the accepted projection artifact, up to the internal default
+maximum of 10.
 Callers may pass `pca_components_for_clustering=N` to use the first `N`
 computed components. `N` must be an integer from 1 through
 `projection.n_components`; unavailable component columns are not filled or
@@ -490,8 +494,9 @@ states parity is not claimed.
 The v1.2 notebook clusters over all PCA score columns from
 `n_comp = min(10, n_frames - 1, len(all_pairs) - 1)` after centering with
 `StandardScaler(with_std=False)`, while it exports only PC1/PC2/PC3 for
-visualization. MANIA Stage 24.B therefore implements PCA-based clustering but
-does not claim exact notebook parity. Stage 24.C handles analysis
+visualization. MANIA therefore retains more than three internal PCA components
+for clustering while keeping the public PCA CSV limited to PC1-PC3, but does
+not claim exact notebook parity. Stage 24.C handles analysis
 orchestration separately; `extended_metrics.json`, WANIA changes,
 API/frontend work, Docker, database models, production workers, and Stage 25
 Minimal API remain unimplemented.
@@ -561,6 +566,12 @@ mania analyze \
   --enable-pca
 ```
 
+In this mode, PCA status is `computed`, clustering basis remains
+`fingerprint`, and PCA is not used for clustering. Fingerprint and PCA
+clustering answer different scientific questions: fingerprint clustering uses
+direct binary residue-contact-pattern similarity, while PCA clustering uses
+proximity in internally retained PCA feature space.
+
 PCA clustering is explicit opt-in and requires an enabled, computed in-memory
 projection:
 
@@ -575,11 +586,17 @@ mania analyze \
 ```
 
 `--pca-components-for-clustering N` is valid only with
-`--clustering-basis pca`, and `N` must be available in the computed
-projection. PCA basis without `--enable-pca`, PCA component selection with the
-fingerprint basis, unsafe/duplicate condition names, missing required Stage 20
-artifacts, and invalid artifact schemas fail clearly without a success JSON
-summary.
+`--clustering-basis pca`, and `N` selects from the internally computed
+components. Valid values may exceed three when enough internal components
+exist. PCA basis without `--enable-pca`, PCA component selection with the
+fingerprint basis, a requested PCA component count above the actual computed
+count, unsafe/duplicate condition names, missing required Stage 20 artifacts,
+and invalid artifact schemas fail clearly without a success JSON summary.
+Explicit requested PCA numerical failure is fatal: stdout contains no success
+JSON, `passed=true` is not emitted, and current-run Stage 24 analysis
+artifacts, including `analysis/extended_metrics.json`, are not written.
+Accepted degenerate PCA inputs remain nonfatal skipped outcomes for
+fingerprint clustering.
 
 For one condition, per-condition artifacts are written and root-level
 `comparison.csv` / `stats.csv` are header-only; no self-comparison is
@@ -610,9 +627,12 @@ limitations list. PCA intent is separate from compatibility CSV status: with
 default `--enable-pca` omitted, the PCA analysis status is `not_requested`
 even though `conformation_pca_{condition}.csv` is still written with blank
 compatibility rows. When PCA computes, the manifest reports backend
-`numpy_svd` and the actual component count. PCA clustering records its
-`deterministic_kmeans_pca` provenance plus requested and used PCA component
-counts; fingerprint clustering records `deterministic_kmeans_fingerprint`.
+`numpy_svd`, the maximum internal component setting, the actual internally
+computed component count, and the CSV-exported component count. Clustering
+metadata separately records basis, PCA status, whether PCA was used for
+clustering, and requested/used PCA component counts. Computed PCA may coexist
+with fingerprint clustering; in that case `pca_status = computed` and
+`pca_used_for_clustering = false`.
 
 For one condition, `comparison.csv` and `stats.csv` may be referenced as
 header-only current-run artifacts while cross-condition status is
@@ -642,6 +662,14 @@ fallback, and preserves the distinction between the stdout summary and
 `analysis/extended_metrics.json`. WANIA JSON, runtime schema, adapter/writer
 behavior, capabilities, artifact mapping, fixtures, and
 `wania_graph_payload.json` remain unchanged. Stage 25 has not started.
+
+Stage 24.F corrects PCA provenance, requested PCA failure semantics, and
+internal PCA component capacity without changing public CLI options or CSV
+field order. It preserves truthful computed-but-unused PCA metadata for
+fingerprint clustering, makes explicit requested numerical PCA failure fatal
+in `mania analyze`, keeps accepted degenerate PCA inputs nonfatal, allows PCA
+clustering to use internally retained components beyond PC3, and keeps WANIA
+unchanged. No YAML or JSON analysis configuration exists.
 
 ## Current Backend Workflow
 
@@ -1115,14 +1143,17 @@ The planning-level scientific roadmap is:
 - **Stage 24.C — Analysis orchestration CLI.**
 - **Stage 24.D — MANIA-only `analysis/extended_metrics.json` manifest.**
 - **Stage 24.E — Validation, documentation, and Stage 24 acceptance.**
+- **Stage 24.F — PCA provenance, failure semantics, and internal component
+  capacity correction.**
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
 Stages 20–23 are now complete within their accepted boundaries. Stage 24.A
 adds opt-in computed PCA, Stage 24.B adds opt-in PCA clustering without
 changing WANIA or fingerprint clustering defaults, Stage 24.C wires the
 accepted preprocessing-input-to-analysis-artifact workflow through
-`mania analyze`, Stage 24.D writes the MANIA-only manifest, and Stage 24.E
-validates and closes the integrated Stage 24 workflow.
+`mania analyze`, Stage 24.D writes the MANIA-only manifest, Stage 24.E
+validates the integrated Stage 24 workflow, and Stage 24.F closes the PCA
+provenance/failure/component-capacity corrections.
 FastAPI/upload and job APIs, Docker/demo packaging, database models,
 production API serving, frontend implementation, and Stage 25 remain
 separately scoped later work.

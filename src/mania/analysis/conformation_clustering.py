@@ -12,6 +12,12 @@ from typing import Literal
 
 from mania.analysis.conformation_pca import (
     CONFORMATION_PCA_STATUS_COMPUTED,
+    CONFORMATION_PCA_STATUS_CONSTANT_MATRIX,
+    CONFORMATION_PCA_STATUS_EMPTY_INPUT,
+    CONFORMATION_PCA_STATUS_FAILED,
+    CONFORMATION_PCA_STATUS_NO_FEATURES,
+    CONFORMATION_PCA_STATUS_ONE_FRAME,
+    CONFORMATION_PCA_STATUS_UNAVAILABLE,
     ConformationPcaProjection,
     ConformationPcaRow,
 )
@@ -73,9 +79,29 @@ _FINGERPRINT_NOTE = (
     "clustered directly from binary contact fingerprints; "
     "PCA coordinates unavailable; notebook PCA-to-k-means parity not claimed"
 )
+_FINGERPRINT_COMPUTED_PCA_NOTE = (
+    "clustered directly from binary contact fingerprints; "
+    "PCA was computed but not used for clustering; "
+    "notebook PCA-to-k-means parity not applicable to fingerprint mode"
+)
+_FINGERPRINT_SKIPPED_PCA_NOTE = (
+    "clustered directly from binary contact fingerprints; "
+    "PCA status retained but not used for clustering; "
+    "notebook PCA-to-k-means parity not applicable to fingerprint mode"
+)
 _SKIPPED_FINGERPRINT_NOTE = (
     "clustering input is binary contact fingerprints; "
     "PCA coordinates unavailable; notebook PCA-to-k-means parity not claimed"
+)
+_SKIPPED_FINGERPRINT_COMPUTED_PCA_NOTE = (
+    "clustering input is binary contact fingerprints; "
+    "PCA was computed but not used for clustering; "
+    "notebook PCA-to-k-means parity not applicable to fingerprint mode"
+)
+_SKIPPED_FINGERPRINT_SKIPPED_PCA_NOTE = (
+    "clustering input is binary contact fingerprints; "
+    "PCA status retained but not used for clustering; "
+    "notebook PCA-to-k-means parity not applicable to fingerprint mode"
 )
 _PCA_NOTE = (
     "clustered from computed PCA frame-score coordinates; "
@@ -92,6 +118,15 @@ _STATUSES = {
     CONFORMATION_CLUSTERING_STATUS_INSUFFICIENT_FRAMES,
     CONFORMATION_CLUSTERING_STATUS_CONSTANT_MATRIX,
     CONFORMATION_CLUSTERING_STATUS_NO_VALID_K,
+}
+_PCA_STATUSES = {
+    CONFORMATION_PCA_STATUS_COMPUTED,
+    CONFORMATION_PCA_STATUS_CONSTANT_MATRIX,
+    CONFORMATION_PCA_STATUS_EMPTY_INPUT,
+    CONFORMATION_PCA_STATUS_FAILED,
+    CONFORMATION_PCA_STATUS_NO_FEATURES,
+    CONFORMATION_PCA_STATUS_ONE_FRAME,
+    CONFORMATION_PCA_STATUS_UNAVAILABLE,
 }
 
 ConformationClusteringBasis = Literal["fingerprint", "pca"]
@@ -213,7 +248,10 @@ def build_conformation_clusters(
     _validate_clustering_basis(clustering_basis)
     _validate_fingerprints(fingerprints)
 
-    metadata = _metadata_for_basis(clustering_basis)
+    metadata = _metadata_for_basis(
+        clustering_basis,
+        pca_projection=pca_projection,
+    )
     values = _clustering_values(
         fingerprints,
         clustering_basis=clustering_basis,
@@ -392,15 +430,36 @@ def _validate_clustering_basis(clustering_basis: object) -> None:
 
 def _metadata_for_basis(
     clustering_basis: ConformationClusteringBasis,
+    *,
+    pca_projection: ConformationPcaProjection | None,
 ) -> _ClusteringMetadata:
     if clustering_basis == CONFORMATION_CLUSTERING_BASIS_FINGERPRINT:
+        if pca_projection is not None and not isinstance(
+            pca_projection,
+            ConformationPcaProjection,
+        ):
+            raise TypeError("pca_projection must be a ConformationPcaProjection")
+        pca_status = (
+            CONFORMATION_CLUSTERING_PCA_STATUS_NOT_USED
+            if pca_projection is None
+            else pca_projection.status
+        )
+        if pca_status == CONFORMATION_PCA_STATUS_COMPUTED:
+            computed_note = _FINGERPRINT_COMPUTED_PCA_NOTE
+            skipped_note = _SKIPPED_FINGERPRINT_COMPUTED_PCA_NOTE
+        elif pca_status == CONFORMATION_CLUSTERING_PCA_STATUS_NOT_USED:
+            computed_note = _FINGERPRINT_NOTE
+            skipped_note = _SKIPPED_FINGERPRINT_NOTE
+        else:
+            computed_note = _FINGERPRINT_SKIPPED_PCA_NOTE
+            skipped_note = _SKIPPED_FINGERPRINT_SKIPPED_PCA_NOTE
         return _ClusteringMetadata(
             algorithm=CONFORMATION_CLUSTERING_ALGORITHM_FINGERPRINT,
             input_source=CONFORMATION_CLUSTERING_INPUT_SOURCE_FINGERPRINT,
-            pca_status=CONFORMATION_CLUSTERING_PCA_STATUS_NOT_USED,
+            pca_status=pca_status,
             notebook_parity=CONFORMATION_CLUSTERING_NOTEBOOK_PARITY_FINGERPRINT,
-            computed_note=_FINGERPRINT_NOTE,
-            skipped_note=_SKIPPED_FINGERPRINT_NOTE,
+            computed_note=computed_note,
+            skipped_note=skipped_note,
         )
     return _ClusteringMetadata(
         algorithm=CONFORMATION_CLUSTERING_ALGORITHM_PCA,
@@ -441,12 +500,13 @@ def _clustering_values(
         pca_projection,
         component_count=component_count,
     )
+    score_vectors = _pca_score_vectors(pca_projection)
     return tuple(
         tuple(
-            _pca_coordinate(row, component_index)
+            score_vector[component_index]
             for component_index in range(component_count)
         )
-        for row in pca_projection.rows
+        for score_vector in score_vectors
     )
 
 
@@ -458,9 +518,9 @@ def _pca_component_count(
         raise ConformationClusteringError(
             "PCA clustering requires a computed PCA projection"
         )
-    if not 1 <= projection.n_components <= 3:
+    if projection.n_components < 1:
         raise ConformationClusteringError(
-            "PCA clustering requires 1-3 computed PCA components"
+            "PCA clustering requires at least one computed PCA component"
         )
     if requested_components is None:
         return projection.n_components
@@ -502,12 +562,32 @@ def _validate_pca_projection_alignment(
         raise ConformationClusteringError(
             "PCA feature count does not match fingerprints"
         )
+    score_vectors = _pca_score_vectors(projection)
+    if len(score_vectors) != projection.n_frames:
+        raise ConformationClusteringError(
+            "PCA internal score count does not match rows"
+        )
 
     frame_indexes: set[int] = set()
-    for row in projection.rows:
+    for row_index, row in enumerate(projection.rows):
         if row.frame_index in frame_indexes:
             raise ConformationClusteringError("duplicate PCA frame identity")
         frame_indexes.add(row.frame_index)
+        score_vector = score_vectors[row_index]
+        if len(score_vector) != projection.n_components:
+            raise ConformationClusteringError(
+                "PCA internal score dimensionality does not match"
+            )
+        for component_index in range(component_count):
+            if component_index >= len(score_vector):
+                raise ConformationClusteringError(
+                    "unavailable PCA component requested"
+                )
+            value = score_vector[component_index]
+            if not isinstance(value, float) or not math.isfinite(value):
+                raise ConformationClusteringError(
+                    "PCA clustering coordinates must be finite"
+                )
 
     for frame, row in zip(fingerprints.frames, projection.rows, strict=True):
         if row.condition != projection.condition:
@@ -539,11 +619,32 @@ def _validate_pca_projection_alignment(
             raise ConformationClusteringError(
                 "PCA row metadata does not match projection"
             )
-        for component_index in range(component_count):
-            _pca_coordinate(row, component_index)
+        for component_index in range(min(component_count, 3)):
+            _pca_exported_coordinate(row, component_index)
 
 
-def _pca_coordinate(row: ConformationPcaRow, component_index: int) -> float:
+def _pca_score_vectors(
+    projection: ConformationPcaProjection,
+) -> tuple[tuple[float, ...], ...]:
+    if projection.score_vectors:
+        return projection.score_vectors
+    if projection.n_components > 3:
+        raise ConformationClusteringError(
+            "PCA clustering requires internal score vectors for components above PC3"
+        )
+    return tuple(
+        tuple(
+            _pca_exported_coordinate(row, component_index)
+            for component_index in range(projection.n_components)
+        )
+        for row in projection.rows
+    )
+
+
+def _pca_exported_coordinate(
+    row: ConformationPcaRow,
+    component_index: int,
+) -> float:
     if component_index == 0:
         value = row.pc1
     elif component_index == 1:
@@ -551,7 +652,7 @@ def _pca_coordinate(row: ConformationPcaRow, component_index: int) -> float:
     elif component_index == 2:
         value = row.pc3
     else:
-        raise ConformationClusteringError("unavailable PCA component requested")
+        raise ConformationClusteringError("unavailable PCA export component requested")
     if not isinstance(value, float) or not math.isfinite(value):
         raise ConformationClusteringError(
             "PCA clustering coordinates must be finite"
@@ -962,11 +1063,22 @@ def _csv_value(value: object) -> object:
 
 def _validate_row_mode_metadata(row: ConformationLabelRow) -> None:
     if row.algorithm == CONFORMATION_CLUSTERING_ALGORITHM_FINGERPRINT:
-        expected = (
-            CONFORMATION_CLUSTERING_INPUT_SOURCE_FINGERPRINT,
-            CONFORMATION_CLUSTERING_PCA_STATUS_NOT_USED,
-            CONFORMATION_CLUSTERING_NOTEBOOK_PARITY_FINGERPRINT,
-        )
+        if row.input_source != CONFORMATION_CLUSTERING_INPUT_SOURCE_FINGERPRINT:
+            raise ConformationClusteringError(
+                "conformation row metadata does not match clustering basis"
+            )
+        if row.pca_status not in _PCA_STATUSES:
+            raise ConformationClusteringError(
+                "unsupported fingerprint clustering PCA status"
+            )
+        if (
+            row.notebook_parity
+            != CONFORMATION_CLUSTERING_NOTEBOOK_PARITY_FINGERPRINT
+        ):
+            raise ConformationClusteringError(
+                "conformation row metadata does not match clustering basis"
+            )
+        return
     elif row.algorithm == CONFORMATION_CLUSTERING_ALGORITHM_PCA:
         expected = (
             CONFORMATION_CLUSTERING_INPUT_SOURCE_PCA,

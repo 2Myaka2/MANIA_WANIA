@@ -20,6 +20,8 @@ CONFORMATION_PCA_STATUS_NO_FEATURES = "no_features"
 CONFORMATION_PCA_STATUS_CONSTANT_MATRIX = "constant_matrix"
 CONFORMATION_PCA_STATUS_UNAVAILABLE = "pca_unavailable"
 CONFORMATION_PCA_STATUS_FAILED = "pca_failed"
+CONFORMATION_PCA_DEFAULT_MAX_COMPONENTS = 10
+CONFORMATION_PCA_EXPORTED_COMPONENT_LIMIT = 3
 
 _NON_COMPUTED_STATUSES = {
     CONFORMATION_PCA_STATUS_EMPTY_INPUT,
@@ -96,6 +98,24 @@ class ConformationPcaProjection:
     n_frames: int
     status: str
     notes: str
+    max_components: int = CONFORMATION_PCA_DEFAULT_MAX_COMPONENTS
+    score_vectors: tuple[tuple[float, ...], ...] = ()
+    explained_variance_ratios: tuple[float, ...] = ()
+
+    @property
+    def computed_component_count(self) -> int:
+        """Return the actual internal component count."""
+        if self.status != CONFORMATION_PCA_STATUS_COMPUTED:
+            return 0
+        return self.n_components
+
+    @property
+    def exported_component_count(self) -> int:
+        """Return the public CSV component count."""
+        return min(
+            CONFORMATION_PCA_EXPORTED_COMPONENT_LIMIT,
+            self.computed_component_count,
+        )
 
 
 @dataclass(frozen=True)
@@ -109,6 +129,7 @@ def build_conformation_pca_projection(
     fingerprints: ContactFingerprintMatrix,
     *,
     enable_pca: bool = False,
+    max_pca_components: int = CONFORMATION_PCA_DEFAULT_MAX_COMPONENTS,
 ) -> ConformationPcaProjection:
     """Build a truthful PCA artifact result from accepted Stage 22.D values.
 
@@ -121,6 +142,7 @@ def build_conformation_pca_projection(
         raise TypeError("fingerprints must be a ContactFingerprintMatrix")
     if type(enable_pca) is not bool:
         raise TypeError("enable_pca must be a bool")
+    _validate_max_pca_components(max_pca_components)
     _validate_fingerprints(fingerprints)
 
     n_frames, n_features = fingerprints.shape
@@ -129,45 +151,59 @@ def build_conformation_pca_projection(
             fingerprints,
             CONFORMATION_PCA_STATUS_EMPTY_INPUT,
             "fingerprint matrix contains no frames",
+            max_components=max_pca_components,
         )
     if not n_features:
         return _skipped_projection(
             fingerprints,
             CONFORMATION_PCA_STATUS_NO_FEATURES,
             "fingerprint matrix contains no features",
+            max_components=max_pca_components,
         )
     if n_frames == 1:
         return _skipped_projection(
             fingerprints,
             CONFORMATION_PCA_STATUS_ONE_FRAME,
             "PCA requires at least two frames",
+            max_components=max_pca_components,
         )
     if _total_centered_sum_of_squares(fingerprints.values) == 0.0:
         return _skipped_projection(
             fingerprints,
             CONFORMATION_PCA_STATUS_CONSTANT_MATRIX,
             "centered fingerprint matrix has zero total variance",
+            max_components=max_pca_components,
         )
     if not enable_pca:
         return _skipped_projection(
             fingerprints,
             CONFORMATION_PCA_STATUS_UNAVAILABLE,
             "PCA computation was not requested; enable_pca=False",
+            max_components=max_pca_components,
         )
 
     try:
-        computed = _compute_pca_values(fingerprints)
-    except Exception:
+        computed = _compute_pca_values(
+            fingerprints,
+            max_components=max_pca_components,
+        )
+    except (
+        FloatingPointError,
+        ImportError,
+        ModuleNotFoundError,
+        _PcaComputationFailed,
+    ):
         return _skipped_projection(
             fingerprints,
             CONFORMATION_PCA_STATUS_FAILED,
             "PCA computation failed during NumPy SVD",
+            max_components=max_pca_components,
         )
 
     rows = []
-    ratios = _padded_components(computed.explained_variance_ratios)
+    ratios = _exported_components(computed.explained_variance_ratios)
     for row_index, frame in enumerate(fingerprints.frames):
-        scores = _padded_components(computed.scores[row_index])
+        scores = _exported_components(computed.scores[row_index])
         rows.append(
             ConformationPcaRow(
                 condition=fingerprints.condition,
@@ -195,6 +231,9 @@ def build_conformation_pca_projection(
         n_frames=n_frames,
         status=CONFORMATION_PCA_STATUS_COMPUTED,
         notes="computed with centered NumPy SVD; notebook parity not claimed",
+        max_components=max_pca_components,
+        score_vectors=computed.scores,
+        explained_variance_ratios=computed.explained_variance_ratios,
     )
     _validate_projection(projection)
     return projection
@@ -204,6 +243,8 @@ def _skipped_projection(
     fingerprints: ContactFingerprintMatrix,
     status: str,
     notes: str,
+    *,
+    max_components: int = CONFORMATION_PCA_DEFAULT_MAX_COMPONENTS,
 ) -> ConformationPcaProjection:
     n_frames, n_features = fingerprints.shape
     rows = tuple(
@@ -234,6 +275,7 @@ def _skipped_projection(
         n_frames=n_frames,
         status=status,
         notes=notes,
+        max_components=max_components,
     )
     _validate_projection(projection)
     return projection
@@ -323,6 +365,11 @@ def _validate_fingerprints(fingerprints: ContactFingerprintMatrix) -> None:
             )
 
 
+def _validate_max_pca_components(max_pca_components: object) -> None:
+    if type(max_pca_components) is not int or max_pca_components < 1:
+        raise ConformationPcaError("max_pca_components must be an integer >= 1")
+
+
 def _total_centered_sum_of_squares(
     values: tuple[tuple[int, ...], ...],
 ) -> float:
@@ -339,7 +386,11 @@ def _total_centered_sum_of_squares(
     )
 
 
-def _compute_pca_values(fingerprints: ContactFingerprintMatrix) -> _ComputedPcaValues:
+def _compute_pca_values(
+    fingerprints: ContactFingerprintMatrix,
+    *,
+    max_components: int,
+) -> _ComputedPcaValues:
     np = _numpy()
     n_frames, n_features = fingerprints.shape
     matrix = np.asarray(fingerprints.values, dtype=np.float64)
@@ -348,11 +399,15 @@ def _compute_pca_values(fingerprints: ContactFingerprintMatrix) -> _ComputedPcaV
     if not bool(np.isfinite(matrix).all()):
         raise _PcaComputationFailed("fingerprint matrix contains non-finite values")
 
-    centered = matrix - matrix.mean(axis=0, keepdims=True)
+    with np.errstate(all="raise"):
+        centered = matrix - matrix.mean(axis=0, keepdims=True)
     if not bool(np.isfinite(centered).all()):
         raise _PcaComputationFailed("centered matrix contains non-finite values")
 
-    u, singular_values, loadings = np.linalg.svd(centered, full_matrices=False)
+    try:
+        u, singular_values, loadings = np.linalg.svd(centered, full_matrices=False)
+    except np.linalg.LinAlgError as error:
+        raise _PcaComputationFailed("NumPy SVD failed") from error
     if not (
         bool(np.isfinite(u).all())
         and bool(np.isfinite(singular_values).all())
@@ -362,16 +417,18 @@ def _compute_pca_values(fingerprints: ContactFingerprintMatrix) -> _ComputedPcaV
 
     if singular_values.size == 0:
         raise _PcaComputationFailed("SVD returned no singular values")
-    total_variance_numerator = float(np.sum(singular_values * singular_values))
+    with np.errstate(all="raise"):
+        total_variance_numerator = float(np.sum(singular_values * singular_values))
     if not math.isfinite(total_variance_numerator) or total_variance_numerator <= 0.0:
         raise _PcaComputationFailed("centered matrix has no finite variance")
 
     numerical_rank = _numerical_rank(np, singular_values, n_frames, n_features)
-    n_components = min(3, n_frames - 1, n_features, numerical_rank)
+    n_components = min(max_components, n_frames - 1, n_features, numerical_rank)
     if n_components <= 0:
         raise _PcaComputationFailed("centered matrix has insufficient rank")
 
-    scores = u[:, :n_components] * singular_values[:n_components]
+    with np.errstate(all="raise"):
+        scores = u[:, :n_components] * singular_values[:n_components]
     for component_index in range(n_components):
         loading = loadings[component_index]
         pivot = int(np.argmax(np.abs(loading)))
@@ -384,7 +441,10 @@ def _compute_pca_values(fingerprints: ContactFingerprintMatrix) -> _ComputedPcaV
     explained_variance_ratios = tuple(
         _finite_float(
             float(
-                (singular_values[component_index] * singular_values[component_index])
+                (
+                    singular_values[component_index]
+                    * singular_values[component_index]
+                )
                 / total_variance_numerator
             )
         )
@@ -429,8 +489,11 @@ def _finite_float(value: float) -> float:
     return value
 
 
-def _padded_components(values: tuple[float, ...]) -> tuple[float | None, ...]:
-    return values + (None,) * (3 - len(values))
+def _exported_components(values: tuple[float, ...]) -> tuple[float | None, ...]:
+    exported = values[:CONFORMATION_PCA_EXPORTED_COMPONENT_LIMIT]
+    return exported + (None,) * (
+        CONFORMATION_PCA_EXPORTED_COMPONENT_LIMIT - len(exported)
+    )
 
 
 def _validate_projection(projection: ConformationPcaProjection) -> None:
@@ -438,11 +501,47 @@ def _validate_projection(projection: ConformationPcaProjection) -> None:
         raise ConformationPcaError("projection n_frames does not match rows")
     if projection.status not in _STATUSES:
         raise ConformationPcaError("unsupported conformation PCA status")
+    _validate_max_pca_components(projection.max_components)
     if projection.status in _NON_COMPUTED_STATUSES:
         _validate_non_computed_projection(projection)
         return
-    if not 1 <= projection.n_components <= 3:
-        raise ConformationPcaError("computed PCA projection must have 1-3 components")
+    if not 1 <= projection.n_components <= projection.max_components:
+        raise ConformationPcaError(
+            "computed PCA projection must have at least one component within "
+            "max_components"
+        )
+    if projection.n_components > projection.n_frames - 1:
+        raise ConformationPcaError(
+            "computed PCA component count exceeds frame bound"
+        )
+    if projection.n_components > projection.n_features:
+        raise ConformationPcaError(
+            "computed PCA component count exceeds feature bound"
+        )
+    if len(projection.score_vectors) != projection.n_frames:
+        raise ConformationPcaError(
+            "computed PCA projection must retain one internal score vector per frame"
+        )
+    if len(projection.explained_variance_ratios) != projection.n_components:
+        raise ConformationPcaError(
+            "computed PCA projection must retain one variance ratio per component"
+        )
+    for ratio in projection.explained_variance_ratios:
+        if not isinstance(ratio, float) or not math.isfinite(ratio):
+            raise ConformationPcaError(
+                "computed PCA explained-variance ratios must be finite"
+            )
+        if ratio < 0.0 or ratio > 1.0:
+            raise ConformationPcaError(
+                "computed PCA explained-variance ratios must be in [0, 1]"
+            )
+    for score_vector in projection.score_vectors:
+        if len(score_vector) != projection.n_components:
+            raise ConformationPcaError(
+                "computed PCA score vector dimensionality does not match"
+            )
+        for score in score_vector:
+            _validate_present_float(score)
     for expected_row_index, row in enumerate(projection.rows):
         _validate_row_metadata(projection, row, expected_row_index)
         coordinates = (row.pc1, row.pc2, row.pc3)
@@ -451,10 +550,22 @@ def _validate_projection(projection: ConformationPcaProjection) -> None:
             row.explained_variance_ratio_pc2,
             row.explained_variance_ratio_pc3,
         )
-        for component_index in range(3):
-            if component_index < projection.n_components:
+        score_vector = projection.score_vectors[expected_row_index]
+        for component_index in range(CONFORMATION_PCA_EXPORTED_COMPONENT_LIMIT):
+            if component_index < projection.exported_component_count:
                 _validate_present_float(coordinates[component_index])
                 _validate_present_float(ratios[component_index])
+                if coordinates[component_index] != score_vector[component_index]:
+                    raise ConformationPcaError(
+                        "exported PCA coordinate does not match internal score"
+                    )
+                if (
+                    ratios[component_index]
+                    != projection.explained_variance_ratios[component_index]
+                ):
+                    raise ConformationPcaError(
+                        "exported PCA ratio does not match internal variance ratio"
+                    )
             elif (
                 coordinates[component_index] is not None
                 or ratios[component_index] is not None
@@ -470,6 +581,10 @@ def _validate_non_computed_projection(
     if projection.n_components != 0:
         raise ConformationPcaError(
             "non-computed PCA projection must have zero components"
+        )
+    if projection.score_vectors or projection.explained_variance_ratios:
+        raise ConformationPcaError(
+            "non-computed PCA projection must not contain internal scores"
         )
     for expected_row_index, row in enumerate(projection.rows):
         _validate_row_metadata(projection, row, expected_row_index)
@@ -529,6 +644,8 @@ def _csv_value(value: object) -> object:
 
 __all__ = [
     "CONFORMATION_PCA_COLUMNS",
+    "CONFORMATION_PCA_DEFAULT_MAX_COMPONENTS",
+    "CONFORMATION_PCA_EXPORTED_COMPONENT_LIMIT",
     "CONFORMATION_PCA_STATUS_COMPUTED",
     "CONFORMATION_PCA_STATUS_CONSTANT_MATRIX",
     "CONFORMATION_PCA_STATUS_EMPTY_INPUT",

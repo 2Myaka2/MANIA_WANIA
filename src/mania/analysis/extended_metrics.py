@@ -221,6 +221,11 @@ def _pca_summary(
     summary: dict[str, object] = {
         "enabled": result.request.enable_pca,
         "status": status,
+        "max_components": condition_result.pca_max_components,
+        "computed_component_count": condition_result.pca_n_components,
+        "exported_component_count": (
+            condition_result.pca_exported_component_count
+        ),
         "artifacts": {
             "conformation_pca": _owned_artifact_reference(
                 condition_result.conformation_pca_csv,
@@ -251,8 +256,12 @@ def _clustering_summary(
         "algorithm": condition_result.clustering_algorithm,
         "input_source": condition_result.clustering_input_source,
         "pca_status": condition_result.clustering_pca_status,
+        "pca_used_for_clustering": condition_result.pca_used_for_clustering,
         "pca_components_requested": (
             result.request.pca_components_for_clustering
+        ),
+        "pca_components_used": (
+            condition_result.pca_components_used_for_clustering
         ),
         "artifacts": {
             "conformation_labels": _owned_artifact_reference(
@@ -265,10 +274,6 @@ def _clustering_summary(
         summary["selected_k"] = condition_result.clustering_selected_k
     else:
         summary["reason"] = condition_result.clustering_status
-    if result.request.clustering_basis == CONFORMATION_CLUSTERING_BASIS_PCA:
-        summary["pca_components_used"] = (
-            condition_result.pca_components_used_for_clustering
-        )
     return summary
 
 
@@ -401,7 +406,11 @@ def _walk_mapping(value: object) -> tuple[tuple[str, object], ...]:
     return tuple(items)
 
 
-def clustering_metadata_for_basis(basis: str) -> tuple[str, str, str]:
+def clustering_metadata_for_basis(
+    basis: str,
+    *,
+    pca_status: str = CONFORMATION_PCA_STATUS_UNAVAILABLE,
+) -> tuple[str, str, str]:
     """Return stable clustering method metadata for the requested basis."""
     if basis == CONFORMATION_CLUSTERING_BASIS_PCA:
         return (
@@ -412,7 +421,7 @@ def clustering_metadata_for_basis(basis: str) -> tuple[str, str, str]:
     return (
         CONFORMATION_CLUSTERING_ALGORITHM_FINGERPRINT,
         CONFORMATION_CLUSTERING_INPUT_SOURCE_FINGERPRINT,
-        CONFORMATION_PCA_STATUS_UNAVAILABLE,
+        pca_status,
     )
 
 

@@ -8,6 +8,7 @@ from typing import Any
 
 import pytest
 
+import mania.analysis.conformation_pca as pca_module
 import mania.analysis.orchestration as orchestration
 import mania.cli as cli
 from mania.analysis import (
@@ -209,6 +210,49 @@ def _write_stage20_condition(
 def _write_stage20_root(root: Path, conditions: Iterable[str]) -> None:
     for condition in conditions:
         _write_stage20_condition(root, condition)
+
+
+def _write_high_rank_stage20_condition(root: Path, condition: str) -> None:
+    _write_stage20_condition(root, condition)
+    features = (
+        (1, 2, "vdw", 3.3),
+        (1, 2, "hbond", 2.8),
+        (1, 3, "vdw", 3.4),
+        (2, 3, "hbond", 2.9),
+        (2, 3, "ionic", 3.1),
+    )
+    patterns = (
+        (1, 0, 0, 0, 0),
+        (0, 1, 0, 0, 0),
+        (0, 0, 1, 0, 0),
+        (0, 0, 0, 1, 0),
+        (0, 0, 0, 0, 1),
+        (1, 1, 1, 1, 1),
+    )
+    rows = []
+    for frame_index, pattern in enumerate(patterns):
+        for present, (residue_i, residue_j, edge_type, distance) in zip(
+            pattern,
+            features,
+            strict=True,
+        ):
+            if present:
+                rows.append(
+                    _perframe_row(
+                        condition,
+                        frame_index,
+                        float(frame_index),
+                        residue_i,
+                        residue_j,
+                        edge_type,
+                        distance,
+                    )
+                )
+    _write_csv(
+        root / f"contacts_perframe_{condition}.csv",
+        PROTEIN_CONTACT_PERFRAME_COLUMNS,
+        rows,
+    )
 
 
 def _read_csv(path: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
@@ -464,6 +508,46 @@ def test_pca_clustering_uses_computed_projection_and_component_selection(
     assert {row["pca_status"] for row in label_rows} == {"computed"}
 
 
+def test_pca_clustering_accepts_component_selection_above_three(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_root = tmp_path / "preprocessing"
+    output_root = tmp_path / "out"
+    _write_high_rank_stage20_condition(input_root, "normal")
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        "analyze",
+        "--input",
+        str(input_root),
+        "--output",
+        str(output_root),
+        "--condition",
+        "normal",
+        "--enable-pca",
+        "--clustering-basis",
+        "pca",
+        "--pca-components-for-clustering",
+        "4",
+    )
+
+    assert stderr == ""
+    assert json.loads(stdout)["passed"] is True
+    manifest = json.loads(
+        (output_root / "analysis" / "extended_metrics.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    analyses = manifest["condition_results"][0]["analyses"]
+    assert analyses["conformation_pca"]["computed_component_count"] >= 4
+    assert analyses["conformation_pca"]["exported_component_count"] == 3
+    assert analyses["conformation_clustering"]["pca_used_for_clustering"] is True
+    assert analyses["conformation_clustering"]["pca_components_used"] == 4
+
+
 @pytest.mark.parametrize(
     ("args", "expected_message", "expected_code"),
     (
@@ -545,6 +629,46 @@ def test_pca_component_count_larger_than_projection_fails_before_writes(
         )
 
     assert not (output_root / "analysis").exists()
+
+
+def test_requested_numerical_pca_failure_is_fatal_before_writes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    input_root = tmp_path / "preprocessing"
+    output_root = tmp_path / "out"
+    _write_stage20_root(input_root, ("normal",))
+
+    def fail_compute(
+        fingerprints: object,
+        *,
+        max_components: int,
+    ) -> object:
+        raise pca_module._PcaComputationFailed("synthetic SVD failure")
+
+    monkeypatch.setattr(pca_module, "_compute_pca_values", fail_compute)
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        "analyze",
+        "--input",
+        str(input_root),
+        "--output",
+        str(output_root),
+        "--condition",
+        "normal",
+        "--enable-pca",
+        expected_exit_code=1,
+    )
+
+    assert stdout == ""
+    assert "Analyze failed:" in stderr
+    assert "pca_failed" in stderr
+    assert "passed" not in stdout
+    assert not (output_root / "analysis").exists()
+    assert not (output_root / "analysis" / "extended_metrics.json").exists()
 
 
 @pytest.mark.parametrize(

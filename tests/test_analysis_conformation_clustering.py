@@ -15,6 +15,7 @@ from mania.analysis import (
     CONFORMATION_CLUSTERING_CANDIDATE_EMPTY_CLUSTER,
     CONFORMATION_CLUSTERING_CANDIDATE_VALID,
     CONFORMATION_CLUSTERING_INPUT_SOURCE,
+    CONFORMATION_CLUSTERING_INPUT_SOURCE_FINGERPRINT,
     CONFORMATION_CLUSTERING_INPUT_SOURCE_PCA,
     CONFORMATION_CLUSTERING_K_MAX,
     CONFORMATION_CLUSTERING_NOTEBOOK_PARITY,
@@ -27,6 +28,10 @@ from mania.analysis import (
     CONFORMATION_CLUSTERING_STATUS_NO_FEATURES,
     CONFORMATION_LABELS_COLUMNS,
     CONFORMATION_PCA_STATUS_COMPUTED,
+    CONFORMATION_PCA_STATUS_CONSTANT_MATRIX,
+    CONFORMATION_PCA_STATUS_FAILED,
+    CONFORMATION_PCA_STATUS_UNAVAILABLE,
+    ConformationClustering,
     ConformationClusteringConfig,
     ConformationClusteringError,
     ConformationPcaProjection,
@@ -103,7 +108,8 @@ def _pca_projection(
     coordinates: tuple[tuple[float, ...], ...],
 ) -> ConformationPcaProjection:
     n_components = len(coordinates[0]) if coordinates else 0
-    ratios = (1.0, 0.0, 0.0)
+    ratios = tuple(1.0 if index == 0 else 0.0 for index in range(n_components))
+    exported_ratios = ratios + (None,) * (3 - len(ratios))
     rows = []
     for frame, row_coordinates in zip(
         fingerprints.frames,
@@ -120,12 +126,12 @@ def _pca_projection(
                 pc1=padded[0],
                 pc2=padded[1],
                 pc3=padded[2],
-                explained_variance_ratio_pc1=ratios[0],
+                explained_variance_ratio_pc1=exported_ratios[0],
                 explained_variance_ratio_pc2=(
-                    ratios[1] if n_components >= 2 else None
+                    exported_ratios[1] if n_components >= 2 else None
                 ),
                 explained_variance_ratio_pc3=(
-                    ratios[2] if n_components >= 3 else None
+                    exported_ratios[2] if n_components >= 3 else None
                 ),
                 n_components=n_components,
                 n_features=fingerprints.shape[1],
@@ -142,6 +148,36 @@ def _pca_projection(
         n_frames=fingerprints.shape[0],
         status=CONFORMATION_PCA_STATUS_COMPUTED,
         notes="computed with centered NumPy SVD; notebook parity not claimed",
+        score_vectors=coordinates,
+        explained_variance_ratios=ratios,
+    )
+
+
+def _scientific_label_snapshot(
+    clustering: ConformationClustering,
+) -> tuple[object, ...]:
+    rows = clustering.rows
+    return (
+        clustering.candidates,
+        clustering.selected_k,
+        clustering.silhouette_score,
+        clustering.status,
+        tuple(
+            (
+                row.condition,
+                row.row_index,
+                row.frame_index,
+                row.time_ps,
+                row.state_id,
+                row.cluster_label,
+                row.selected_k,
+                row.silhouette_score,
+                row.is_representative,
+                row.distance_to_centroid,
+                row.status,
+            )
+            for row in rows
+        ),
     )
 
 
@@ -160,7 +196,9 @@ def test_binary_fingerprints_are_clustered_deterministically_without_pca() -> No
     )
 
     assert first == second
-    assert explicit_fingerprint == first
+    assert _scientific_label_snapshot(explicit_fingerprint) == (
+        _scientific_label_snapshot(first)
+    )
     assert first.condition == "normal"
     assert first.status == CONFORMATION_CLUSTERING_STATUS_COMPUTED
     assert first.selected_k == 2
@@ -191,12 +229,22 @@ def test_binary_fingerprints_are_clustered_deterministically_without_pca() -> No
         row.pca_status == CONFORMATION_CLUSTERING_PCA_STATUS for row in first.rows
     )
     assert all(
+        row.pca_status == CONFORMATION_PCA_STATUS_COMPUTED
+        for row in explicit_fingerprint.rows
+    )
+    assert all(
+        row.input_source == CONFORMATION_CLUSTERING_INPUT_SOURCE_FINGERPRINT
+        for row in explicit_fingerprint.rows
+    )
+    assert all(
         row.notebook_parity == CONFORMATION_CLUSTERING_NOTEBOOK_PARITY
         for row in first.rows
     )
     assert "binary contact fingerprints" in first.notes
     assert "PCA coordinates unavailable" in first.notes
     assert "parity not claimed" in first.notes
+    assert "PCA was computed but not used" in explicit_fingerprint.notes
+    assert "unavailable" not in explicit_fingerprint.notes
 
 
 def test_farthest_first_assignment_and_representative_ties_are_stable() -> None:
@@ -253,9 +301,16 @@ def test_pca_clustering_requires_explicit_computed_projection() -> None:
     )
     default = build_conformation_clusters(fingerprints)
 
-    assert build_conformation_clusters(fingerprints, pca_projection=projection) == (
-        default
+    explicit_fingerprint = build_conformation_clusters(
+        fingerprints,
+        pca_projection=projection,
     )
+    assert _scientific_label_snapshot(explicit_fingerprint) == (
+        _scientific_label_snapshot(default)
+    )
+    assert {row.pca_status for row in explicit_fingerprint.rows} == {
+        CONFORMATION_PCA_STATUS_COMPUTED
+    }
     with pytest.raises(ConformationClusteringError, match="clustering_basis"):
         build_conformation_clusters(fingerprints, clustering_basis="invalid")
     with pytest.raises(ConformationClusteringError, match="requires pca_projection"):
@@ -346,6 +401,56 @@ def test_pca_clustering_uses_pca_space_metadata_components_and_csv_bytes(
     assert {row["distance_to_centroid"] for row in rows} == {"0", "5"}
 
 
+def test_pca_clustering_uses_internal_components_above_three() -> None:
+    fingerprints = _matrix(
+        values=((0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (1, 1, 1, 1)),
+    )
+    projection = _pca_projection(
+        fingerprints,
+        (
+            (0.0, 0.0, 0.0, 0.0),
+            (2.0, 1.0, 3.0, 10.0),
+            (4.0, 2.0, 6.0, 20.0),
+            (100.0, 3.0, 9.0, 30.0),
+        ),
+    )
+
+    all_components = build_conformation_clusters(
+        fingerprints,
+        clustering_basis=CONFORMATION_CLUSTERING_BASIS_PCA,
+        pca_projection=projection,
+        config=ConformationClusteringConfig(max_k=2),
+    )
+    four_components = build_conformation_clusters(
+        fingerprints,
+        clustering_basis=CONFORMATION_CLUSTERING_BASIS_PCA,
+        pca_projection=projection,
+        pca_components_for_clustering=4,
+        config=ConformationClusteringConfig(max_k=2),
+    )
+    three_components = build_conformation_clusters(
+        fingerprints,
+        clustering_basis=CONFORMATION_CLUSTERING_BASIS_PCA,
+        pca_projection=projection,
+        pca_components_for_clustering=3,
+        config=ConformationClusteringConfig(max_k=2),
+    )
+
+    assert all_components == four_components
+    assert [row.distance_to_centroid for row in four_components.rows] == [
+        114.0,
+        0.0,
+        114.0,
+        0.0,
+    ]
+    assert [row.distance_to_centroid for row in three_components.rows] == [
+        14.0,
+        0.0,
+        14.0,
+        0.0,
+    ]
+
+
 def test_pca_component_selection_is_explicit_and_rejects_unavailable_values(
 ) -> None:
     fingerprints = _matrix()
@@ -376,6 +481,8 @@ def test_pca_component_selection_is_explicit_and_rejects_unavailable_values(
         rows=tuple(
             replace(row, n_components=2, pc2=None) for row in projection.rows
         ),
+        score_vectors=tuple((row[0], 0.0) for row in projection.score_vectors),
+        explained_variance_ratios=(1.0, 0.0),
     )
     with pytest.raises(ConformationClusteringError, match="finite"):
         build_conformation_clusters(
@@ -507,12 +614,50 @@ def test_pca_degenerate_inputs_skip_without_invented_labels() -> None:
             == (None, None, None, None, None, None)
             for row in clustering.rows
         )
-    with pytest.raises(ConformationClusteringError, match="1-3"):
+    with pytest.raises(ConformationClusteringError, match="at least one"):
         build_conformation_clusters(
             _matrix(),
             clustering_basis=CONFORMATION_CLUSTERING_BASIS_PCA,
             pca_projection=zero_component_projection,
         )
+
+
+def test_fingerprint_clustering_retains_skipped_pca_status_for_provenance() -> None:
+    fingerprints = _matrix(values=((1,), (1,), (1,), (1,)))
+    projection = build_conformation_pca_projection(fingerprints, enable_pca=True)
+
+    clustering = build_conformation_clusters(
+        fingerprints,
+        pca_projection=projection,
+    )
+
+    assert projection.status == CONFORMATION_PCA_STATUS_CONSTANT_MATRIX
+    assert clustering.status == CONFORMATION_CLUSTERING_STATUS_CONSTANT_MATRIX
+    assert {row.pca_status for row in clustering.rows} == {
+        CONFORMATION_PCA_STATUS_CONSTANT_MATRIX
+    }
+    assert "PCA status retained but not used" in clustering.notes
+
+
+def test_pca_clustering_rejects_unavailable_skipped_and_failed_pca() -> None:
+    fingerprints = _matrix()
+    computed = _pca_projection(
+        fingerprints,
+        ((0.0,), (0.0,), (10.0,), (10.0,)),
+    )
+    non_computed = (
+        replace(computed, status=CONFORMATION_PCA_STATUS_UNAVAILABLE),
+        replace(computed, status=CONFORMATION_PCA_STATUS_CONSTANT_MATRIX),
+        replace(computed, status=CONFORMATION_PCA_STATUS_FAILED),
+    )
+
+    for projection in non_computed:
+        with pytest.raises(ConformationClusteringError, match="computed PCA"):
+            build_conformation_clusters(
+                fingerprints,
+                clustering_basis=CONFORMATION_CLUSTERING_BASIS_PCA,
+                pca_projection=projection,
+            )
 
 
 @pytest.mark.parametrize(

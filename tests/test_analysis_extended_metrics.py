@@ -107,8 +107,11 @@ def _walk_scientific_table_keys(value: object) -> tuple[str, ...]:
         "protein_contact_edges",
         "residue_rows",
         "rows",
+        "score_vectors",
+        "scores",
         "stats_rows",
         "temporal_windows",
+        "loadings",
     }
     matches: list[str] = []
     if isinstance(value, Mapping):
@@ -163,6 +166,9 @@ def test_default_extended_metrics_manifest_is_compact_and_relative(
     assert analyses["conformation_pca"]["enabled"] is False
     assert analyses["conformation_pca"]["status"] == "not_requested"
     assert analyses["conformation_pca"]["reason"] == "pca_not_requested"
+    assert analyses["conformation_pca"]["max_components"] == 10
+    assert analyses["conformation_pca"]["computed_component_count"] == 0
+    assert analyses["conformation_pca"]["exported_component_count"] == 0
     assert analyses["conformation_clustering"]["basis"] == "fingerprint"
     assert analyses["conformation_clustering"]["algorithm"] == (
         "deterministic_kmeans_fingerprint"
@@ -170,6 +176,9 @@ def test_default_extended_metrics_manifest_is_compact_and_relative(
     assert analyses["conformation_clustering"]["input_source"] == (
         "contact_fingerprint_matrix"
     )
+    assert analyses["conformation_clustering"]["pca_status"] == "pca_unavailable"
+    assert analyses["conformation_clustering"]["pca_used_for_clustering"] is False
+    assert analyses["conformation_clustering"]["pca_components_used"] is None
     assert manifest["run_results"]["cross_condition"]["status"] == "computed"
     assert manifest["diagnostics"] == {"issues": [], "passed": True}
     assert manifest["limitations"] == sorted(manifest["limitations"])
@@ -198,9 +207,14 @@ def test_pca_enabled_manifest_reports_computed_projection(tmp_path: Path) -> Non
     assert pca["status"] == "computed"
     assert pca["backend"] == "numpy_svd"
     assert pca["n_components"] == 1
+    assert pca["max_components"] == 10
+    assert pca["computed_component_count"] == 1
+    assert pca["exported_component_count"] == 1
     assert clustering["basis"] == "fingerprint"
     assert clustering["pca_components_requested"] is None
-    assert clustering["pca_status"] == "pca_unavailable"
+    assert clustering["pca_components_used"] is None
+    assert clustering["pca_status"] == "computed"
+    assert clustering["pca_used_for_clustering"] is False
 
 
 def test_pca_clustering_manifest_reports_requested_and_used_components(
@@ -228,6 +242,7 @@ def test_pca_clustering_manifest_reports_requested_and_used_components(
     assert clustering["algorithm"] == "deterministic_kmeans_pca"
     assert clustering["input_source"] == "conformation_pca_coordinates"
     assert clustering["pca_status"] == "computed"
+    assert clustering["pca_used_for_clustering"] is True
     assert clustering["pca_components_requested"] == 1
     assert clustering["pca_components_used"] == 1
 
@@ -246,7 +261,17 @@ def test_degenerate_pca_manifest_reports_skipped_without_fake_values(
     assert pca["enabled"] is True
     assert pca["status"] == "skipped"
     assert pca["reason"] == "constant_matrix"
+    assert pca["max_components"] == 10
+    assert pca["computed_component_count"] == 0
+    assert pca["exported_component_count"] == 0
     assert "n_components" not in pca
+    clustering = _condition_manifest(manifest, "normal")["analyses"][
+        "conformation_clustering"
+    ]
+    assert clustering["basis"] == "fingerprint"
+    assert clustering["pca_status"] == "constant_matrix"
+    assert clustering["pca_used_for_clustering"] is False
+    assert clustering["pca_components_used"] is None
     _, pca_rows = _read_csv(
         output_root / "analysis" / "normal" / "conformation_pca_normal.csv"
     )

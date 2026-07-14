@@ -18,6 +18,7 @@ from mania.analysis.conformation_clustering import (
     write_conformation_labels_csv,
 )
 from mania.analysis.conformation_pca import (
+    CONFORMATION_PCA_STATUS_FAILED,
     ConformationPcaProjection,
     build_conformation_pca_projection,
     write_conformation_pca_csv,
@@ -153,6 +154,9 @@ class AnalyzeConditionResult:
     clustering_pca_status: str
     clustering_selected_k: int | None
     pca_components_used_for_clustering: int | None
+    pca_max_components: int
+    pca_exported_component_count: int
+    pca_used_for_clustering: bool
 
     @property
     def artifacts(self) -> tuple[Path, ...]:
@@ -346,11 +350,6 @@ def _validate_pca_component_option(request: AnalyzeRequest) -> None:
         raise AnalyzeError("pca_components_for_clustering must be an integer")
     if value < 1:
         raise AnalyzeError("pca_components_for_clustering must be >= 1")
-    if value > 3:
-        raise AnalyzeError(
-            "pca_components_for_clustering must be <= the three exported PCA "
-            "components"
-        )
 
 
 def _validate_input_root(input_root: Path) -> None:
@@ -487,10 +486,15 @@ def _compute_condition(
             fingerprints,
             enable_pca=request.enable_pca,
         )
+        _validate_requested_pca_projection(
+            pca_projection,
+            request=request,
+            condition=paths.condition,
+        )
         pca_projection_for_clustering = (
             pca_projection
             if request.clustering_basis == CONFORMATION_CLUSTERING_BASIS_PCA
-            else None
+            else pca_projection
         )
         clustering = build_conformation_clusters(
             fingerprints,
@@ -580,7 +584,10 @@ def _write_condition_artifacts(
         clustering_algorithm,
         clustering_input_source,
         clustering_pca_status,
-    ) = clustering_metadata_for_basis(request.clustering_basis)
+    ) = clustering_metadata_for_basis(
+        request.clustering_basis,
+        pca_status=computation.pca_projection.status,
+    )
     pca_components_used_for_clustering = (
         _pca_components_used_for_clustering(computation, request=request)
     )
@@ -603,6 +610,13 @@ def _write_condition_artifacts(
         clustering_pca_status=clustering_pca_status,
         clustering_selected_k=computation.clustering.selected_k,
         pca_components_used_for_clustering=pca_components_used_for_clustering,
+        pca_max_components=computation.pca_projection.max_components,
+        pca_exported_component_count=(
+            computation.pca_projection.exported_component_count
+        ),
+        pca_used_for_clustering=(
+            request.clustering_basis == CONFORMATION_CLUSTERING_BASIS_PCA
+        ),
     )
 
 
@@ -669,6 +683,21 @@ def _pca_components_used_for_clustering(
         if request.pca_components_for_clustering is not None
         else computation.pca_projection.n_components
     )
+
+
+def _validate_requested_pca_projection(
+    projection: ConformationPcaProjection,
+    *,
+    request: AnalyzeRequest,
+    condition: str,
+) -> None:
+    if not request.enable_pca:
+        return
+    if projection.status == CONFORMATION_PCA_STATUS_FAILED:
+        raise AnalyzeError(
+            "requested PCA computation failed for condition "
+            f"{condition!r}: {projection.status}"
+        )
 
 
 def _analysis_root(output_root: Path) -> Path:

@@ -10,6 +10,8 @@ import mania.analysis
 import mania.analysis.conformation_pca as pca_module
 from mania.analysis import (
     CONFORMATION_PCA_COLUMNS,
+    CONFORMATION_PCA_DEFAULT_MAX_COMPONENTS,
+    CONFORMATION_PCA_EXPORTED_COMPONENT_LIMIT,
     CONFORMATION_PCA_STATUS_COMPUTED,
     CONFORMATION_PCA_STATUS_CONSTANT_MATRIX,
     CONFORMATION_PCA_STATUS_EMPTY_INPUT,
@@ -79,6 +81,21 @@ def _matrix(
     )
 
 
+def _high_rank_matrix() -> ContactFingerprintMatrix:
+    return _matrix(
+        values=(
+            (1, 0, 0, 0, 0),
+            (0, 1, 0, 0, 0),
+            (0, 0, 1, 0, 0),
+            (0, 0, 0, 1, 0),
+            (0, 0, 0, 0, 1),
+            (1, 1, 1, 1, 1),
+        ),
+        frame_indexes=(0, 1, 2, 3, 4, 5),
+        times=(None, None, None, None, None, None),
+    )
+
+
 def test_nonconstant_binary_fingerprints_have_default_disabled_projection(
 ) -> None:
     fingerprints = _matrix()
@@ -89,6 +106,11 @@ def test_nonconstant_binary_fingerprints_have_default_disabled_projection(
     assert projection.n_components == 0
     assert projection.n_features == 3
     assert projection.n_frames == 4
+    assert projection.max_components == CONFORMATION_PCA_DEFAULT_MAX_COMPONENTS
+    assert projection.computed_component_count == 0
+    assert projection.exported_component_count == 0
+    assert projection.score_vectors == ()
+    assert projection.explained_variance_ratios == ()
     assert [row.row_index for row in projection.rows] == [0, 1, 2, 3]
     assert [row.frame_index for row in projection.rows] == [2, 100, 900, 1200]
     assert [row.time_ps for row in projection.rows] == [2.5, None, 9.0, 12.0]
@@ -148,6 +170,8 @@ def test_explicit_pca_computes_centered_rank_one_projection() -> None:
 
     assert projection.status == CONFORMATION_PCA_STATUS_COMPUTED
     assert projection.n_components == 1
+    assert projection.computed_component_count == 1
+    assert projection.exported_component_count == 1
     assert projection.n_features == 1
     assert projection.n_frames == 3
     assert "centered NumPy SVD" in projection.notes
@@ -159,6 +183,10 @@ def test_explicit_pca_computes_centered_rank_one_projection() -> None:
     assert [
         row.explained_variance_ratio_pc1 for row in projection.rows
     ] == pytest.approx([1.0, 1.0, 1.0])
+    assert projection.score_vectors == tuple(
+        (row.pc1,) for row in projection.rows if row.pc1 is not None
+    )
+    assert projection.explained_variance_ratios == pytest.approx((1.0,))
     assert all(
         row.explained_variance_ratio_pc2 is None
         and row.explained_variance_ratio_pc3 is None
@@ -205,6 +233,74 @@ def test_explicit_pca_limits_components_to_numerical_rank() -> None:
     )
 
 
+def test_explicit_pca_retains_more_than_three_internal_components_and_exports_three(
+    tmp_path: Path,
+) -> None:
+    projection = build_conformation_pca_projection(
+        _high_rank_matrix(),
+        enable_pca=True,
+    )
+    limited_projection = build_conformation_pca_projection(
+        _high_rank_matrix(),
+        enable_pca=True,
+        max_pca_components=4,
+    )
+    output = write_conformation_pca_csv(projection, tmp_path)
+
+    assert CONFORMATION_PCA_DEFAULT_MAX_COMPONENTS == 10
+    assert CONFORMATION_PCA_EXPORTED_COMPONENT_LIMIT == 3
+    assert projection.max_components == 10
+    assert projection.n_components == 5
+    assert projection.computed_component_count == 5
+    assert projection.exported_component_count == 3
+    assert limited_projection.n_components == 4
+    assert len(projection.score_vectors) == 6
+    assert {len(vector) for vector in projection.score_vectors} == {5}
+    assert len(projection.explained_variance_ratios) == 5
+    assert all(
+        math.isfinite(value)
+        for vector in projection.score_vectors
+        for value in vector
+    )
+    assert all(math.isfinite(value) for value in projection.explained_variance_ratios)
+    assert [row.n_components for row in projection.rows] == [5] * 6
+    assert all(row.pc1 == vector[0] for row, vector in zip(
+        projection.rows,
+        projection.score_vectors,
+        strict=True,
+    ))
+    assert all(row.pc2 == vector[1] for row, vector in zip(
+        projection.rows,
+        projection.score_vectors,
+        strict=True,
+    ))
+    assert all(row.pc3 == vector[2] for row, vector in zip(
+        projection.rows,
+        projection.score_vectors,
+        strict=True,
+    ))
+
+    with output.open(encoding="utf-8", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+        rows = list(reader)
+
+    assert reader.fieldnames == list(CONFORMATION_PCA_COLUMNS)
+    assert "pc4" not in reader.fieldnames
+    assert "explained_variance_ratio_pc4" not in reader.fieldnames
+    assert {row["n_components"] for row in rows} == {"5"}
+    assert all(row["pc1"] and row["pc2"] and row["pc3"] for row in rows)
+
+
+def test_pca_max_component_validation_rejects_invalid_values() -> None:
+    for value in (0, -1, True, 1.5):
+        with pytest.raises(ConformationPcaError, match="max_pca_components"):
+            build_conformation_pca_projection(
+                _matrix(),
+                enable_pca=True,
+                max_pca_components=value,  # type: ignore[arg-type]
+            )
+
+
 def test_explicit_pca_is_deterministic_and_csv_is_byte_stable(
     tmp_path: Path,
 ) -> None:
@@ -223,6 +319,11 @@ def test_explicit_pca_is_deterministic_and_csv_is_byte_stable(
     text = output.read_text(encoding="utf-8").lower()
 
     assert first_projection == second_projection
+    assert first_projection.score_vectors == second_projection.score_vectors
+    assert (
+        first_projection.explained_variance_ratios
+        == second_projection.explained_variance_ratios
+    )
     assert output.read_bytes() == first_bytes
     assert "nan" not in text
     assert "inf" not in text
@@ -352,8 +453,11 @@ def test_enabled_pca_failure_is_explicit_without_fake_values(
 ) -> None:
     def fail_compute(
         fingerprints: ContactFingerprintMatrix,
+        *,
+        max_components: int,
     ) -> object:
-        raise RuntimeError("synthetic SVD failure")
+        assert max_components == CONFORMATION_PCA_DEFAULT_MAX_COMPONENTS
+        raise pca_module._PcaComputationFailed("synthetic SVD failure")
 
     monkeypatch.setattr(pca_module, "_compute_pca_values", fail_compute)
 
@@ -361,6 +465,8 @@ def test_enabled_pca_failure_is_explicit_without_fake_values(
 
     assert projection.status == CONFORMATION_PCA_STATUS_FAILED
     assert projection.n_components == 0
+    assert projection.score_vectors == ()
+    assert projection.explained_variance_ratios == ()
     assert all(
         (
             row.pc1,
@@ -375,6 +481,22 @@ def test_enabled_pca_failure_is_explicit_without_fake_values(
     )
 
 
+def test_unexpected_pca_programming_error_is_not_normalized(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_compute(
+        fingerprints: ContactFingerprintMatrix,
+        *,
+        max_components: int,
+    ) -> object:
+        raise TypeError("synthetic programming bug")
+
+    monkeypatch.setattr(pca_module, "_compute_pca_values", fail_compute)
+
+    with pytest.raises(TypeError, match="programming bug"):
+        build_conformation_pca_projection(_matrix(), enable_pca=True)
+
+
 def test_public_api_and_forbidden_dependency_boundaries() -> None:
     assert (
         mania.analysis.build_conformation_pca_projection
@@ -385,6 +507,7 @@ def test_public_api_and_forbidden_dependency_boundaries() -> None:
         mania.analysis.CONFORMATION_PCA_STATUS_COMPUTED
         == CONFORMATION_PCA_STATUS_COMPUTED
     )
+    assert mania.analysis.CONFORMATION_PCA_DEFAULT_MAX_COMPONENTS == 10
     source = MODULE_PATH.read_text(encoding="utf-8")
 
     for forbidden in (

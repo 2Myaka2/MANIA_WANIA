@@ -18,8 +18,9 @@ def test_stage24_docs_record_completion_workflow_and_boundaries() -> None:
 
     for phrase in (
         "Stage 24.E validation and acceptance",
+        "Stage 24.F corrects PCA provenance",
         "Completed Stage 24 acceptance checklist",
-        "Completed through Stage 24.E",
+        "Completed through Stage 24.F",
         "Stage 24 closed",
         "mania analyze",
         "already generated Stage 20 preprocessing artifacts",
@@ -49,8 +50,16 @@ def test_stage24_docs_record_pca_and_clustering_semantics() -> None:
         "PCA requires explicit enablement",
         "ContactFingerprintMatrix.values",
         "centered NumPy SVD",
+        "internal default maximum of 10",
         "component signs are stabilized deterministically",
         "Degenerate PCA inputs emit honest statuses",
+        "Accepted degenerate PCA inputs remain nonfatal",
+        "Explicit requested PCA numerical failure is fatal",
+        "Internal PCA components may exceed three",
+        "Public conformation PCA CSV exports only PC1-PC3",
+        "PCA status is preserved truthfully",
+        "PCA used-for-clustering state is explicit",
+        "Computed PCA may coexist with fingerprint clustering",
         "No fake PCA values are emitted",
         "No NaN or Infinity values are emitted",
         "Fingerprint clustering remains default",
@@ -61,6 +70,7 @@ def test_stage24_docs_record_pca_and_clustering_semantics() -> None:
         "direct binary residue-contact-pattern similarity",
         "proximity in reduced PCA feature space",
         "Representative frames use the active clustering space",
+        "`--pca-components-for-clustering` selects from internally computed components",
     ):
         assert phrase in text
 
@@ -101,8 +111,10 @@ def test_stage24_docs_record_status_terms_and_notebook_non_claims() -> None:
 
     for phrase in (
         "`pca_unavailable`",
+        "`pca_failed`",
         "`status = not_requested`",
         "Default-disabled PCA is not a failed numerical attempt",
+        "requested numerical PCA failure is fatal",
         "single-condition",
         "`not_applicable`",
         "skipped/unavailable statuses",
@@ -130,6 +142,17 @@ def test_stage24_acceptance_checklist_preserves_wania_and_future_boundaries(
     text = _text()
 
     for phrase in (
+        "- [x] Accepted degenerate PCA inputs remain nonfatal skipped outcomes.",
+        "- [x] Explicit requested PCA numerical failure is fatal.",
+        "- [x] Requested `pca_failed` writes no current-run Stage 24 output set.",
+        "- [x] Internal PCA components may exceed three.",
+        "- [x] Internal/default maximum PCA component capacity is 10.",
+        "- [x] Public conformation PCA CSV exports only PC1-PC3.",
+        "- [x] Computed PCA may coexist with fingerprint clustering.",
+        "- [x] PCA status is preserved truthfully.",
+        "- [x] PCA used-for-clustering state is explicit.",
+        "- [x] `--pca-components-for-clustering` selects from "
+        "internally computed components.",
         "- [x] WANIA JSON is unchanged.",
         "- [x] WANIA runtime schema is unchanged.",
         "- [x] WANIA adapter/writer behavior is unchanged.",
@@ -147,5 +170,6 @@ def test_stage24_acceptance_checklist_preserves_wania_and_future_boundaries(
         "No scikit-learn, SciPy, or pandas dependency was added",
         "analysis/extended_metrics.json` is implemented",
         "PCA intent and computation status are distinguished",
+        "No YAML or JSON analysis configuration exists",
     ):
         assert phrase in text
