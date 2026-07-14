@@ -98,8 +98,9 @@ def test_default_and_dev_dependencies_remain_lightweight() -> None:
         for requirement in dependencies
         if isinstance(requirement, str)
     }
+    assert "numpy" in default_names
     assert default_names.isdisjoint(
-        {"mdanalysis", "numpy", "pandas", "networkx", "pyarrow"}
+        {"mdanalysis", "pandas", "networkx", "pyarrow"}
     )
 
     optional_dependencies = project.get("optional-dependencies", {})

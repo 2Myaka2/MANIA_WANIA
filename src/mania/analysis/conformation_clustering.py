@@ -8,14 +8,43 @@ import re
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
+from mania.analysis.conformation_pca import (
+    CONFORMATION_PCA_STATUS_COMPUTED,
+    CONFORMATION_PCA_STATUS_CONSTANT_MATRIX,
+    CONFORMATION_PCA_STATUS_EMPTY_INPUT,
+    CONFORMATION_PCA_STATUS_FAILED,
+    CONFORMATION_PCA_STATUS_NO_FEATURES,
+    CONFORMATION_PCA_STATUS_ONE_FRAME,
+    CONFORMATION_PCA_STATUS_UNAVAILABLE,
+    ConformationPcaProjection,
+    ConformationPcaRow,
+)
 from mania.analysis.contact_fingerprints import ContactFingerprintMatrix
 
 CONFORMATION_CLUSTERING_K_MAX = 10
-CONFORMATION_CLUSTERING_ALGORITHM = "deterministic_kmeans_fingerprint"
-CONFORMATION_CLUSTERING_INPUT_SOURCE = "contact_fingerprint_matrix"
-CONFORMATION_CLUSTERING_PCA_STATUS = "pca_unavailable"
-CONFORMATION_CLUSTERING_NOTEBOOK_PARITY = "not_pca_kmeans_parity"
+CONFORMATION_CLUSTERING_BASIS_FINGERPRINT = "fingerprint"
+CONFORMATION_CLUSTERING_BASIS_PCA = "pca"
+CONFORMATION_CLUSTERING_BASES = (
+    CONFORMATION_CLUSTERING_BASIS_FINGERPRINT,
+    CONFORMATION_CLUSTERING_BASIS_PCA,
+)
+CONFORMATION_CLUSTERING_ALGORITHM_FINGERPRINT = "deterministic_kmeans_fingerprint"
+CONFORMATION_CLUSTERING_ALGORITHM_PCA = "deterministic_kmeans_pca"
+CONFORMATION_CLUSTERING_INPUT_SOURCE_FINGERPRINT = "contact_fingerprint_matrix"
+CONFORMATION_CLUSTERING_INPUT_SOURCE_PCA = "conformation_pca_coordinates"
+CONFORMATION_CLUSTERING_PCA_STATUS_NOT_USED = "pca_unavailable"
+CONFORMATION_CLUSTERING_NOTEBOOK_PARITY_FINGERPRINT = "not_pca_kmeans_parity"
+CONFORMATION_CLUSTERING_NOTEBOOK_PARITY_PCA = (
+    "notebook_pca_kmeans_parity_not_claimed"
+)
+CONFORMATION_CLUSTERING_ALGORITHM = CONFORMATION_CLUSTERING_ALGORITHM_FINGERPRINT
+CONFORMATION_CLUSTERING_INPUT_SOURCE = CONFORMATION_CLUSTERING_INPUT_SOURCE_FINGERPRINT
+CONFORMATION_CLUSTERING_PCA_STATUS = CONFORMATION_CLUSTERING_PCA_STATUS_NOT_USED
+CONFORMATION_CLUSTERING_NOTEBOOK_PARITY = (
+    CONFORMATION_CLUSTERING_NOTEBOOK_PARITY_FINGERPRINT
+)
 
 CONFORMATION_CLUSTERING_STATUS_COMPUTED = "computed"
 CONFORMATION_CLUSTERING_STATUS_EMPTY_INPUT = "empty_input"
@@ -50,9 +79,37 @@ _FINGERPRINT_NOTE = (
     "clustered directly from binary contact fingerprints; "
     "PCA coordinates unavailable; notebook PCA-to-k-means parity not claimed"
 )
+_FINGERPRINT_COMPUTED_PCA_NOTE = (
+    "clustered directly from binary contact fingerprints; "
+    "PCA was computed but not used for clustering; "
+    "notebook PCA-to-k-means parity not applicable to fingerprint mode"
+)
+_FINGERPRINT_SKIPPED_PCA_NOTE = (
+    "clustered directly from binary contact fingerprints; "
+    "PCA status retained but not used for clustering; "
+    "notebook PCA-to-k-means parity not applicable to fingerprint mode"
+)
 _SKIPPED_FINGERPRINT_NOTE = (
     "clustering input is binary contact fingerprints; "
     "PCA coordinates unavailable; notebook PCA-to-k-means parity not claimed"
+)
+_SKIPPED_FINGERPRINT_COMPUTED_PCA_NOTE = (
+    "clustering input is binary contact fingerprints; "
+    "PCA was computed but not used for clustering; "
+    "notebook PCA-to-k-means parity not applicable to fingerprint mode"
+)
+_SKIPPED_FINGERPRINT_SKIPPED_PCA_NOTE = (
+    "clustering input is binary contact fingerprints; "
+    "PCA status retained but not used for clustering; "
+    "notebook PCA-to-k-means parity not applicable to fingerprint mode"
+)
+_PCA_NOTE = (
+    "clustered from computed PCA frame-score coordinates; "
+    "PCA clustering implemented; exact notebook parity not claimed"
+)
+_SKIPPED_PCA_NOTE = (
+    "clustering input is computed PCA frame-score coordinates; "
+    "PCA clustering implemented; exact notebook parity not claimed"
 )
 _STATUSES = {
     CONFORMATION_CLUSTERING_STATUS_COMPUTED,
@@ -62,8 +119,19 @@ _STATUSES = {
     CONFORMATION_CLUSTERING_STATUS_CONSTANT_MATRIX,
     CONFORMATION_CLUSTERING_STATUS_NO_VALID_K,
 }
+_PCA_STATUSES = {
+    CONFORMATION_PCA_STATUS_COMPUTED,
+    CONFORMATION_PCA_STATUS_CONSTANT_MATRIX,
+    CONFORMATION_PCA_STATUS_EMPTY_INPUT,
+    CONFORMATION_PCA_STATUS_FAILED,
+    CONFORMATION_PCA_STATUS_NO_FEATURES,
+    CONFORMATION_PCA_STATUS_ONE_FRAME,
+    CONFORMATION_PCA_STATUS_UNAVAILABLE,
+}
 
-_Vector = tuple[int, ...]
+ConformationClusteringBasis = Literal["fingerprint", "pca"]
+
+_Vector = tuple[int | float, ...]
 _Centroid = tuple[float, ...]
 
 
@@ -148,43 +216,77 @@ class _KmeansResult:
     converged: bool
 
 
+@dataclass(frozen=True)
+class _ClusteringMetadata:
+    algorithm: str
+    input_source: str
+    pca_status: str
+    notebook_parity: str
+    computed_note: str
+    skipped_note: str
+
+
 def build_conformation_clusters(
     fingerprints: ContactFingerprintMatrix,
     *,
+    clustering_basis: ConformationClusteringBasis = "fingerprint",
+    pca_projection: ConformationPcaProjection | None = None,
+    pca_components_for_clustering: int | None = None,
     config: ConformationClusteringConfig | None = None,
 ) -> ConformationClustering:
-    """Cluster accepted binary fingerprints without PCA or dependencies."""
+    """Cluster frames from the selected conformation feature basis.
+
+    Fingerprint clustering remains the default and ignores any supplied PCA
+    projection. PCA clustering is explicit opt-in and uses only computed
+    in-memory PCA frame-score coordinates.
+    """
     if not isinstance(fingerprints, ContactFingerprintMatrix):
         raise TypeError("fingerprints must be a ContactFingerprintMatrix")
     clustering_config = config or ConformationClusteringConfig()
     if not isinstance(clustering_config, ConformationClusteringConfig):
         raise TypeError("config must be a ConformationClusteringConfig")
+    _validate_clustering_basis(clustering_basis)
     _validate_fingerprints(fingerprints)
 
+    metadata = _metadata_for_basis(
+        clustering_basis,
+        pca_projection=pca_projection,
+    )
+    values = _clustering_values(
+        fingerprints,
+        clustering_basis=clustering_basis,
+        pca_projection=pca_projection,
+        pca_components_for_clustering=pca_components_for_clustering,
+    )
     n_frames, n_features = fingerprints.shape
+    n_vector_features = len(values[0]) if values else n_features
     if not n_frames:
         return _skipped_clustering(
             fingerprints,
             CONFORMATION_CLUSTERING_STATUS_EMPTY_INPUT,
             "fingerprint matrix contains no frames",
+            metadata=metadata,
         )
-    if not n_features:
+    if not n_vector_features:
         return _skipped_clustering(
             fingerprints,
             CONFORMATION_CLUSTERING_STATUS_NO_FEATURES,
-            "fingerprint matrix contains no features",
+            _no_features_reason(clustering_basis),
+            metadata=metadata,
         )
     if n_frames < 3:
         return _skipped_clustering(
             fingerprints,
             CONFORMATION_CLUSTERING_STATUS_INSUFFICIENT_FRAMES,
             "at least three frames are required for silhouette selection",
+            metadata=metadata,
         )
-    if len(set(fingerprints.values)) == 1:
+    if len(set(values)) == 1:
         return _skipped_clustering(
             fingerprints,
             CONFORMATION_CLUSTERING_STATUS_CONSTANT_MATRIX,
-            "all fingerprint rows are identical",
+            _constant_matrix_reason(clustering_basis),
+            metadata=metadata,
         )
 
     candidate_results: dict[int, _KmeansResult] = {}
@@ -192,7 +294,7 @@ def build_conformation_clusters(
     maximum_k = min(clustering_config.max_k, n_frames - 1)
     for k in range(2, maximum_k + 1):
         result = _run_kmeans(
-            fingerprints.values,
+            values,
             tuple(frame.frame_index for frame in fingerprints.frames),
             k=k,
             max_iterations=clustering_config.max_iterations,
@@ -208,7 +310,7 @@ def build_conformation_clusters(
                 )
             )
             continue
-        score = _silhouette_score(fingerprints.values, result.assignments)
+        score = _silhouette_score(values, result.assignments)
         candidate_results[k] = result
         candidates.append(
             ConformationClusteringCandidate(
@@ -232,6 +334,7 @@ def build_conformation_clusters(
             CONFORMATION_CLUSTERING_STATUS_NO_VALID_K,
             "no candidate k produced valid non-empty clusters",
             candidates=tuple(candidates),
+            metadata=metadata,
         )
 
     selected = valid_candidates[0]
@@ -245,9 +348,11 @@ def build_conformation_clusters(
     result = candidate_results[selected.k]
     rows = _computed_rows(
         fingerprints,
+        values,
         result,
         selected_k=selected.k,
         silhouette_score=selected_score,
+        metadata=metadata,
     )
     clustering = ConformationClustering(
         condition=fingerprints.condition,
@@ -256,7 +361,7 @@ def build_conformation_clusters(
         selected_k=selected.k,
         silhouette_score=selected_score,
         status=CONFORMATION_CLUSTERING_STATUS_COMPUTED,
-        notes=_FINGERPRINT_NOTE,
+        notes=metadata.computed_note,
     )
     _validate_clustering(clustering)
     return clustering
@@ -314,6 +419,257 @@ def write_conformation_labels_csv(
             f"conformation labels could not be written: {output_path}"
         ) from error
     return output_path
+
+
+def _validate_clustering_basis(clustering_basis: object) -> None:
+    if clustering_basis not in CONFORMATION_CLUSTERING_BASES:
+        raise ConformationClusteringError(
+            "clustering_basis must be 'fingerprint' or 'pca'"
+        )
+
+
+def _metadata_for_basis(
+    clustering_basis: ConformationClusteringBasis,
+    *,
+    pca_projection: ConformationPcaProjection | None,
+) -> _ClusteringMetadata:
+    if clustering_basis == CONFORMATION_CLUSTERING_BASIS_FINGERPRINT:
+        if pca_projection is not None and not isinstance(
+            pca_projection,
+            ConformationPcaProjection,
+        ):
+            raise TypeError("pca_projection must be a ConformationPcaProjection")
+        pca_status = (
+            CONFORMATION_CLUSTERING_PCA_STATUS_NOT_USED
+            if pca_projection is None
+            else pca_projection.status
+        )
+        if pca_status == CONFORMATION_PCA_STATUS_COMPUTED:
+            computed_note = _FINGERPRINT_COMPUTED_PCA_NOTE
+            skipped_note = _SKIPPED_FINGERPRINT_COMPUTED_PCA_NOTE
+        elif pca_status == CONFORMATION_CLUSTERING_PCA_STATUS_NOT_USED:
+            computed_note = _FINGERPRINT_NOTE
+            skipped_note = _SKIPPED_FINGERPRINT_NOTE
+        else:
+            computed_note = _FINGERPRINT_SKIPPED_PCA_NOTE
+            skipped_note = _SKIPPED_FINGERPRINT_SKIPPED_PCA_NOTE
+        return _ClusteringMetadata(
+            algorithm=CONFORMATION_CLUSTERING_ALGORITHM_FINGERPRINT,
+            input_source=CONFORMATION_CLUSTERING_INPUT_SOURCE_FINGERPRINT,
+            pca_status=pca_status,
+            notebook_parity=CONFORMATION_CLUSTERING_NOTEBOOK_PARITY_FINGERPRINT,
+            computed_note=computed_note,
+            skipped_note=skipped_note,
+        )
+    return _ClusteringMetadata(
+        algorithm=CONFORMATION_CLUSTERING_ALGORITHM_PCA,
+        input_source=CONFORMATION_CLUSTERING_INPUT_SOURCE_PCA,
+        pca_status=CONFORMATION_PCA_STATUS_COMPUTED,
+        notebook_parity=CONFORMATION_CLUSTERING_NOTEBOOK_PARITY_PCA,
+        computed_note=_PCA_NOTE,
+        skipped_note=_SKIPPED_PCA_NOTE,
+    )
+
+
+def _clustering_values(
+    fingerprints: ContactFingerprintMatrix,
+    *,
+    clustering_basis: ConformationClusteringBasis,
+    pca_projection: ConformationPcaProjection | None,
+    pca_components_for_clustering: int | None,
+) -> tuple[_Vector, ...]:
+    if clustering_basis == CONFORMATION_CLUSTERING_BASIS_FINGERPRINT:
+        if pca_components_for_clustering is not None:
+            raise ConformationClusteringError(
+                "pca_components_for_clustering requires clustering_basis='pca'"
+            )
+        return fingerprints.values
+
+    if pca_projection is None:
+        raise ConformationClusteringError(
+            "clustering_basis='pca' requires pca_projection"
+        )
+    if not isinstance(pca_projection, ConformationPcaProjection):
+        raise TypeError("pca_projection must be a ConformationPcaProjection")
+    component_count = _pca_component_count(
+        pca_projection,
+        pca_components_for_clustering,
+    )
+    _validate_pca_projection_alignment(
+        fingerprints,
+        pca_projection,
+        component_count=component_count,
+    )
+    score_vectors = _pca_score_vectors(pca_projection)
+    return tuple(
+        tuple(
+            score_vector[component_index]
+            for component_index in range(component_count)
+        )
+        for score_vector in score_vectors
+    )
+
+
+def _pca_component_count(
+    projection: ConformationPcaProjection,
+    requested_components: int | None,
+) -> int:
+    if projection.status != CONFORMATION_PCA_STATUS_COMPUTED:
+        raise ConformationClusteringError(
+            "PCA clustering requires a computed PCA projection"
+        )
+    if projection.n_components < 1:
+        raise ConformationClusteringError(
+            "PCA clustering requires at least one computed PCA component"
+        )
+    if requested_components is None:
+        return projection.n_components
+    if type(requested_components) is not int:
+        raise ConformationClusteringError(
+            "pca_components_for_clustering must be an integer"
+        )
+    if requested_components < 1:
+        raise ConformationClusteringError(
+            "pca_components_for_clustering must be >= 1"
+        )
+    if requested_components > projection.n_components:
+        raise ConformationClusteringError(
+            "pca_components_for_clustering must be <= projection.n_components"
+        )
+    return requested_components
+
+
+def _validate_pca_projection_alignment(
+    fingerprints: ContactFingerprintMatrix,
+    projection: ConformationPcaProjection,
+    *,
+    component_count: int,
+) -> None:
+    n_frames, n_features = fingerprints.shape
+    if projection.condition != fingerprints.condition:
+        raise ConformationClusteringError(
+            "PCA projection condition does not match fingerprints"
+        )
+    if projection.n_frames != len(projection.rows):
+        raise ConformationClusteringError(
+            "PCA projection n_frames does not match rows"
+        )
+    if projection.n_frames != n_frames:
+        raise ConformationClusteringError(
+            "PCA frame count does not match fingerprints"
+        )
+    if projection.n_features != n_features:
+        raise ConformationClusteringError(
+            "PCA feature count does not match fingerprints"
+        )
+    score_vectors = _pca_score_vectors(projection)
+    if len(score_vectors) != projection.n_frames:
+        raise ConformationClusteringError(
+            "PCA internal score count does not match rows"
+        )
+
+    frame_indexes: set[int] = set()
+    for row_index, row in enumerate(projection.rows):
+        if row.frame_index in frame_indexes:
+            raise ConformationClusteringError("duplicate PCA frame identity")
+        frame_indexes.add(row.frame_index)
+        score_vector = score_vectors[row_index]
+        if len(score_vector) != projection.n_components:
+            raise ConformationClusteringError(
+                "PCA internal score dimensionality does not match"
+            )
+        for component_index in range(component_count):
+            if component_index >= len(score_vector):
+                raise ConformationClusteringError(
+                    "unavailable PCA component requested"
+                )
+            value = score_vector[component_index]
+            if not isinstance(value, float) or not math.isfinite(value):
+                raise ConformationClusteringError(
+                    "PCA clustering coordinates must be finite"
+                )
+
+    for frame, row in zip(fingerprints.frames, projection.rows, strict=True):
+        if row.condition != projection.condition:
+            raise ConformationClusteringError(
+                "PCA row condition does not match projection"
+            )
+        if row.row_index != frame.row_index:
+            raise ConformationClusteringError(
+                "PCA row_index does not match fingerprint frame order"
+            )
+        if row.frame_index != frame.frame_index:
+            raise ConformationClusteringError(
+                "PCA frame_index does not match fingerprint frame order"
+            )
+        if (
+            row.time_ps is not None
+            and frame.time_ps is not None
+            and row.time_ps != frame.time_ps
+        ):
+            raise ConformationClusteringError(
+                "PCA time_ps conflicts with fingerprint frame"
+            )
+        if (
+            row.n_components != projection.n_components
+            or row.n_features != projection.n_features
+            or row.n_frames != projection.n_frames
+            or row.status != projection.status
+        ):
+            raise ConformationClusteringError(
+                "PCA row metadata does not match projection"
+            )
+        for component_index in range(min(component_count, 3)):
+            _pca_exported_coordinate(row, component_index)
+
+
+def _pca_score_vectors(
+    projection: ConformationPcaProjection,
+) -> tuple[tuple[float, ...], ...]:
+    if projection.score_vectors:
+        return projection.score_vectors
+    if projection.n_components > 3:
+        raise ConformationClusteringError(
+            "PCA clustering requires internal score vectors for components above PC3"
+        )
+    return tuple(
+        tuple(
+            _pca_exported_coordinate(row, component_index)
+            for component_index in range(projection.n_components)
+        )
+        for row in projection.rows
+    )
+
+
+def _pca_exported_coordinate(
+    row: ConformationPcaRow,
+    component_index: int,
+) -> float:
+    if component_index == 0:
+        value = row.pc1
+    elif component_index == 1:
+        value = row.pc2
+    elif component_index == 2:
+        value = row.pc3
+    else:
+        raise ConformationClusteringError("unavailable PCA export component requested")
+    if not isinstance(value, float) or not math.isfinite(value):
+        raise ConformationClusteringError(
+            "PCA clustering coordinates must be finite"
+        )
+    return value
+
+
+def _no_features_reason(clustering_basis: ConformationClusteringBasis) -> str:
+    if clustering_basis == CONFORMATION_CLUSTERING_BASIS_PCA:
+        return "PCA clustering contains no retained components"
+    return "fingerprint matrix contains no features"
+
+
+def _constant_matrix_reason(clustering_basis: ConformationClusteringBasis) -> str:
+    if clustering_basis == CONFORMATION_CLUSTERING_BASIS_PCA:
+        return "all PCA clustering rows are identical"
+    return "all fingerprint rows are identical"
 
 
 def _run_kmeans(
@@ -448,10 +804,12 @@ def _silhouette_score(
 
 def _computed_rows(
     fingerprints: ContactFingerprintMatrix,
+    values: tuple[_Vector, ...],
     result: _KmeansResult,
     *,
     selected_k: int,
     silhouette_score: float,
+    metadata: _ClusteringMetadata,
 ) -> tuple[ConformationLabelRow, ...]:
     members = {
         cluster: tuple(
@@ -477,9 +835,7 @@ def _computed_rows(
         cluster: min(
             members[cluster],
             key=lambda index: (
-                _squared_distance(
-                    fingerprints.values[index], result.centroids[cluster]
-                ),
+                _squared_distance(values[index], result.centroids[cluster]),
                 fingerprints.frames[index].frame_index,
             ),
         )
@@ -501,14 +857,14 @@ def _computed_rows(
                 silhouette_score=silhouette_score,
                 is_representative=index == representatives[cluster],
                 distance_to_centroid=_squared_distance(
-                    fingerprints.values[index], result.centroids[cluster]
+                    values[index], result.centroids[cluster]
                 ),
-                algorithm=CONFORMATION_CLUSTERING_ALGORITHM,
-                input_source=CONFORMATION_CLUSTERING_INPUT_SOURCE,
-                pca_status=CONFORMATION_CLUSTERING_PCA_STATUS,
-                notebook_parity=CONFORMATION_CLUSTERING_NOTEBOOK_PARITY,
+                algorithm=metadata.algorithm,
+                input_source=metadata.input_source,
+                pca_status=metadata.pca_status,
+                notebook_parity=metadata.notebook_parity,
                 status=CONFORMATION_CLUSTERING_STATUS_COMPUTED,
-                notes=_FINGERPRINT_NOTE,
+                notes=metadata.computed_note,
             )
         )
     return tuple(rows)
@@ -520,8 +876,9 @@ def _skipped_clustering(
     reason: str,
     *,
     candidates: tuple[ConformationClusteringCandidate, ...] = (),
+    metadata: _ClusteringMetadata,
 ) -> ConformationClustering:
-    notes = f"{reason}; {_SKIPPED_FINGERPRINT_NOTE}"
+    notes = f"{reason}; {metadata.skipped_note}"
     rows = tuple(
         ConformationLabelRow(
             condition=fingerprints.condition,
@@ -534,10 +891,10 @@ def _skipped_clustering(
             silhouette_score=None,
             is_representative=None,
             distance_to_centroid=None,
-            algorithm=CONFORMATION_CLUSTERING_ALGORITHM,
-            input_source=CONFORMATION_CLUSTERING_INPUT_SOURCE,
-            pca_status=CONFORMATION_CLUSTERING_PCA_STATUS,
-            notebook_parity=CONFORMATION_CLUSTERING_NOTEBOOK_PARITY,
+            algorithm=metadata.algorithm,
+            input_source=metadata.input_source,
+            pca_status=metadata.pca_status,
+            notebook_parity=metadata.notebook_parity,
             status=status,
             notes=notes,
         )
@@ -604,6 +961,7 @@ def _validate_clustering(clustering: ConformationClustering) -> None:
     if clustering.status == CONFORMATION_CLUSTERING_STATUS_EMPTY_INPUT:
         if clustering.rows:
             raise ConformationClusteringError("empty input must not contain rows")
+    expected_metadata: tuple[str, str, str, str] | None = None
     for expected_row_index, row in enumerate(clustering.rows):
         if row.condition != clustering.condition:
             raise ConformationClusteringError(
@@ -614,15 +972,24 @@ def _validate_clustering(clustering: ConformationClustering) -> None:
                 "conformation row_index must match deterministic row order"
             )
         if (
-            row.algorithm != CONFORMATION_CLUSTERING_ALGORITHM
-            or row.input_source != CONFORMATION_CLUSTERING_INPUT_SOURCE
-            or row.pca_status != CONFORMATION_CLUSTERING_PCA_STATUS
-            or row.notebook_parity != CONFORMATION_CLUSTERING_NOTEBOOK_PARITY
-            or row.status != clustering.status
+            row.status != clustering.status
             or row.notes != clustering.notes
         ):
             raise ConformationClusteringError(
                 "conformation row metadata does not match clustering"
+            )
+        _validate_row_mode_metadata(row)
+        row_metadata = (
+            row.algorithm,
+            row.input_source,
+            row.pca_status,
+            row.notebook_parity,
+        )
+        if expected_metadata is None:
+            expected_metadata = row_metadata
+        elif row_metadata != expected_metadata:
+            raise ConformationClusteringError(
+                "conformation rows must use one clustering basis"
             )
     if clustering.status == CONFORMATION_CLUSTERING_STATUS_COMPUTED:
         if clustering.selected_k is None or clustering.silhouette_score is None:
@@ -688,18 +1055,64 @@ def _csv_value(value: object) -> object:
     if isinstance(value, bool):
         return str(value).lower()
     if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ConformationClusteringError("CSV numerical values must be finite")
         return format(value, ".15g")
     return value
 
 
+def _validate_row_mode_metadata(row: ConformationLabelRow) -> None:
+    if row.algorithm == CONFORMATION_CLUSTERING_ALGORITHM_FINGERPRINT:
+        if row.input_source != CONFORMATION_CLUSTERING_INPUT_SOURCE_FINGERPRINT:
+            raise ConformationClusteringError(
+                "conformation row metadata does not match clustering basis"
+            )
+        if row.pca_status not in _PCA_STATUSES:
+            raise ConformationClusteringError(
+                "unsupported fingerprint clustering PCA status"
+            )
+        if (
+            row.notebook_parity
+            != CONFORMATION_CLUSTERING_NOTEBOOK_PARITY_FINGERPRINT
+        ):
+            raise ConformationClusteringError(
+                "conformation row metadata does not match clustering basis"
+            )
+        return
+    elif row.algorithm == CONFORMATION_CLUSTERING_ALGORITHM_PCA:
+        expected = (
+            CONFORMATION_CLUSTERING_INPUT_SOURCE_PCA,
+            CONFORMATION_PCA_STATUS_COMPUTED,
+            CONFORMATION_CLUSTERING_NOTEBOOK_PARITY_PCA,
+        )
+    else:
+        raise ConformationClusteringError(
+            "unsupported conformation clustering algorithm"
+        )
+    if (row.input_source, row.pca_status, row.notebook_parity) != expected:
+        raise ConformationClusteringError(
+            "conformation row metadata does not match clustering basis"
+        )
+
+
 __all__ = [
     "CONFORMATION_CLUSTERING_ALGORITHM",
+    "CONFORMATION_CLUSTERING_ALGORITHM_FINGERPRINT",
+    "CONFORMATION_CLUSTERING_ALGORITHM_PCA",
+    "CONFORMATION_CLUSTERING_BASES",
+    "CONFORMATION_CLUSTERING_BASIS_FINGERPRINT",
+    "CONFORMATION_CLUSTERING_BASIS_PCA",
     "CONFORMATION_CLUSTERING_CANDIDATE_EMPTY_CLUSTER",
     "CONFORMATION_CLUSTERING_CANDIDATE_VALID",
     "CONFORMATION_CLUSTERING_INPUT_SOURCE",
+    "CONFORMATION_CLUSTERING_INPUT_SOURCE_FINGERPRINT",
+    "CONFORMATION_CLUSTERING_INPUT_SOURCE_PCA",
     "CONFORMATION_CLUSTERING_K_MAX",
     "CONFORMATION_CLUSTERING_NOTEBOOK_PARITY",
+    "CONFORMATION_CLUSTERING_NOTEBOOK_PARITY_FINGERPRINT",
+    "CONFORMATION_CLUSTERING_NOTEBOOK_PARITY_PCA",
     "CONFORMATION_CLUSTERING_PCA_STATUS",
+    "CONFORMATION_CLUSTERING_PCA_STATUS_NOT_USED",
     "CONFORMATION_CLUSTERING_STATUS_COMPUTED",
     "CONFORMATION_CLUSTERING_STATUS_CONSTANT_MATRIX",
     "CONFORMATION_CLUSTERING_STATUS_EMPTY_INPUT",
@@ -708,6 +1121,7 @@ __all__ = [
     "CONFORMATION_CLUSTERING_STATUS_NO_VALID_K",
     "CONFORMATION_LABELS_COLUMNS",
     "ConformationClustering",
+    "ConformationClusteringBasis",
     "ConformationClusteringCandidate",
     "ConformationClusteringConfig",
     "ConformationClusteringError",
