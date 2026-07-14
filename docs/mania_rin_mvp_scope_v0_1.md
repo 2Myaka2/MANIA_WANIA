@@ -734,6 +734,19 @@ or YAML/JSON analysis configuration. It keeps accepted degenerate PCA inputs
 nonfatal for fingerprint clustering, makes explicit requested numerical PCA
 failure fatal in `mania analyze`, retains up to 10 internal PCA components,
 and keeps the public PCA CSV limited to PC1-PC3. WANIA remains unchanged.
+Completed through Stage 24.F remains the accepted PCA refinement closure.
+
+Stage 24.G adds the explicit preprocessing CLI integration for analysis-ready
+Stage 20 inputs. `mania preprocessing run-graph-export
+--export-analysis-inputs --contact-selection protein` writes the root-level
+`residue_table_{condition}.csv`,
+`protein_contact_edges_undirected_{condition}.csv`,
+`contacts_perframe_{condition}.csv`, `edge_semantics.json`,
+`mania_manifest.json`, and `mania_residue_library.json` files consumed by
+`mania analyze`. The flag is disabled by default, rejects `--skip-contacts`
+and non-protein contact selection, and does not invoke analysis. The legacy
+`--export-scientific-csvs` path remains a separate optional `rg/` and
+`contacts/` side export. WANIA remains unchanged.
 
 ##### Completed Stage 24 acceptance checklist
 
@@ -893,7 +906,7 @@ This is planning-level ownership only; it does not create implementation tasks.
 | Stage 21 — RIN analysis parity | **Completed through Stage 21.F:** accepted static graph, metrics, communities, enrichment, conservative node comparison/statistics, and validation/docs/tests alignment. |
 | Stage 22 — Temporal RIN + conformational artifacts | **Completed through Stage 22.G:** accepted temporal input/windows, window graphs/metrics, contact fingerprints, PCA-unavailable and fingerprint-clustering artifacts, representatives, and validation/docs/tests alignment. |
 | Stage 23 — WANIA RIN alignment | **Completed through Stage 23.E:** accepted MANIA/WANIA boundary, conservative capabilities, optional file-reference policy, deterministic contract protection, and documentation acceptance checklist without expanding the base render contract. |
-| Stage 24 — Optional PCA refinement and analysis orchestration | **Completed through Stage 24.F:** explicit opt-in computed PCA, explicit opt-in PCA clustering, the `mania analyze` orchestration CLI, the MANIA-only `analysis/extended_metrics.json` manifest, validation/docs/acceptance closure, and PCA provenance/failure/internal-component corrections, with PCA disabled by default, fingerprint clustering as default, Stage 25 not started, and WANIA unchanged. |
+| Stage 24 — Optional PCA refinement and analysis orchestration | **Completed through Stage 24.G:** explicit opt-in computed PCA, explicit opt-in PCA clustering, the `mania analyze` orchestration CLI, the MANIA-only `analysis/extended_metrics.json` manifest, validation/docs/acceptance closure, PCA provenance/failure/internal-component corrections, and explicit preprocessing CLI export of analysis-ready Stage 20 inputs, with PCA disabled by default, fingerprint clustering as default, Stage 25 not started, and WANIA unchanged. |
 
 ## 10. Non-goals
 

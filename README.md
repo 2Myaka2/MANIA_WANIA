@@ -7,8 +7,9 @@ outputs after a separate Stage 16+ contract is accepted.
 The current practical workflow starts from a preprocessing manifest and local
 raw MD files, loads runtimes, computes Rg and contacts in memory, exports
 backend graph artifacts, writes diagnostics when report writing succeeds, and
-can optionally compare generated graph artifacts against explicit reference
-artifacts.
+can optionally write the root-level Stage 20 artifacts consumed by
+`mania analyze`. Reference comparison is separate and requires explicit
+reference artifact paths.
 
 ## Stage 20 Preprocessing Status
 
@@ -682,6 +683,7 @@ raw MD files + preprocessing manifest
 -> graph/nodes.csv
 -> graph/edges.csv
 -> graph/graph.json
+-> optional root-level Stage 20 analysis inputs when explicitly requested
 -> optional scientific CSV exports when explicitly requested
 -> diagnostics report when diagnostics report writing succeeds
 ```
@@ -697,6 +699,10 @@ mania preprocessing run-graph-export \
   --manifest PATH \
   --output PATH
 ```
+
+Preprocessing does not invoke `mania analyze`. `mania analyze` does not read
+raw `.tpr`/`.xtc` files and does not repeat contact computation. Neither
+command invokes WANIA automatically.
 
 ## Protein-Agnostic Boundary
 
@@ -753,7 +759,7 @@ current MDAnalysis/runtime loading path.
 
 ## Manifest Example
 
-Example `local_md/manifests/napi2b_10ns.yaml`:
+Example `local_md/manifests/napi2b_full.yaml`:
 
 ```yaml
 output_root: ../outputs
@@ -803,6 +809,76 @@ mania preprocessing run-graph-export \
 machine-readable JSON result. The command exits non-zero when a workflow stage
 fails. The CLI does not execute notebooks, auto-discover `local_md`, or produce
 WANIA frontend/API payloads.
+
+## Export Analysis-Ready Inputs
+
+To make preprocessing output directly reusable by `mania analyze`, pass the
+explicit `--export-analysis-inputs` flag with protein-only contacts. This
+writes the accepted Stage 20 CSV/JSON files directly under `--output`:
+
+```text
+residue_table_{condition}.csv
+protein_contact_edges_undirected_{condition}.csv
+contacts_perframe_{condition}.csv
+edge_semantics.json
+mania_manifest.json
+mania_residue_library.json
+```
+
+Smoke preprocessing:
+
+```bash
+mania preprocessing run-graph-export \
+  --manifest local_md/manifests/napi2b_full.yaml \
+  --output mania_output/napi2b_smoke \
+  --expected-condition normal \
+  --expected-condition tumor \
+  --contact-selection protein \
+  --export-analysis-inputs \
+  --max-frames 10 \
+  --verbose
+```
+
+Full preprocessing:
+
+```bash
+mania preprocessing run-graph-export \
+  --manifest local_md/manifests/napi2b_full.yaml \
+  --output mania_output/napi2b_full \
+  --expected-condition normal \
+  --expected-condition tumor \
+  --contact-selection protein \
+  --export-analysis-inputs \
+  --verbose
+```
+
+Analysis with PCA from the same root:
+
+```bash
+mania analyze \
+  --input mania_output/napi2b_full \
+  --output mania_output/napi2b_full \
+  --condition normal \
+  --condition tumor \
+  --enable-pca
+```
+
+PCA-basis clustering is a separate explicit analysis choice:
+
+```bash
+mania analyze \
+  --input mania_output/napi2b_full \
+  --output mania_output/napi2b_full \
+  --condition normal \
+  --condition tumor \
+  --enable-pca \
+  --clustering-basis pca
+```
+
+This workflow uses CSV/JSON Stage 20 artifacts; `.npz` files are not required.
+The preprocessing step reads `.tpr`/`.xtc`, computes contacts once, and
+persists analysis-ready inputs so PCA, clustering, and later analysis options
+can be rerun without recalculating raw trajectory contacts.
 
 ### Frame Sampling
 
@@ -977,6 +1053,12 @@ computation.
 
 By default, the Stage 15 CLI does not export Rg/contacts CSVs. They can be
 exported with explicit optional flags after graph export succeeds.
+
+These legacy flags are distinct from `--export-analysis-inputs`.
+`--export-analysis-inputs` writes the root-level per-condition Stage 20 bundle
+consumed directly by `mania analyze`. `--export-scientific-csvs` writes the
+older optional side CSV subset under `rg/` and `contacts/`, and it does not
+write the full analysis-ready bundle or run analysis.
 
 Recommended safe shortcut:
 

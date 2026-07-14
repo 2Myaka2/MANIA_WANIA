@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
@@ -400,16 +401,27 @@ def _validate_condition(condition: object) -> None:
     path = Path(condition)
     if path.is_absolute() or len(path.parts) != 1 or condition in {".", ".."}:
         raise AnalyzeError(f"unsafe condition name: {condition!r}")
-    if not _CONDITION_COMPONENT_RE.fullmatch(condition):
-        raise AnalyzeError(f"unsafe condition name: {condition!r}")
+    try:
+        _condition_filename_component(condition)
+    except AnalyzeError as error:
+        raise AnalyzeError(f"unsafe condition name: {condition!r}") from error
 
 
 def _condition_input_paths(input_root: Path, condition: str) -> _ConditionInputPaths:
-    residue_table = input_root / f"residue_table_{condition}.csv"
-    protein_contact_edges = (
-        input_root / f"protein_contact_edges_undirected_{condition}.csv"
+    manifest_refs = _manifest_condition_artifact_paths(input_root, condition)
+    component = _condition_filename_component(condition)
+    residue_table = manifest_refs.get(
+        "residue_table",
+        input_root / f"residue_table_{component}.csv",
     )
-    contacts_perframe = input_root / f"contacts_perframe_{condition}.csv"
+    protein_contact_edges = manifest_refs.get(
+        "protein_contact_edges",
+        input_root / f"protein_contact_edges_undirected_{component}.csv",
+    )
+    contacts_perframe = manifest_refs.get(
+        "contacts_perframe",
+        input_root / f"contacts_perframe_{component}.csv",
+    )
     required = {
         "residue_table": residue_table,
         "protein_contact_edges": protein_contact_edges,
@@ -431,6 +443,72 @@ def _condition_input_paths(input_root: Path, condition: str) -> _ConditionInputP
         mania_manifest=mania_manifest,
         mania_residue_library=mania_residue_library,
     )
+
+
+def _condition_filename_component(condition: str) -> str:
+    component = re.sub(r"[^A-Za-z0-9_.-]+", "_", condition).strip("._")
+    if not component:
+        raise AnalyzeError("condition must contain a filename-safe character")
+    if not _CONDITION_COMPONENT_RE.fullmatch(component):
+        raise AnalyzeError("condition must contain a filename-safe character")
+    return component
+
+
+def _manifest_condition_artifact_paths(
+    input_root: Path,
+    condition: str,
+) -> dict[str, Path]:
+    manifest_path = input_root / _MANIA_MANIFEST_FILENAME
+    if not manifest_path.exists():
+        return {}
+    if not manifest_path.is_file():
+        raise AnalyzeError(
+            f"optional root artifact is not a file: {manifest_path.name}"
+        )
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise AnalyzeError(
+            f"mania_manifest.json could not be read: {error.__class__.__name__}"
+        ) from error
+    if not isinstance(payload, dict):
+        raise AnalyzeError("mania_manifest.json must contain a JSON object")
+    produced = payload.get("produced_artifacts")
+    if produced is None:
+        return {}
+    if not isinstance(produced, list):
+        raise AnalyzeError("mania_manifest.json produced_artifacts must be a list")
+
+    by_label: dict[str, Path] = {}
+    role_to_label = {
+        "residue table": "residue_table",
+        "protein contact edges": "protein_contact_edges",
+        "per-frame protein contacts": "contacts_perframe",
+    }
+    for item in produced:
+        if not isinstance(item, dict) or item.get("condition") != condition:
+            continue
+        role = item.get("role")
+        label = role_to_label.get(role) if isinstance(role, str) else None
+        if label is None:
+            continue
+        filename = item.get("filename")
+        if not isinstance(filename, str) or not filename:
+            raise AnalyzeError(
+                "mania_manifest.json artifact filename must be a non-empty string"
+            )
+        path = Path(filename)
+        if path.is_absolute() or path.name != filename:
+            raise AnalyzeError(
+                "mania_manifest.json artifact filename must be portable"
+            )
+        if label in by_label:
+            raise AnalyzeError(
+                "mania_manifest.json contains duplicate artifact references "
+                f"for condition {condition!r}"
+            )
+        by_label[label] = input_root / filename
+    return by_label
 
 
 def _require_file(path: Path, *, label: str, condition: str) -> None:

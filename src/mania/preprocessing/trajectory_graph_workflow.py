@@ -193,6 +193,25 @@ class _ScientificCsvValidator(Protocol):
     def __call__(self, csv_path: str | Path) -> object: ...
 
 
+class _ResidueTablesCsvWriter(Protocol):
+    def __call__(self, mapping_result: object, output_dir: str | Path) -> object: ...
+
+
+class _ProteinContactArtifactsCsvWriter(Protocol):
+    def __call__(self, contacts_result: object, output_dir: str | Path) -> object: ...
+
+
+class _ManifestArtifactsWriter(Protocol):
+    def __call__(
+        self,
+        mapping_result: object,
+        output_dir: str | Path,
+        *,
+        residue_tables: object | None = None,
+        protein_contacts: object | None = None,
+    ) -> object: ...
+
+
 class _GraphExportMappingBuilder(Protocol):
     def __call__(self, contacts_result: object) -> object: ...
 
@@ -1347,6 +1366,157 @@ class PreprocessingGraphWorkflowScientificCsvExportResult:
                     else None
                 ),
             },
+            "issues": [issue.to_dict() for issue in self.issues],
+            "issue_count": self.issue_count,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphWorkflowAnalysisInputExportIssue:
+    """One deterministic analysis-ready artifact export issue."""
+
+    kind: str
+    message: str
+    stage: str | None = None
+    field: str | None = None
+    path: Path | None = None
+    value: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "kind", _non_empty_string(self.kind, "kind"))
+        object.__setattr__(
+            self,
+            "message",
+            _non_empty_string(self.message, "message"),
+        )
+        object.__setattr__(
+            self,
+            "stage",
+            _optional_non_empty_string(self.stage, "stage"),
+        )
+        object.__setattr__(
+            self,
+            "field",
+            _optional_non_empty_string(self.field, "field"),
+        )
+        _require_optional_path(self.path, "path")
+        object.__setattr__(
+            self,
+            "value",
+            _optional_non_empty_string(self.value, "value"),
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return a JSON-safe analysis input export issue dictionary."""
+        return {
+            "kind": self.kind,
+            "message": self.message,
+            "stage": self.stage,
+            "field": self.field,
+            "path": _optional_path_string(self.path),
+            "value": self.value,
+        }
+
+
+@dataclass(frozen=True)
+class PreprocessingGraphWorkflowAnalysisInputExportResult:
+    """Root-level analysis-ready Stage 20 preprocessing export result."""
+
+    graph_export: PreprocessingGraphWorkflowGraphExportResult
+    output_dir: Path
+    residue_tables_result: object | None = None
+    protein_contacts_result: object | None = None
+    manifest_artifacts_result: object | None = None
+    issues: tuple[
+        PreprocessingGraphWorkflowAnalysisInputExportIssue,
+        ...,
+    ] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(
+            self.graph_export,
+            PreprocessingGraphWorkflowGraphExportResult,
+        ):
+            raise ValueError(
+                "graph_export must be PreprocessingGraphWorkflowGraphExportResult"
+            )
+        _require_path(self.output_dir, "output_dir")
+        if not isinstance(self.issues, tuple):
+            raise ValueError(
+                "issues must be a tuple of "
+                "PreprocessingGraphWorkflowAnalysisInputExportIssue"
+            )
+        for issue in self.issues:
+            if not isinstance(
+                issue,
+                PreprocessingGraphWorkflowAnalysisInputExportIssue,
+            ):
+                raise ValueError(
+                    "issues must contain "
+                    "PreprocessingGraphWorkflowAnalysisInputExportIssue"
+                )
+
+    @property
+    def requested(self) -> bool:
+        """Return whether this result represents a requested export."""
+        return True
+
+    @property
+    def skipped(self) -> bool:
+        """Return whether this requested export was skipped."""
+        return False
+
+    @property
+    def residue_tables_written(self) -> bool:
+        """Return whether residue table writing passed."""
+        return _stage_result_passed(self.residue_tables_result)
+
+    @property
+    def protein_contacts_written(self) -> bool:
+        """Return whether protein contact artifact writing passed."""
+        return _stage_result_passed(self.protein_contacts_result)
+
+    @property
+    def manifests_written(self) -> bool:
+        """Return whether manifest artifact writing passed."""
+        return _stage_result_passed(self.manifest_artifacts_result)
+
+    @property
+    def issue_count(self) -> int:
+        """Return the number of analysis input export issues."""
+        return len(self.issues)
+
+    @property
+    def passed(self) -> bool:
+        """Return whether every requested analysis-ready artifact was written."""
+        return (
+            self.graph_export.passed
+            and self.residue_tables_result is not None
+            and self.residue_tables_written
+            and self.protein_contacts_result is not None
+            and self.protein_contacts_written
+            and self.manifest_artifacts_result is not None
+            and self.manifests_written
+            and self.issues == ()
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        """Return compact JSON-safe analysis input export metadata."""
+        return {
+            "stage": "analysis_input_export",
+            "requested": self.requested,
+            "skipped": self.skipped,
+            "passed": self.passed,
+            "output_dir": str(self.output_dir),
+            "residue_tables": _json_safe_result_payload(
+                self.residue_tables_result
+            ),
+            "protein_contacts": _json_safe_result_payload(
+                self.protein_contacts_result
+            ),
+            "manifests": _json_safe_result_payload(
+                self.manifest_artifacts_result
+            ),
             "issues": [issue.to_dict() for issue in self.issues],
             "issue_count": self.issue_count,
         }
@@ -2612,6 +2782,201 @@ def export_preprocessing_graph_workflow_scientific_csvs(
     )
 
 
+def export_preprocessing_graph_workflow_analysis_inputs(
+    graph_export: PreprocessingGraphWorkflowGraphExportResult,
+    output_dir: str | Path | None = None,
+) -> PreprocessingGraphWorkflowAnalysisInputExportResult:
+    """Write root-level Stage 20 artifacts accepted by ``mania analyze``."""
+    if not isinstance(
+        graph_export,
+        PreprocessingGraphWorkflowGraphExportResult,
+    ):
+        raise ValueError(
+            "graph_export must be PreprocessingGraphWorkflowGraphExportResult"
+        )
+    selected_output_dir = (
+        graph_export.output_layout.output_dir
+        if output_dir is None
+        else Path(output_dir)
+    )
+
+    if not graph_export.passed:
+        return _analysis_input_export_result(
+            graph_export,
+            selected_output_dir,
+            issues=(
+                PreprocessingGraphWorkflowAnalysisInputExportIssue(
+                    kind="graph_export_failed",
+                    message=(
+                        "Stage 15.5 graph export did not pass; analysis-ready "
+                        "artifact export was not attempted."
+                    ),
+                    stage="graph_export",
+                    field="graph_export",
+                ),
+            ),
+        )
+
+    mapping_result = graph_export.mapping_result
+    if mapping_result is None or not _stage_result_passed(mapping_result):
+        return _analysis_input_export_result(
+            graph_export,
+            selected_output_dir,
+            issues=(
+                PreprocessingGraphWorkflowAnalysisInputExportIssue(
+                    kind="mapping_result_missing",
+                    message=(
+                        "Graph export did not retain a passed mapping result "
+                        "for analysis-ready artifact export."
+                    ),
+                    stage="graph_export",
+                    field="mapping_result",
+                    value=_object_type(mapping_result),
+                ),
+            ),
+        )
+
+    contacts_result = graph_export.computation.contacts_result
+    if contacts_result is None or not _stage_result_passed(contacts_result):
+        return _analysis_input_export_result(
+            graph_export,
+            selected_output_dir,
+            issues=(
+                PreprocessingGraphWorkflowAnalysisInputExportIssue(
+                    kind="contacts_result_missing",
+                    message=(
+                        "Computation did not retain a passed contacts result "
+                        "for analysis-ready artifact export."
+                    ),
+                    stage="computation",
+                    field="contacts_result",
+                    value=_object_type(contacts_result),
+                ),
+            ),
+        )
+
+    try:
+        residue_tables_result = _residue_tables_csv_writer()(
+            mapping_result,
+            selected_output_dir,
+        )
+    except Exception as exc:
+        return _analysis_input_export_result(
+            graph_export,
+            selected_output_dir,
+            issues=(
+                _analysis_input_exception_issue(
+                    kind="residue_table_export_failed",
+                    stage="residue_tables",
+                    field="residue_tables_result",
+                    output_dir=selected_output_dir,
+                    exc=exc,
+                ),
+            ),
+        )
+    if not _stage_result_passed(residue_tables_result):
+        return _analysis_input_export_result(
+            graph_export,
+            selected_output_dir,
+            residue_tables_result=residue_tables_result,
+            issues=(
+                _analysis_input_failed_issue(
+                    kind="residue_table_export_failed",
+                    stage="residue_tables",
+                    field="residue_tables_result",
+                    output_dir=selected_output_dir,
+                    result=residue_tables_result,
+                ),
+            ),
+        )
+
+    try:
+        protein_contacts_result = _protein_contact_artifacts_csv_writer()(
+            contacts_result,
+            selected_output_dir,
+        )
+    except Exception as exc:
+        return _analysis_input_export_result(
+            graph_export,
+            selected_output_dir,
+            residue_tables_result=residue_tables_result,
+            issues=(
+                _analysis_input_exception_issue(
+                    kind="protein_contact_export_failed",
+                    stage="protein_contacts",
+                    field="protein_contacts_result",
+                    output_dir=selected_output_dir,
+                    exc=exc,
+                ),
+            ),
+        )
+    if not _stage_result_passed(protein_contacts_result):
+        return _analysis_input_export_result(
+            graph_export,
+            selected_output_dir,
+            residue_tables_result=residue_tables_result,
+            protein_contacts_result=protein_contacts_result,
+            issues=(
+                _analysis_input_failed_issue(
+                    kind="protein_contact_export_failed",
+                    stage="protein_contacts",
+                    field="protein_contacts_result",
+                    output_dir=selected_output_dir,
+                    result=protein_contacts_result,
+                ),
+            ),
+        )
+
+    try:
+        manifest_artifacts_result = _manifest_artifacts_writer()(
+            mapping_result,
+            selected_output_dir,
+            residue_tables=residue_tables_result,
+            protein_contacts=protein_contacts_result,
+        )
+    except Exception as exc:
+        return _analysis_input_export_result(
+            graph_export,
+            selected_output_dir,
+            residue_tables_result=residue_tables_result,
+            protein_contacts_result=protein_contacts_result,
+            issues=(
+                _analysis_input_exception_issue(
+                    kind="manifest_artifact_export_failed",
+                    stage="manifests",
+                    field="manifest_artifacts_result",
+                    output_dir=selected_output_dir,
+                    exc=exc,
+                ),
+            ),
+        )
+    if not _stage_result_passed(manifest_artifacts_result):
+        return _analysis_input_export_result(
+            graph_export,
+            selected_output_dir,
+            residue_tables_result=residue_tables_result,
+            protein_contacts_result=protein_contacts_result,
+            manifest_artifacts_result=manifest_artifacts_result,
+            issues=(
+                _analysis_input_failed_issue(
+                    kind="manifest_artifact_export_failed",
+                    stage="manifests",
+                    field="manifest_artifacts_result",
+                    output_dir=selected_output_dir,
+                    result=manifest_artifacts_result,
+                ),
+            ),
+        )
+
+    return _analysis_input_export_result(
+        graph_export,
+        selected_output_dir,
+        residue_tables_result=residue_tables_result,
+        protein_contacts_result=protein_contacts_result,
+        manifest_artifacts_result=manifest_artifacts_result,
+    )
+
+
 def run_preprocessing_graph_workflow_diagnostics(
     graph_export: PreprocessingGraphWorkflowGraphExportResult,
     *,
@@ -3144,6 +3509,28 @@ def _scientific_csv_export_result(
     )
 
 
+def _analysis_input_export_result(
+    graph_export: PreprocessingGraphWorkflowGraphExportResult,
+    output_dir: Path,
+    *,
+    residue_tables_result: object | None = None,
+    protein_contacts_result: object | None = None,
+    manifest_artifacts_result: object | None = None,
+    issues: tuple[
+        PreprocessingGraphWorkflowAnalysisInputExportIssue,
+        ...,
+    ] = (),
+) -> PreprocessingGraphWorkflowAnalysisInputExportResult:
+    return PreprocessingGraphWorkflowAnalysisInputExportResult(
+        graph_export=graph_export,
+        output_dir=output_dir,
+        residue_tables_result=residue_tables_result,
+        protein_contacts_result=protein_contacts_result,
+        manifest_artifacts_result=manifest_artifacts_result,
+        issues=issues,
+    )
+
+
 def _build_output_layout(
     options: PreprocessingGraphWorkflowOptions,
 ) -> PreprocessingGraphWorkflowOutputLayout:
@@ -3542,6 +3929,36 @@ def _contacts_perframe_csv_validator() -> _ContactsPerframeCsvValidator:
     )
 
 
+def _residue_tables_csv_writer() -> _ResidueTablesCsvWriter:
+    module = _import_preprocessing_module(
+        "trajectory_" + "residue_table_export"
+    )
+    return cast(
+        _ResidueTablesCsvWriter,
+        module.write_preprocessing_residue_tables_csv,
+    )
+
+
+def _protein_contact_artifacts_csv_writer() -> _ProteinContactArtifactsCsvWriter:
+    module = _import_preprocessing_module(
+        "trajectory_" + "protein_contact_export"
+    )
+    return cast(
+        _ProteinContactArtifactsCsvWriter,
+        module.write_preprocessing_protein_contact_artifacts_csv,
+    )
+
+
+def _manifest_artifacts_writer() -> _ManifestArtifactsWriter:
+    module = _import_preprocessing_module(
+        "trajectory_" + "preprocessing_manifests"
+    )
+    return cast(
+        _ManifestArtifactsWriter,
+        module.write_preprocessing_manifest_artifacts,
+    )
+
+
 def _graph_export_mapping_builder() -> _GraphExportMappingBuilder:
     module = _import_preprocessing_module("trajectory_" + "graph_export")
     return cast(
@@ -3791,6 +4208,59 @@ def _stage_result_passed_status(result: object | None) -> bool | None:
     if isinstance(passed, bool):
         return passed
     return None
+
+
+def _json_safe_result_payload(result: object | None) -> dict[str, object] | None:
+    if result is None:
+        return None
+    to_dict = getattr(result, "to_dict", None)
+    if not callable(to_dict):
+        return {"passed": _stage_result_passed(result)}
+    payload = to_dict()
+    if not isinstance(payload, dict):
+        return {"passed": _stage_result_passed(result)}
+    safe_payload = _json_safe_value(payload)
+    if isinstance(safe_payload, dict):
+        return cast(dict[str, object], safe_payload)
+    return {"passed": _stage_result_passed(result)}
+
+
+def _analysis_input_failed_issue(
+    *,
+    kind: str,
+    stage: str,
+    field: str,
+    output_dir: Path,
+    result: object,
+) -> PreprocessingGraphWorkflowAnalysisInputExportIssue:
+    return PreprocessingGraphWorkflowAnalysisInputExportIssue(
+        kind=kind,
+        message=f"Analysis input {stage} export step did not pass.",
+        stage=stage,
+        field=field,
+        path=output_dir,
+        value=_object_type(result),
+    )
+
+
+def _analysis_input_exception_issue(
+    *,
+    kind: str,
+    stage: str,
+    field: str,
+    output_dir: Path,
+    exc: Exception,
+) -> PreprocessingGraphWorkflowAnalysisInputExportIssue:
+    return PreprocessingGraphWorkflowAnalysisInputExportIssue(
+        kind=kind,
+        message=(
+            f"Analysis input {stage} export step failed unexpectedly: "
+            f"{exc.__class__.__name__}."
+        ),
+        stage=stage,
+        field=field,
+        path=output_dir,
+    )
 
 
 def _export_rg_timeseries_scientific_csv(
@@ -4734,6 +5204,8 @@ def _condition_readiness_issues(
 
 
 __all__ = [
+    "PreprocessingGraphWorkflowAnalysisInputExportIssue",
+    "PreprocessingGraphWorkflowAnalysisInputExportResult",
     "PreprocessingGraphWorkflowManifestReadinessIssue",
     "PreprocessingGraphWorkflowManifestReadinessResult",
     "PreprocessingGraphWorkflowIssue",
@@ -4744,5 +5216,6 @@ __all__ = [
     "PreprocessingGraphWorkflowRuntimeLoadingResult",
     "build_preprocessing_graph_workflow_plan",
     "check_preprocessing_graph_workflow_manifest_readiness",
+    "export_preprocessing_graph_workflow_analysis_inputs",
     "load_preprocessing_graph_workflow_condition_runtimes",
 ]

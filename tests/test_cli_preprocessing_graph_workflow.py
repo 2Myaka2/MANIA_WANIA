@@ -43,6 +43,25 @@ STAGE15_ORDER_WITH_SCIENTIFIC = (
     "run_preprocessing_graph_workflow_diagnostics",
     "compare_preprocessing_graph_workflow_reference_artifacts",
 )
+STAGE15_ORDER_WITH_ANALYSIS_INPUTS = (
+    "build_preprocessing_graph_workflow_plan",
+    "load_preprocessing_graph_workflow_condition_runtimes",
+    "compute_preprocessing_graph_workflow_rg_contacts",
+    "export_preprocessing_graph_workflow_artifacts",
+    "export_preprocessing_graph_workflow_analysis_inputs",
+    "run_preprocessing_graph_workflow_diagnostics",
+    "compare_preprocessing_graph_workflow_reference_artifacts",
+)
+STAGE15_ORDER_WITH_ANALYSIS_AND_SCIENTIFIC = (
+    "build_preprocessing_graph_workflow_plan",
+    "load_preprocessing_graph_workflow_condition_runtimes",
+    "compute_preprocessing_graph_workflow_rg_contacts",
+    "export_preprocessing_graph_workflow_artifacts",
+    "export_preprocessing_graph_workflow_analysis_inputs",
+    "export_preprocessing_graph_workflow_scientific_csvs",
+    "run_preprocessing_graph_workflow_diagnostics",
+    "compare_preprocessing_graph_workflow_reference_artifacts",
+)
 VERBOSE_STAGE_MESSAGES = (
     "[1/7] Building workflow plan",
     "[2/7] Loading manifest and condition runtimes",
@@ -61,6 +80,27 @@ VERBOSE_STAGE_MESSAGES_WITH_SCIENTIFIC = (
     "[6/8] Running graph diagnostics",
     "[7/8] Running/skipping reference comparison",
     "[8/8] Writing final summary",
+)
+VERBOSE_STAGE_MESSAGES_WITH_ANALYSIS_INPUTS = (
+    "[1/8] Building workflow plan",
+    "[2/8] Loading manifest and condition runtimes",
+    "[3/8] Computing Rg and contacts",
+    "[4/8] Exporting graph artifacts",
+    "[5/8] Exporting analysis-ready artifacts",
+    "[6/8] Running graph diagnostics",
+    "[7/8] Running/skipping reference comparison",
+    "[8/8] Writing final summary",
+)
+VERBOSE_STAGE_MESSAGES_WITH_ANALYSIS_AND_SCIENTIFIC = (
+    "[1/9] Building workflow plan",
+    "[2/9] Loading manifest and condition runtimes",
+    "[3/9] Computing Rg and contacts",
+    "[4/9] Exporting graph artifacts",
+    "[5/9] Exporting analysis-ready artifacts",
+    "[6/9] Exporting optional scientific CSVs",
+    "[7/9] Running graph diagnostics",
+    "[8/9] Running/skipping reference comparison",
+    "[9/9] Writing final summary",
 )
 
 
@@ -196,6 +236,34 @@ class FakeScientificCsvExportResult:
 
 
 @dataclass(frozen=True)
+class FakeAnalysisInputExportResult:
+    passed: bool = True
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "stage": "analysis_input_export",
+            "requested": True,
+            "skipped": False,
+            "passed": self.passed,
+            "residue_tables": {"passed": True, "artifacts": []},
+            "protein_contacts": {"passed": self.passed, "artifacts": []},
+            "manifests": {"passed": self.passed, "paths": []},
+            "issues": (
+                []
+                if self.passed
+                else [
+                    {
+                        "kind": "forced_analysis_input_export_failure",
+                        "message": "Forced analysis input export failure.",
+                        "stage": "protein_contacts",
+                    }
+                ]
+            ),
+            "issue_count": 0 if self.passed else 1,
+        }
+
+
+@dataclass(frozen=True)
 class FakeDiagnosticsWorkflowResult:
     passed: bool
     diagnostics_run: dict[str, object]
@@ -264,6 +332,7 @@ def install_fake_stage15(
     failing_stage: str | None = None,
     diagnostics_result: object | None = None,
     scientific_result: object | None = None,
+    analysis_input_result: object | None = None,
 ) -> tuple[list[str], dict[str, Any]]:
     calls: list[str] = []
     received: dict[str, Any] = {}
@@ -402,6 +471,19 @@ def install_fake_stage15(
             passed=failing_stage != "scientific_csv_export",
         )
 
+    def fake_analysis_input_export(
+        graph_export: object,
+        output_dir: str | Path | None = None,
+    ) -> object:
+        calls.append("export_preprocessing_graph_workflow_analysis_inputs")
+        received["analysis_input_graph_export"] = graph_export
+        received["analysis_input_output_dir"] = output_dir
+        if analysis_input_result is not None:
+            return analysis_input_result
+        return FakeAnalysisInputExportResult(
+            passed=failing_stage != "analysis_input_export"
+        )
+
     def fake_diagnostics(
         graph_export: object,
         *,
@@ -469,6 +551,11 @@ def install_fake_stage15(
     )
     monkeypatch.setattr(
         cli,
+        "export_preprocessing_graph_workflow_analysis_inputs",
+        fake_analysis_input_export,
+    )
+    monkeypatch.setattr(
+        cli,
         "run_preprocessing_graph_workflow_diagnostics",
         fake_diagnostics,
     )
@@ -497,6 +584,9 @@ def test_graph_export_help_mentions_verbose_without_mdanalysis() -> None:
     assert "--export-rg-timeseries" in result.stdout
     assert "--export-contact-edges" in result.stdout
     assert "--export-contacts-perframe" in result.stdout
+    assert "--export-analysis-inputs" in result.stdout
+    assert "--contact-selection protein" in result.stdout
+    assert "--skip-contacts" in result.stdout
     assert "--frame-start" in result.stdout
     assert "--frame-stop" in result.stdout
     assert "--frame-stride" in result.stdout
@@ -522,6 +612,20 @@ def test_graph_export_accepts_scientific_csv_flags() -> None:
     assert args.export_rg_timeseries is True
     assert args.export_contact_edges is True
     assert args.export_contacts_perframe is True
+
+
+def test_graph_export_accepts_analysis_input_export_flag() -> None:
+    args = cli.build_parser().parse_args(
+        [
+            *BASE_COMMAND,
+            "--contact-selection",
+            "protein",
+            "--export-analysis-inputs",
+        ]
+    )
+
+    assert args.export_analysis_inputs is True
+    assert args.contact_selection == "protein"
 
 
 def test_graph_export_accepts_frame_sampling_flags() -> None:
@@ -616,12 +720,20 @@ def test_default_command_builds_options_and_calls_stage15_in_order(
     _, stdout, _ = invoke_cli(monkeypatch, capsys, *BASE_COMMAND)
     payload = stdout_json(stdout)
     scientific_payload = payload["scientific_csv_export"]
+    analysis_input_payload = payload["analysis_input_export"]
     options = received["options"]
 
     assert payload["passed"] is True
     assert isinstance(scientific_payload, dict)
     assert scientific_payload["passed"] is True
     assert scientific_payload["skipped"] is True
+    assert isinstance(analysis_input_payload, dict)
+    assert analysis_input_payload == {
+        "passed": True,
+        "requested": False,
+        "skipped": True,
+        "stage": "analysis_input_export",
+    }
     assert calls == list(STAGE15_ORDER)
     assert options.manifest_path == Path("manifest.yaml")
     assert options.output_dir == Path("out")
@@ -869,6 +981,52 @@ def test_invalid_contact_selection_fails_clearly(
     assert called is False
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "expected_message"),
+    (
+        (
+            ("--export-analysis-inputs", "--contact-selection", "all"),
+            "--export-analysis-inputs requires --contact-selection protein",
+        ),
+        (
+            (
+                "--export-analysis-inputs",
+                "--contact-selection",
+                "protein",
+                "--skip-contacts",
+            ),
+            "--export-analysis-inputs cannot be used with --skip-contacts",
+        ),
+    ),
+)
+def test_analysis_input_export_invalid_combinations_fail_before_workflow(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    extra_args: tuple[str, ...],
+    expected_message: str,
+) -> None:
+    called = False
+
+    def fake_build(options: object) -> object:
+        nonlocal called
+        called = True
+        return object()
+
+    monkeypatch.setattr(cli, "build_preprocessing_graph_workflow_plan", fake_build)
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        *extra_args,
+        expected_exit_code=2,
+    )
+
+    assert stdout == ""
+    assert expected_message in stderr
+    assert called is False
+
+
 def test_verbose_command_parses_and_calls_stage15_in_order(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -926,6 +1084,7 @@ def test_default_command_does_not_write_scientific_csvs(
     scientific_payload = payload["scientific_csv_export"]
 
     assert "export_preprocessing_graph_workflow_scientific_csvs" not in calls
+    assert "export_preprocessing_graph_workflow_analysis_inputs" not in calls
     assert isinstance(scientific_payload, dict)
     assert scientific_payload["skipped"] is True
     assert not (output_dir / "rg" / "rg_timeseries.csv").exists()
@@ -989,6 +1148,92 @@ def test_scientific_csv_granular_flags_export_expected_outputs(
     assert scientific_payload["contacts_perframe_written"] is True
 
 
+def test_analysis_input_export_runs_after_graph_export_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    calls, received = install_fake_stage15(monkeypatch)
+
+    _, stdout, _ = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--contact-selection",
+        "protein",
+        "--export-analysis-inputs",
+    )
+    payload = stdout_json(stdout)
+    analysis_payload = payload["analysis_input_export"]
+
+    assert calls == list(STAGE15_ORDER_WITH_ANALYSIS_INPUTS)
+    assert received["analysis_input_output_dir"] == "out"
+    assert isinstance(analysis_payload, dict)
+    assert analysis_payload["requested"] is True
+    assert analysis_payload["skipped"] is False
+    assert analysis_payload["passed"] is True
+
+
+def test_analysis_input_export_coexists_with_legacy_scientific_csvs(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    calls, received = install_fake_stage15(monkeypatch)
+
+    _, stdout, _ = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--contact-selection",
+        "protein",
+        "--export-analysis-inputs",
+        "--export-contacts-perframe",
+    )
+    payload = stdout_json(stdout)
+
+    assert calls == list(STAGE15_ORDER_WITH_ANALYSIS_AND_SCIENTIFIC)
+    assert received["scientific_export_flags"] == {
+        "export_rg_timeseries": False,
+        "export_contact_edges": False,
+        "export_contacts_perframe": True,
+    }
+    assert payload["analysis_input_export"]["passed"] is True
+    assert payload["scientific_csv_export"]["paths"]["contacts_perframe_csv"] == (
+        "out/contacts/contacts_perframe.csv"
+    )
+
+
+def test_requested_analysis_input_export_failure_makes_cli_nonzero(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    calls, _ = install_fake_stage15(
+        monkeypatch,
+        failing_stage="analysis_input_export",
+    )
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--contact-selection",
+        "protein",
+        "--export-analysis-inputs",
+        expected_exit_code=1,
+    )
+    payload = stdout_json(stdout)
+    analysis_payload = payload["analysis_input_export"]
+
+    assert calls == list(STAGE15_ORDER_WITH_ANALYSIS_INPUTS[:5])
+    assert payload["stage"] == "analysis_input_export"
+    assert payload["passed"] is False
+    assert isinstance(analysis_payload, dict)
+    assert analysis_payload["passed"] is False
+    assert "forced_analysis_input_export_failure" in json.dumps(
+        analysis_payload
+    )
+    assert "Analysis input export failed during protein_contacts" in stderr
+
+
 def test_requested_scientific_csv_failure_makes_cli_nonzero(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -1041,6 +1286,57 @@ def test_verbose_scientific_csv_export_progress_stays_stderr_only(
     for message in VERBOSE_STAGE_MESSAGES_WITH_SCIENTIFIC:
         assert message in stderr
         assert message not in stdout
+    assert "{" not in stderr
+
+
+def test_verbose_analysis_input_export_progress_stays_stderr_only(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    install_fake_stage15(monkeypatch)
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--contact-selection",
+        "protein",
+        "--export-analysis-inputs",
+        "--verbose",
+    )
+    payload = stdout_json(stdout)
+
+    assert payload["passed"] is True
+    assert stdout.strip() == json.dumps(payload, sort_keys=True)
+    for message in VERBOSE_STAGE_MESSAGES_WITH_ANALYSIS_INPUTS:
+        assert message in stderr
+        assert message not in stdout
+    assert "{" not in stderr
+
+
+def test_verbose_analysis_and_scientific_progress_totals_are_correct(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    install_fake_stage15(monkeypatch)
+
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--contact-selection",
+        "protein",
+        "--export-analysis-inputs",
+        "--export-scientific-csvs",
+        "--verbose",
+    )
+    payload = stdout_json(stdout)
+
+    assert payload["passed"] is True
+    for message in VERBOSE_STAGE_MESSAGES_WITH_ANALYSIS_AND_SCIENTIFIC:
+        assert message in stderr
+        assert message not in stdout
+    assert "[1/8]" not in stderr
     assert "{" not in stderr
 
 

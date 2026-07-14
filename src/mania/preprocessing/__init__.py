@@ -174,6 +174,8 @@ from mania.preprocessing.trajectory_graph_reference_comparison import (
     validate_preprocessing_graph_reference_comparison_input,
 )
 from mania.preprocessing.trajectory_graph_workflow import (
+    PreprocessingGraphWorkflowAnalysisInputExportIssue,
+    PreprocessingGraphWorkflowAnalysisInputExportResult,
     PreprocessingGraphWorkflowComputationIssue,
     PreprocessingGraphWorkflowComputationResult,
     PreprocessingGraphWorkflowDiagnosticsIssue,
@@ -196,6 +198,7 @@ from mania.preprocessing.trajectory_graph_workflow import (
     check_preprocessing_graph_workflow_manifest_readiness,
     compare_preprocessing_graph_workflow_reference_artifacts,  # noqa: F401
     compute_preprocessing_graph_workflow_rg_contacts,
+    export_preprocessing_graph_workflow_analysis_inputs,
     export_preprocessing_graph_workflow_artifacts,
     export_preprocessing_graph_workflow_scientific_csvs,
     load_preprocessing_graph_workflow_condition_runtimes,
@@ -403,6 +406,8 @@ __all__ = [
     "PreprocessingConditionResidueNames",
     "PreprocessingConditionRuntime",
     "PreprocessingConditionRuntimeInput",
+    "PreprocessingGraphWorkflowAnalysisInputExportIssue",
+    "PreprocessingGraphWorkflowAnalysisInputExportResult",
     "PreprocessingConditionRuntimeMetadata",
     "PreprocessingResidueTableArtifact",
     "PreprocessingResidueTableCsvWriteIssue",
@@ -512,6 +517,7 @@ __all__ = [
     "compute_preprocessing_graph_workflow_rg_contacts",
     "detect_protein_rin_interactions",
     "export_preprocessing_graph_workflow_artifacts",
+    "export_preprocessing_graph_workflow_analysis_inputs",
     "export_preprocessing_graph_workflow_scientific_csvs",
     "extract_condition_residue_names",
     "extract_manifest_residue_names",
