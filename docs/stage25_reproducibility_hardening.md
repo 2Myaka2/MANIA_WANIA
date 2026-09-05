@@ -10,7 +10,7 @@ analysis orchestration and CLI integration. See [README.md](../README.md) for
 the current implementation-status overview.
 
 Stage 25 is approved as reproducibility and publication hardening. Stage 25.A
-is beginning; Stage 25 functionality is not yet fully implemented. Existing
+is underway; Stage 25 functionality is not yet fully implemented. Existing
 scientific semantics remain frozen unless changed by a separate, explicitly
 approved task. Older v0.1 planning statements remain historical records.
 
@@ -35,8 +35,22 @@ This roadmap does not claim FAIR² certification or Dataset v1.0 readiness.
 - Stage 25.F — Reproducibility documentation and FAIR² bridge
 - Stage 25.G — Validation and technical-hardening acceptance
 
-These are approved work areas, not implemented capabilities. Each requires
-separate, focused implementation and acceptance steps.
+These are approved work areas, not a claim of complete implementation. Each
+requires separate, focused implementation and acceptance steps.
+
+## Stage 25.A implementation note
+
+Stage 25.A.2 provides `src/mania/_version.py` as the single package-version
+source; package/build metadata reads the same version. The immutable
+`SoftwareIdentity` returned by `get_software_identity()` exposes the version,
+exact checkout commit, commit source, and working-tree status, with a JSON-safe
+`to_dict()` representation. Git metadata is collected lazily when the function
+is called, using the module's source-checkout location. Wheel installations
+without checkout metadata report Git fields as unavailable (`commit_sha` is
+`None`). Existing version CLI output remains `mania-wania 0.1.0`.
+
+No `run_provenance.json` is produced yet, and no existing manifest is changed.
+This step does not complete Stage 25.A or Stage 25 as a whole.
 
 ## Compatibility rules
 
@@ -53,7 +67,7 @@ separate, focused implementation and acceptance steps.
 
 ## Frozen scientific scope
 
-The following remain outside the current Stage 25.A documentation task and
+The following remain outside the current Stage 25.A software-identity task and
 require separate scientific or architectural approval:
 
 - contact lifetime;

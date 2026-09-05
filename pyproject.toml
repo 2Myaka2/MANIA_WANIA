@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mania-wania"
-version = "0.1.0"
-description = "MANIA/WANIA toolkit skeleton for molecular dynamics trajectory analysis artifacts."
+dynamic = ["version"]
+description = "MANIA scientific backend for molecular dynamics trajectory preprocessing and analysis."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
@@ -36,6 +36,9 @@ mania = "mania.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "mania._version.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

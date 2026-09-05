@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 import mania.cli as cli
-from mania import __version__
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -24,7 +23,41 @@ def test_python_module_version_prints_package_version() -> None:
     result = run_python_module("--version")
 
     assert result.returncode == 0
-    assert __version__ in result.stdout
+    assert result.stdout == "mania-wania 0.1.0\n"
+    assert result.stderr == ""
+
+
+@pytest.mark.parametrize("entry_point", ["console", "module"])
+def test_version_does_not_invoke_git(entry_point: str) -> None:
+    script = """
+import runpy
+import subprocess
+import sys
+import sysconfig
+from pathlib import Path
+from unittest.mock import patch
+
+entry_point = sys.argv[1]
+sys.argv = ["mania", "--version"]
+with patch.object(subprocess, "Popen", side_effect=AssertionError("process launched")):
+    if entry_point == "module":
+        runpy.run_module("mania", run_name="__main__")
+    else:
+        runpy.run_path(str(Path(sysconfig.get_path("scripts")) / "mania"),
+                       run_name="__main__")
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script, entry_point],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == "mania-wania 0.1.0\n"
+    assert result.stderr == ""
 
 
 def test_python_module_validate_config_accepts_example_config() -> None:
