@@ -1,3 +1,6 @@
+PLAN.md
+napi2b_poc_results.tar.gz
+
 # Python bytecode and caches
 __pycache__/
 *.py[cod]
