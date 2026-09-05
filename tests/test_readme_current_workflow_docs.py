@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -136,6 +137,30 @@ def test_readme_documents_frontend_api_future_scope() -> None:
         "future scope",
     ):
         assert phrase in text
+
+
+def test_readme_documents_stage25_software_identity() -> None:
+    text = " ".join(readme_text().split())
+
+    assert re.search(
+        r"Stage 25\b[^.]*reproducibility and publication hardening",
+        text,
+        flags=re.IGNORECASE,
+    )
+    for phrase in ("get_software_identity", "mania --version", "_version.py"):
+        assert phrase in text
+    assert re.search(r"FastAPI\s+(?:remains|is)\s+postponed", text)
+
+
+def test_readme_does_not_assign_minimal_api_to_stage25() -> None:
+    sections = re.split(r"(?m)^## ", readme_text())
+    current_status = next(
+        section for section in sections if section.startswith("Stage 25.A ")
+    )
+    text = " ".join(current_status.split()).lower()
+
+    assert "reproducibility and publication hardening" in text
+    assert "minimal api" not in text
 
 
 def test_readme_links_wania_object_json_payload_contract() -> None:

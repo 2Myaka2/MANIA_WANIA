@@ -11,6 +11,30 @@ can optionally write the root-level Stage 20 artifacts consumed by
 `mania analyze`. Reference comparison is separate and requires explicit
 reference artifact paths.
 
+## Stage 25.A Software Identity Status
+
+Stage 25 is reproducibility and publication hardening; Stage 25.A software
+identity is implemented. Stages 25.B–25.G remain planned, and FastAPI remains
+postponed. See the [Stage 25 roadmap](docs/stage25_reproducibility_hardening.md).
+
+MANIA has one package-version source, `src/mania/_version.py`, shared by
+`mania.__version__` and dynamic package metadata. `mania --version` remains the
+standard human-readable version command, printing `mania-wania 0.1.0`.
+The Python API `get_software_identity()` returns immutable structured runtime
+software identity: software and distribution names, the MANIA version, the
+exact source-checkout commit when available, commit source, and working-tree
+status (`clean`, `dirty`, or `unavailable`). Git inspection is lazy and occurs
+only when this function is called, using the module location rather than the
+process working directory. Wheel installations without checkout metadata
+report Git fields as unavailable (`commit_sha` is `None`).
+
+```bash
+.venv/bin/python -c "import json; from mania.software_identity import get_software_identity; print(json.dumps(get_software_identity().to_dict(), indent=2, sort_keys=True))"
+```
+
+This Python API invocation prints the software identity as JSON to stdout; it
+is software identity only, creates no run provenance, and adds no CLI subcommand.
+
 ## Stage 20 Preprocessing Status
 
 Stage 20 preprocessing parity is consolidated through Stage 20.F:
@@ -413,8 +437,11 @@ remained fingerprint-based rather than PCA-based. Stage 24.A now adds optional
 computed PCA for MANIA only; fingerprint clustering remains the default and
 does not use PCA coordinates. Notebook PCA-to-k-means parity, Louvain, MWU,
 bootstrap confidence intervals, p-values, FDR-BH, and full statistical parity
-are not claimed. API, Docker, database, frontend implementation, production
-workers, and the postponed Stage 25 Minimal API layer remain future scope.
+are not claimed. API, Docker, database, frontend implementation, and production
+workers remain future scope; FastAPI remains postponed.
+
+The former roadmap statement "Stage 25 Minimal API is postponed" is historical;
+Stage 25 now covers reproducibility and publication hardening.
 
 ## Stage 24.A Optional Computed PCA Status
 
@@ -454,8 +481,7 @@ claim exact notebook parity.
 
 Stage 24.A does not implement PCA-based clustering, `mania analyze`,
 `extended_metrics.json`, WANIA schema or payload changes, API/frontend work,
-Docker, database models, or production workers. Stage 25 Minimal API is
-postponed.
+Docker, database models, or production workers. FastAPI remains postponed.
 
 ## Stage 24.B Optional PCA-Based Clustering Status
 
@@ -499,8 +525,8 @@ visualization. MANIA therefore retains more than three internal PCA components
 for clustering while keeping the public PCA CSV limited to PC1-PC3, but does
 not claim exact notebook parity. Stage 24.C handles analysis
 orchestration separately; `extended_metrics.json`, WANIA changes,
-API/frontend work, Docker, database models, production workers, and Stage 25
-Minimal API remain unimplemented.
+API/frontend work, Docker, database models, and production workers remain
+unimplemented. FastAPI remains postponed.
 
 ## Stage 24.C Analysis Orchestration CLI Status
 
@@ -647,7 +673,7 @@ temporal/PCA/label/comparison/stat rows or graph node/edge arrays.
 `extended_metrics.json` is not consumed by WANIA in Stage 24. WANIA required
 fields, runtime schema, capabilities, artifact mapping, adapters, fixtures,
 and `wania_graph_payload.json` remain unchanged. API/frontend integration is
-future scope, and Stage 25 has not started.
+future scope.
 
 This orchestration layer calls the accepted Stage 21 and Stage 22 Python APIs
 directly. It adds no dependency, no WANIA schema/runtime/capability/artifact
@@ -662,7 +688,7 @@ clustering as the default, keeps PCA clustering explicit opt-in with no silent
 fallback, and preserves the distinction between the stdout summary and
 `analysis/extended_metrics.json`. WANIA JSON, runtime schema, adapter/writer
 behavior, capabilities, artifact mapping, fixtures, and
-`wania_graph_payload.json` remain unchanged. Stage 25 has not started.
+`wania_graph_payload.json` remain unchanged.
 
 Stage 24.F corrects PCA provenance, requested PCA failure semantics, and
 internal PCA component capacity without changing public CLI options or CSV
@@ -1227,6 +1253,8 @@ The planning-level scientific roadmap is:
 - **Stage 24.E — Validation, documentation, and Stage 24 acceptance.**
 - **Stage 24.F — PCA provenance, failure semantics, and internal component
   capacity correction.**
+- **Stage 25 — Reproducibility and publication hardening:** Stage 25.A software
+  identity is implemented; Stages 25.B–25.G remain planned.
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
 Stages 20–23 are now complete within their accepted boundaries. Stage 24.A
@@ -1237,8 +1265,8 @@ accepted preprocessing-input-to-analysis-artifact workflow through
 validates the integrated Stage 24 workflow, and Stage 24.F closes the PCA
 provenance/failure/component-capacity corrections.
 FastAPI/upload and job APIs, Docker/demo packaging, database models,
-production API serving, frontend implementation, and Stage 25 remain
-separately scoped later work.
+production API serving, and frontend implementation remain postponed and
+require separate scope approval.
 
 ## Documentation
 

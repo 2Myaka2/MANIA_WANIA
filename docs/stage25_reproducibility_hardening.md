@@ -10,7 +10,7 @@ analysis orchestration and CLI integration. See [README.md](../README.md) for
 the current implementation-status overview.
 
 Stage 25 is approved as reproducibility and publication hardening. Stage 25.A
-is underway; Stage 25 functionality is not yet fully implemented. Existing
+is implemented; Stages 25.B–25.G remain planned and unimplemented. Existing
 scientific semantics remain frozen unless changed by a separate, explicitly
 approved task. Older v0.1 planning statements remain historical records.
 
@@ -27,7 +27,7 @@ This roadmap does not claim FAIR² certification or Dataset v1.0 readiness.
 
 ## Stage decomposition
 
-- Stage 25.A — Software identity and release metadata
+- Stage 25.A — Software identity and release metadata (implemented)
 - Stage 25.B — Run provenance and effective sampling
 - Stage 25.C — Input/output artifact inventory and checksums
 - Stage 25.D — Unified artifact validation
@@ -35,22 +35,30 @@ This roadmap does not claim FAIR² certification or Dataset v1.0 readiness.
 - Stage 25.F — Reproducibility documentation and FAIR² bridge
 - Stage 25.G — Validation and technical-hardening acceptance
 
-These are approved work areas, not a claim of complete implementation. Each
-requires separate, focused implementation and acceptance steps.
+Only Stage 25.A is implemented. Stages 25.B–25.G require separate, focused
+implementation and acceptance steps.
 
-## Stage 25.A implementation note
+## Stage 25.A status — implemented
 
-Stage 25.A.2 provides `src/mania/_version.py` as the single package-version
-source; package/build metadata reads the same version. The immutable
+Stage 25.A provides `src/mania/_version.py` as the single package-version
+source; dynamic Setuptools package/build metadata reads the same version.
+`mania.__version__` remains publicly available. The immutable
 `SoftwareIdentity` returned by `get_software_identity()` exposes the version,
-exact checkout commit, commit source, and working-tree status, with a JSON-safe
-`to_dict()` representation. Git metadata is collected lazily when the function
-is called, using the module's source-checkout location. Wheel installations
+exact checkout commit as a full lowercase 40-character SHA, commit source,
+and working-tree status (`clean`, `dirty`, or `unavailable`), with a JSON-safe
+`to_dict()` representation containing no local paths. Git metadata is collected
+lazily only when the function is called, validating the module's source-checkout
+location independently of the process working directory. Missing Git or checkout
+metadata, failed commands, and timeouts safely report unavailable Git fields;
+a valid commit is preserved if only the status lookup fails. Wheel installations
 without checkout metadata report Git fields as unavailable (`commit_sha` is
-`None`). Existing version CLI output remains `mania-wania 0.1.0`.
+`None`). Imports and version commands do not inspect Git. Existing version CLI
+output remains `mania-wania 0.1.0`.
 
+Stage 25.A does not yet provide run provenance, effective sampling, checksums,
+artifact inventory, PBC audit, runtime metrics, or FAIR² package generation.
 No `run_provenance.json` is produced yet, and no existing manifest is changed.
-This step does not complete Stage 25.A or Stage 25 as a whole.
+Stage 25 as a whole remains incomplete.
 
 ## Compatibility rules
 
