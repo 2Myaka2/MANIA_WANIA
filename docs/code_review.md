@@ -20,34 +20,42 @@ reason and the reason is documented.
 
 ## 2. Project Stage
 
-MANIA/WANIA is currently at the engineering skeleton stage.
+The MANIA scientific/backend CLI is operational through accepted Stage 24.G.
+[Stage 25](stage25_reproducibility_hardening.md) is approved as reproducibility
+and publication hardening. Stage 25.A is beginning; Stage 25 functionality is
+not yet fully implemented.
 
-Prefer changes in:
-
-- documentation;
-- config validation;
-- CLI skeleton;
-- tests;
-- constants;
-- small typed helpers;
-- pipeline placeholders.
-
-Do not accept real scientific MD implementation unless the task explicitly asks
-for it.
+Review small, focused hardening steps against their approved scope. Preserve
+accepted scientific semantics, existing CLI behavior, and Stage 20–24 artifact
+compatibility unless a focused task explicitly authorizes changes.
 
 ## 3. Forbidden Or Postponed Work
 
-Reject accidental additions of:
+MDAnalysis and trajectory/topology reading already exist within the optional
+scientific dependency boundary. Reject unapproved changes to:
 
-- MDAnalysis;
+- scientific runtime behavior;
+- trajectory loading;
+- frame sampling;
+- contact computation;
+- typed-interaction semantics;
+- RIN algorithms;
+- PCA;
+- clustering;
+- scientific schemas and scientific rows;
+- dependencies, including the optional scientific dependency boundary.
+
+Keep unrelated scientific scope postponed. Reject accidental additions of:
+
 - GROMACS execution or wrappers;
 - FastAPI;
+- database infrastructure or background workers;
+- WANIA redesign;
 - pandas;
 - pyarrow;
 - networkx;
 - ESM or ESM-2 implementation;
 - Yandex Disk integration;
-- real trajectory/topology reading;
 - DSSP/SASA/RMSF implementation;
 - energy rerun implementation;
 - final biological interpretation in reports.
@@ -60,7 +68,8 @@ Check:
 
 - no new dependency was added unless explicitly requested;
 - `pyproject.toml` was not modified in docs-only tasks;
-- heavy scientific dependencies were not added during skeleton tasks;
+- the existing optional scientific dependency boundary was preserved unless
+  explicitly authorized;
 - runtime and dev dependencies remain minimal.
 
 ## 5. Data Contract

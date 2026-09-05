@@ -14,20 +14,13 @@ Main rule:
 
 ## Project Stage
 
-`MANIA_WANIA` is currently at the engineering skeleton stage.
+The MANIA scientific/backend CLI is operational through accepted Stage 24.G,
+including preprocessing and analysis. Stage 25 is approved as reproducibility
+and publication hardening; Stage 25.A is beginning, and Stage 25 functionality
+is not yet fully implemented.
 
-Current focus:
-
-- package structure;
-- config validation;
-- CLI skeleton;
-- documentation;
-- tests;
-- data contract;
-- CI;
-- small typed helpers.
-
-Do not treat planned scientific modules as implemented features.
+Preserve accepted scientific semantics and established Stage 20–24 artifact
+contracts. Do not treat approved roadmap items as implemented features.
 
 ## Mandatory Rules
 
@@ -35,14 +28,15 @@ Do not treat planned scientific modules as implemented features.
 2. Keep every change small and focused.
 3. Do not add unrelated refactoring.
 4. Do not create large future module trees unless explicitly requested.
-5. Do not implement scientific MD logic unless explicitly requested.
-6. Do not add dependencies unless explicitly requested.
-7. Do not add large data files, outputs, caches, virtual environments, or secrets.
+5. Do not add or change scientific MD logic without an explicitly approved scientific scope.
+6. Do not add dependencies without explicit approval.
+7. Do not add large data files, generated datasets, outputs, caches, virtual environments, or secrets.
 8. Do not hardcode local user paths.
 9. Do not invent final lipid, glycan, or glycolipid residue lists.
 10. Every functional change must include tests or a clear verification path.
 11. Documentation-only tasks must not modify Python code.
 12. Code tasks must preserve existing CLI behavior unless the task explicitly changes it.
+13. Preserve Stage 20–24 artifact schemas, scientific rows, and calculation semantics unless explicitly authorized.
 
 ## Required Checks
 
@@ -83,17 +77,25 @@ Do not claim checks passed without showing command output.
 
 ## Forbidden Unless Explicitly Requested
 
+Do not change the existing optional scientific dependency boundary unless the
+task explicitly requires it. MDAnalysis and trajectory/topology reading already
+exist within that boundary.
+
+Do not change trajectory loading, frame sampling, contact computation,
+typed-interaction semantics, RIN algorithms, PCA, or clustering without an
+explicitly approved scientific scope.
+
 Do not add or implement:
 
-- MDAnalysis;
 - GROMACS execution or wrappers;
 - FastAPI;
+- database or background-worker infrastructure;
+- WANIA redesign;
 - pandas;
 - pyarrow;
 - networkx;
 - ESM or ESM-2 implementation;
 - Yandex Disk integration;
-- trajectory/topology reading;
 - DSSP/SASA/RMSF implementation;
 - energy rerun implementation;
 - allosteric paths implementation;
@@ -132,6 +134,7 @@ read the relevant document:
 - `docs/architecture.md` — intended package architecture.
 - `docs/git_workflow.md` — branch and Git workflow.
 - `docs/code_review.md` — review checklist.
+- `docs/stage25_reproducibility_hardening.md` — approved Stage 25 roadmap and compatibility rules.
 - `docs/task_templates.md` — reusable Codex task templates.
 
 When a task touches one of these areas, follow the corresponding document.

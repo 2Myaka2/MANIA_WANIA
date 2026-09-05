@@ -5,9 +5,11 @@
 This guide describes how to work with Git in the `MANIA_WANIA` repository. It
 is a practical beginner-friendly workflow guide, not a Git internals tutorial.
 
-The goal is to keep Codex-assisted changes small, reviewable, and safe. At the
-current skeleton stage, most changes should stay focused on documentation,
-configuration, tests, and package structure.
+The goal is to keep Codex-assisted changes small, reviewable, and safe. The
+scientific/backend CLI is operational through accepted Stage 24.G. The current
+focus is the approved Stage 25 reproducibility and publication-hardening
+roadmap, with Stage 25.A beginning. Hardening must proceed in separate accepted
+steps; the roadmap is not a claim of implemented Stage 25 functionality.
 
 ## Branch Model
 
@@ -159,9 +161,9 @@ Ask Codex to report:
 - check outputs;
 - TODOs or limitations.
 
-Review `git diff` before accepting Codex changes. Reject changes that add heavy
-dependencies or scientific logic too early. At the current stage, prefer
-documentation, config, tests, and skeleton work.
+Review `git diff` before accepting Codex changes. Reject unapproved dependency
+or scientific-semantic changes. Keep Stage 25 hardening tasks focused and
+preserve accepted Stage 20–24 behavior and artifact contracts.
 
 If Codex cannot run `pytest`, `ruff`, or `mypy` because the tools are not on
 `PATH`, rerun them locally in `.venv` before accepting the task:
@@ -270,17 +272,19 @@ explicit decision to add a small test fixture later.
 
 ## Recommended Workflow For This Project Stage
 
-At the current MANIA/WANIA skeleton stage:
+For the approved [Stage 25 hardening roadmap](stage25_reproducibility_hardening.md):
 
 - keep tasks small;
-- prefer docs, config, tests, and skeleton work now;
+- proceed in separate accepted hardening steps;
 - use separate topic branches for each Codex task;
 - start topic branches from the latest `develop`;
 - merge accepted task branches back into `develop`;
 - do not merge `develop` into a topic branch after every commit unless needed;
-- do not start FastAPI yet;
-- do not start scientific MD implementation yet;
-- do not add heavy dependencies until the package contract and pipeline
-  skeleton are stable;
+- keep FastAPI and unrelated product work postponed;
+- do not make unreviewed scientific-semantic changes; changes to accepted
+  Stage 20–24 scientific behavior require a separate approved scope;
+- new dependencies require separate approval;
+- preserve existing artifact contracts and CLI behavior unless explicitly
+  changed by a focused task;
 - always verify with `pytest`, `ruff check .`, and `mypy src` before committing
   or merging.

@@ -1,4 +1,19 @@
-# MANIA Architecture v0.1 Skeleton
+# MANIA Architecture — v0.1 Foundation and Historical Planning
+
+## Current implementation status
+
+MANIA implementation has advanced through accepted Stage 24.G, with an
+operational scientific/backend preprocessing and analysis CLI.
+[README.md](../README.md) is the current implementation-status overview.
+
+The sections below preserve the original v0.1 architectural foundation and
+historical planning context. Older wording such as “future”, “skeleton”, and
+“not implemented” may describe that original context rather than the current
+repository inventory. These sections are not a current capability checklist.
+
+See [Stage 25 reproducibility hardening](stage25_reproducibility_hardening.md)
+for the approved current roadmap. Stage 25.A is beginning; Stage 25
+functionality is not yet fully implemented.
 
 ## Purpose
 

@@ -3,6 +3,19 @@
 This document records accepted project decisions for MANIA v0.1. These are
 scope and contract decisions, not a list of implemented features.
 
+## Historical context and current status
+
+This document originated as a v0.1 planning and decision record. Some older
+implementation-status statements, including the skeleton focus and “No
+MDAnalysis yet”, are historical and do not describe the current repository.
+The original decisions below are preserved as a historical record.
+
+[README.md](../README.md) contains the current implementation status through
+accepted Stage 24.G. [Stage 25 reproducibility
+hardening](stage25_reproducibility_hardening.md) contains the approved Stage 25
+roadmap; Stage 25.A is beginning, and Stage 25 functionality is not yet fully
+implemented.
+
 ## Project Scope
 
 - MANIA is a Python package for preparing molecular dynamics analysis artifacts.
@@ -82,7 +95,7 @@ scope and contract decisions, not a list of implemented features.
 - `window_cv = std(contact_freq_per_window) / mean(contact_freq_per_window)`,
   with `mean = 0` handled explicitly later.
 
-## Current Non-Goals
+## Original v0.1 Non-Goals (Historical)
 
 - No FastAPI yet.
 - No MDAnalysis yet.
