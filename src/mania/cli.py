@@ -24,11 +24,17 @@ from mania.analysis.run_provenance import (
     build_completed_analysis_run_provenance,
     build_failed_analysis_run_provenance,
 )
+from mania.artifact_inventory_io import write_artifact_inventory
 from mania.config import load_config
 from mania.pipeline import build_pipeline_plan, format_pipeline_plan
 from mania.pipeline_steps import (
     NotebookExportGraphDiagnosticsPipelineResult,
     run_notebook_export_graph_diagnostics_pipeline_from_config_file,
+)
+from mania.preprocessing.artifact_inventory import (
+    PREPROCESSING_ARTIFACT_INVENTORY_PATH,
+    PREPROCESSING_ARTIFACT_INVENTORY_ROLE,
+    build_preprocessing_artifact_inventory,
 )
 from mania.preprocessing.run_provenance import (
     PREPROCESSING_RUN_FAILURE_STAGES,
@@ -59,6 +65,13 @@ from mania.preprocessing.trajectory_graph_workflow import (
     export_preprocessing_graph_workflow_scientific_csvs,
     load_preprocessing_graph_workflow_condition_runtimes,
     run_preprocessing_graph_workflow_diagnostics,
+)
+from mania.preprocessing.trajectory_manifest_loader import (
+    PreprocessingManifestLoadResult,
+)
+from mania.preprocessing.trajectory_runtime import (
+    PreprocessingConditionLoadResult,
+    PreprocessingConditionRuntimeInput,
 )
 from mania.run_provenance import PortableArtifactReference, RunProvenance
 from mania.run_provenance_io import write_run_provenance
@@ -240,6 +253,16 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         required=True,
         help="Output directory for preprocessing graph export artifacts.",
+    )
+    graph_export_parser.add_argument(
+        "--artifact-checksum-mode",
+        choices=("none", "sha256"),
+        default="none",
+        help=(
+            "Artifact inventory: none records exact sizes without reading file "
+            "contents; sha256 streams all inventoried files including trajectories "
+            "and may be expensive for large MD datasets. Defaults to none."
+        ),
     )
     graph_export_parser.add_argument(
         "--run-name",
@@ -929,6 +952,30 @@ def _completed_preprocessing_artifact_references(
         ) from None
 
 
+def _preprocessing_inventory_inputs_available(
+    runtime_loading: PreprocessingGraphWorkflowRuntimeLoadingResult | None,
+) -> bool:
+    """Failed loading may retain all inputs even without any loaded conditions."""
+    if not isinstance(runtime_loading, PreprocessingGraphWorkflowRuntimeLoadingResult):
+        return False
+    loaded = runtime_loading.runtime_load_result
+    intended = runtime_loading.manifest_readiness.condition_names
+    return (
+        runtime_loading.manifest_readiness.passed
+        and bool(intended)
+        and len(set(intended)) == len(intended)
+        and isinstance(loaded, PreprocessingManifestLoadResult)
+        and all(
+            isinstance(result, PreprocessingConditionLoadResult)
+            and isinstance(result.runtime_input, PreprocessingConditionRuntimeInput)
+            and result.runtime_input.condition_name == result.condition_name
+            for result in loaded.condition_results
+        )
+        and tuple(result.condition_name for result in loaded.condition_results)
+        == intended
+    )
+
+
 def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     if _analysis_input_export_requested(args):
         if args.skip_contacts:
@@ -951,6 +998,10 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     started_at_utc = _utc_now()
     software_identity = get_software_identity()
     command = tuple(sys.argv)
+    inventory_runtime_loading: (
+        PreprocessingGraphWorkflowRuntimeLoadingResult | None
+    ) = None
+    inventory_outputs: dict[str, Any] = {}
     analysis_input_export: object | None = (
         None
         if _analysis_input_export_requested(args)
@@ -964,6 +1015,54 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     _print_preprocessing_graph_export_progress(args, 1)
     plan = build_preprocessing_graph_workflow_plan(options)
 
+    def emit_inventory(
+        *,
+        failed_workflow: bool = False,
+    ) -> tuple[tuple[PortableArtifactReference, ...], bool]:
+        if failed_workflow and not _preprocessing_inventory_inputs_available(
+            inventory_runtime_loading
+        ):
+            return (), True
+        try:
+            if inventory_runtime_loading is None:
+                raise ValueError("Runtime inputs are unavailable.")
+            inventory = build_preprocessing_artifact_inventory(
+                run_id=options.run_name,
+                runtime_loading=inventory_runtime_loading,
+                output_root=plan.output_layout.output_dir,
+                checksum_mode=args.artifact_checksum_mode,
+                reference_nodes_path=options.reference_nodes_csv_path,
+                reference_edges_path=options.reference_edges_csv_path,
+                reference_graph_path=options.reference_graph_json_path,
+                include_reference_inputs=options.enable_reference_comparison,
+                **inventory_outputs,
+            )
+        except (ValueError, TypeError, OSError, RuntimeError, AttributeError):
+            print(
+                "Artifact inventory build failed: Inventory metadata is unavailable.",
+                file=sys.stderr,
+            )
+            return (), False
+        try:
+            result = write_artifact_inventory(
+                inventory, plan.output_layout.output_dir, overwrite=options.overwrite
+            )
+            if not result.passed:
+                print(
+                    f"Artifact inventory write failed: {result.error}", file=sys.stderr
+                )
+                return (), False
+        except (ValueError, TypeError, OSError, RuntimeError, AttributeError):
+            print(
+                "Artifact inventory write failed: Write operation failed.",
+                file=sys.stderr,
+            )
+            return (), False
+        reference = PortableArtifactReference(
+            PREPROCESSING_ARTIFACT_INVENTORY_ROLE, PREPROCESSING_ARTIFACT_INVENTORY_PATH
+        )
+        return (reference,), True
+
     def emit_failure(
         stage: PreprocessingRunFailureStage,
         *,
@@ -973,6 +1072,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         # Metadata failure must never replace the existing workflow failure.
         try:
             ended_at_utc = _utc_now()
+            inventory_references, _ = emit_inventory(failed_workflow=True)
             conditions = (
                 computation.condition_names
                 if type(computation) is PreprocessingGraphWorkflowComputationResult
@@ -994,7 +1094,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 frame_sampling=options.frame_sampling,
                 artifact_references=_completed_preprocessing_artifact_references(
                     args, options, plan.output_layout, failure_stage=stage
-                ),
+                ) + inventory_references,
                 computation=computation,
             )
         except (ValueError, TypeError, OSError, RuntimeError, AttributeError):
@@ -1041,6 +1141,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         options.manifest_path,
         expected_condition_names=_expected_condition_names(args),
     )
+    inventory_runtime_loading = runtime_loading
     if not runtime_loading.passed:
         _print_preprocessing_graph_export_failure(args, 2)
         _print_preprocessing_graph_export_progress(
@@ -1124,6 +1225,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         emit_failure("graph_export", computation=computation)
         return 1
 
+    inventory_outputs["graph_export"] = graph_export
     if _analysis_input_export_requested(args):
         analysis_stage = _analysis_input_export_stage_number(args)
         _print_preprocessing_graph_export_progress(args, analysis_stage)
@@ -1154,6 +1256,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             )
             emit_failure("analysis_input_export", computation=computation)
             return 1
+        inventory_outputs["analysis_input_export"] = analysis_input_export
 
     if _scientific_csv_export_requested(args):
         scientific_stage = _scientific_csv_export_stage_number(args)
@@ -1194,6 +1297,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             )
             emit_failure("scientific_csv_export", computation=computation)
             return 1
+        inventory_outputs["scientific_csv_export"] = scientific_csv_export
 
     diagnostics: object | None
     diagnostics_stage = _diagnostics_stage_number(args)
@@ -1229,6 +1333,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             )
             emit_failure("diagnostics", computation=computation)
             return 1
+        inventory_outputs["diagnostics"] = diagnostics
 
     reference_comparison_stage = _reference_comparison_stage_number(args)
     _print_preprocessing_graph_export_progress(
@@ -1269,7 +1374,10 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         emit_failure("reference_comparison", computation=computation)
         return 1
 
+    if options.enable_reference_comparison:
+        inventory_outputs["reference_comparison"] = reference_comparison
     ended_at_utc = _utc_now()
+    inventory_references, inventory_passed = emit_inventory()
     try:
         provenance = build_completed_preprocessing_run_provenance(
             computation,
@@ -1281,16 +1389,28 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             resolved_configuration=_preprocessing_resolved_configuration(args, options),
             artifact_references=_completed_preprocessing_artifact_references(
                 args, options, plan.output_layout
-            ),
+            ) + inventory_references,
         )
     except PreprocessingRunProvenanceBuildError as exc:
         print(f"Run provenance build failed: {exc}", file=sys.stderr)
         return 1
-    write_result = write_run_provenance(
-        provenance, plan.output_layout.output_dir, overwrite=options.overwrite
-    )
+    except (ValueError, TypeError, OSError, RuntimeError, AttributeError):
+        print(
+            "Run provenance build failed: Completed run metadata is invalid.",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        write_result = write_run_provenance(
+            provenance, plan.output_layout.output_dir, overwrite=options.overwrite
+        )
+    except (ValueError, TypeError, OSError, RuntimeError, AttributeError):
+        print("Run provenance write failed: Write operation failed.", file=sys.stderr)
+        return 1
     if not write_result.passed:
         print(f"Run provenance write failed: {write_result.error}", file=sys.stderr)
+        return 1
+    if not inventory_passed:
         return 1
 
     _print_preprocessing_graph_export_progress(

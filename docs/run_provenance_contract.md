@@ -383,6 +383,17 @@ analysis boundary below and completes Stage 25.B.
 `RunMeta`, `mania_manifest.json`, and `extended_metrics.json` remain unchanged
 and are not replaced; no backlinks or schema changes are introduced.
 
+## Stage 25.C.2 — preprocessing inventory linkage
+
+When preprocessing inventory is successfully written, completed or failed root
+preprocessing provenance includes one portable artifact reference with role
+`artifact_inventory` and path `artifact_inventory.json`. Inventory generation
+failure or unavailable complete inputs adds no such reference, even if an older
+inventory file is present. Inventory excludes itself and `run_provenance.json`;
+there is no checksum cycle. The provenance schema itself is unchanged. See
+[artifact inventory contract](artifact_inventory_contract.md) for emission and
+failure ordering.
+
 ## Stage 25.B.3c — completed and failed analysis emission implemented
 
 The existing `mania analyze` command automatically writes

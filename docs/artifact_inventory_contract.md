@@ -4,8 +4,9 @@
 
 Stage 25.C.1 is implemented: immutable models, an explicit file-specification
 builder, streaming opt-in SHA256, and an atomic JSON writer are available through
-the Python API. Automatic preprocessing and analysis integration is not yet
-implemented. Stage 25.C as a whole remains incomplete.
+the Python API. Stage 25.C.2 preprocessing integration is implemented.
+Stage 25.C.3 analysis integration and final acceptance remain planned.
+Stage 25.C as a whole remains incomplete.
 
 Artifact inventory is an additive per-run registry connecting declared inputs,
 one MANIA run, and known outputs. It records file identity and integrity metadata
@@ -13,13 +14,14 @@ without changing scientific artifacts.
 
 ## Layout and root contract
 
-Intended locations are:
+Inventory locations are:
 
 - preprocessing: `<output>/artifact_inventory.json`;
-- analysis: `<output>/analysis/artifact_inventory.json`.
+- analysis (planned): `<output>/analysis/artifact_inventory.json`.
 
-Automatic creation begins only in later integration steps. Calling the builder
-alone never writes a file; callers must explicitly invoke the writer.
+Preprocessing creates inventory automatically after scientific execution as
+described below. Calling the Python builder alone never writes a file; callers
+must explicitly invoke the writer.
 
 The independently versioned root uses this exact field order:
 
@@ -73,8 +75,9 @@ non-regular files are rejected.
 
 - `"none"` is the default: sizes only, using file metadata with no file-content
   opening or reading. All entry checksums are `null`.
-- `"sha256"` requires explicit Python API opt-in. Every declared artifact is
-  streamed in bounded positive chunks, defaulting to one MiB. No whole-file memory
+- `"sha256"` requires explicit Python API or preprocessing CLI opt-in. Every
+  declared artifact is streamed in bounded positive chunks, defaulting to one MiB.
+  No whole-file memory
   loading occurs. Every entry must have a checksum; incomplete mixed checksum sets
   are rejected.
 
@@ -86,13 +89,31 @@ and timestamp around hashing. These detect observed mutations, without promising
 a locked filesystem snapshot or detecting changes that restore the same metadata.
 Modification timestamps are never part of the portable payload.
 
-Normal MANIA execution must not silently hash large XTC files. Normal preprocessing
-still does not automatically hash trajectories. No CLI checksum flag or command
-exists yet; the exact opt-in CLI surface is deferred.
+Normal preprocessing automatically writes `<output>/artifact_inventory.json`:
+
+```bash
+mania preprocessing run-graph-export --manifest manifest.yaml --output out
+```
+
+The default `--artifact-checksum-mode none` records exact byte sizes without
+reading file contents for inventory. All SHA256 fields are `null`. There is no
+second integrity or publication flag and no automatic checksum-mode switching.
+
+Explicit opt-in is available with:
+
+```bash
+mania preprocessing run-graph-export --manifest manifest.yaml --output out \
+  --artifact-checksum-mode sha256
+```
+
+SHA256 streams every inventoried file, including topology and trajectory inputs.
+It can require reading multi-gigabyte XTC files in full again and may be expensive
+for large MD datasets. Use it only intentionally. Checksums remain outside all
+scientific tables and manifests.
 
 ## Authoritative-source boundary
 
-Later integrations must build specifications only from validated input manifests,
+Integrations build specifications only from validated input manifests,
 authoritative workflow results, and known output paths. Blind output-directory
 scanning is forbidden because it could mix old or unrelated files into the current
 run. The builder inspects only the exact supplied paths, preserving specification
@@ -104,11 +125,15 @@ self-reference are validated before any file is opened or stat-ed.
 `inventory_path` is recorded at the root. The inventory is excluded from its own
 artifact entries by both its portable path and the reserved role
 `artifact_inventory`. It has no self-SHA256. No separate `checksums.sha256` file
-exists in Stage 25.C.1.
+is created.
 
-Future run provenance may reference inventory, and inventory may describe and
-checksum run provenance without creating a checksum cycle. This task does not
-add those references or modify run provenance.
+Stage 25.C.2 excludes `run_provenance.json` from inventory as well. A successfully
+written preprocessing inventory adds exactly one portable reference to completed
+or failed preprocessing provenance: role `artifact_inventory`, path
+`artifact_inventory.json`. Unavailable or failed inventory generation adds no
+reference, even if an older inventory file is present. Authoritative files feed
+inventory, then provenance references inventory: neither metadata file is hashed
+by inventory, and no checksum cycle exists. The provenance schema is unchanged.
 
 These remain separate: `run_provenance.json`, `mania_manifest.json`,
 `extended_metrics.json`, legacy `RunMeta`, and artifact inventory.
@@ -137,8 +162,99 @@ derived `passed` in that order. It may serialize its local output path as a stri
 and must never be embedded in the portable inventory payload. An unsuccessful
 result requires a non-empty error; a successful result requires no error.
 
-Exact workflow-level failure semantics remain deferred to Stage 25.C.2 and
-Stage 25.C.3.
+### Preprocessing authoritative sources and portable identities
+
+`mania.preprocessing.artifact_inventory` adapts accepted retained state without
+reopening the manifest, reloading trajectories, scanning directories, writing
+files, or reading Git or the clock. Inputs precede outputs.
+
+- The manifest itself is `input:manifest`, role `input_manifest`, portable path
+  `inputs/manifest/<filename>`.
+- Each condition uses its retained `PreprocessingConditionLoadResult.runtime_input`
+  for topology, ordered trajectory paths, and optional reference structure.
+  Manifest/runtime condition order determines 1-based ordinals `0001`, `0002`,
+  etc. For example, `input:condition:0001:topology` maps to
+  `inputs/conditions/0001/topology/<filename>`;
+  `input:condition:0001:trajectory:0001` maps to
+  `inputs/conditions/0001/trajectories/0001/<filename>`; and
+  `input:condition:0001:reference_structure` maps to
+  `inputs/conditions/0001/reference_structure/<filename>`.
+- Raw condition names occur only in the input entry's `condition` field, never
+  its ID or virtual path. Manifest and CLI reference entries have null condition.
+- When comparison is enabled, supplied CLI reference nodes, edges, and graph
+  inputs use `input:reference:nodes`, `input:reference:edges`, and
+  `input:reference:graph`, under `inputs/reference/nodes/`,
+  `inputs/reference/edges/`, and `inputs/reference/graph/`, with filename-only
+  final components. Their roles are `reference_nodes`, `reference_edges`, and
+  `reference_graph`. Disabled comparison contributes no reference inputs.
+- The current graph-export workflow checks external residue-library path metadata
+  but does not open and consume those files. Such schema fields are excluded.
+  The generated `mania_residue_library.json` is an output when analysis-input
+  export succeeds.
+
+Input formats derive from the lowercase final filename suffix (for example
+`yaml`, `tpr`, `xtc`, `csv`); a missing or unusable suffix is rejected. This does
+not infer a scientific engine or MIME type.
+
+Outputs come only from successful accepted stage results, in execution order:
+graph nodes, edges, and JSON; requested analysis-input exports; requested
+scientific CSVs; written diagnostics report; enabled and written reference
+comparison report. Analysis-input exports enumerate every reported per-condition
+residue table, protein contact edge table and contact-per-frame table, plus
+`edge_semantics.json`, `mania_residue_library.json`, and `mania_manifest.json`.
+Condition-specific output IDs use ordinals with the actual condition stored
+separately. The accepted output layout and filenames remain unchanged. Optional
+scientific CSVs include only requested `rg_timeseries`, `contact_edges`, and
+`contacts_perframe` outputs. Reports require passed stages and enabled writing.
+Output paths are lexical POSIX paths relative to the output root; outside-root
+paths are rejected without resolving symlinks. No directory scan occurs, so
+unrelated files, old outputs, temporary files, and analysis/WANIA artifacts are
+never discovered or automatically included.
+
+### Preprocessing workflow failure semantics
+
+Inventory is technical post-processing after the existing scientific stages.
+The existing end timestamp is captured before inventory construction, and
+software identity is captured only once. Hashing duration is not added to
+provenance. Inventory adds no scientific stage, verbose message, or stdout field.
+On scientific success, inventory is built and atomically written using the
+resolved `options.overwrite`, then completed provenance is written, then the
+existing successful stdout summary is printed unchanged.
+
+A scientific success followed by inventory failure returns exit 1 and suppresses
+the successful summary. Completed provenance is still attempted without an
+inventory reference. One deterministic stderr line begins `Artifact inventory
+build failed:` or `Artifact inventory write failed:`. If fallback provenance also
+fails, its existing `Run provenance build failed:` or `Run provenance write
+failed:` line follows the inventory error. Scientific outputs are retained;
+no partial inventory is published. An existing target is preserved when
+`overwrite=False`.
+
+Covered scientific failures retain their original stdout and exit code.
+Inventory is attempted before failed provenance only when readiness passed and
+one accepted runtime-input record exists for every intended condition. A failed
+condition load is sufficient if its validated input record is retained; missing
+records skip inventory silently rather than publish a partial input set.
+
+| Failed stage | Inventoried outputs, in addition to complete inputs |
+| --- | --- |
+| Plan | No inventory |
+| Runtime loading | None; incomplete inputs mean no inventory |
+| Computation or graph export | None |
+| Analysis-input export | Successful graph outputs |
+| Scientific CSV export | Graph and earlier successful analysis-input outputs |
+| Diagnostics | Graph, analysis-input and scientific CSV outputs from successful stages |
+| Reference comparison | All earlier successful outputs, including a written diagnostics report |
+
+Skipped stages and partial outputs from the failed stage are excluded. Failed-run
+inventory success adds the inventory reference to failed provenance with no
+extra stderr. Inventory failure prints the same deterministic inventory prefix,
+still attempts failed provenance without the reference, and preserves the
+original scientific failure. No scientific rollback occurs.
+
+Parser errors, missing required arguments, invalid sampling or option
+combinations, help, and version never create inventory. Analysis inventory and
+its workflow failure semantics remain deferred to Stage 25.C.3.
 
 ## Scientific boundary and deferred work
 
@@ -148,11 +264,8 @@ only in this additive contract.
 
 Deferred work:
 
-- Stage 25.C.2 preprocessing integration;
 - Stage 25.C.3 analysis integration;
-- the exact opt-in CLI surface;
-- provenance-to-inventory references;
-- workflow failure semantics;
+- analysis workflow failure semantics;
 - Stage 25.C final acceptance;
 - unified publication validation in Stage 25.D;
 - PBC audit in Stage 25.E;

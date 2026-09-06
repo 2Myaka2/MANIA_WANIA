@@ -4,10 +4,13 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
 import mania.cli as cli
+from mania.artifact_inventory import ArtifactInventory
+from mania.artifact_inventory_io import ArtifactInventoryWriteResult
 from mania.preprocessing import (
     EDGE_SEMANTICS_FILENAME,
     MANIA_MANIFEST_FILENAME,
@@ -346,6 +349,19 @@ def _install_synthetic_preprocessing_runtime(
     monkeypatch: pytest.MonkeyPatch,
     conditions: tuple[str, ...],
 ) -> None:
+    # These tests exercise Stage 20 exports; inventory I/O has dedicated coverage.
+    monkeypatch.setattr(cli, "build_preprocessing_artifact_inventory", Mock(
+        return_value=ArtifactInventory(
+            "synthetic", "preprocessing_graph_export", "artifact_inventory.json",
+            "none", (),
+        )
+    ))
+    monkeypatch.setattr(cli, "write_artifact_inventory", Mock(
+        side_effect=lambda inventory, root, **kw: ArtifactInventoryWriteResult(
+            Path(root) / "artifact_inventory.json", True
+        )
+    ))
+
     def fake_load(
         manifest_path: str | Path,
         *,

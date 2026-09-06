@@ -11,6 +11,8 @@ import pytest
 
 import mania.cli as cli
 import mania.software_identity as identity_module
+from mania.artifact_inventory import ArtifactInventory
+from mania.artifact_inventory_io import ArtifactInventoryWriteResult
 from mania.preprocessing import (
     ContactProgressCallback,
     PreprocessingContactComputationLimits,
@@ -605,6 +607,12 @@ def install_fake_stage15(
         fake_reference,
     )
     received["clock"] = Mock(side_effect=timestamps)
+    received["inventory_builder"] = Mock(return_value=ArtifactInventory(
+        "fixed", "preprocessing_graph_export", "artifact_inventory.json", "none", ()
+    ))
+    received["inventory_writer"] = Mock(side_effect=lambda inventory, root, **kw: (
+        ArtifactInventoryWriteResult(Path(root) / "artifact_inventory.json", True)
+    ))
     received["identity"] = Mock(return_value=software_identity)
     received["provenance_builder"] = Mock(return_value=completed_provenance)
     received["failed_provenance_builder"] = Mock(
@@ -620,6 +628,8 @@ def install_fake_stage15(
         )
     )
     for name, key in (
+        ("build_preprocessing_artifact_inventory", "inventory_builder"),
+        ("write_artifact_inventory", "inventory_writer"),
         ("_utc_now", "clock"),
         ("get_software_identity", "identity"),
         ("build_completed_preprocessing_run_provenance", "provenance_builder"),
@@ -2157,6 +2167,7 @@ def test_completed_artifact_references_follow_successful_exports(
         "graph_edges",
         "graph_json",
         *roles,
+        "artifact_inventory",
     )
     expected = {
         "graph_nodes": "graph/nodes.csv",
@@ -2168,6 +2179,7 @@ def test_completed_artifact_references_follow_successful_exports(
         "contacts_perframe": "contacts/contacts_perframe.csv",
         "graph_diagnostics_report": "reports/graph_diagnostics_report.json",
         "reference_comparison_report": "reports/graph_reference_comparison.json",
+        "artifact_inventory": "artifact_inventory.json",
     }
     assert [item.to_dict() for item in references] == [
         {"role": item.role, "path": expected[item.role]} for item in references
