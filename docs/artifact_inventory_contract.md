@@ -5,8 +5,8 @@
 Stage 25.C.1 is implemented: immutable models, an explicit file-specification
 builder, streaming opt-in SHA256, and an atomic JSON writer are available through
 the Python API. Stage 25.C.2 preprocessing integration is implemented.
-Stage 25.C.3 analysis integration and final acceptance remain planned.
-Stage 25.C as a whole remains incomplete.
+Stage 25.C.3 analysis integration is implemented and Stage 25.C is complete.
+Stage 25.D unified artifact validation is next; Stage 25 overall remains incomplete.
 
 Artifact inventory is an additive per-run registry connecting declared inputs,
 one MANIA run, and known outputs. It records file identity and integrity metadata
@@ -17,9 +17,9 @@ without changing scientific artifacts.
 Inventory locations are:
 
 - preprocessing: `<output>/artifact_inventory.json`;
-- analysis (planned): `<output>/analysis/artifact_inventory.json`.
+- analysis: `<output>/analysis/artifact_inventory.json`.
 
-Preprocessing creates inventory automatically after scientific execution as
+Both workflows create inventory automatically after scientific execution as
 described below. Calling the Python builder alone never writes a file; callers
 must explicitly invoke the writer.
 
@@ -75,11 +75,10 @@ non-regular files are rejected.
 
 - `"none"` is the default: sizes only, using file metadata with no file-content
   opening or reading. All entry checksums are `null`.
-- `"sha256"` requires explicit Python API or preprocessing CLI opt-in. Every
-  declared artifact is streamed in bounded positive chunks, defaulting to one MiB.
-  No whole-file memory
-  loading occurs. Every entry must have a checksum; incomplete mixed checksum sets
-  are rejected.
+- `"sha256"` requires explicit Python API, preprocessing CLI, or analysis CLI opt-in.
+  Every declared artifact is streamed in bounded positive chunks, defaulting to
+  one MiB. No whole-file memory loading occurs. Every entry must have a checksum;
+  incomplete mixed checksum sets are rejected.
 
 `stream_file_sha256(path, chunk_size=...)` accepts a concrete native `Path` and a
 positive integer chunk size, excluding booleans. Where file descriptors support
@@ -253,8 +252,107 @@ still attempts failed provenance without the reference, and preserves the
 original scientific failure. No scientific rollback occurs.
 
 Parser errors, missing required arguments, invalid sampling or option
-combinations, help, and version never create inventory. Analysis inventory and
-its workflow failure semantics remain deferred to Stage 25.C.3.
+combinations, help, and version never create preprocessing inventory.
+
+## Stage 25.C.3 — analysis integration implemented
+
+The existing analysis command defaults to metadata-only inventory:
+
+```bash
+mania analyze --input prepared --output out --condition normal \
+  --artifact-checksum-mode none
+```
+
+It writes `<output>/analysis/artifact_inventory.json`. Omitting the option has
+the same effect: exact byte sizes and null SHA256, with no integrity content
+reads. Explicit `--artifact-checksum-mode sha256` streams every declared analysis
+input and output through the accepted bounded generic SHA256 implementation.
+Neither environment nor output location changes the selected mode.
+
+### Authoritative analysis paths
+
+`resolve_analysis_input_paths(request)` in `mania.analysis.orchestration` returns
+an ordered tuple of frozen `AnalyzeConditionInputPaths` execution records. It
+uses accepted `mania_manifest.json` references and conventional fallback names,
+checks required files, and preserves optional root inputs. The CLI calls it once
+and passes the identical tuple to `run_analysis` and the inventory adapter.
+Resolution reads the manifest once for all requested conditions; existing
+scientific manifest validation remains unchanged. Supplied paths skip a second
+resolution pass. They must match the exact requested condition count and order.
+There is no directory scan, symlink resolution, or portable serialization of
+these execution records. Inventory does not independently guess filenames or
+parse the manifest.
+
+`mania.analysis.artifact_inventory` collects inputs first, then completed
+`AnalyzeRunResult` outputs. Its collectors do not read, stat, write, hash, inspect
+Git, or read the clock; only the generic inventory builder inspects files.
+
+Optional root inputs are deduplicated across conditions in this order. Absent
+inputs are omitted; conflicting paths or presence across conditions are rejected.
+
+| Artifact ID | Portable path | Role |
+| --- | --- | --- |
+| `input:root:mania_manifest` | `inputs/root/mania_manifest.json` | `preprocessing_manifest` |
+| `input:root:edge_semantics` | `inputs/root/edge_semantics.json` | `edge_semantics` |
+| `input:root:residue_library` | `inputs/root/mania_residue_library.json` | `residue_library` |
+
+Their condition is null. Required per-condition inputs follow in request order:
+`residue_table`, `protein_contact_edges`, `contacts_perframe`. For each role,
+IDs use `input:condition:0001:<role>` and virtual paths use
+`inputs/conditions/0001/<role>/<filename>`. Ordinals are 1-based and zero-padded;
+condition identity is stored in `condition`, with no condition-name component
+added to the ID or virtual path. Original final filenames are preserved,
+including any condition text already in those filenames. Duplicate basenames
+across conditions are separated by ordinals. Formats use only the lowercase
+final suffix (currently CSV or JSON); unusable or absent suffixes are rejected.
+Local absolute paths never enter portable fields. Root preprocessing inventory
+and provenance are excluded because analysis does not consume them.
+
+For each completed condition result, outputs follow its accepted write order:
+graph, centrality, communities, region enrichment, temporal RIN, conformation
+PCA, conformation labels. IDs are `output:condition:0001:graph`, etc.; roles are
+`analysis_graph`, `analysis_centrality`, etc., with the actual condition stored
+separately. Then come `output:comparison` / `analysis_comparison`,
+`output:stats` / `analysis_stats`, and, when present,
+`output:extended_metrics` / `analysis_manifest`. Output paths are lexical POSIX
+paths relative to `result.request.output_root`, for example
+`analysis/normal/graph.json` and `analysis/extended_metrics.json`. Outside-root
+paths are rejected. Only authoritative result paths are included; stale files
+and partial outputs are never discovered.
+
+### Analysis ordering, failures, and collision protection
+
+After scientific execution, the existing end timestamp is captured before
+inventory construction. Identity and timing capture counts remain unchanged.
+The atomic inventory writer receives `request.output_root` and `overwrite=True`;
+the inventory path already contains `analysis/`. After writing succeeds,
+completed provenance appends the inventory reference after scientific references,
+then the unchanged stdout summary is printed. Inventory is absent from scientific
+result lists/counts, `extended_metrics.json`, and stdout.
+
+After inputs resolve, failed analysis attempts an input-only inventory with
+`result=None`, even if some outputs were written before failure. Partial output
+directories are never scanned. Failure before authoritative resolution, request
+construction failure, parser errors, help, and version produce no inventory.
+Existing failed provenance is still attempted when an accepted request exists.
+
+Inventory build/write failure after scientific success returns 1 and suppresses
+the successful summary, while still attempting completed provenance without an
+inventory reference. Stderr begins `Analysis artifact inventory build failed:`
+or `Analysis artifact inventory write failed:`. After scientific failure, the
+original `Analyze failed:` line remains first, followed by any inventory error.
+Failed provenance is still attempted without a reference if inventory failed;
+its existing meta-error follows any inventory error. Generated scientific outputs
+are retained. No partial inventory is published. An older inventory may remain
+after a failed replacement, but provenance never claims it for the current run.
+
+With `--input ROOT --output ROOT`, both root preprocessing files
+`ROOT/artifact_inventory.json` and `ROOT/run_provenance.json` remain byte-for-byte
+unchanged. Analysis technical metadata uses only `ROOT/analysis/`.
+`analysis/artifact_inventory.json` appears only as root `inventory_path`, never
+as an entry or self-checksum. Neither run-provenance file is inventoried.
+Analysis provenance references `analysis/artifact_inventory.json` only after
+successful writing. No checksum cycle or `checksums.sha256` file is created.
 
 ## Scientific boundary and deferred work
 
@@ -264,9 +362,6 @@ only in this additive contract.
 
 Deferred work:
 
-- Stage 25.C.3 analysis integration;
-- analysis workflow failure semantics;
-- Stage 25.C final acceptance;
 - unified publication validation in Stage 25.D;
 - PBC audit in Stage 25.E;
 - FAIR² software/dataset bridge in Stage 25.F.

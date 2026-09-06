@@ -7,8 +7,9 @@ available through `mania.run_provenance`. Stage 25.B.2 implements the in-memory
 preprocessing sampling adapter described below. Stage 25.B.3a implements automatic
 completed preprocessing file emission; Stage 25.B.3b implements failed preprocessing
 emission. Stage 25.B.3c implements completed and failed analysis provenance.
-Stage 25.B is complete; Stage 25.C input/output artifact inventory and opt-in
-checksums is next. Stage 25 as a whole remains incomplete.
+Stage 25.B and Stage 25.C input/output artifact inventory and opt-in checksums
+are complete. Stage 25.D unified artifact validation is next.
+Stage 25 as a whole remains incomplete.
 
 `RunProvenance` is the in-memory final-run passport for one MANIA execution.
 The caller supplies identity, timing, command tokens, resolved configuration,
@@ -420,9 +421,12 @@ Only `--input` and `--output` are normalized, supporting separated and equals
 forms: output becomes `.`, and input becomes `.` when the actual request roots
 are equal, otherwise its filename. Empty portable filenames are rejected.
 Other tokens and order, `sys.argv`, and actual runtime paths are preserved.
-Resolved configuration has exactly `input_root`, `output_root`, `analysis_root`,
-`conditions`, `enable_pca`, `clustering_basis`, and
-`pca_components_for_clustering`. Roots use the same portable labels, with
+Resolved configuration has `input_root`, `output_root`, `analysis_root`,
+`conditions`, `enable_pca`, `clustering_basis`, `pca_components_for_clustering`,
+and, since Stage 25.C.3, `artifact_checksum_mode`. The checksum mode is technical
+execution metadata; no hashes or inventory contents are added. Explicit checksum
+flag/value tokens remain in the portable command; default omission remains
+omission. Roots use the same portable labels, with
 `analysis_root="analysis"`; other values and condition order come from the
 request. No working directory, environment, hashes, or runtime objects are added.
 
@@ -448,8 +452,9 @@ stderr, and exit code zero remain unchanged. Provenance is not added to
 
 When `run_analysis()` raises `AnalyzeError` or another existing caught exception,
 failed provenance is attempted at `request.output_root / "analysis"`, also with
-`overwrite=True`. It conservatively contains no artifact references or sampling
-and exactly one root issue: severity `error`, code `analysis_execution_failed`,
+`overwrite=True`. Without additional Stage 25.C.3 references, it conservatively
+contains no artifact references or sampling and exactly one root issue: severity
+`error`, code `analysis_execution_failed`,
 message `Analysis workflow failed.`, stage `analysis_execution`, condition null.
 Original exception text is never stored in the passport. Partial outputs are
 neither inspected nor claimed. The original `Analyze failed: <message>` stderr
@@ -468,9 +473,34 @@ without inventing a request or passport. Parser errors, missing required argumen
 invalid parser-level integers, help, version, and other commands do not enter
 this analysis provenance boundary.
 
-Checksums and the complete input/output inventory remain Stage 25.C; stronger
-lineage and the publication bridge remain Stage 25.F. Stage 25.C–25.G are not
-implemented by this provenance work.
+Stage 25.C adds inventory linkage below. Stronger lineage and the publication
+bridge remain planned for Stage 25.F.
+
+## Stage 25.C.3 — analysis inventory linkage
+
+Completed and failed builders accept optional
+`additional_artifact_references: tuple[PortableArtifactReference, ...] = ()`.
+Completed builders preserve scientific references first and append additional
+references. Failed builders use the supplied references; omission preserves the
+existing empty list. Existing model validation rejects invalid references.
+No filesystem, clock, Git access, or generic provenance schema change is added.
+
+After successful inventory writing, completed or failed analysis provenance
+includes role `artifact_inventory`, path `analysis/artifact_inventory.json`.
+Unavailable or failed inventory adds no reference, even if an older file exists.
+After authoritative input resolution, failed runs can link an input-only inventory;
+partial outputs are never claimed. Resolution failures still attempt failed
+provenance without inventory. Scientific success followed by inventory failure
+still attempts completed provenance without inventory, returns 1, and suppresses
+the success summary. Inventory errors precede provenance meta-errors; after a
+scientific failure, the original `Analyze failed:` line stays first.
+
+The CLI retains one software identity, one start timestamp, and one end timestamp,
+with the end captured before inventory work. Inventory is atomically written to
+`<output>/analysis/artifact_inventory.json` before provenance; neither root
+preprocessing technical file changes when input and output roots coincide.
+Inventory excludes itself and both provenance files, so there is no checksum
+cycle. See the [artifact inventory contract](artifact_inventory_contract.md).
 
 ## Explicit non-goals
 

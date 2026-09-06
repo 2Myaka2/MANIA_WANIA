@@ -16,11 +16,10 @@ provides completed preprocessing emission, Stage 25.B.3b provides failed
 preprocessing emission, and Stage 25.B.3c provides completed and failed analysis
 emission. Stage 25.B is complete. Stage 25.C.1 implements the additive
 artifact-inventory contract, streaming opt-in SHA256 primitives, and atomic
-inventory writing. Stage 25.C.2 preprocessing inventory integration is implemented;
-Stage 25.C.3 analysis integration and final Stage 25.C acceptance remain planned.
-Stage 25.C as a whole remains incomplete. Stages 25.D–25.G remain planned and
-unimplemented; Stage 25 as
-a whole remains incomplete. FastAPI remains postponed.
+inventory writing. Stage 25.C.2 preprocessing integration and Stage 25.C.3
+analysis integration are implemented. Stage 25.C is complete. Stage 25.D unified
+artifact validation is next. Stages 25.D–25.G remain planned and unimplemented;
+Stage 25 as a whole remains incomplete. FastAPI remains postponed.
 Existing scientific semantics remain frozen unless changed by
 a separate, explicitly approved task. Older v0.1 planning statements remain
 historical records.
@@ -40,14 +39,14 @@ This roadmap does not claim FAIR² certification or Dataset v1.0 readiness.
 
 - Stage 25.A — Software identity and release metadata (implemented)
 - Stage 25.B — Run provenance and effective sampling (25.B.1–25.B.3c implemented; complete)
-- Stage 25.C — Input/output artifact inventory and opt-in checksums (25.C.1–25.C.2 implemented; incomplete)
+- Stage 25.C — Input/output artifact inventory and opt-in checksums (25.C.1–25.C.3 implemented; complete)
 - Stage 25.D — Unified artifact validation
 - Stage 25.E — PBC audit and runtime metadata
 - Stage 25.F — Reproducibility documentation and FAIR² bridge
 - Stage 25.G — Validation and technical-hardening acceptance
 
-Stage 25.A, Stage 25.B.1–25.B.3c, and Stage 25.C.1–25.C.2 are implemented.
-Stage 25.C.3 and Stages 25.D–25.G require separate, focused implementation and
+Stage 25.A, Stage 25.B.1–25.B.3c, and Stage 25.C.1–25.C.3 are implemented.
+Stages 25.D–25.G require separate, focused implementation and
 acceptance steps.
 
 ## Stage 25.A status — implemented
@@ -104,11 +103,10 @@ in the existing mutable output directory.
 
 Stage 25.B acceptance covers both workflows, output-location separation,
 unchanged CLI summaries and original failure behavior, and preserved manifests,
-scientific schemas, and calculations. Stage 25.B is complete; Stage 25.C.1
-input/output artifact-inventory primitives are implemented as described below.
-Stage 25.C and Stage 25 as a whole remain incomplete.
+scientific schemas, and calculations. Stage 25.B is complete. Stage 25.C is
+complete as described below; Stage 25 as a whole remains incomplete.
 
-## Stage 25.C status — 25.C.1–25.C.2 implemented; incomplete
+## Stage 25.C status — complete
 
 Stage 25.C.1 implements the independently versioned additive artifact-inventory
 contract, immutable models, explicit file-specification builder, streaming
@@ -117,9 +115,9 @@ opt-in SHA256 primitives, and atomic inventory writing. See
 
 Default inventory construction records exact byte sizes using file metadata only,
 without opening or reading file contents. SHA256 requires explicit Python API
-or preprocessing CLI opt-in. Specifications are caller-supplied; no output-directory
-scanning occurs. The inventory excludes itself and its own checksum and remains separate from
-provenance, manifests, and scientific artifacts.
+or preprocessing/analysis CLI opt-in. Specifications are caller-supplied; no
+output-directory scanning occurs. The inventory excludes itself and its own
+checksum and remains separate from provenance, manifests, and scientific artifacts.
 
 Stage 25.C.2 preprocessing inventory integration is implemented. Normal
 `mania preprocessing run-graph-export` execution automatically writes
@@ -137,8 +135,21 @@ inputs and claim only earlier successful outputs. Inventory failure after
 scientific success returns exit 1 with completed provenance still attempted;
 inventory failure during a failed workflow preserves the original failure.
 
-Stage 25.C.3 analysis inventory integration and final Stage 25.C acceptance remain
-planned. Stage 25.C as a whole remains incomplete. Stages 25.D–25.G remain planned.
+Stage 25.C.3 analysis inventory integration is implemented. `mania analyze`
+automatically writes `<output>/analysis/artifact_inventory.json`, with size-only
+`none` as default and streaming SHA256 as explicit opt-in through the same flag.
+The public resolver supplies authoritative inputs once for execution and
+inventory; completed result paths supply outputs. Failed runs with resolved
+inputs get input-only inventory. Earlier failures get no inventory. Analysis
+provenance links inventory only after successful writing. Neither root
+preprocessing technical file is modified, including with equal input/output roots.
+
+Stage 25.C acceptance covers generic C.1 compatibility, preprocessing and analysis
+in both checksum modes, conservative failure handling, separate technical metadata
+locations, no directory scanning, and unchanged manifests, scientific results,
+CLI summaries, and dependencies. Stage 25.C is complete. Stage 25.D unified
+artifact validation is next. Stages 25.D–25.G remain planned; Stage 25 as a whole
+remains incomplete.
 
 ## Compatibility rules
 
@@ -155,7 +166,7 @@ planned. Stage 25.C as a whole remains incomplete. Stages 25.D–25.G remain pla
 
 ## Frozen scientific scope
 
-The following remain outside the implemented Stage 25.A–25.B hardening scope and
+The following remain outside the implemented Stage 25.A–25.C hardening scope and
 require separate scientific or architectural approval:
 
 - contact lifetime;

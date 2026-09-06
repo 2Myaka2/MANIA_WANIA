@@ -11,14 +11,14 @@ can optionally write the root-level Stage 20 artifacts consumed by
 `mania analyze`. Reference comparison is separate and requires explicit
 reference artifact paths.
 
-## Stage 25.A Software Identity Status
+## Stage 25 Reproducibility Hardening Status
 
-Stage 25 is reproducibility and publication hardening; Stage 25.A software
-identity is implemented. Stage 25.B run provenance and effective sampling is
-complete. Stage 25.C input/output artifact inventory and opt-in checksums is the
-next focused step; Stages 25.C–25.G remain planned. Stage 25 as a whole remains
-incomplete, and FastAPI remains postponed. See the
-[Stage 25 roadmap](docs/stage25_reproducibility_hardening.md).
+Stage 25 is reproducibility and publication hardening. Stage 25.A software
+identity is complete. Stage 25.B run provenance and effective sampling is
+complete. Stage 25.C input/output artifact inventory and opt-in checksums is
+complete. Stage 25.D unified artifact validation is next. Stage 25 as a whole
+remains incomplete. FastAPI remains postponed.
+See the [Stage 25 roadmap](docs/stage25_reproducibility_hardening.md).
 
 MANIA has one package-version source, `src/mania/_version.py`, shared by
 `mania.__version__` and dynamic package metadata. `mania --version` remains the
@@ -59,6 +59,26 @@ and configuration, conditions, and references to completed analysis outputs;
 failed runs claim no partial outputs. Sampling remains in preprocessing
 provenance. See the [run-provenance contract](docs/run_provenance_contract.md)
 for covered failures and metadata error behavior.
+
+Preprocessing automatically writes `<output>/artifact_inventory.json`; analysis
+writes `<output>/analysis/artifact_inventory.json`. The default size-only mode
+`--artifact-checksum-mode none` records exact byte sizes without reading contents
+for integrity metadata. SHA256 is explicit opt-in and streams every inventoried
+input and output in bounded chunks:
+
+```bash
+mania analyze --input preprocessing_output --output run_output \
+  --condition normal --condition tumor --artifact-checksum-mode sha256
+```
+
+The shared analysis resolver supplies the exact Stage 20 input paths used by
+execution; completed output paths come from its result. No directory scanning
+occurs. After authoritative inputs resolve, failed analysis gets an input-only
+inventory; earlier failures produce no inventory. Each workflow's provenance
+references its own inventory only after successful writing. Inventories exclude
+themselves and run provenance. Analysis preserves both root preprocessing
+technical files even with the same input and output root. See the
+[artifact inventory contract](docs/artifact_inventory_contract.md).
 
 ## Stage 20 Preprocessing Status
 
@@ -1279,8 +1299,9 @@ The planning-level scientific roadmap is:
 - **Stage 24.F — PCA provenance, failure semantics, and internal component
   capacity correction.**
 - **Stage 25 — Reproducibility and publication hardening:** Stage 25.A software
-  identity is implemented and Stage 25.B is complete; Stage 25.C is next.
-  Stages 25.C–25.G remain planned, and Stage 25 as a whole remains incomplete.
+  identity, Stage 25.B run provenance, and Stage 25.C artifact inventory are
+  complete. Stage 25.D unified artifact validation is next; Stages 25.D–25.G
+  remain planned, and Stage 25 as a whole remains incomplete.
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
 Stages 20–23 are now complete within their accepted boundaries. Stage 24.A

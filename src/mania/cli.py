@@ -17,6 +17,16 @@ from mania.analysis import (
     AnalyzeRequest,
     run_analysis,
 )
+from mania.analysis.artifact_inventory import (
+    ANALYSIS_ARTIFACT_INVENTORY_PATH,
+    ANALYSIS_ARTIFACT_INVENTORY_ROLE,
+    build_analysis_artifact_inventory,
+)
+from mania.analysis.orchestration import (
+    AnalyzeConditionInputPaths,
+    AnalyzeRunResult,
+    resolve_analysis_input_paths,
+)
 from mania.analysis.run_provenance import (
     ANALYSIS_RUN_PROVENANCE_DIRNAME,
     AnalysisRunProvenanceBuildError,
@@ -178,6 +188,16 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         required=True,
         help="Run output root; analysis artifacts are written under analysis/.",
+    )
+    analyze_parser.add_argument(
+        "--artifact-checksum-mode",
+        choices=("none", "sha256"),
+        default="none",
+        help=(
+            "Artifact inventory: none records exact sizes without reading file "
+            "contents for integrity metadata; sha256 explicitly streams every "
+            "inventoried analysis input and output. Defaults to none."
+        ),
     )
     analyze_parser.add_argument(
         "--condition",
@@ -1526,7 +1546,9 @@ def _portable_analysis_command(
     return tuple(tokens)
 
 
-def _analysis_resolved_configuration(request: AnalyzeRequest) -> dict[str, object]:
+def _analysis_resolved_configuration(
+    request: AnalyzeRequest, checksum_mode: str,
+) -> dict[str, object]:
     return {
         "input_root": _portable_analysis_input(request),
         "output_root": ".",
@@ -1535,6 +1557,7 @@ def _analysis_resolved_configuration(request: AnalyzeRequest) -> dict[str, objec
         "enable_pca": request.enable_pca,
         "clustering_basis": request.clustering_basis,
         "pca_components_for_clustering": request.pca_components_for_clustering,
+        "artifact_checksum_mode": checksum_mode,
     }
 
 
@@ -1560,9 +1583,52 @@ def _run_analyze_command(args: argparse.Namespace) -> int:
     command: tuple[str, ...] | None = None
     run_id = analysis_run_id_from_started_at(started_at_utc)
     request: AnalyzeRequest | None = None
+    resolved_input_paths: tuple[AnalyzeConditionInputPaths, ...] | None = None
+
+    def emit_inventory(
+        request: AnalyzeRequest, result: AnalyzeRunResult | None,
+    ) -> tuple[tuple[PortableArtifactReference, ...], bool]:
+        if resolved_input_paths is None:
+            return (), False
+        try:
+            inventory = build_analysis_artifact_inventory(
+                run_id=run_id,
+                request=request,
+                resolved_input_paths=resolved_input_paths,
+                result=result,
+                checksum_mode=args.artifact_checksum_mode,
+            )
+        except Exception:
+            print(
+                "Analysis artifact inventory build failed: "
+                "Inventory metadata is unavailable.",
+                file=sys.stderr,
+            )
+            return (), False
+        try:
+            written = write_artifact_inventory(
+                inventory, request.output_root, overwrite=True,
+            )
+            if not written.passed:
+                print(
+                    f"Analysis artifact inventory write failed: {written.error}",
+                    file=sys.stderr,
+                )
+                return (), False
+        except Exception:
+            print(
+                "Analysis artifact inventory write failed: Write operation failed.",
+                file=sys.stderr,
+            )
+            return (), False
+        return (PortableArtifactReference(
+            role=ANALYSIS_ARTIFACT_INVENTORY_ROLE,
+            path=ANALYSIS_ARTIFACT_INVENTORY_PATH,
+        ),), True
 
     def emit_failure(request: AnalyzeRequest) -> None:
         ended_at_utc = _utc_now()
+        inventory_references, _ = emit_inventory(request, None)
         try:
             if command is None:
                 raise AnalysisRunProvenanceBuildError("Analysis command is invalid.")
@@ -1573,7 +1639,10 @@ def _run_analyze_command(args: argparse.Namespace) -> int:
                 ended_at_utc=ended_at_utc,
                 software_identity=software_identity,
                 command=command,
-                resolved_configuration=_analysis_resolved_configuration(request),
+                resolved_configuration=_analysis_resolved_configuration(
+                    request, args.artifact_checksum_mode,
+                ),
+                additional_artifact_references=inventory_references,
             )
         except Exception:
             print(
@@ -1602,7 +1671,8 @@ def _run_analyze_command(args: argparse.Namespace) -> int:
             # Report invalid portable metadata at the provenance boundary, so
             # it cannot prevent execution or replace an original analysis error.
             command = None
-        result = run_analysis(request)
+        resolved_input_paths = resolve_analysis_input_paths(request)
+        result = run_analysis(request, resolved_input_paths=resolved_input_paths)
     except AnalyzeError as exc:
         print(f"Analyze failed: {exc}", file=sys.stderr)
         if request is not None:
@@ -1615,6 +1685,7 @@ def _run_analyze_command(args: argparse.Namespace) -> int:
         return 1
 
     ended_at_utc = _utc_now()
+    inventory_references, inventory_passed = emit_inventory(request, result)
     try:
         if command is None:
             raise AnalysisRunProvenanceBuildError("Analysis command is invalid.")
@@ -1632,7 +1703,10 @@ def _run_analyze_command(args: argparse.Namespace) -> int:
             ended_at_utc=ended_at_utc,
             software_identity=software_identity,
             command=command,
-            resolved_configuration=_analysis_resolved_configuration(request),
+            resolved_configuration=_analysis_resolved_configuration(
+                request, args.artifact_checksum_mode,
+            ),
+            additional_artifact_references=inventory_references,
         )
     except Exception:
         print(
@@ -1642,6 +1716,8 @@ def _run_analyze_command(args: argparse.Namespace) -> int:
         )
         return 1
     if not _write_analysis_provenance(provenance, result.analysis_root, failed=False):
+        return 1
+    if not inventory_passed:
         return 1
     print(json.dumps(result.to_summary(), sort_keys=True))
     return 0

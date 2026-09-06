@@ -88,6 +88,7 @@ def build_completed_analysis_run_provenance(
     software_identity: SoftwareIdentity,
     command: tuple[str, ...],
     resolved_configuration: Mapping[str, object],
+    additional_artifact_references: tuple[PortableArtifactReference, ...] = (),
 ) -> RunProvenance:
     """Describe existing analysis outputs; upstream sampling stays upstream."""
     if type(result) is not AnalyzeRunResult:
@@ -105,7 +106,7 @@ def build_completed_analysis_run_provenance(
             resolved_configuration=resolved_configuration,
             conditions=result.request.conditions,
             sampling_by_condition=(),
-            artifact_references=references,
+            artifact_references=references + additional_artifact_references,
         )
     except (AttributeError, TypeError, ValueError, OverflowError):
         raise AnalysisRunProvenanceBuildError(
@@ -122,6 +123,7 @@ def build_failed_analysis_run_provenance(
     software_identity: SoftwareIdentity,
     command: tuple[str, ...],
     resolved_configuration: Mapping[str, object],
+    additional_artifact_references: tuple[PortableArtifactReference, ...] = (),
 ) -> RunProvenance:
     """Record failure without claiming partial outputs or copying exception text."""
     if type(request) is not AnalyzeRequest:
@@ -138,7 +140,7 @@ def build_failed_analysis_run_provenance(
             resolved_configuration=resolved_configuration,
             conditions=request.conditions,
             sampling_by_condition=(),
-            artifact_references=(),
+            artifact_references=additional_artifact_references,
             issues=(
                 RunProvenanceIssue(
                     severity="error",

@@ -12,10 +12,11 @@ historical planning context. Older wording such as “future”, “skeleton”,
 repository inventory. These sections are not a current capability checklist.
 
 See [Stage 25 reproducibility hardening](stage25_reproducibility_hardening.md)
-for the approved current roadmap. Stage 25.A software identity is implemented;
-Stage 25.B run provenance and effective sampling is implemented. Stage 25.C
-input/output artifact inventory and opt-in checksums is the next focused step.
-Stage 25 as a whole remains incomplete.
+for the approved current roadmap. Stage 25.A software identity is complete.
+Stage 25.B run provenance and effective sampling is complete. Stage 25.C
+input/output artifact inventory and opt-in checksums is complete. Stage 25.D
+unified artifact validation is next. Stage 25 as a whole remains incomplete.
+FastAPI remains postponed.
 
 ## Purpose
 

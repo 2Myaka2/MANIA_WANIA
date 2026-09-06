@@ -7,11 +7,13 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
+from test_analysis_artifact_inventory import declared_inputs
 from test_analysis_run_provenance import END, IDENTITY, START, analysis_result
 from test_cli_analyze import _write_stage20_root
 
 import mania.cli as cli
 from mania.analysis.orchestration import AnalyzeError, AnalyzeRequest
+from mania.artifact_inventory_io import ArtifactInventoryWriteResult
 from mania.run_provenance_io import RunProvenanceWriteResult
 
 
@@ -24,6 +26,20 @@ def execution(monkeypatch, tmp_path):
     clock = Mock(side_effect=[START, END])
     identity = Mock(return_value=IDENTITY)
     run = Mock(return_value=result)
+    # Isolate Stage 25.B emission tests from C.3 I/O; the C.3 suite exercises
+    # real resolution, inventories, and atomic writing separately.
+    monkeypatch.setattr(
+        cli, "resolve_analysis_input_paths", Mock(side_effect=declared_inputs)
+    )
+    monkeypatch.setattr(
+        cli, "build_analysis_artifact_inventory", Mock(return_value=object())
+    )
+    monkeypatch.setattr(
+        cli, "write_artifact_inventory",
+        Mock(return_value=ArtifactInventoryWriteResult(
+            request.output_root / "analysis/artifact_inventory.json", True,
+        )),
+    )
     completed = Mock(wraps=cli.build_completed_analysis_run_provenance)
     failed = Mock(wraps=cli.build_failed_analysis_run_provenance)
     writer = Mock(wraps=cli.write_run_provenance)
@@ -122,7 +138,7 @@ def test_completed_real_writer_preserves_stdout_and_root(
     sentinel = request.output_root / "run_provenance.json"
     sentinel.write_bytes(b"existing preprocessing provenance\n")
     captured = invoke(monkeypatch, capsys, request, equals=equals, options=options)
-    run.assert_called_once_with(request)
+    run.assert_called_once_with(request, resolved_input_paths=declared_inputs(request))
     assert_context(clock, identity, completed)
     failed.assert_not_called()
     assert writer.call_count == 1
@@ -140,7 +156,10 @@ def test_completed_real_writer_preserves_stdout_and_root(
     assert payload["started_at_utc"] == "2026-09-06T12:03:04.123456Z"
     assert payload["ended_at_utc"] == "2026-09-06T12:03:09.123456Z"
     assert payload["sampling_by_condition"] == []
-    assert len(payload["artifact_references"]) == 17
+    assert len(payload["artifact_references"]) == 18
+    assert payload["artifact_references"][-1] == {
+        "role": "artifact_inventory", "path": "analysis/artifact_inventory.json",
+    }
     assert all(
         ref["path"].startswith("analysis/") for ref in payload["artifact_references"]
     )
@@ -170,6 +189,7 @@ def test_completed_real_writer_preserves_stdout_and_root(
         "enable_pca": enable_pca,
         "clustering_basis": basis,
         "pca_components_for_clustering": components,
+        "artifact_checksum_mode": "none",
     }
     assert str(request.output_root) not in target.read_text()
     assert "/private/" not in target.read_text()
@@ -201,7 +221,7 @@ def test_portable_command_is_captured_before_execution(
     portable = Mock(wraps=cli._portable_analysis_command)
     monkeypatch.setattr(cli, "_portable_analysis_command", portable)
 
-    def execute(received):
+    def execute(received, *, resolved_input_paths):
         portable.assert_called_once()
         assert received == request
         # Changes after the capture cannot affect the emitted command snapshot.
@@ -267,7 +287,7 @@ def test_failed_real_writer_preserves_original_failure_and_root(
     captured = invoke(monkeypatch, capsys, request, code=1)
     assert captured.out == ""
     assert captured.err == f"Analyze failed: {error}\n"
-    run.assert_called_once_with(request)
+    run.assert_called_once_with(request, resolved_input_paths=declared_inputs(request))
     assert_context(clock, identity, failed)
     completed.assert_not_called()
     assert writer.call_count == 1
@@ -278,7 +298,9 @@ def test_failed_real_writer_preserves_original_failure_and_root(
     assert payload["status"] == "failed"
     assert payload["workflow"] == "analysis"
     assert payload["sampling_by_condition"] == []
-    assert payload["artifact_references"] == []
+    assert payload["artifact_references"] == [
+        {"role": "artifact_inventory", "path": "analysis/artifact_inventory.json"}
+    ]
     assert payload["issues"] == [
         {
             "severity": "error",
@@ -388,7 +410,7 @@ def test_empty_input_filename_fails_portable_build_after_science(
     if analysis_failed:
         run.side_effect = AnalyzeError("original error")
     captured = invoke(monkeypatch, capsys, request, code=1)
-    run.assert_called_once_with(request)
+    run.assert_called_once_with(request, resolved_input_paths=declared_inputs(request))
     completed.assert_not_called()
     failed.assert_not_called()
     writer.assert_not_called()
@@ -502,7 +524,7 @@ def test_synthetic_stage20_analysis_smoke_protects_shared_root(
     assert payload["sampling_by_condition"] == []
     assert {ref["path"] for ref in payload["artifact_references"]} == set(
         summary["artifacts"]["written"]
-    )
+    ) | {"analysis/artifact_inventory.json"}
     assert (tmp_path / "analysis" / "extended_metrics.json").is_file()
     assert sentinel.read_bytes() == b"preprocessing sampling sentinel"
 

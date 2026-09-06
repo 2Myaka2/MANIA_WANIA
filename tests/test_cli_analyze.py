@@ -266,7 +266,8 @@ def _analysis_bytes(root: Path) -> dict[str, bytes]:
     return {
         path.relative_to(analysis_root).as_posix(): path.read_bytes()
         for path in sorted(analysis_root.rglob("*"))
-        if path.is_file() and path.name != "run_provenance.json"
+        if path.is_file()
+        and path.name not in {"run_provenance.json", "artifact_inventory.json"}
     }
 
 
@@ -684,9 +685,15 @@ def test_requested_numerical_pca_failure_is_fatal_before_writes(
     provenance = json.loads(target.read_text())
     assert provenance["status"] == "failed"
     assert provenance["issues"][0]["code"] == "analysis_execution_failed"
-    assert provenance["artifact_references"] == []
+    assert provenance["artifact_references"] == [
+        {"role": "artifact_inventory", "path": "analysis/artifact_inventory.json"}
+    ]
     assert provenance["sampling_by_condition"] == []
-    assert list(target.parent.iterdir()) == [target]
+    inventory_path = target.parent / "artifact_inventory.json"
+    assert set(target.parent.iterdir()) == {target, inventory_path}
+    inventory = json.loads(inventory_path.read_text())
+    assert inventory["input_artifact_count"] == 3
+    assert inventory["output_artifact_count"] == 0
     assert _analysis_bytes(output_root) == {}
     assert not (output_root / "analysis" / "extended_metrics.json").exists()
 
@@ -814,3 +821,11 @@ def test_analyze_outputs_and_stdout_are_deterministic(tmp_path: Path) -> None:
     assert first.stdout.count("\n") == 1
     assert json.loads(first.stdout)["passed"] is True
     assert _analysis_bytes(first_output) == _analysis_bytes(second_output)
+    for output in (first_output, second_output):
+        inventory = json.loads(
+            (output / "analysis/artifact_inventory.json").read_text()
+        )
+        assert inventory["checksum_mode"] == "none"
+        assert inventory["input_artifact_count"] == 6
+        assert inventory["output_artifact_count"] == 17
+        assert all(entry["sha256"] is None for entry in inventory["artifacts"])

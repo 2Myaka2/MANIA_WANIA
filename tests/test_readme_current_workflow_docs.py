@@ -155,7 +155,7 @@ def test_readme_documents_stage25_software_identity() -> None:
 def test_readme_does_not_assign_minimal_api_to_stage25() -> None:
     sections = re.split(r"(?m)^## ", readme_text())
     current_status = next(
-        section for section in sections if section.startswith("Stage 25.A ")
+        section for section in sections if section.startswith("Stage 25 ")
     )
     text = " ".join(current_status.split()).lower()
 
@@ -173,7 +173,7 @@ def test_readme_documents_completed_stage25b_and_separate_provenance() -> None:
     for record in ("RunMeta", "mania_manifest.json", "analysis/extended_metrics.json"):
         assert record in text
     assert "mania analyze" in text
-    assert re.search(r"Stage 25\.C[^.;]*\bis (?:the )?next\b", text)
+    assert re.search(r"Stage 25\.D[^.;]*\bis (?:the )?next\b", text)
     assert re.search(r"FastAPI\s+(?:remains|is)\s+postponed", text)
     assert re.search(r"Stage 25 as a whole remains incomplete", text)
     assert not re.search(r"Stage 25(?: as a whole)?\s+is complete\b", text)
@@ -207,3 +207,19 @@ def test_readme_documents_protein_agnostic_boundary() -> None:
         "docs/wania_api_protein_agnostic_boundary.md",
     ):
         assert phrase in text
+
+
+def test_readme_documents_completed_stage25c_inventory_and_next_boundary() -> None:
+    text = " ".join(readme_text().split())
+    assert re.search(r"Stage 25\.C[^.;]*\bis complete\b", text)
+    assert "<output>/artifact_inventory.json" in text
+    assert "<output>/analysis/artifact_inventory.json" in text
+    assert "default size-only mode" in text
+    assert "--artifact-checksum-mode none" in text
+    assert "exact byte sizes without reading contents for integrity metadata" in text
+    assert "SHA256 is explicit opt-in" in text
+    assert "streams every inventoried input and output in bounded chunks" in text
+    assert "--artifact-checksum-mode sha256" in text
+    assert re.search(r"Stage 25\.D unified artifact validation is next", text)
+    assert "Stage 25 as a whole remains incomplete" in text
+    assert "FastAPI remains postponed" in text

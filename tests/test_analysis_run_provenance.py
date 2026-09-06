@@ -315,3 +315,55 @@ def test_exact_accepted_types_are_required(tmp_path):
             adapter.build_completed_analysis_run_provenance(value, **context())
         with pytest.raises(adapter.AnalysisRunProvenanceBuildError, match="result"):
             adapter.collect_analysis_artifact_references(value)
+
+
+@pytest.mark.parametrize("failed", [False, True])
+def test_additional_references_append_after_scientific_outputs(
+    tmp_path, monkeypatch, failed
+):
+    from mania.run_provenance import PortableArtifactReference
+
+    request = AnalyzeRequest(tmp_path / "in", tmp_path / "out", ("normal",))
+    result = analysis_result(request)
+    builder = (
+        adapter.build_failed_analysis_run_provenance
+        if failed
+        else adapter.build_completed_analysis_run_provenance
+    )
+    source = request if failed else result
+    reference = PortableArtifactReference(
+        "artifact_inventory", "analysis/artifact_inventory.json"
+    )
+    with monkeypatch.context() as patch:
+        forbid_observation(patch)
+        default = builder(source, **context())
+        explicit_empty = builder(source, **context(), additional_artifact_references=())
+        linked = builder(
+            source, **context(), additional_artifact_references=(reference,)
+        )
+    assert default == explicit_empty
+    assert linked.artifact_references == default.artifact_references + (reference,)
+    assert linked.to_dict() == default.to_dict() | {
+        "artifact_references": [r.to_dict() for r in linked.artifact_references]
+    }
+
+
+@pytest.mark.parametrize("failed", [False, True])
+@pytest.mark.parametrize("references", [[], (object(),), (None,)])
+def test_invalid_additional_references_use_existing_validation(
+    tmp_path, failed, references
+):
+    request = AnalyzeRequest(tmp_path / "in", tmp_path / "out", ("normal",))
+    builder = (
+        adapter.build_failed_analysis_run_provenance
+        if failed
+        else adapter.build_completed_analysis_run_provenance
+    )
+    with pytest.raises(
+        adapter.AnalysisRunProvenanceBuildError, match="metadata is invalid"
+    ):
+        builder(
+            request if failed else analysis_result(request),
+            **context(),
+            additional_artifact_references=references,
+        )

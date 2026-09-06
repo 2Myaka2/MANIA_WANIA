@@ -249,7 +249,9 @@ class AnalyzeRunResult:
 
 
 @dataclass(frozen=True)
-class _ConditionInputPaths:
+class AnalyzeConditionInputPaths:
+    """Authoritative execution paths, deliberately without portable serialization."""
+
     condition: str
     residue_table: Path
     protein_contact_edges: Path
@@ -274,13 +276,54 @@ class _ConditionComputation:
     clustering: ConformationClustering
 
 
-def run_analysis(request: AnalyzeRequest) -> AnalyzeRunResult:
-    """Run accepted Stage 21/22 analysis over existing Stage 20 artifacts."""
+def resolve_analysis_input_paths(
+    request: AnalyzeRequest,
+) -> tuple[AnalyzeConditionInputPaths, ...]:
+    """Resolve accepted Stage 20 paths without scanning or resolving symlinks."""
+    if type(request) is not AnalyzeRequest:
+        raise TypeError("request must be an AnalyzeRequest")
     _validate_request(request)
-    condition_paths = tuple(
-        _condition_input_paths(request.input_root, condition)
+    produced = _manifest_produced_artifacts(request.input_root)
+    return tuple(
+        _condition_input_paths(request.input_root, condition, produced)
         for condition in request.conditions
     )
+
+
+def _validate_resolved_input_paths(
+    request: AnalyzeRequest,
+    resolved_input_paths: tuple[AnalyzeConditionInputPaths, ...],
+) -> None:
+    """Check reusable execution metadata without filesystem observation."""
+    if type(request) is not AnalyzeRequest:
+        raise TypeError("request must be an AnalyzeRequest")
+    if not isinstance(resolved_input_paths, tuple) or not all(
+        type(paths) is AnalyzeConditionInputPaths for paths in resolved_input_paths
+    ):
+        raise AnalyzeError(
+            "resolved_input_paths must be a tuple of AnalyzeConditionInputPaths"
+        )
+    if (
+        not isinstance(request.conditions, tuple)
+        or not request.conditions
+        or tuple(paths.condition for paths in resolved_input_paths)
+        != request.conditions
+    ):
+        raise AnalyzeError("resolved_input_paths must match requested condition order")
+
+
+def run_analysis(
+    request: AnalyzeRequest,
+    *,
+    resolved_input_paths: tuple[AnalyzeConditionInputPaths, ...] | None = None,
+) -> AnalyzeRunResult:
+    """Run accepted Stage 21/22 analysis over existing Stage 20 artifacts."""
+    if resolved_input_paths is None:
+        condition_paths = resolve_analysis_input_paths(request)
+    else:
+        _validate_request(request)
+        _validate_resolved_input_paths(request, resolved_input_paths)
+        condition_paths = resolved_input_paths
     computations = tuple(
         _compute_condition(paths, request=request) for paths in condition_paths
     )
@@ -407,8 +450,10 @@ def _validate_condition(condition: object) -> None:
         raise AnalyzeError(f"unsafe condition name: {condition!r}") from error
 
 
-def _condition_input_paths(input_root: Path, condition: str) -> _ConditionInputPaths:
-    manifest_refs = _manifest_condition_artifact_paths(input_root, condition)
+def _condition_input_paths(
+    input_root: Path, condition: str, produced: list[object],
+) -> AnalyzeConditionInputPaths:
+    manifest_refs = _manifest_condition_artifact_paths(input_root, condition, produced)
     component = _condition_filename_component(condition)
     residue_table = manifest_refs.get(
         "residue_table",
@@ -434,7 +479,7 @@ def _condition_input_paths(input_root: Path, condition: str) -> _ConditionInputP
     mania_residue_library = _optional_root_file(
         input_root / _MANIA_RESIDUE_LIBRARY_FILENAME
     )
-    return _ConditionInputPaths(
+    return AnalyzeConditionInputPaths(
         condition=condition,
         residue_table=residue_table,
         protein_contact_edges=protein_contact_edges,
@@ -454,13 +499,10 @@ def _condition_filename_component(condition: str) -> str:
     return component
 
 
-def _manifest_condition_artifact_paths(
-    input_root: Path,
-    condition: str,
-) -> dict[str, Path]:
+def _manifest_produced_artifacts(input_root: Path) -> list[object]:
     manifest_path = input_root / _MANIA_MANIFEST_FILENAME
     if not manifest_path.exists():
-        return {}
+        return []
     if not manifest_path.is_file():
         raise AnalyzeError(
             f"optional root artifact is not a file: {manifest_path.name}"
@@ -475,10 +517,15 @@ def _manifest_condition_artifact_paths(
         raise AnalyzeError("mania_manifest.json must contain a JSON object")
     produced = payload.get("produced_artifacts")
     if produced is None:
-        return {}
+        return []
     if not isinstance(produced, list):
         raise AnalyzeError("mania_manifest.json produced_artifacts must be a list")
+    return produced
 
+
+def _manifest_condition_artifact_paths(
+    input_root: Path, condition: str, produced: list[object],
+) -> dict[str, Path]:
     by_label: dict[str, Path] = {}
     role_to_label = {
         "residue table": "residue_table",
@@ -533,7 +580,7 @@ def _optional_root_file(path: Path) -> Path | None:
 
 
 def _compute_condition(
-    paths: _ConditionInputPaths,
+    paths: AnalyzeConditionInputPaths,
     *,
     request: AnalyzeRequest,
 ) -> _ConditionComputation:
@@ -799,12 +846,14 @@ def summary_to_json_payload(result: AnalyzeRunResult) -> Mapping[str, Any]:
 __all__ = [
     "ANALYZE_COMMAND",
     "ANALYZE_STAGE",
+    "AnalyzeConditionInputPaths",
     "AnalyzeConditionResult",
     "AnalyzeDiagnosticIssue",
     "AnalyzeError",
     "AnalyzeRequest",
     "AnalyzeRunResult",
     "AnalyzeSkip",
+    "resolve_analysis_input_paths",
     "run_analysis",
     "summary_to_json_payload",
 ]
