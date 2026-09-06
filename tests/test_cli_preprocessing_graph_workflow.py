@@ -607,6 +607,9 @@ def install_fake_stage15(
     received["clock"] = Mock(side_effect=timestamps)
     received["identity"] = Mock(return_value=software_identity)
     received["provenance_builder"] = Mock(return_value=completed_provenance)
+    received["failed_provenance_builder"] = Mock(
+        return_value=replace(completed_provenance, status="failed")
+    )
     received["provenance_writer"] = Mock(
         side_effect=lambda provenance, output_dir, **kwargs: (
             provenance_write_result
@@ -620,6 +623,7 @@ def install_fake_stage15(
         ("_utc_now", "clock"),
         ("get_software_identity", "identity"),
         ("build_completed_preprocessing_run_provenance", "provenance_builder"),
+        ("build_failed_preprocessing_run_provenance", "failed_provenance_builder"),
         ("write_run_provenance", "provenance_writer"),
     ):
         monkeypatch.setattr(cli, name, received[key])
@@ -1680,6 +1684,12 @@ def test_reference_comparison_enabled_requires_explicit_paths(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    install_fake_stage15(monkeypatch)
+    monkeypatch.setattr(
+        cli, "build_preprocessing_graph_workflow_plan",
+        build_preprocessing_graph_workflow_plan,
+    )
+
     def fail_unexpected_call(*args: object, **kwargs: object) -> object:
         pytest.fail("runtime workflow APIs must not be called after plan failure")
 
@@ -2292,8 +2302,9 @@ def test_earlier_failures_do_not_build_or_write_completed_provenance(
     )
     assert stdout_json(stdout)["stage"] == stage
     received["provenance_builder"].assert_not_called()
-    received["provenance_writer"].assert_not_called()
-    assert received["clock"].call_count == 1
+    received["failed_provenance_builder"].assert_called_once()
+    received["provenance_writer"].assert_called_once()
+    assert received["clock"].call_count == 2
 
 
 def test_invalid_options_do_not_capture_start_or_emit_provenance(monkeypatch, capsys):

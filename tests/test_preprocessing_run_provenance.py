@@ -228,6 +228,9 @@ def test_public_boundary_and_constants():
         "PREPROCESSING_RUN_PROVENANCE_WORKFLOW",
         "PreprocessingRunProvenanceBuildError",
         "build_completed_preprocessing_run_provenance",
+        "PREPROCESSING_RUN_FAILURE_STAGES",
+        "PreprocessingRunFailureStage",
+        "build_failed_preprocessing_run_provenance",
     ]
     assert PREPROCESSING_SAMPLING_STAGE == "preprocessing_sampling"
     assert PREPROCESSING_SAMPLING_TIME_REL_TOL == 1e-9
@@ -950,3 +953,206 @@ def test_completed_builder_has_no_external_observation_or_file_io(
         "build_completed_preprocessing_run_provenance",
     ):
         assert not hasattr(mania.preprocessing, name)
+
+
+def failed_kwargs():
+    return {
+        **completed_kwargs(),
+        "failure_stage": "plan",
+        "conditions": ("second", "first"),
+        "frame_sampling": PreprocessingFrameSamplingOptions(2, 9, 3, 2),
+    }
+
+
+def test_failed_builder_public_stages():
+    from typing import get_args
+
+    expected = (
+        "plan",
+        "runtime_loading",
+        "computation",
+        "graph_export",
+        "analysis_input_export",
+        "scientific_csv_export",
+        "diagnostics",
+        "reference_comparison",
+    )
+    assert adapter.PREPROCESSING_RUN_FAILURE_STAGES == expected
+    assert get_args(adapter.PreprocessingRunFailureStage) == expected
+    for name in (
+        "PREPROCESSING_RUN_FAILURE_STAGES",
+        "PreprocessingRunFailureStage",
+        "build_failed_preprocessing_run_provenance",
+    ):
+        assert name in adapter.__all__ and not hasattr(mania.preprocessing, name)
+
+
+@pytest.mark.parametrize("stage", adapter.PREPROCESSING_RUN_FAILURE_STAGES)
+def test_failed_builder_root_and_requested_only_sampling(stage):
+    supplied = failed_kwargs()
+    supplied["failure_stage"] = stage
+    result = adapter.build_failed_preprocessing_run_provenance(**supplied)
+    assert result.status == "failed"
+    assert result.workflow == "preprocessing_graph_export"
+    assert result.run_id == supplied["run_id"]
+    assert result.started_at_utc == supplied["started_at_utc"]
+    assert result.ended_at_utc == supplied["ended_at_utc"]
+    assert result.started_at_utc.tzinfo is datetime.UTC
+    assert result.ended_at_utc.tzinfo is datetime.UTC
+    assert result.software_identity is supplied["software_identity"]
+    assert result.command == supplied["command"]
+    assert (
+        result.to_dict()["resolved_configuration"] == supplied["resolved_configuration"]
+    )
+    assert result.artifact_references == supplied["artifact_references"]
+    assert result.conditions == ("second", "first")
+    assert result.issues[0].to_dict() == {
+        "severity": "error",
+        "code": "preprocessing_stage_failed",
+        "stage": stage,
+        "condition": None,
+        "message": f"Preprocessing workflow failed during {stage}.",
+    }
+    assert [item.condition for item in result.sampling_by_condition] == [
+        "second",
+        "first",
+    ]
+    for record in result.sampling_by_condition:
+        assert record.requested.to_dict() == supplied["frame_sampling"].to_dict()
+        assert record.effective is None
+    assert [issue.to_dict() for issue in result.issues[1:]] == [
+        {
+            "severity": "warning",
+            "code": "effective_sampling_unavailable",
+            "stage": "preprocessing_sampling",
+            "condition": name,
+            "message": "No retained frame observations are available.",
+        }
+        for name in result.conditions
+    ]
+    json.dumps(result.to_dict(), allow_nan=False)
+
+
+@pytest.mark.parametrize("stage", ["", "parse", "analyze", None, 1, []])
+def test_failed_builder_rejects_unsupported_stage(stage):
+    supplied = failed_kwargs()
+    supplied["failure_stage"] = stage
+    with pytest.raises(PreprocessingRunProvenanceBuildError, match="Unsupported"):
+        adapter.build_failed_preprocessing_run_provenance(**supplied)
+
+
+def test_failed_builder_empty_conditions():
+    supplied = failed_kwargs()
+    supplied["conditions"] = ()
+    result = adapter.build_failed_preprocessing_run_provenance(**supplied)
+    assert result.conditions == () and result.sampling_by_condition == ()
+    assert len(result.issues) == 1 and result.issues[0].condition is None
+
+
+@pytest.mark.parametrize("sampling_error", [False, True])
+def test_failed_builder_keeps_partial_observations_warnings_and_errors(sampling_error):
+    original = computation(
+        contacts=contact_source(((2, 2.0), (5, 5.0)), failed=True),
+        rg=rg_source(((2, 2.0), (8, 8.0))) if sampling_error else None,
+        options=PreprocessingFrameSamplingOptions(2, 9, 3, 2),
+        source_count=None,
+    )
+    assert not original.passed
+    supplied = failed_kwargs()
+    supplied.update(
+        computation=original,
+        conditions=original.condition_names,
+        failure_stage="computation",
+    )
+    before = original.to_dict()
+    observed = collect_preprocessing_sampling_provenance(original)
+    result = adapter.build_failed_preprocessing_run_provenance(**supplied)
+    assert result.sampling_by_condition == observed.sampling_by_condition
+    assert result.issues[1:] == observed.issues
+    assert any(issue.severity == "warning" for issue in result.issues[1:])
+    if sampling_error:
+        assert any(issue.severity == "error" for issue in result.issues[1:])
+        assert result.sampling_by_condition[0].effective is None
+    else:
+        effective = result.sampling_by_condition[0].effective
+        assert effective.sampled_frame_count == 2
+        assert effective.first_source_frame_index == 2
+        assert effective.last_source_frame_index == 5
+        assert effective.observed_time_spacing_ps == 3.0
+    assert original.to_dict() == before
+
+
+@pytest.mark.parametrize(
+    "conditions", [("other",), (), ("sample", "sample"), ["sample"]]
+)
+def test_failed_builder_does_not_drop_condition_mismatches(conditions):
+    supplied = failed_kwargs()
+    supplied.update(computation=computation(), conditions=conditions)
+    with pytest.raises(
+        PreprocessingRunProvenanceBuildError, match="metadata is invalid"
+    ):
+        adapter.build_failed_preprocessing_run_provenance(**supplied)
+
+
+def test_failed_builder_validates_options_and_exact_computation_type():
+    class Derived(PreprocessingGraphWorkflowComputationResult):
+        pass
+
+    for invalid in (object(), object.__new__(Derived)):
+        supplied = failed_kwargs()
+        supplied["computation"] = invalid
+        with pytest.raises(
+            PreprocessingRunProvenanceBuildError, match="computation must"
+        ):
+            adapter.build_failed_preprocessing_run_provenance(**supplied)
+    supplied = failed_kwargs()
+    supplied["frame_sampling"] = None
+    with pytest.raises(
+        PreprocessingRunProvenanceBuildError, match="frame_sampling must"
+    ):
+        adapter.build_failed_preprocessing_run_provenance(**supplied)
+
+
+@pytest.mark.parametrize("with_computation", [False, True])
+def test_failed_builder_has_no_external_side_effects(
+    monkeypatch, tmp_path, with_computation
+):
+    original = computation(
+        contacts=contact_source(((2, 2.0), (5, 5.0))),
+        options=PreprocessingFrameSamplingOptions(2, 9, 3, 2),
+    )
+    supplied = failed_kwargs()
+    if with_computation:
+        supplied.update(computation=original, conditions=original.condition_names)
+    before = original.to_dict()
+    monkeypatch.chdir(tmp_path)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Failure builder must use supplied observations only")
+
+    class NoClock(datetime.datetime):
+        now = utcnow = today = forbidden
+
+    with monkeypatch.context() as patch:
+        patch.setattr(adapter, "datetime", NoClock)
+        patch.setattr(identity, "get_software_identity", forbidden)
+        patch.setattr(
+            adapter, "build_completed_preprocessing_run_provenance", forbidden
+        )
+        for module, names in (
+            (builtins, ("open",)),
+            (io, ("open",)),
+            (subprocess, ("Popen", "run", "check_output")),
+            (os, ("open", "stat", "lstat", "scandir", "listdir", "system")),
+            (time, ("time", "time_ns", "monotonic", "perf_counter")),
+            (Path, ("open", "exists", "resolve", "read_text", "write_text", "mkdir")),
+        ):
+            for name in names:
+                patch.setattr(module, name, forbidden)
+        result = adapter.build_failed_preprocessing_run_provenance(**supplied)
+    assert result.status == "failed" and original.to_dict() == before
+    assert list(tmp_path.iterdir()) == []
+    trajectory = original.runtime_loading.runtime_load_result.condition_results[
+        0
+    ].runtime.runtime_object.trajectory
+    assert trajectory.iterations == 0

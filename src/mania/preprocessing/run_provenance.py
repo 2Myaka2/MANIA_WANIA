@@ -4,11 +4,15 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from math import fsum, isclose, isfinite
+from typing import Literal
 
 from mania.preprocessing.trajectory_contacts import (
     PreprocessingConditionContactsResult,
     PreprocessingContactFrameResult,
     PreprocessingManifestContactsResult,
+)
+from mania.preprocessing.trajectory_frame_sampling import (
+    PreprocessingFrameSamplingOptions,
 )
 from mania.preprocessing.trajectory_graph_workflow import (
     PreprocessingGraphWorkflowComputationResult,
@@ -44,11 +48,32 @@ PREPROCESSING_SAMPLING_STAGE = "preprocessing_sampling"
 PREPROCESSING_SAMPLING_TIME_REL_TOL = 1e-9
 PREPROCESSING_SAMPLING_TIME_ABS_TOL_PS = 1e-9
 
+PreprocessingRunFailureStage = Literal[
+    "plan",
+    "runtime_loading",
+    "computation",
+    "graph_export",
+    "analysis_input_export",
+    "scientific_csv_export",
+    "diagnostics",
+    "reference_comparison",
+]
+PREPROCESSING_RUN_FAILURE_STAGES: tuple[PreprocessingRunFailureStage, ...] = (
+    "plan",
+    "runtime_loading",
+    "computation",
+    "graph_export",
+    "analysis_input_export",
+    "scientific_csv_export",
+    "diagnostics",
+    "reference_comparison",
+)
+
 _Observations = tuple[tuple[int, float | None], ...]
 
 
 class PreprocessingRunProvenanceBuildError(ValueError):
-    """Completed preprocessing metadata cannot form a valid portable passport."""
+    """Preprocessing metadata cannot form a valid portable passport."""
 
 
 def build_completed_preprocessing_run_provenance(
@@ -92,6 +117,85 @@ def build_completed_preprocessing_run_provenance(
     except (TypeError, ValueError):
         raise PreprocessingRunProvenanceBuildError(
             "Completed run metadata is invalid."
+        ) from None
+
+
+def build_failed_preprocessing_run_provenance(
+    *,
+    run_id: str,
+    failure_stage: PreprocessingRunFailureStage,
+    started_at_utc: datetime,
+    ended_at_utc: datetime,
+    software_identity: SoftwareIdentity,
+    command: tuple[str, ...],
+    resolved_configuration: Mapping[str, object],
+    conditions: tuple[str, ...],
+    frame_sampling: PreprocessingFrameSamplingOptions,
+    artifact_references: tuple[PortableArtifactReference, ...] = (),
+    computation: PreprocessingGraphWorkflowComputationResult | None = None,
+) -> RunProvenance:
+    """Record a workflow failure and any retained observations without I/O."""
+    if failure_stage not in PREPROCESSING_RUN_FAILURE_STAGES:
+        raise PreprocessingRunProvenanceBuildError(
+            "Unsupported preprocessing failure stage."
+        )
+    if not isinstance(frame_sampling, PreprocessingFrameSamplingOptions):
+        raise PreprocessingRunProvenanceBuildError(
+            "frame_sampling must be PreprocessingFrameSamplingOptions"
+        )
+    if computation is not None and (
+        type(computation) is not PreprocessingGraphWorkflowComputationResult
+    ):
+        raise PreprocessingRunProvenanceBuildError(
+            "computation must be PreprocessingGraphWorkflowComputationResult"
+        )
+    try:
+        if computation is None:
+            requested = RequestedFrameSampling(
+                frame_start=frame_sampling.frame_start,
+                frame_stop=frame_sampling.frame_stop,
+                frame_stride=frame_sampling.frame_stride,
+                max_frames=frame_sampling.max_frames,
+            )
+            sampling = PreprocessingSamplingProvenanceResult(
+                tuple(
+                    ConditionSamplingProvenance(condition, requested, None)
+                    for condition in conditions
+                ),
+                tuple(
+                    _issue(
+                        condition, "warning", "effective_sampling_unavailable",
+                        "No retained frame observations are available.",
+                    )
+                    for condition in conditions
+                ),
+            )
+        else:
+            sampling = collect_preprocessing_sampling_provenance(computation)
+        failure = RunProvenanceIssue(
+            severity="error",
+            code="preprocessing_stage_failed",
+            message=f"Preprocessing workflow failed during {failure_stage}.",
+            stage=failure_stage,
+            condition=None,
+        )
+        return RunProvenance(
+            run_id=run_id,
+            workflow=PREPROCESSING_RUN_PROVENANCE_WORKFLOW,
+            status="failed",
+            started_at_utc=started_at_utc,
+            ended_at_utc=ended_at_utc,
+            software_identity=software_identity,
+            command=command,
+            resolved_configuration=resolved_configuration,
+            conditions=conditions,
+            sampling_by_condition=sampling.sampling_by_condition,
+            artifact_references=artifact_references,
+            issues=(failure, *sampling.issues),
+        )
+    except (TypeError, ValueError):
+        raise PreprocessingRunProvenanceBuildError(
+            "Failed run metadata is invalid."
         ) from None
 
 
@@ -418,4 +522,7 @@ __all__ = [
     "PREPROCESSING_RUN_PROVENANCE_WORKFLOW",
     "PreprocessingRunProvenanceBuildError",
     "build_completed_preprocessing_run_provenance",
+    "PREPROCESSING_RUN_FAILURE_STAGES",
+    "PreprocessingRunFailureStage",
+    "build_failed_preprocessing_run_provenance",
 ]

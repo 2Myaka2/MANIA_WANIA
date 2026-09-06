@@ -24,8 +24,11 @@ from mania.pipeline_steps import (
     run_notebook_export_graph_diagnostics_pipeline_from_config_file,
 )
 from mania.preprocessing.run_provenance import (
+    PREPROCESSING_RUN_FAILURE_STAGES,
+    PreprocessingRunFailureStage,
     PreprocessingRunProvenanceBuildError,
     build_completed_preprocessing_run_provenance,
+    build_failed_preprocessing_run_provenance,
 )
 from mania.preprocessing.trajectory_contacts import (
     ContactProgressCallback,
@@ -37,8 +40,10 @@ from mania.preprocessing.trajectory_frame_sampling import (
     PreprocessingFrameSamplingOptions,
 )
 from mania.preprocessing.trajectory_graph_workflow import (
+    PreprocessingGraphWorkflowComputationResult,
     PreprocessingGraphWorkflowOptions,
     PreprocessingGraphWorkflowOutputLayout,
+    PreprocessingGraphWorkflowRuntimeLoadingResult,
     build_preprocessing_graph_workflow_plan,
     compare_preprocessing_graph_workflow_reference_artifacts,
     compute_preprocessing_graph_workflow_rg_contacts,
@@ -858,14 +863,27 @@ def _completed_preprocessing_artifact_references(
     args: argparse.Namespace,
     options: PreprocessingGraphWorkflowOptions,
     layout: PreprocessingGraphWorkflowOutputLayout,
+    *,
+    failure_stage: PreprocessingRunFailureStage | None = None,
 ) -> tuple[PortableArtifactReference, ...]:
-    """Link known outputs; called only after every requested stage has passed."""
+    """Link requested outputs only from stages completed before the failure."""
+    boundary = (
+        len(PREPROCESSING_RUN_FAILURE_STAGES)
+        if failure_stage is None
+        else PREPROCESSING_RUN_FAILURE_STAGES.index(failure_stage)
+    )
+
+    def completed(stage: PreprocessingRunFailureStage) -> bool:
+        return PREPROCESSING_RUN_FAILURE_STAGES.index(stage) < boundary
+
+    if not completed("graph_export"):
+        return ()
     paths = [
         ("graph_nodes", layout.graph_nodes_csv_path),
         ("graph_edges", layout.graph_edges_csv_path),
         ("graph_json", layout.graph_json_path),
     ]
-    if _analysis_input_export_requested(args):
+    if completed("analysis_input_export") and _analysis_input_export_requested(args):
         paths.append(
             ("preprocessing_manifest", layout.output_dir / "mania_manifest.json")
         )
@@ -875,11 +893,19 @@ def _completed_preprocessing_artifact_references(
         ("contact_edges", layout.contact_edges_csv_path),
         ("contacts_perframe", layout.contacts_perframe_csv_path),
     ):
-        if flags[f"export_{role}"]:
+        if completed("scientific_csv_export") and flags[f"export_{role}"]:
             paths.append((role, path))
-    if options.include_diagnostics and not args.no_write_diagnostics_report:
+    if (
+        completed("diagnostics")
+        and options.include_diagnostics
+        and not args.no_write_diagnostics_report
+    ):
         paths.append(("graph_diagnostics_report", layout.diagnostics_report_json_path))
-    if options.enable_reference_comparison and not args.no_write_reference_comparison:
+    if (
+        completed("reference_comparison")
+        and options.enable_reference_comparison
+        and not args.no_write_reference_comparison
+    ):
         paths.append(
             ("reference_comparison_report", layout.reference_comparison_json_path)
         )
@@ -930,6 +956,61 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     )
     _print_preprocessing_graph_export_progress(args, 1)
     plan = build_preprocessing_graph_workflow_plan(options)
+
+    def emit_failure(
+        stage: PreprocessingRunFailureStage,
+        *,
+        runtime_loading: PreprocessingGraphWorkflowRuntimeLoadingResult | None = None,
+        computation: PreprocessingGraphWorkflowComputationResult | None = None,
+    ) -> None:
+        # Metadata failure must never replace the existing workflow failure.
+        try:
+            ended_at_utc = _utc_now()
+            conditions = (
+                computation.condition_names
+                if type(computation) is PreprocessingGraphWorkflowComputationResult
+                else getattr(
+                    runtime_loading, "condition_names", _expected_condition_names(args)
+                )
+            )
+            provenance = build_failed_preprocessing_run_provenance(
+                run_id=options.run_name,
+                failure_stage=stage,
+                started_at_utc=started_at_utc,
+                ended_at_utc=ended_at_utc,
+                software_identity=software_identity,
+                command=_portable_preprocessing_command(command),
+                resolved_configuration=_preprocessing_resolved_configuration(
+                    args, options
+                ),
+                conditions=conditions,
+                frame_sampling=options.frame_sampling,
+                artifact_references=_completed_preprocessing_artifact_references(
+                    args, options, plan.output_layout, failure_stage=stage
+                ),
+                computation=computation,
+            )
+        except (ValueError, TypeError, OSError, RuntimeError, AttributeError):
+            print(
+                "Failed-run provenance build failed: Failed run metadata is invalid.",
+                file=sys.stderr,
+            )
+            return
+        try:
+            result = write_run_provenance(
+                provenance, plan.output_layout.output_dir, overwrite=options.overwrite
+            )
+            if not result.passed:
+                print(
+                    f"Failed-run provenance write failed: {result.error}",
+                    file=sys.stderr,
+                )
+        except (ValueError, TypeError, OSError, RuntimeError, AttributeError):
+            print(
+                "Failed-run provenance write failed: Write operation failed.",
+                file=sys.stderr,
+            )
+
     if not plan.passed:
         _print_preprocessing_graph_export_failure(args, 1)
         _print_preprocessing_graph_export_progress(
@@ -945,6 +1026,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 scientific_csv_export=scientific_csv_export,
             )
         )
+        emit_failure("plan")
         return 1
 
     _print_preprocessing_graph_export_progress(args, 2)
@@ -968,6 +1050,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 scientific_csv_export=scientific_csv_export,
             )
         )
+        emit_failure("runtime_loading", runtime_loading=runtime_loading)
         return 1
 
     _print_preprocessing_graph_export_progress(args, 3)
@@ -1005,6 +1088,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 scientific_csv_export=scientific_csv_export,
             )
         )
+        emit_failure("computation", computation=computation)
         return 1
 
     _print_preprocessing_graph_export_progress(args, 4)
@@ -1030,6 +1114,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 scientific_csv_export=scientific_csv_export,
             )
         )
+        emit_failure("graph_export", computation=computation)
         return 1
 
     if _analysis_input_export_requested(args):
@@ -1060,6 +1145,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                     scientific_csv_export=scientific_csv_export,
                 )
             )
+            emit_failure("analysis_input_export", computation=computation)
             return 1
 
     if _scientific_csv_export_requested(args):
@@ -1099,6 +1185,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                     scientific_csv_export=scientific_csv_export,
                 )
             )
+            emit_failure("scientific_csv_export", computation=computation)
             return 1
 
     diagnostics: object | None
@@ -1133,6 +1220,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                     diagnostics=diagnostics,
                 )
             )
+            emit_failure("diagnostics", computation=computation)
             return 1
 
     reference_comparison_stage = _reference_comparison_stage_number(args)
@@ -1171,6 +1259,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 reference_comparison=reference_comparison,
             )
         )
+        emit_failure("reference_comparison", computation=computation)
         return 1
 
     ended_at_utc = _utc_now()

@@ -5,8 +5,9 @@
 Stage 25.B.1 is implemented: the contract and validated in-memory model are
 available through `mania.run_provenance`. Stage 25.B.2 implements the in-memory
 preprocessing sampling adapter described below. Stage 25.B.3a implements automatic
-completed preprocessing file emission. Stage 25.B.3b failed-run emission, analysis
-linkage, and final acceptance remain planned; Stage 25.B as a whole is incomplete.
+completed preprocessing file emission; Stage 25.B.3b implements failed preprocessing
+emission. Analysis provenance and final acceptance remain planned for Stage 25.B.3c;
+Stage 25.B as a whole is incomplete.
 
 `RunProvenance` is the in-memory final-run passport for one MANIA execution.
 The caller supplies identity, timing, command tokens, resolved configuration,
@@ -195,8 +196,9 @@ errors do. The result can later supply sampling records and issues to
 The adapter produces an in-memory result only. It changes no frame selection or
 scientific calculation and adds no fields to existing scientific serialization.
 The adapter itself writes no file. Stage 25.B.3a uses its result for completed
-preprocessing emission below. Failed-run emission and analysis linkage remain
-Stage 25.B.3b. Checksums and the full artifact inventory remain Stage 25.C.
+preprocessing emission below. Stage 25.B.3b retains the same sampling observations
+for failed runs; analysis provenance remains Stage 25.B.3c. Checksums and the full
+artifact inventory remain Stage 25.C.
 
 ## Configuration contract
 
@@ -245,9 +247,8 @@ stripped strings when supplied. Tracebacks are not part of the portable model;
 callers supply portable issue messages, and exception objects are not inspected.
 
 Stage 25.B.1 represents issues only. Stage 25.B.3a handles completed-run build
-and write failures as described below. Failed scientific workflow capture and
-failed-run emission remain deferred to Stage 25.B.3b. Status is not inferred
-from the issue list.
+and write failures as described below. Stage 25.B.3b adds emission for the eight
+covered workflow-stage failures. Status is not inferred from the issue list.
 
 ## Stage 25.B.3a — completed preprocessing emission implemented
 
@@ -309,19 +310,80 @@ remain unchanged; provenance emission is silent and adds no verbose stage. After
 scientific success, provenance construction or writing failure prints one line
 beginning `Run provenance build failed:` or `Run provenance write failed:` and
 returns exit code 1 without the successful final summary. Scientific artifacts
-are retained and no partial passport is published. Earlier scientific failures,
-argument parsing failures, and invalid options retain their existing behavior
-and emit no passport. Failed-run emission and analysis provenance remain deferred
-to Stage 25.B.3b; existing manifests and scientific behavior remain unchanged.
+are retained and no partial passport is published. Stage 25.B.3b covers earlier
+workflow-stage failures below. Argument parsing failures and invalid options
+emit no passport. Analysis provenance remains deferred to Stage 25.B.3c; existing
+manifests and scientific behavior remain unchanged.
 
 `run_provenance.json` records the execution passport; existing `RunMeta` records
 export run metadata, `mania_manifest.json` describes preprocessing artifacts,
 and `extended_metrics.json` describes analysis artifacts. None replaces another.
 No backlinks or changes to the existing manifests are introduced.
 
+## Stage 25.B.3b — failed preprocessing emission implemented
+
+After validated preprocessing options and the execution context exist, the
+existing command attempts to write `<output>/run_provenance.json` when a covered
+workflow stage fails. The public `PreprocessingRunFailureStage` literal and
+`PREPROCESSING_RUN_FAILURE_STAGES` tuple define these stages in order: `plan`,
+`runtime_loading`, `computation`, `graph_export`, `analysis_input_export`,
+`scientific_csv_export`, `diagnostics`, and `reference_comparison`.
+
+`build_failed_preprocessing_run_provenance` produces `status="failed"` and
+workflow `preprocessing_graph_export`, preserving caller-supplied run identity,
+UTC timestamps, software identity, command tokens, resolved configuration,
+conditions, and artifact references. The first issue has severity `error`, code
+`preprocessing_stage_failed`, the failed stage, no condition, and message
+`Preprocessing workflow failed during <failure_stage>.` Sampling issues follow it;
+no exception text, traceback, or raw scientific results are copied into issues.
+
+Without a computation, each known condition receives the requested sampling,
+`effective=None`, and an `effective_sampling_unavailable` warning. No zero-frame
+observation is invented. Empty conditions produce no sampling entries or
+condition-specific warnings. With a retained accepted computation, including a
+failed computation, Stage 25.B.2 supplies observations and all sampling warnings
+and errors. Sampling inconsistencies can coexist with the main workflow failure.
+The builder neither recomputes frames nor inspects trajectories or files.
+
+The CLI reuses its start-time software snapshot and captures one end timestamp:
+normal success or failure calls the clock exactly twice. Known conditions come
+from the accepted computation, otherwise runtime loading when available,
+otherwise resolved expected conditions. Order is preserved; invalid metadata
+is not silently sorted, deduplicated, or discarded. Portable commands, resolved
+configuration, output root, run ID, and overwrite behavior use the same helpers
+and options as completed runs.
+
+References use the existing lightweight portable layout rules, limited to earlier
+successful stages. Plan, loading, computation, and graph-export failures claim
+no artifacts. An analysis-input failure retains only graph links; a scientific
+CSV failure can also retain a previously exported preprocessing manifest.
+Diagnostics failure additionally retains successful requested scientific CSVs.
+Reference-comparison failure can retain a successfully written diagnostics
+report. Disabled exports and reports are omitted. Partial outputs from the
+failed stage and the provenance file itself are never claimed. No existence
+checks or directory enumeration occur; checksums and full inventory remain
+Stage 25.C.
+
+Successful failed-run emission is silent: original failure stdout, stderr,
+verbose messages, and exit code remain unchanged. If building fails, one safe
+line begins `Failed-run provenance build failed:`; if writing fails, one begins
+`Failed-run provenance write failed:`. A failed writer result uses its safe error
+text; expected boundary exceptions receive fixed messages without tracebacks.
+Neither replaces the original workflow failure, removes its stdout summary,
+nor rolls back scientific artifacts. Existing provenance is preserved when
+overwrite is false.
+
+Parser errors, missing required arguments, invalid option combinations and
+frame sampling, help, version, and other commands remain outside this boundary.
+They have no validated preprocessing execution context. Completed-run provenance
+build/write failures retain Stage 25.B.3a behavior. Analysis provenance and final
+Stage 25.B acceptance remain Stage 25.B.3c; Stage 25.B remains incomplete.
+`RunMeta`, `mania_manifest.json`, and `extended_metrics.json` remain unchanged
+and are not replaced; no backlinks or schema changes are introduced.
+
 ## Explicit non-goals
 
-No failed-run or analysis provenance, checksum, environment inventory, runtime
+No analysis provenance, checksum, environment inventory, runtime
 performance metrics, PBC audit, PBC-aware calculation, sampling change, contact
 or RIN change, lifetime, aggregation, FAIR² package generation, FastAPI, or WANIA
-change is implemented by Stage 25.B.3a.
+change is implemented by Stage 25.B.3a–25.B.3b.

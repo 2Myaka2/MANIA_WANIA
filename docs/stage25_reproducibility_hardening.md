@@ -11,8 +11,9 @@ the current implementation-status overview.
 
 Stage 25 is approved as reproducibility and publication hardening. Stage 25.A
 is implemented; Stage 25.B.1 provides the run-provenance contract and in-memory
-model, Stage 25.B.2 provides the preprocessing sampling adapter, and Stage 25.B.3a
-provides completed preprocessing file emission. Stage 25.B remains incomplete;
+model, Stage 25.B.2 provides the preprocessing sampling adapter, Stage 25.B.3a
+provides completed preprocessing emission, and Stage 25.B.3b provides failed
+preprocessing emission. Stage 25.B remains incomplete;
 Stages 25.C–25.G remain planned and unimplemented.
 Existing scientific semantics remain frozen unless changed by
 a separate, explicitly approved task. Older v0.1 planning statements remain
@@ -32,14 +33,14 @@ This roadmap does not claim FAIR² certification or Dataset v1.0 readiness.
 ## Stage decomposition
 
 - Stage 25.A — Software identity and release metadata (implemented)
-- Stage 25.B — Run provenance and effective sampling (25.B.1–25.B.3a implemented; incomplete)
+- Stage 25.B — Run provenance and effective sampling (25.B.1–25.B.3b implemented; incomplete)
 - Stage 25.C — Input/output artifact inventory and checksums
 - Stage 25.D — Unified artifact validation
 - Stage 25.E — PBC audit and runtime metadata
 - Stage 25.F — Reproducibility documentation and FAIR² bridge
 - Stage 25.G — Validation and technical-hardening acceptance
 
-Stage 25.A and Stage 25.B.1–25.B.3a are implemented. The remaining Stage 25.B steps and
+Stage 25.A and Stage 25.B.1–25.B.3b are implemented. The remaining Stage 25.B steps and
 Stages 25.C–25.G require separate, focused implementation and acceptance steps.
 
 ## Stage 25.A status — implemented
@@ -64,7 +65,7 @@ artifact inventory, PBC audit, runtime metrics, or FAIR² package generation.
 No `run_provenance.json` is produced yet, and no existing manifest is changed.
 Stage 25 as a whole remains incomplete.
 
-## Stage 25.B status — completed preprocessing emission implemented
+## Stage 25.B status — completed and failed preprocessing emission implemented
 
 Stage 25.B.1 implements the additive run-provenance contract, root in-memory model,
 validation, and deterministic JSON-safe conversion. See
@@ -80,8 +81,13 @@ builder, and automatic successful preprocessing CLI emission of
 `<output>/run_provenance.json`. Successful stdout, verbose stage messages,
 existing manifests, and scientific behavior remain unchanged.
 
-Stage 25.B.3b failed-run emission, analysis linkage, and final Stage 25.B
-acceptance remain planned. Stage 25.B as a whole remains incomplete.
+Stage 25.B.3b implements failed preprocessing provenance construction and
+best-effort emission after covered workflow-stage failures. Requested sampling,
+retained effective observations, and references to earlier successful outputs
+are preserved without replacing the original workflow failure.
+
+Stage 25.B.3c analysis provenance and final Stage 25.B acceptance remain planned.
+Stage 25.B as a whole remains incomplete.
 
 ## Compatibility rules
 
