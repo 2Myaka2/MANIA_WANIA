@@ -3,8 +3,9 @@
 ## Status and purpose
 
 Stage 25.B.1 is implemented: the contract and validated in-memory model are
-available through `mania.run_provenance`. Automatic file emission is not yet
-implemented; no `run_provenance.json` file is written. Stage 25.B as a whole
+available through `mania.run_provenance`. Stage 25.B.2 implements the in-memory
+preprocessing sampling adapter described below. Automatic file emission is not
+yet implemented; no `run_provenance.json` file is written. Stage 25.B as a whole
 remains incomplete.
 
 `RunProvenance` is the in-memory final-run passport for one MANIA execution.
@@ -122,15 +123,80 @@ when both are available, first must not exceed last.
 - `unavailable`: spacing was unavailable; requires `observed_time_spacing_ps = None`.
   Zero-frame and one-frame observations must use this status.
 
-This contract defines no numerical tolerance for uniformity; Stage 25.B.2 must
-define the observation algorithm separately. No endpoint, count, or spacing is
-calculated from other fields in this model.
+The root model defines no numerical tolerance for uniformity; the Stage 25.B.2
+adapter defines the observation algorithm below. No endpoint, count, or spacing
+is calculated from other fields in the root model.
 
 `ConditionSamplingProvenance.to_dict()` contains `condition` (a non-empty
 stripped string), `requested` (a `RequestedFrameSampling` dictionary), and
 `effective` (an `EffectiveFrameSampling` dictionary or null). `effective = None`
 means observations were unavailable, for example when execution did not reach
 sampling; the model does not infer a reason.
+
+## Stage 25.B.2 — preprocessing sampling adapter implemented
+
+```python
+from mania.preprocessing.run_provenance import (
+    PreprocessingSamplingProvenanceResult,
+    collect_preprocessing_sampling_provenance,
+)
+
+# computation is an existing PreprocessingGraphWorkflowComputationResult.
+sampling = collect_preprocessing_sampling_provenance(computation)
+payload = sampling.to_dict()
+```
+
+This Python API copies requested sampling directly from the accepted
+`PreprocessingFrameSamplingOptions` into one immutable `RequestedFrameSampling`
+snapshot shared by all conditions. Effective sampling uses only frame records
+already retained in preprocessing contact and Rg results, counting every
+selected/attempted frame, including scientifically unsuccessful rows. An empty
+condition frame tuple records zero observations; absent sources produce
+`effective=None` and a warning. No missing requested frames are inferred.
+
+When both sources exist, their source-frame indexes must agree in recorded
+order. Available times are retained; two available times must agree within the
+declared tolerances, with their minimum used as the symmetric deterministic
+value. Index or time disagreement, invalid sources, and invalid sequences
+produce error issues and `effective=None`. Index validation checks non-negative
+integers, strict increase, and the existing start/stop/stride/max-frame bounds.
+
+The existing runtime metadata helper supplies the total source trajectory frame
+count when available, without reopening files or iterating over the trajectory.
+Unrelated atom, residue, or segment metadata issues do not discard an available
+count. Observed indexes and sampled count must fit that source count. An
+unavailable count remains `None` with a warning; other effective metadata is
+still collected.
+
+Time spacing describes consecutive **selected frames**, not the source
+integration timestep. Classification uses only these provenance tolerances:
+
+- `PREPROCESSING_SAMPLING_TIME_REL_TOL = 1e-9`
+- `PREPROCESSING_SAMPLING_TIME_ABS_TOL_PS = 1e-9`
+
+Zero or one frame, or any missing sampled time, gives `"unavailable"` spacing.
+With all times available, finite positive differences matching the first
+difference using the declared `math.isclose` tolerances give `"uniform"`;
+spacing is their deterministic arithmetic mean (`math.fsum` divided by the
+number of differences). Fully available unequal spacing, including zero or
+negative differences, gives `"non_uniform"` with no spacing value. Every
+available time must be finite and non-negative. Values incompatible with the
+root `EffectiveFrameSampling` contract, including reversed endpoint times,
+produce `invalid_effective_sampling` and `effective=None`.
+
+The frozen `PreprocessingSamplingProvenanceResult` serializes keys in order:
+`sampling_by_condition`, `issues`, `passed`. Conditions follow computation order;
+each receives one record. All issues use stage `"preprocessing_sampling"`
+(`PREPROCESSING_SAMPLING_STAGE`). Within a condition, a source-count warning
+precedes observation or validation issues. Warnings do not fail `passed`;
+errors do. The result can later supply sampling records and issues to
+`RunProvenance`.
+
+The adapter produces an in-memory result only. It changes no frame selection or
+scientific calculation and adds no fields to existing scientific serialization.
+No `run_provenance.json` file is written yet. Preprocessing CLI integration,
+file emission, final success/failure emission behavior, and analysis linkage
+remain Stage 25.B.3. Checksums and the full artifact inventory remain Stage 25.C.
 
 ## Configuration contract
 
@@ -145,7 +211,7 @@ proxies, sorts keys recursively, and stores input sequences as tuples. Mutating
 the input or any returned payload does not affect the stored snapshot. Each
 `to_dict()` call returns independent ordinary dictionaries and lists.
 
-No config hash is calculated yet. Stage 25.B.2 integration must normalize known
+No config hash is calculated yet. Stage 25.B.3 integration must normalize known
 path fields before constructing publication-facing provenance. Stage 25.B.1
 does not infer filesystem path semantics from arbitrary strings.
 

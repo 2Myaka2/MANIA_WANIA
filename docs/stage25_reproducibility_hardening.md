@@ -11,8 +11,9 @@ the current implementation-status overview.
 
 Stage 25 is approved as reproducibility and publication hardening. Stage 25.A
 is implemented; Stage 25.B.1 provides the run-provenance contract and in-memory
-model. Stage 25.B remains incomplete; Stages 25.C–25.G remain planned and
-unimplemented. Existing scientific semantics remain frozen unless changed by
+model, and Stage 25.B.2 provides the preprocessing sampling adapter. Stage 25.B
+remains incomplete; Stages 25.C–25.G remain planned and unimplemented.
+Existing scientific semantics remain frozen unless changed by
 a separate, explicitly approved task. Older v0.1 planning statements remain
 historical records.
 
@@ -30,14 +31,14 @@ This roadmap does not claim FAIR² certification or Dataset v1.0 readiness.
 ## Stage decomposition
 
 - Stage 25.A — Software identity and release metadata (implemented)
-- Stage 25.B — Run provenance and effective sampling (25.B.1 implemented; incomplete)
+- Stage 25.B — Run provenance and effective sampling (25.B.1–25.B.2 implemented; incomplete)
 - Stage 25.C — Input/output artifact inventory and checksums
 - Stage 25.D — Unified artifact validation
 - Stage 25.E — PBC audit and runtime metadata
 - Stage 25.F — Reproducibility documentation and FAIR² bridge
 - Stage 25.G — Validation and technical-hardening acceptance
 
-Stage 25.A and Stage 25.B.1 are implemented. The remaining Stage 25.B steps and
+Stage 25.A and Stage 25.B.1–25.B.2 are implemented. The remaining Stage 25.B steps and
 Stages 25.C–25.G require separate, focused implementation and acceptance steps.
 
 ## Stage 25.A status — implemented
@@ -62,16 +63,19 @@ artifact inventory, PBC audit, runtime metrics, or FAIR² package generation.
 No `run_provenance.json` is produced yet, and no existing manifest is changed.
 Stage 25 as a whole remains incomplete.
 
-## Stage 25.B status — contract and in-memory model implemented
+## Stage 25.B status — contract, model, and sampling adapter implemented
 
-Stage 25.B.1 implements the additive run-provenance contract, immutable models,
+Stage 25.B.1 implements the additive run-provenance contract, root in-memory model,
 validation, and deterministic JSON-safe conversion. See
 [`docs/run_provenance_contract.md`](run_provenance_contract.md).
 No `run_provenance.json` file is emitted yet.
 
-Stage 25.B.2 preprocessing integration and effective-sampling collection remain
-planned. Stage 25.B.3 analysis linkage, failure semantics, and final Stage 25.B
-acceptance remain planned. Stage 25.B as a whole is not complete.
+Stage 25.B.2 implements the preprocessing sampling adapter: requested sampling
+is copied from existing options, and effective metadata is collected from
+retained frame observations and available source frame counts. Its result is
+in-memory only. Stage 25.B.3 file emission, CLI integration, analysis linkage,
+final success/failure behavior, and final Stage 25.B acceptance remain planned.
+Stage 25.B as a whole remains incomplete.
 
 ## Compatibility rules
 
