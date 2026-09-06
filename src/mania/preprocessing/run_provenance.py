@@ -1,6 +1,8 @@
 """Observe retained preprocessing sampling results without computation or I/O."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import datetime
 from math import fsum, isclose, isfinite
 
 from mania.preprocessing.trajectory_contacts import (
@@ -28,17 +30,69 @@ from mania.preprocessing.trajectory_runtime import (
 from mania.run_provenance import (
     ConditionSamplingProvenance,
     EffectiveFrameSampling,
+    PortableArtifactReference,
     RequestedFrameSampling,
+    RunProvenance,
     RunProvenanceIssue,
     RunProvenanceIssueSeverity,
     TimeSpacingStatus,
 )
+from mania.software_identity import SoftwareIdentity
 
+PREPROCESSING_RUN_PROVENANCE_WORKFLOW = "preprocessing_graph_export"
 PREPROCESSING_SAMPLING_STAGE = "preprocessing_sampling"
 PREPROCESSING_SAMPLING_TIME_REL_TOL = 1e-9
 PREPROCESSING_SAMPLING_TIME_ABS_TOL_PS = 1e-9
 
 _Observations = tuple[tuple[int, float | None], ...]
+
+
+class PreprocessingRunProvenanceBuildError(ValueError):
+    """Completed preprocessing metadata cannot form a valid portable passport."""
+
+
+def build_completed_preprocessing_run_provenance(
+    computation: PreprocessingGraphWorkflowComputationResult,
+    *,
+    run_id: str,
+    started_at_utc: datetime,
+    ended_at_utc: datetime,
+    software_identity: SoftwareIdentity,
+    command: tuple[str, ...],
+    resolved_configuration: Mapping[str, object],
+    artifact_references: tuple[PortableArtifactReference, ...],
+) -> RunProvenance:
+    """Combine caller snapshots and retained sampling, without time or file I/O."""
+    if type(computation) is not PreprocessingGraphWorkflowComputationResult:
+        raise PreprocessingRunProvenanceBuildError(
+            "computation must be PreprocessingGraphWorkflowComputationResult"
+        )
+    if not computation.passed:
+        raise PreprocessingRunProvenanceBuildError("Computation must have passed.")
+    sampling = collect_preprocessing_sampling_provenance(computation)
+    if not sampling.passed:
+        raise PreprocessingRunProvenanceBuildError(
+            "Sampling collection contains errors."
+        )
+    try:
+        return RunProvenance(
+            run_id=run_id,
+            workflow=PREPROCESSING_RUN_PROVENANCE_WORKFLOW,
+            status="completed",
+            started_at_utc=started_at_utc,
+            ended_at_utc=ended_at_utc,
+            software_identity=software_identity,
+            command=command,
+            resolved_configuration=resolved_configuration,
+            conditions=computation.condition_names,
+            sampling_by_condition=sampling.sampling_by_condition,
+            artifact_references=artifact_references,
+            issues=sampling.issues,
+        )
+    except (TypeError, ValueError):
+        raise PreprocessingRunProvenanceBuildError(
+            "Completed run metadata is invalid."
+        ) from None
 
 
 @dataclass(frozen=True)
@@ -361,4 +415,7 @@ __all__ = [
     "PREPROCESSING_SAMPLING_TIME_ABS_TOL_PS",
     "PreprocessingSamplingProvenanceResult",
     "collect_preprocessing_sampling_provenance",
+    "PREPROCESSING_RUN_PROVENANCE_WORKFLOW",
+    "PreprocessingRunProvenanceBuildError",
+    "build_completed_preprocessing_run_provenance",
 ]

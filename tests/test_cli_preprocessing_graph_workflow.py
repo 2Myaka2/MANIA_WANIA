@@ -1,19 +1,40 @@
 import json
 import subprocess
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
 import mania.cli as cli
+import mania.software_identity as identity_module
 from mania.preprocessing import (
     ContactProgressCallback,
     PreprocessingContactComputationLimits,
     PreprocessingContactDetectionOptions,
     PreprocessingContactProgressEvent,
     PreprocessingFrameSamplingOptions,
+)
+from mania.preprocessing.run_provenance import PreprocessingRunProvenanceBuildError
+from mania.preprocessing.trajectory_graph_workflow import (
+    PreprocessingGraphWorkflowOutputLayout,
+    build_preprocessing_graph_workflow_plan,
+)
+from mania.run_provenance import RunProvenance
+from mania.run_provenance_io import RunProvenanceWriteResult, write_run_provenance
+from mania.software_identity import SoftwareIdentity
+
+FIXED_IDENTITY = SoftwareIdentity(
+    "MANIA", "mania-wania", "0.1.0", None, "unavailable", "unavailable"
+)
+START = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
+END = datetime(2026, 1, 2, 3, 4, 6, tzinfo=UTC)
+FIXED_PROVENANCE = RunProvenance(
+    "fixed", "preprocessing_graph_export", "completed", START, END,
+    FIXED_IDENTITY, ("mania",), {}, (),
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -105,17 +126,29 @@ VERBOSE_STAGE_MESSAGES_WITH_ANALYSIS_AND_SCIENTIFIC = (
 
 
 @dataclass(frozen=True)
-class FakeLayout:
-    output_dir: str = "out"
-
+class FakeLayout(PreprocessingGraphWorkflowOutputLayout):
     def to_dict(self) -> dict[str, object]:
-        return {"output_dir": self.output_dir}
+        return {"output_dir": str(self.output_dir)}
+
+
+def fake_layout(output_dir: Path = Path("out")) -> FakeLayout:
+    return FakeLayout(
+        output_dir, "fake",
+        output_dir / "rg/rg_timeseries.csv",
+        output_dir / "contacts/contacts_perframe.csv",
+        output_dir / "contacts/contact_edges.csv",
+        output_dir / "graph/nodes.csv",
+        output_dir / "graph/edges.csv",
+        output_dir / "graph/graph.json",
+        output_dir / "reports/graph_diagnostics_report.json",
+        output_dir / "reports/graph_reference_comparison.json",
+    )
 
 
 @dataclass(frozen=True)
 class FakePlan:
     passed: bool = True
-    output_layout: FakeLayout = field(default_factory=FakeLayout)
+    output_layout: FakeLayout = field(default_factory=fake_layout)
     options: object | None = None
 
     def to_dict(self) -> dict[str, object]:
@@ -333,14 +366,21 @@ def install_fake_stage15(
     diagnostics_result: object | None = None,
     scientific_result: object | None = None,
     analysis_input_result: object | None = None,
+    software_identity: SoftwareIdentity = FIXED_IDENTITY,
+    timestamps: tuple[datetime, datetime] = (START, END),
+    completed_provenance: RunProvenance = FIXED_PROVENANCE,
+    provenance_write_result: RunProvenanceWriteResult | None = None,
 ) -> tuple[list[str], dict[str, Any]]:
     calls: list[str] = []
     received: dict[str, Any] = {}
 
-    def fake_build(options: object) -> FakePlan:
+    def fake_build(options: Any) -> FakePlan:
         calls.append("build_preprocessing_graph_workflow_plan")
         received["options"] = options
-        return FakePlan(passed=failing_stage != "plan", options=options)
+        return FakePlan(
+            passed=failing_stage != "plan", options=options,
+            output_layout=fake_layout(options.output_dir),
+        )
 
     def fake_load(
         manifest_path: str | Path,
@@ -564,6 +604,25 @@ def install_fake_stage15(
         "compare_preprocessing_graph_workflow_reference_artifacts",
         fake_reference,
     )
+    received["clock"] = Mock(side_effect=timestamps)
+    received["identity"] = Mock(return_value=software_identity)
+    received["provenance_builder"] = Mock(return_value=completed_provenance)
+    received["provenance_writer"] = Mock(
+        side_effect=lambda provenance, output_dir, **kwargs: (
+            provenance_write_result
+            if provenance_write_result is not None
+            else RunProvenanceWriteResult(
+                Path(output_dir) / "run_provenance.json", True
+            )
+        )
+    )
+    for name, key in (
+        ("_utc_now", "clock"),
+        ("get_software_identity", "identity"),
+        ("build_completed_preprocessing_run_provenance", "provenance_builder"),
+        ("write_run_provenance", "provenance_writer"),
+    ):
+        monkeypatch.setattr(cli, name, received[key])
     return calls, received
 
 
@@ -1166,7 +1225,7 @@ def test_analysis_input_export_runs_after_graph_export_when_enabled(
     analysis_payload = payload["analysis_input_export"]
 
     assert calls == list(STAGE15_ORDER_WITH_ANALYSIS_INPUTS)
-    assert received["analysis_input_output_dir"] == "out"
+    assert received["analysis_input_output_dir"] == Path("out")
     assert isinstance(analysis_payload, dict)
     assert analysis_payload["requested"] is True
     assert analysis_payload["skipped"] is False
@@ -1838,3 +1897,560 @@ def test_cli_does_not_import_default_scientific_stack() -> None:
 
     for forbidden in ("MDAnalysis", "numpy", "pandas", "networkx", "pyarrow"):
         assert forbidden not in source
+
+
+def test_completed_provenance_integration_preserves_output(monkeypatch, capsys):
+    calls, received = install_fake_stage15(monkeypatch)
+    observations = []
+
+    def clock():
+        observations.append(tuple(calls))
+        return START if len(observations) == 1 else END
+
+    received["clock"].side_effect = clock
+    _, stdout, stderr = invoke_cli(
+        monkeypatch, capsys, *BASE_COMMAND, "--run-name", "experiment", "--verbose"
+    )
+    assert observations == [(), STAGE15_ORDER]
+    received["identity"].assert_called_once_with()
+    assert received["clock"].call_count == 2
+    builder = received["provenance_builder"]
+    builder.assert_called_once()
+    assert builder.call_args.args == (received["computation"],)
+    supplied = builder.call_args.kwargs
+    assert supplied["run_id"] == received["options"].run_name == "experiment"
+    assert supplied["started_at_utc"] == START <= supplied["ended_at_utc"] == END
+    assert supplied["software_identity"] is FIXED_IDENTITY
+    received["provenance_writer"].assert_called_once_with(
+        FIXED_PROVENANCE, received["output_layout"].output_dir, overwrite=False
+    )
+    assert supplied["command"] == (
+        "mania",
+        *BASE_COMMAND[:5],
+        ".",
+        "--run-name",
+        "experiment",
+        "--verbose",
+    )
+    expected = cli._build_preprocessing_graph_export_summary(
+        "preprocessing_graph_export",
+        passed=True,
+        plan=FakePlan(options=received["options"]),
+        runtime_loading=received["runtime_loading"],
+        computation=received["computation"],
+        graph_export=received["diagnostics_graph_export"],
+        analysis_input_export=cli._skipped_analysis_input_export_summary(),
+        scientific_csv_export=cli._skipped_scientific_csv_export_summary(),
+        diagnostics=FakeResult("diagnostics"),
+        reference_comparison=FakeResult("reference_comparison", skipped=True),
+    )
+    assert stdout == json.dumps(expected, sort_keys=True) + "\n"
+    assert set(stdout_json(stdout)) == {
+        "stage",
+        "passed",
+        "plan",
+        "runtime_loading",
+        "computation",
+        "graph_export",
+        "analysis_input_export",
+        "scientific_csv_export",
+        "diagnostics",
+        "reference_comparison",
+    }
+    assert tuple(
+        line for line in stderr.splitlines() if not line.startswith("[contacts]")
+    ) == (tuple(message + "..." for message in VERBOSE_STAGE_MESSAGES))
+
+
+@pytest.mark.parametrize("equals", [False, True])
+def test_portable_command_and_resolved_configuration_preserve_execution_paths(
+    monkeypatch, capsys, tmp_path, equals
+):
+    _, received = install_fake_stage15(monkeypatch)
+    paths = {
+        "--manifest": tmp_path / "inputs/manifest.yaml",
+        "--output": tmp_path / "selected-output",
+        "--reference-nodes": tmp_path / "reference/nodes.csv",
+        "--reference-edges": tmp_path / "reference/edges.csv",
+        "--reference-graph-json": tmp_path / "reference/graph.json",
+    }
+    tokens = ["preprocessing", "run-graph-export"]
+    portable = ["mania", *tokens]
+    for option, path in paths.items():
+        name = "." if option == "--output" else path.name
+        tokens.extend([f"{option}={path}"] if equals else [option, str(path)])
+        portable.extend([f"{option}={name}"] if equals else [option, name])
+    extra = [
+        "--contact-selection",
+        "protein",
+        "--frame-start",
+        "2",
+        "--frame-stop",
+        "20",
+        "--frame-stride",
+        "3",
+        "--max-frames",
+        "4",
+        "--contact-max-residue-pairs-per-frame",
+        "20",
+        "--contact-max-distance-evaluations-per-frame",
+        "100",
+        "--export-analysis-inputs",
+        "--export-scientific-csvs",
+        "--enable-reference-comparison",
+        "--expected-condition",
+        "alpha",
+        "--expected-condition",
+        "beta",
+    ]
+    argv = [str(tmp_path / "bin/mania"), *tokens, *extra]
+    monkeypatch.setattr(sys, "argv", argv)
+    cli.main()
+    capsys.readouterr()
+    supplied = received["provenance_builder"].call_args.kwargs
+    assert supplied["command"] == tuple([*portable, *extra])
+    assert isinstance(supplied["command"], tuple)
+    assert sys.argv is argv and sys.argv[0] == str(tmp_path / "bin/mania")
+    options = received["options"]
+    assert options.manifest_path == paths["--manifest"] == received["manifest_path"]
+    assert options.output_dir == paths["--output"]
+    assert options.reference_nodes_csv_path == paths["--reference-nodes"]
+    assert options.reference_edges_csv_path == paths["--reference-edges"]
+    assert options.reference_graph_json_path == paths["--reference-graph-json"]
+    received["provenance_writer"].assert_called_once_with(
+        FIXED_PROVENANCE, paths["--output"], overwrite=False
+    )
+    config = supplied["resolved_configuration"]
+    assert config["manifest_name"] == "manifest.yaml" and config["output_root"] == "."
+    assert config["reference_input_names"] == {
+        "nodes": "nodes.csv",
+        "edges": "edges.csv",
+        "graph_json": "graph.json",
+    }
+    assert config["expected_condition_names"] == ["alpha", "beta"]
+    assert config["frame_sampling"] == {
+        "frame_start": 2,
+        "frame_stop": 20,
+        "frame_stride": 3,
+        "max_frames": 4,
+    }
+    assert config["contact_detection_options"]["contact_selection"] == "protein"
+    assert config["contact_computation_limits"] == {
+        "max_residue_pairs_per_frame": 20,
+        "max_atom_distance_evaluations_per_frame": 100,
+    }
+    assert config["export_analysis_inputs"] is True
+    assert config["scientific_csv_exports"] == {
+        "export_rg_timeseries": True,
+        "export_contact_edges": True,
+        "export_contacts_perframe": False,
+    }
+    serialized = json.dumps(config, allow_nan=False)
+    assert str(tmp_path) not in serialized and str(Path.cwd()) not in serialized
+    assert "/" not in serialized
+
+
+def test_default_resolved_configuration(monkeypatch, capsys):
+    _, received = install_fake_stage15(monkeypatch)
+    invoke_cli(monkeypatch, capsys, *BASE_COMMAND)
+    config = received["provenance_builder"].call_args.kwargs["resolved_configuration"]
+    options = received["options"]
+    assert config == {
+        "manifest_name": "manifest.yaml",
+        "output_root": ".",
+        "run_name": options.run_name,
+        "expected_condition_names": ["normal", "tumor"],
+        "include_rg": True,
+        "include_contacts": True,
+        "include_graph_export": True,
+        "include_diagnostics": True,
+        "enable_reference_comparison": False,
+        "reference_semantics": "MANIA_analysis_v1_2",
+        "reference_input_names": {"nodes": None, "edges": None, "graph_json": None},
+        "frame_sampling": PreprocessingFrameSamplingOptions().to_dict(),
+        "contact_detection_options": PreprocessingContactDetectionOptions().to_dict(
+            include_contact_selection=True
+        ),
+        "contact_computation_limits": PreprocessingContactComputationLimits().to_dict(),
+        "export_analysis_inputs": False,
+        "scientific_csv_exports": {
+            "export_rg_timeseries": False,
+            "export_contact_edges": False,
+            "export_contacts_perframe": False,
+        },
+        "write_diagnostics_report": True,
+        "write_reference_comparison_report": True,
+    }
+    json.dumps(config, allow_nan=False)
+
+
+@pytest.mark.parametrize(
+    "extra,roles",
+    [
+        ((), ("graph_diagnostics_report",)),
+        (("--skip-diagnostics",), ()),
+        (("--no-write-diagnostics-report",), ()),
+        (
+            ("--export-analysis-inputs", "--contact-selection", "protein"),
+            ("preprocessing_manifest", "graph_diagnostics_report"),
+        ),
+        (
+            ("--export-scientific-csvs",),
+            ("rg_timeseries", "contact_edges", "graph_diagnostics_report"),
+        ),
+        (
+            ("--export-contacts-perframe",),
+            ("contacts_perframe", "graph_diagnostics_report"),
+        ),
+        (("--export-rg-timeseries",), ("rg_timeseries", "graph_diagnostics_report")),
+        (("--export-contact-edges",), ("contact_edges", "graph_diagnostics_report")),
+        (
+            ("--enable-reference-comparison",),
+            ("graph_diagnostics_report", "reference_comparison_report"),
+        ),
+        (
+            ("--enable-reference-comparison", "--no-write-reference-comparison"),
+            ("graph_diagnostics_report",),
+        ),
+        (
+            ("--skip-diagnostics", "--enable-reference-comparison"),
+            ("reference_comparison_report",),
+        ),
+        (
+            (
+                "--export-analysis-inputs",
+                "--contact-selection",
+                "protein",
+                "--export-scientific-csvs",
+                "--export-contacts-perframe",
+                "--enable-reference-comparison",
+            ),
+            (
+                "preprocessing_manifest",
+                "rg_timeseries",
+                "contact_edges",
+                "contacts_perframe",
+                "graph_diagnostics_report",
+                "reference_comparison_report",
+            ),
+        ),
+    ],
+)
+def test_completed_artifact_references_follow_successful_exports(
+    monkeypatch, capsys, extra, roles
+):
+    _, received = install_fake_stage15(monkeypatch)
+    invoke_cli(monkeypatch, capsys, *BASE_COMMAND, *extra)
+    references = received["provenance_builder"].call_args.kwargs["artifact_references"]
+    assert tuple(item.role for item in references) == (
+        "graph_nodes",
+        "graph_edges",
+        "graph_json",
+        *roles,
+    )
+    expected = {
+        "graph_nodes": "graph/nodes.csv",
+        "graph_edges": "graph/edges.csv",
+        "graph_json": "graph/graph.json",
+        "preprocessing_manifest": "mania_manifest.json",
+        "rg_timeseries": "rg/rg_timeseries.csv",
+        "contact_edges": "contacts/contact_edges.csv",
+        "contacts_perframe": "contacts/contacts_perframe.csv",
+        "graph_diagnostics_report": "reports/graph_diagnostics_report.json",
+        "reference_comparison_report": "reports/graph_reference_comparison.json",
+    }
+    assert [item.to_dict() for item in references] == [
+        {"role": item.role, "path": expected[item.role]} for item in references
+    ]
+
+
+def test_artifact_references_are_lexical_without_filesystem_observation(monkeypatch):
+    args = cli.build_parser().parse_args(BASE_COMMAND)
+    options = cli._build_preprocessing_graph_workflow_options(args)
+    layout = build_preprocessing_graph_workflow_plan(options).output_layout
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("File observation is forbidden")
+
+    with monkeypatch.context() as patch:
+        for name in ("exists", "stat", "resolve", "read_bytes", "open", "iterdir"):
+            patch.setattr(Path, name, forbidden)
+        references = cli._completed_preprocessing_artifact_references(
+            args, options, layout
+        )
+        for outside in (
+            Path("elsewhere/nodes.csv"),
+            Path("out/../nodes.csv"),
+            Path("/nodes"),
+        ):
+            with pytest.raises(PreprocessingRunProvenanceBuildError, match="inside"):
+                cli._completed_preprocessing_artifact_references(
+                    args, options, replace(layout, graph_nodes_csv_path=outside)
+                )
+    assert references[0].path == "graph/nodes.csv"
+
+
+@pytest.mark.parametrize("name", ["", "/", ".", ".."])
+def test_command_rejects_empty_or_nonportable_input_names(name):
+    with pytest.raises(PreprocessingRunProvenanceBuildError, match="portable filename"):
+        cli._portable_preprocessing_command(("local-mania", "--manifest", name))
+
+
+def test_command_does_not_guess_paths_in_other_arguments():
+    original = (
+        "local-mania",
+        "--reference-semantics",
+        "arbitrary/text",
+        "--run-name=a/b",
+    )
+    assert cli._portable_preprocessing_command(original) == ("mania", *original[1:])
+
+
+@pytest.mark.parametrize("overwrite", [False, True])
+def test_writer_receives_resolved_overwrite(monkeypatch, capsys, overwrite):
+    _, received = install_fake_stage15(monkeypatch)
+    build_options = cli._build_preprocessing_graph_workflow_options
+    monkeypatch.setattr(
+        cli,
+        "_build_preprocessing_graph_workflow_options",
+        lambda args: replace(build_options(args), overwrite=overwrite),
+    )
+    invoke_cli(monkeypatch, capsys, *BASE_COMMAND)
+    assert received["provenance_writer"].call_args.kwargs == {"overwrite": overwrite}
+
+
+@pytest.mark.parametrize("failure", ["build", "write"])
+def test_provenance_failure_keeps_scientific_files_and_omits_summary(
+    monkeypatch, capsys, tmp_path, failure
+):
+    _, received = install_fake_stage15(monkeypatch)
+    scientific = tmp_path / "graph/nodes.csv"
+    scientific.parent.mkdir()
+    scientific.write_text("retained scientific result\n")
+    target = tmp_path / "run_provenance.json"
+    if failure == "build":
+        received[
+            "provenance_builder"
+        ].side_effect = PreprocessingRunProvenanceBuildError(
+            "Sampling collection contains errors."
+        )
+        message = "Run provenance build failed: Sampling collection contains errors.\n"
+    else:
+        target.write_bytes(b"existing provenance")
+        monkeypatch.setattr(cli, "write_run_provenance", write_run_provenance)
+        message = "Run provenance write failed: Target already exists.\n"
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--output",
+        str(tmp_path),
+        expected_exit_code=1,
+    )
+    assert stdout == "" and stderr == message
+    assert scientific.read_text() == "retained scientific result\n"
+    if failure == "build":
+        received["provenance_writer"].assert_not_called()
+        assert not target.exists()
+    else:
+        assert target.read_bytes() == b"existing provenance"
+    assert sorted(
+        path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*")
+    ) == (
+        ["graph", "graph/nodes.csv"]
+        + (["run_provenance.json"] if failure == "write" else [])
+    )
+
+
+@pytest.mark.parametrize(
+    "stage",
+    [
+        "plan",
+        "runtime_loading",
+        "computation",
+        "graph_export",
+        "analysis_input_export",
+        "scientific_csv_export",
+        "diagnostics",
+        "reference_comparison",
+    ],
+)
+def test_earlier_failures_do_not_build_or_write_completed_provenance(
+    monkeypatch, capsys, stage
+):
+    _, received = install_fake_stage15(monkeypatch, failing_stage=stage)
+    _, stdout, _ = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--contact-selection",
+        "protein",
+        "--export-analysis-inputs",
+        "--export-scientific-csvs",
+        "--enable-reference-comparison",
+        expected_exit_code=1,
+    )
+    assert stdout_json(stdout)["stage"] == stage
+    received["provenance_builder"].assert_not_called()
+    received["provenance_writer"].assert_not_called()
+    assert received["clock"].call_count == 1
+
+
+def test_invalid_options_do_not_capture_start_or_emit_provenance(monkeypatch, capsys):
+    _, received = install_fake_stage15(monkeypatch)
+    invoke_cli(
+        monkeypatch, capsys, *BASE_COMMAND, "--frame-stride", "0", expected_exit_code=2
+    )
+    for key in ("clock", "identity", "provenance_builder", "provenance_writer"):
+        received[key].assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "args",
+    [("--help",), ("preprocessing", "run-graph-export", "--help"), ("--version",)],
+)
+def test_parser_help_and_version_do_not_capture_time_or_git(monkeypatch, capsys, args):
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Parser/help/version must not observe time or Git")
+
+    monkeypatch.setattr(cli, "_utc_now", forbidden)
+    monkeypatch.setattr(cli, "get_software_identity", forbidden)
+    monkeypatch.setattr(identity_module, "_run_git", forbidden)
+    cli.build_parser()
+    monkeypatch.setattr(sys, "argv", ["mania", *args])
+    with pytest.raises(SystemExit) as error:
+        cli.main()
+    assert error.value.code == 0
+    captured = capsys.readouterr()
+    assert captured.err == "" and "--provenance" not in captured.out
+    if args == ("--version",):
+        assert captured.out == "mania-wania 0.1.0\n"
+
+
+def test_successful_mocked_workflow_reaches_real_writer(monkeypatch, capsys, tmp_path):
+    _, received = install_fake_stage15(monkeypatch)
+    writer = Mock(wraps=write_run_provenance)
+    monkeypatch.setattr(cli, "write_run_provenance", writer)
+    _, stdout, stderr = invoke_cli(
+        monkeypatch, capsys, *BASE_COMMAND, "--output", str(tmp_path), "--verbose"
+    )
+    received["provenance_builder"].assert_called_once()
+    writer.assert_called_once_with(FIXED_PROVENANCE, tmp_path, overwrite=False)
+    target = tmp_path / "run_provenance.json"
+    assert json.loads(target.read_text()) == FIXED_PROVENANCE.to_dict()
+    assert list(tmp_path.iterdir()) == [target]
+    assert stdout_json(stdout)["passed"] is True
+    assert tuple(
+        line for line in stderr.splitlines() if not line.startswith("[contacts]")
+    ) == (tuple(message + "..." for message in VERBOSE_STAGE_MESSAGES))
+
+
+def test_cli_import_does_not_read_clock_or_inspect_git(monkeypatch):
+    import datetime as datetime_module
+    import importlib
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Import must not capture time or inspect Git")
+
+    class NoClock(datetime):
+        now = utcnow = today = forbidden
+
+    with monkeypatch.context() as patch:
+        patch.setattr(datetime_module, "datetime", NoClock)
+        patch.setattr(identity_module, "get_software_identity", forbidden)
+        patch.setattr(identity_module, "_run_git", forbidden)
+        patch.setattr(subprocess, "run", forbidden)
+        importlib.reload(cli)
+    importlib.reload(cli)
+
+
+def test_cli_completed_passport_with_real_builder_and_writer(
+    monkeypatch, capsys, tmp_path
+):
+    from mania.preprocessing.run_provenance import (
+        build_completed_preprocessing_run_provenance,
+    )
+    from mania.preprocessing.trajectory_contacts import (
+        PreprocessingConditionContactsResult,
+        PreprocessingContactFrameResult,
+        PreprocessingManifestContactsResult,
+    )
+    from mania.preprocessing.trajectory_graph_workflow import (
+        PreprocessingGraphWorkflowComputationResult,
+        PreprocessingGraphWorkflowManifestReadinessResult,
+        PreprocessingGraphWorkflowRuntimeLoadingResult,
+    )
+
+    _, received = install_fake_stage15(monkeypatch)
+    conditions = ("normal", "tumor")
+    readiness = PreprocessingGraphWorkflowManifestReadinessResult(
+        Path("manifest.yaml"), True, True, conditions, 2
+    )
+    loading = PreprocessingGraphWorkflowRuntimeLoadingResult(
+        readiness.manifest_path,
+        readiness,
+        conditions,
+        conditions,
+        runtime_load_result=object(),
+    )
+    contacts = PreprocessingManifestContactsResult(
+        tuple(
+            PreprocessingConditionContactsResult(
+                condition_name=name,
+                status="computed",
+                options=PreprocessingContactDetectionOptions(),
+                frame_results=(PreprocessingContactFrameResult(name, 2, 4.0),),
+            )
+            for name in conditions
+        )
+    )
+    computation = PreprocessingGraphWorkflowComputationResult(
+        loading,
+        conditions,
+        False,
+        True,
+        frame_sampling=PreprocessingFrameSamplingOptions(frame_start=2, frame_stride=3),
+        contacts_result=contacts,
+    )
+    monkeypatch.setattr(
+        cli,
+        "compute_preprocessing_graph_workflow_rg_contacts",
+        lambda *args, **kwargs: computation,
+    )
+    builder = Mock(wraps=build_completed_preprocessing_run_provenance)
+    monkeypatch.setattr(cli, "build_completed_preprocessing_run_provenance", builder)
+    monkeypatch.setattr(cli, "write_run_provenance", write_run_provenance)
+    _, stdout, stderr = invoke_cli(
+        monkeypatch,
+        capsys,
+        *BASE_COMMAND,
+        "--output",
+        str(tmp_path),
+        "--run-name",
+        "real-passport",
+        "--skip-rg",
+        "--frame-start",
+        "2",
+        "--frame-stride",
+        "3",
+    )
+    assert stdout_json(stdout)["passed"] is True and stderr == ""
+    received["identity"].assert_called_once_with()
+    builder.assert_called_once()
+    payload = json.loads((tmp_path / "run_provenance.json").read_text())
+    assert payload["run_id"] == "real-passport" and payload["status"] == "completed"
+    assert payload["software_identity"] == FIXED_IDENTITY.to_dict()
+    assert payload["started_at_utc"] == "2026-01-02T03:04:05.000000Z"
+    assert payload["ended_at_utc"] == "2026-01-02T03:04:06.000000Z"
+    assert payload["conditions"] == list(conditions)
+    for item in payload["sampling_by_condition"]:
+        assert item["requested"]["frame_stride"] == 3
+        assert item["effective"]["sampled_frame_count"] == 1
+        assert item["effective"]["first_source_frame_index"] == 2
+        assert item["effective"]["first_time_ps"] == 4.0
+    assert payload["resolved_configuration"]["output_root"] == "."
+    assert payload["artifact_references"][0] == {
+        "role": "graph_nodes",
+        "path": "graph/nodes.csv",
+    }
+    assert list(tmp_path.iterdir()) == [tmp_path / "run_provenance.json"]

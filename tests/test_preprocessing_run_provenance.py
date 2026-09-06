@@ -18,10 +18,13 @@ import mania.preprocessing
 import mania.preprocessing.run_provenance as adapter
 import mania.software_identity as identity
 from mania.preprocessing.run_provenance import (
+    PREPROCESSING_RUN_PROVENANCE_WORKFLOW,
     PREPROCESSING_SAMPLING_STAGE,
     PREPROCESSING_SAMPLING_TIME_ABS_TOL_PS,
     PREPROCESSING_SAMPLING_TIME_REL_TOL,
+    PreprocessingRunProvenanceBuildError,
     PreprocessingSamplingProvenanceResult,
+    build_completed_preprocessing_run_provenance,
     collect_preprocessing_sampling_provenance,
 )
 from mania.preprocessing.trajectory_contacts import (
@@ -54,6 +57,7 @@ from mania.preprocessing.trajectory_runtime import (
 )
 from mania.run_provenance import (
     ConditionSamplingProvenance,
+    PortableArtifactReference,
     RequestedFrameSampling,
     RunProvenanceIssue,
 )
@@ -221,6 +225,9 @@ def test_public_boundary_and_constants():
         "PREPROCESSING_SAMPLING_TIME_ABS_TOL_PS",
         "PreprocessingSamplingProvenanceResult",
         "collect_preprocessing_sampling_provenance",
+        "PREPROCESSING_RUN_PROVENANCE_WORKFLOW",
+        "PreprocessingRunProvenanceBuildError",
+        "build_completed_preprocessing_run_provenance",
     ]
     assert PREPROCESSING_SAMPLING_STAGE == "preprocessing_sampling"
     assert PREPROCESSING_SAMPLING_TIME_REL_TOL == 1e-9
@@ -793,3 +800,153 @@ def test_collection_has_no_side_effects_and_preserves_existing_serialization(
     ]
     assert not (tmp_path / "run_provenance.json").exists()
     assert list(tmp_path.iterdir()) == []
+
+
+def completed_kwargs():
+    offset = datetime.timezone(datetime.timedelta(hours=3))
+    return {
+        "run_id": "requested-run",
+        "started_at_utc": datetime.datetime(2026, 1, 2, 3, tzinfo=offset),
+        "ended_at_utc": datetime.datetime(2026, 1, 2, 4, tzinfo=offset),
+        "software_identity": identity.SoftwareIdentity(
+            "MANIA", "mania-wania", "0.1.0", None, "unavailable", "unavailable"
+        ),
+        "command": ("mania", "preprocessing", "run-graph-export"),
+        "resolved_configuration": {"output_root": ".", "sampling": [1, 2]},
+        "artifact_references": (
+            PortableArtifactReference("graph_nodes", "graph/nodes.csv"),
+        ),
+    }
+
+
+def test_completed_builder_preserves_supplied_snapshots_and_sampling():
+    original = computation(
+        contacts=contact_source(((2, 4.0), (4, 8.0))),
+        options=PreprocessingFrameSamplingOptions(2, 8, 2, 3),
+    )
+    before = original.to_dict()
+    supplied = completed_kwargs()
+    result = build_completed_preprocessing_run_provenance(original, **supplied)
+    assert result.workflow == PREPROCESSING_RUN_PROVENANCE_WORKFLOW
+    assert result.workflow == "preprocessing_graph_export"
+    assert result.status == "completed" and result.run_id == "requested-run"
+    assert result.conditions == original.condition_names
+    assert result.software_identity is supplied["software_identity"]
+    assert result.command == supplied["command"]
+    assert result.artifact_references == supplied["artifact_references"]
+    assert (
+        result.to_dict()["resolved_configuration"] == supplied["resolved_configuration"]
+    )
+    assert result.started_at_utc == supplied["started_at_utc"]
+    assert result.ended_at_utc == supplied["ended_at_utc"]
+    assert result.started_at_utc.tzinfo is datetime.UTC
+    assert result.ended_at_utc.tzinfo is datetime.UTC
+    assert result.to_dict()["started_at_utc"] == "2026-01-02T00:00:00.000000Z"
+    collected = collect_preprocessing_sampling_provenance(original)
+    assert result.sampling_by_condition == collected.sampling_by_condition
+    assert result.sampling_by_condition[0].requested.frame_stride == 2
+    assert result.sampling_by_condition[0].effective.sampled_frame_count == 2
+    assert original.to_dict() == before
+
+
+def test_completed_builder_keeps_all_sampling_warnings():
+    original = computation(conditions=("second", "first"))
+    result = build_completed_preprocessing_run_provenance(
+        original, **completed_kwargs()
+    )
+    collected = collect_preprocessing_sampling_provenance(original)
+    assert result.conditions == ("second", "first")
+    assert result.issues == collected.issues
+    assert result.issues and all(issue.severity == "warning" for issue in result.issues)
+
+
+def test_completed_builder_rejects_sampling_errors():
+    original = computation(
+        contacts=contact_source(((0, 0.0),)), rg=rg_source(((1, 1.0),))
+    )
+    assert original.passed
+    with pytest.raises(
+        PreprocessingRunProvenanceBuildError, match="Sampling collection"
+    ):
+        build_completed_preprocessing_run_provenance(original, **completed_kwargs())
+
+
+def test_completed_builder_rejects_failed_computation_and_wrong_exact_type():
+    original = computation(source_count=None)
+    assert not original.passed
+    with pytest.raises(PreprocessingRunProvenanceBuildError, match="must have passed"):
+        build_completed_preprocessing_run_provenance(original, **completed_kwargs())
+
+    class Derived(PreprocessingGraphWorkflowComputationResult):
+        pass
+
+    for invalid in (None, object(), object.__new__(Derived)):
+        with pytest.raises(
+            PreprocessingRunProvenanceBuildError, match="computation must"
+        ):
+            build_completed_preprocessing_run_provenance(invalid, **completed_kwargs())
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("run_id", ""),
+        ("command", "mania"),
+        ("resolved_configuration", {"private": Path("private")}),
+        ("ended_at_utc", datetime.datetime(2020, 1, 1, tzinfo=datetime.UTC)),
+    ],
+)
+def test_completed_builder_uses_root_validation_with_portable_errors(field, value):
+    supplied = completed_kwargs()
+    supplied[field] = value
+    with pytest.raises(
+        PreprocessingRunProvenanceBuildError,
+        match="^Completed run metadata is invalid.$",
+    ):
+        build_completed_preprocessing_run_provenance(computation(), **supplied)
+
+
+def test_completed_builder_has_no_external_observation_or_file_io(
+    monkeypatch, tmp_path
+):
+    original = computation(contacts=contact_source(((0, 0.0), (1, 1.0))))
+    before = original.to_dict()
+    supplied = completed_kwargs()
+    monkeypatch.chdir(tmp_path)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Builder must use supplied snapshots only")
+
+    class NoClock(datetime.datetime):
+        now = utcnow = today = forbidden
+
+    original_import = builtins.__import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name in ("datetime", "time", "subprocess"):
+            forbidden()
+        return original_import(name, *args, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(adapter, "datetime", NoClock)
+        patch.setattr(builtins, "__import__", guarded_import)
+        patch.setattr(identity, "get_software_identity", forbidden)
+        for module, names in (
+            (builtins, ("open",)),
+            (io, ("open",)),
+            (subprocess, ("Popen", "run", "check_output")),
+            (os, ("open", "stat", "lstat", "scandir", "listdir", "system")),
+            (time, ("time", "time_ns", "monotonic", "perf_counter")),
+            (Path, ("open", "exists", "resolve", "read_text", "write_text", "mkdir")),
+        ):
+            for name in names:
+                patch.setattr(module, name, forbidden)
+        result = build_completed_preprocessing_run_provenance(original, **supplied)
+    assert result.status == "completed" and original.to_dict() == before
+    assert list(tmp_path.iterdir()) == []
+    for name in (
+        "PREPROCESSING_RUN_PROVENANCE_WORKFLOW",
+        "PreprocessingRunProvenanceBuildError",
+        "build_completed_preprocessing_run_provenance",
+    ):
+        assert not hasattr(mania.preprocessing, name)

@@ -127,14 +127,15 @@ def _rg_result(conditions: tuple[str, ...]) -> PreprocessingManifestRgResult:
                 trajectory_paths=(),
                 frame_time_ps=1.0,
                 rg_unit="angstrom",
-                frame_results=(
+                frame_results=tuple(
                     PreprocessingRgFrameResult(
                         condition_name=condition,
-                        frame_index=0,
-                        time_ps=0.0,
+                        frame_index=frame.frame_index,
+                        time_ps=frame.time_ps,
                         rg_value=12.5,
                         rg_unit="angstrom",
-                    ),
+                    )
+                    for frame in _condition_contacts(condition).frame_results
                 ),
             )
             for condition in conditions

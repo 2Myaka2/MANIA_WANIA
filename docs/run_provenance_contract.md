@@ -4,9 +4,9 @@
 
 Stage 25.B.1 is implemented: the contract and validated in-memory model are
 available through `mania.run_provenance`. Stage 25.B.2 implements the in-memory
-preprocessing sampling adapter described below. Automatic file emission is not
-yet implemented; no `run_provenance.json` file is written. Stage 25.B as a whole
-remains incomplete.
+preprocessing sampling adapter described below. Stage 25.B.3a implements automatic
+completed preprocessing file emission. Stage 25.B.3b failed-run emission, analysis
+linkage, and final acceptance remain planned; Stage 25.B as a whole is incomplete.
 
 `RunProvenance` is the in-memory final-run passport for one MANIA execution.
 The caller supplies identity, timing, command tokens, resolved configuration,
@@ -43,7 +43,7 @@ through `__all__`; these names are not re-exported from `mania.__init__`.
 
 - `RUN_PROVENANCE_SCHEMA_VERSION = "mania.run_provenance.v0.1"`
 - `RUN_PROVENANCE_KIND = "mania_run_provenance"`
-- `RUN_PROVENANCE_FILENAME = "run_provenance.json"` (reserved filename only)
+- `RUN_PROVENANCE_FILENAME = "run_provenance.json"`
 - `RunProvenanceStatus = Literal["completed", "failed"]`
 - `RunProvenanceIssueSeverity = Literal["warning", "error"]`
 - `TimeSpacingStatus = Literal["uniform", "non_uniform", "unavailable"]`
@@ -194,9 +194,9 @@ errors do. The result can later supply sampling records and issues to
 
 The adapter produces an in-memory result only. It changes no frame selection or
 scientific calculation and adds no fields to existing scientific serialization.
-No `run_provenance.json` file is written yet. Preprocessing CLI integration,
-file emission, final success/failure emission behavior, and analysis linkage
-remain Stage 25.B.3. Checksums and the full artifact inventory remain Stage 25.C.
+The adapter itself writes no file. Stage 25.B.3a uses its result for completed
+preprocessing emission below. Failed-run emission and analysis linkage remain
+Stage 25.B.3b. Checksums and the full artifact inventory remain Stage 25.C.
 
 ## Configuration contract
 
@@ -211,7 +211,7 @@ proxies, sorts keys recursively, and stores input sequences as tuples. Mutating
 the input or any returned payload does not affect the stored snapshot. Each
 `to_dict()` call returns independent ordinary dictionaries and lists.
 
-No config hash is calculated yet. Stage 25.B.3 integration must normalize known
+No config hash is calculated yet. Stage 25.B.3a integration normalizes known
 path fields before constructing publication-facing provenance. Stage 25.B.1
 does not infer filesystem path semantics from arbitrary strings.
 
@@ -244,13 +244,84 @@ strings. Optional stage and condition default to `None` and must be non-empty
 stripped strings when supplied. Tracebacks are not part of the portable model;
 callers supply portable issue messages, and exception objects are not inspected.
 
-Stage 25.B.1 represents issues only. Exact CLI failure capture, the relationship
-between workflow failures and emitted issues, and file-emission behavior remain
-deferred to Stage 25.B.3. Status is not inferred from the issue list.
+Stage 25.B.1 represents issues only. Stage 25.B.3a handles completed-run build
+and write failures as described below. Failed scientific workflow capture and
+failed-run emission remain deferred to Stage 25.B.3b. Status is not inferred
+from the issue list.
+
+## Stage 25.B.3a — completed preprocessing emission implemented
+
+A successful `mania preprocessing run-graph-export` now automatically writes
+`<output>/run_provenance.json`. There is no new CLI command or flag. The existing
+`run_name` supplies the run ID; callers remain responsible for its uniqueness.
+Software identity is captured exactly once after options validation and before
+the first workflow stage. Start and end timestamps are recorded in UTC. The
+completed builder uses Stage 25.B.2 requested/effective sampling, preserves its
+warnings as root issues, and rejects sampling errors. The builder itself is
+in-memory only and uses caller-supplied identity and timestamps.
+
+The portable command is a tuple of argument tokens with token zero `mania`.
+Only known path options (`--manifest`, `--output`, `--reference-nodes`,
+`--reference-edges`, `--reference-graph-json`) are normalized, in both separated
+and `--option=value` forms. Input values become filename-only references and
+output becomes `.`; empty portable filenames are rejected. Other argument
+values and order are preserved without path guessing. Runtime paths and
+`sys.argv` are unchanged. This representation is not a replacement for the
+runtime command. Stage 25.C and Stage 25.F will provide the stronger input
+inventory and publication bridge.
+
+Resolved configuration contains `manifest_name`, `output_root`, `run_name`,
+`expected_condition_names`, `include_rg`, `include_contacts`,
+`include_graph_export`, `include_diagnostics`, `enable_reference_comparison`,
+`reference_semantics`, `reference_input_names`, `frame_sampling`,
+`contact_detection_options`, `contact_computation_limits`,
+`export_analysis_inputs`, `scientific_csv_exports`, `write_diagnostics_report`,
+and `write_reference_comparison_report`. Input references are filename-only
+(or null), output root is `.`, and scientific CSV flags are explicit after
+shortcut expansion. The snapshot contains JSON values, including contact
+selection and resolved expected conditions, without runtime objects, working
+directory, environment, scientific results, or a config hash.
+
+Lightweight artifact references contain only `role` and relative POSIX `path`.
+They follow this order when applicable: `graph_nodes`, `graph_edges`,
+`graph_json`, `preprocessing_manifest`, `rg_timeseries`, `contact_edges`,
+`contacts_perframe`, `graph_diagnostics_report`, `reference_comparison_report`.
+The three graph links are always present after successful export. The manifest
+link is `mania_manifest.json` only when analysis-input export was requested and
+passed. Scientific CSV links follow resolved export flags and successful export;
+report links require their stage and report writing to be enabled and successful.
+Paths come lexically from the accepted output layout, with no symlink resolution,
+file existence checks, checksums, sizes, row counts, or media types. The manifest
+is the lightweight anchor for Stage 20 artifacts until the Stage 25.C inventory.
+
+`mania.run_provenance_io.write_run_provenance` writes ordered UTF-8 JSON with
+two-space indentation, preserved non-ASCII text, strict finite JSON values, and
+exactly one trailing newline. It creates missing output parents, writes a
+same-directory temporary file, then publishes the complete file atomically.
+Without overwrite, atomic publication preserves an existing target, including
+one created concurrently; with overwrite, atomic replacement is used. Temporary
+files are removed after writing or publication failures. Its frozen
+`RunProvenanceWriteResult` reports `output_path`, `written`, `error`, and `passed`.
+These local writer-result paths are never embedded in the portable payload.
+
+Successful stdout JSON, stderr, verbose stage messages/counts, and exit code zero
+remain unchanged; provenance emission is silent and adds no verbose stage. After
+scientific success, provenance construction or writing failure prints one line
+beginning `Run provenance build failed:` or `Run provenance write failed:` and
+returns exit code 1 without the successful final summary. Scientific artifacts
+are retained and no partial passport is published. Earlier scientific failures,
+argument parsing failures, and invalid options retain their existing behavior
+and emit no passport. Failed-run emission and analysis provenance remain deferred
+to Stage 25.B.3b; existing manifests and scientific behavior remain unchanged.
+
+`run_provenance.json` records the execution passport; existing `RunMeta` records
+export run metadata, `mania_manifest.json` describes preprocessing artifacts,
+and `extended_metrics.json` describes analysis artifacts. None replaces another.
+No backlinks or changes to the existing manifests are introduced.
 
 ## Explicit non-goals
 
-No file writer, workflow integration, checksum, environment inventory, runtime
+No failed-run or analysis provenance, checksum, environment inventory, runtime
 performance metrics, PBC audit, PBC-aware calculation, sampling change, contact
 or RIN change, lifetime, aggregation, FAIR² package generation, FastAPI, or WANIA
-change is implemented by this contract.
+change is implemented by Stage 25.B.3a.

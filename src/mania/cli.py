@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NoReturn, cast
 
@@ -22,6 +23,10 @@ from mania.pipeline_steps import (
     NotebookExportGraphDiagnosticsPipelineResult,
     run_notebook_export_graph_diagnostics_pipeline_from_config_file,
 )
+from mania.preprocessing.run_provenance import (
+    PreprocessingRunProvenanceBuildError,
+    build_completed_preprocessing_run_provenance,
+)
 from mania.preprocessing.trajectory_contacts import (
     ContactProgressCallback,
     PreprocessingContactComputationLimits,
@@ -33,6 +38,7 @@ from mania.preprocessing.trajectory_frame_sampling import (
 )
 from mania.preprocessing.trajectory_graph_workflow import (
     PreprocessingGraphWorkflowOptions,
+    PreprocessingGraphWorkflowOutputLayout,
     build_preprocessing_graph_workflow_plan,
     compare_preprocessing_graph_workflow_reference_artifacts,
     compute_preprocessing_graph_workflow_rg_contacts,
@@ -42,6 +48,9 @@ from mania.preprocessing.trajectory_graph_workflow import (
     load_preprocessing_graph_workflow_condition_runtimes,
     run_preprocessing_graph_workflow_diagnostics,
 )
+from mania.run_provenance import PortableArtifactReference
+from mania.run_provenance_io import write_run_provenance
+from mania.software_identity import get_software_identity
 from mania.wania import (
     WaniaGraphPayloadArtifactPaths,
     WaniaGraphPayloadRunMetadata,
@@ -766,6 +775,127 @@ def _print_analysis_input_export_error(result: object) -> None:
     print("Analysis input export failed.", file=sys.stderr)
 
 
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
+def _portable_input_name(value: str | Path) -> str:
+    name = Path(value).name
+    # Reuse the portable path contract, including rejection of empty names.
+    try:
+        return PortableArtifactReference("input", name).path
+    except ValueError:
+        raise PreprocessingRunProvenanceBuildError(
+            "Input path must have a portable filename."
+        ) from None
+
+
+def _portable_preprocessing_command(argv: tuple[str, ...]) -> tuple[str, ...]:
+    path_options = {
+        "--manifest", "--output", "--reference-nodes", "--reference-edges",
+        "--reference-graph-json",
+    }
+    tokens = ["mania"]
+    index = 1
+    while index < len(argv):
+        token = argv[index]
+        option, separator, value = token.partition("=")
+        if option in path_options:
+            if not separator:
+                index += 1
+                if index == len(argv):
+                    raise PreprocessingRunProvenanceBuildError(
+                        "Path option requires a value."
+                    )
+                value = argv[index]
+            portable = "." if option == "--output" else _portable_input_name(value)
+            if separator:
+                tokens.append(f"{option}={portable}")
+            else:
+                tokens.extend((option, portable))
+        else:
+            tokens.append(token)
+        index += 1
+    return tuple(tokens)
+
+
+def _preprocessing_resolved_configuration(
+    args: argparse.Namespace,
+    options: PreprocessingGraphWorkflowOptions,
+) -> dict[str, object]:
+    return {
+        "manifest_name": _portable_input_name(options.manifest_path),
+        "output_root": ".",
+        "run_name": options.run_name,
+        "expected_condition_names": list(_expected_condition_names(args)),
+        "include_rg": options.include_rg,
+        "include_contacts": options.include_contacts,
+        "include_graph_export": options.include_graph_export,
+        "include_diagnostics": options.include_diagnostics,
+        "enable_reference_comparison": options.enable_reference_comparison,
+        "reference_semantics": options.reference_semantics,
+        "reference_input_names": {
+            name: None if path is None else _portable_input_name(path)
+            for name, path in (
+                ("nodes", options.reference_nodes_csv_path),
+                ("edges", options.reference_edges_csv_path),
+                ("graph_json", options.reference_graph_json_path),
+            )
+        },
+        "frame_sampling": options.frame_sampling.to_dict(),
+        "contact_detection_options": options.contact_detection_options.to_dict(
+            include_contact_selection=True
+        ),
+        "contact_computation_limits": options.contact_computation_limits.to_dict(),
+        "export_analysis_inputs": _analysis_input_export_requested(args),
+        "scientific_csv_exports": _scientific_export_flags(args),
+        "write_diagnostics_report": not args.no_write_diagnostics_report,
+        "write_reference_comparison_report": not args.no_write_reference_comparison,
+    }
+
+
+def _completed_preprocessing_artifact_references(
+    args: argparse.Namespace,
+    options: PreprocessingGraphWorkflowOptions,
+    layout: PreprocessingGraphWorkflowOutputLayout,
+) -> tuple[PortableArtifactReference, ...]:
+    """Link known outputs; called only after every requested stage has passed."""
+    paths = [
+        ("graph_nodes", layout.graph_nodes_csv_path),
+        ("graph_edges", layout.graph_edges_csv_path),
+        ("graph_json", layout.graph_json_path),
+    ]
+    if _analysis_input_export_requested(args):
+        paths.append(
+            ("preprocessing_manifest", layout.output_dir / "mania_manifest.json")
+        )
+    flags = _scientific_export_flags(args)
+    for role, path in (
+        ("rg_timeseries", layout.rg_timeseries_csv_path),
+        ("contact_edges", layout.contact_edges_csv_path),
+        ("contacts_perframe", layout.contacts_perframe_csv_path),
+    ):
+        if flags[f"export_{role}"]:
+            paths.append((role, path))
+    if options.include_diagnostics and not args.no_write_diagnostics_report:
+        paths.append(("graph_diagnostics_report", layout.diagnostics_report_json_path))
+    if options.enable_reference_comparison and not args.no_write_reference_comparison:
+        paths.append(
+            ("reference_comparison_report", layout.reference_comparison_json_path)
+        )
+    try:
+        return tuple(
+            PortableArtifactReference(
+                role, path.relative_to(layout.output_dir).as_posix()
+            )
+            for role, path in paths
+        )
+    except ValueError:
+        raise PreprocessingRunProvenanceBuildError(
+            "Artifact path must be portable and inside the output root."
+        ) from None
+
+
 def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     if _analysis_input_export_requested(args):
         if args.skip_contacts:
@@ -785,6 +915,9 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     except ValueError as exc:
         print(f"Invalid frame sampling options: {exc}", file=sys.stderr)
         return 2
+    started_at_utc = _utc_now()
+    software_identity = get_software_identity()
+    command = tuple(sys.argv)
     analysis_input_export: object | None = (
         None
         if _analysis_input_export_requested(args)
@@ -1038,6 +1171,30 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 reference_comparison=reference_comparison,
             )
         )
+        return 1
+
+    ended_at_utc = _utc_now()
+    try:
+        provenance = build_completed_preprocessing_run_provenance(
+            computation,
+            run_id=options.run_name,
+            started_at_utc=started_at_utc,
+            ended_at_utc=ended_at_utc,
+            software_identity=software_identity,
+            command=_portable_preprocessing_command(command),
+            resolved_configuration=_preprocessing_resolved_configuration(args, options),
+            artifact_references=_completed_preprocessing_artifact_references(
+                args, options, plan.output_layout
+            ),
+        )
+    except PreprocessingRunProvenanceBuildError as exc:
+        print(f"Run provenance build failed: {exc}", file=sys.stderr)
+        return 1
+    write_result = write_run_provenance(
+        provenance, plan.output_layout.output_dir, overwrite=options.overwrite
+    )
+    if not write_result.passed:
+        print(f"Run provenance write failed: {write_result.error}", file=sys.stderr)
         return 1
 
     _print_preprocessing_graph_export_progress(
