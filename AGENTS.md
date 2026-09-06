@@ -16,8 +16,9 @@ Main rule:
 
 The MANIA scientific/backend CLI is operational through accepted Stage 24.G,
 including preprocessing and analysis. Stage 25 is approved as reproducibility
-and publication hardening; Stage 25.A is beginning, and Stage 25 functionality
-is not yet fully implemented.
+and publication hardening; Stage 25.A software identity is implemented.
+Stage 25.B run provenance and effective sampling is the next focused step,
+and Stage 25 as a whole remains incomplete.
 
 Preserve accepted scientific semantics and established Stage 20–24 artifact
 contracts. Do not treat approved roadmap items as implemented features.

@@ -13,8 +13,9 @@ The original decisions below are preserved as a historical record.
 [README.md](../README.md) contains the current implementation status through
 accepted Stage 24.G. [Stage 25 reproducibility
 hardening](stage25_reproducibility_hardening.md) contains the approved Stage 25
-roadmap; Stage 25.A is beginning, and Stage 25 functionality is not yet fully
-implemented.
+roadmap; Stage 25.A software identity is implemented, and Stage 25.B run
+provenance and effective sampling is the next focused step. Stage 25 as a
+whole remains incomplete.
 
 ## Project Scope
 

@@ -22,8 +22,9 @@ reason and the reason is documented.
 
 The MANIA scientific/backend CLI is operational through accepted Stage 24.G.
 [Stage 25](stage25_reproducibility_hardening.md) is approved as reproducibility
-and publication hardening. Stage 25.A is beginning; Stage 25 functionality is
-not yet fully implemented.
+and publication hardening. Stage 25.A software identity is implemented, with
+Stage 25.B run provenance and effective sampling as the next focused step.
+Stage 25 as a whole remains incomplete.
 
 Review small, focused hardening steps against their approved scope. Preserve
 accepted scientific semantics, existing CLI behavior, and Stage 20–24 artifact
