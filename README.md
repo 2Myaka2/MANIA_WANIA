@@ -14,8 +14,11 @@ reference artifact paths.
 ## Stage 25.A Software Identity Status
 
 Stage 25 is reproducibility and publication hardening; Stage 25.A software
-identity is implemented. Stages 25.B–25.G remain planned, and FastAPI remains
-postponed. See the [Stage 25 roadmap](docs/stage25_reproducibility_hardening.md).
+identity is implemented. Stage 25.B run provenance and effective sampling is
+complete. Stage 25.C input/output artifact inventory and opt-in checksums is the
+next focused step; Stages 25.C–25.G remain planned. Stage 25 as a whole remains
+incomplete, and FastAPI remains postponed. See the
+[Stage 25 roadmap](docs/stage25_reproducibility_hardening.md).
 
 MANIA has one package-version source, `src/mania/_version.py`, shared by
 `mania.__version__` and dynamic package metadata. `mania --version` remains the
@@ -34,6 +37,28 @@ report Git fields as unavailable (`commit_sha` is `None`).
 
 This Python API invocation prints the software identity as JSON to stdout; it
 is software identity only, creates no run provenance, and adds no CLI subcommand.
+
+Successful and covered failed preprocessing runs write
+`<output>/run_provenance.json`; successful and covered failed analysis runs write
+`<output>/analysis/run_provenance.json`. The separate locations protect preprocessing
+provenance even when analysis uses the same input and output root. These records
+are additive: `RunMeta`, `mania_manifest.json`, and `analysis/extended_metrics.json`
+retain their existing roles and schemas. The existing command needs no new flag:
+
+```bash
+mania analyze \
+  --input preprocessing_output \
+  --output run_output \
+  --condition normal \
+  --condition tumor \
+  --enable-pca
+```
+
+The analysis passport records execution identity, UTC timing, portable command
+and configuration, conditions, and references to completed analysis outputs;
+failed runs claim no partial outputs. Sampling remains in preprocessing
+provenance. See the [run-provenance contract](docs/run_provenance_contract.md)
+for covered failures and metadata error behavior.
 
 ## Stage 20 Preprocessing Status
 
@@ -1254,7 +1279,8 @@ The planning-level scientific roadmap is:
 - **Stage 24.F — PCA provenance, failure semantics, and internal component
   capacity correction.**
 - **Stage 25 — Reproducibility and publication hardening:** Stage 25.A software
-  identity is implemented; Stages 25.B–25.G remain planned.
+  identity is implemented and Stage 25.B is complete; Stage 25.C is next.
+  Stages 25.C–25.G remain planned, and Stage 25 as a whole remains incomplete.
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
 Stages 20–23 are now complete within their accepted boundaries. Stage 24.A

@@ -266,7 +266,7 @@ def _analysis_bytes(root: Path) -> dict[str, bytes]:
     return {
         path.relative_to(analysis_root).as_posix(): path.read_bytes()
         for path in sorted(analysis_root.rglob("*"))
-        if path.is_file()
+        if path.is_file() and path.name != "run_provenance.json"
     }
 
 
@@ -397,6 +397,13 @@ def test_default_analyze_run_writes_accepted_layout_without_wania_or_raw_md(
     }
     assert not (output_root / "wania_graph_payload.json").exists()
     assert (output_root / "analysis" / "extended_metrics.json").is_file()
+    provenance = json.loads(
+        (output_root / "analysis" / "run_provenance.json").read_text()
+    )
+    assert provenance["workflow"] == "analysis"
+    assert provenance["status"] == "completed"
+    assert provenance["sampling_by_condition"] == []
+    assert not (output_root / "run_provenance.json").exists()
 
     _, pca_rows = _read_csv(
         output_root / "analysis" / "normal" / "conformation_pca_normal.csv"
@@ -440,6 +447,12 @@ def test_enable_pca_computes_projection_without_switching_clustering_basis(
     summary = json.loads(stdout)
     assert summary["pca"] == {"enabled": True}
     assert summary["clustering"]["basis"] == "fingerprint"
+    provenance = json.loads(
+        (output_root / "analysis" / "run_provenance.json").read_text()
+    )
+    assert provenance["workflow"] == "analysis"
+    assert provenance["status"] == "completed"
+    assert provenance["sampling_by_condition"] == []
     _, pca_rows = _read_csv(
         output_root / "analysis" / "normal" / "conformation_pca_normal.csv"
     )
@@ -667,7 +680,14 @@ def test_requested_numerical_pca_failure_is_fatal_before_writes(
     assert "Analyze failed:" in stderr
     assert "pca_failed" in stderr
     assert "passed" not in stdout
-    assert not (output_root / "analysis").exists()
+    target = output_root / "analysis" / "run_provenance.json"
+    provenance = json.loads(target.read_text())
+    assert provenance["status"] == "failed"
+    assert provenance["issues"][0]["code"] == "analysis_execution_failed"
+    assert provenance["artifact_references"] == []
+    assert provenance["sampling_by_condition"] == []
+    assert list(target.parent.iterdir()) == [target]
+    assert _analysis_bytes(output_root) == {}
     assert not (output_root / "analysis" / "extended_metrics.json").exists()
 
 

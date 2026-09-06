@@ -6,8 +6,9 @@ Stage 25.B.1 is implemented: the contract and validated in-memory model are
 available through `mania.run_provenance`. Stage 25.B.2 implements the in-memory
 preprocessing sampling adapter described below. Stage 25.B.3a implements automatic
 completed preprocessing file emission; Stage 25.B.3b implements failed preprocessing
-emission. Analysis provenance and final acceptance remain planned for Stage 25.B.3c;
-Stage 25.B as a whole is incomplete.
+emission. Stage 25.B.3c implements completed and failed analysis provenance.
+Stage 25.B is complete; Stage 25.C input/output artifact inventory and opt-in
+checksums is next. Stage 25 as a whole remains incomplete.
 
 `RunProvenance` is the in-memory final-run passport for one MANIA execution.
 The caller supplies identity, timing, command tokens, resolved configuration,
@@ -22,9 +23,10 @@ raises `ValueError`.
 - `mania_manifest.json` remains the preprocessing artifact manifest.
 - `extended_metrics.json` remains the analysis manifest.
 
-Run provenance is additive and does not replace these records. Later integration
-may link them through portable artifact references. Existing Stage 20–24 schemas,
-scientific rows, calculation semantics, and CLI behavior remain unchanged.
+Run provenance is additive and does not replace these records. Lightweight
+references can point to existing manifests; the manifests have no backlinks.
+Existing Stage 20–24 schemas, scientific rows, calculation semantics, and CLI
+behavior remain unchanged.
 
 ## Public API and root contract
 
@@ -197,8 +199,8 @@ The adapter produces an in-memory result only. It changes no frame selection or
 scientific calculation and adds no fields to existing scientific serialization.
 The adapter itself writes no file. Stage 25.B.3a uses its result for completed
 preprocessing emission below. Stage 25.B.3b retains the same sampling observations
-for failed runs; analysis provenance remains Stage 25.B.3c. Checksums and the full
-artifact inventory remain Stage 25.C.
+for failed runs; analysis provenance is described under Stage 25.B.3c. Checksums
+and the full artifact inventory remain Stage 25.C.
 
 ## Configuration contract
 
@@ -312,7 +314,7 @@ beginning `Run provenance build failed:` or `Run provenance write failed:` and
 returns exit code 1 without the successful final summary. Scientific artifacts
 are retained and no partial passport is published. Stage 25.B.3b covers earlier
 workflow-stage failures below. Argument parsing failures and invalid options
-emit no passport. Analysis provenance remains deferred to Stage 25.B.3c; existing
+emit no passport. Analysis provenance is described under Stage 25.B.3c; existing
 manifests and scientific behavior remain unchanged.
 
 `run_provenance.json` records the execution passport; existing `RunMeta` records
@@ -376,14 +378,92 @@ overwrite is false.
 Parser errors, missing required arguments, invalid option combinations and
 frame sampling, help, version, and other commands remain outside this boundary.
 They have no validated preprocessing execution context. Completed-run provenance
-build/write failures retain Stage 25.B.3a behavior. Analysis provenance and final
-Stage 25.B acceptance remain Stage 25.B.3c; Stage 25.B remains incomplete.
+build/write failures retain Stage 25.B.3a behavior. Stage 25.B.3c adds the separate
+analysis boundary below and completes Stage 25.B.
 `RunMeta`, `mania_manifest.json`, and `extended_metrics.json` remain unchanged
 and are not replaced; no backlinks or schema changes are introduced.
 
+## Stage 25.B.3c — completed and failed analysis emission implemented
+
+The existing `mania analyze` command automatically writes
+`<output>/analysis/run_provenance.json` with workflow `analysis` and final status
+`completed` or `failed`. There is no new command or flag. This file is separate
+from both `<output>/run_provenance.json` (preprocessing provenance) and
+`<output>/analysis/extended_metrics.json` (the scientific analysis manifest).
+Analysis never modifies root preprocessing provenance, including when its input
+and output roots are equal. Existing manifests and `RunMeta` retain their roles.
+
+`mania.analysis.run_provenance` provides pure completed/failed builders, lexical
+artifact collection, and `analysis_run_id_from_started_at`. The run ID has format
+`analysis-YYYYMMDDTHHMMSSffffffZ`, for example `analysis-20260906T120304123456Z`.
+It derives only from a caller-supplied aware start timestamp normalized to UTC.
+The builders consume accepted `AnalyzeRunResult` or `AnalyzeRequest` instances
+and supplied execution context; they do not read clocks, inspect Git, or read
+or write files. Invalid metadata raises `AnalysisRunProvenanceBuildError` with
+a deterministic message without local paths or exception details.
+
+The CLI captures one software-identity snapshot and one start timestamp after
+parsing, immediately before request execution. One end timestamp covers success
+or failure. Command tokens remain a tuple, with token zero normalized to `mania`.
+Only `--input` and `--output` are normalized, supporting separated and equals
+forms: output becomes `.`, and input becomes `.` when the actual request roots
+are equal, otherwise its filename. Empty portable filenames are rejected.
+Other tokens and order, `sys.argv`, and actual runtime paths are preserved.
+Resolved configuration has exactly `input_root`, `output_root`, `analysis_root`,
+`conditions`, `enable_pca`, `clustering_basis`, and
+`pca_components_for_clustering`. Roots use the same portable labels, with
+`analysis_root="analysis"`; other values and condition order come from the
+request. No working directory, environment, hashes, or runtime objects are added.
+
+Analysis consumes prepared artifacts, so `sampling_by_condition` remains empty.
+Upstream requested/effective sampling belongs to preprocessing provenance; no
+sampling is copied or inferred from analysis tables. Completed references contain
+only role and a portable POSIX path relative to the output root. In condition
+result order, their roles are `analysis_graph`, `analysis_centrality`,
+`analysis_communities`, `analysis_region_enrichment`, `analysis_temporal_rin`,
+`analysis_conformation_pca`, and `analysis_conformation_labels`, followed by
+`analysis_comparison`, `analysis_stats`, and `analysis_manifest` when available.
+Repeated roles across conditions are allowed. Paths come from the existing
+result without resolving symlinks, checking existence, or scanning directories;
+paths outside the output root are rejected. Neither provenance file, upstream
+inputs, nor richer artifact inventory fields are included.
+
+Successful execution builds completed provenance and uses the existing atomic
+writer with `result.analysis_root` and `overwrite=True`. This intentionally
+replaces the latest-run passport in the current mutable analysis output directory;
+it is not a history archive. Existing stdout JSON, keys, artifact list/count,
+stderr, and exit code zero remain unchanged. Provenance is not added to
+`AnalyzeRunResult.artifacts`, `to_summary()`, or `extended_metrics.json`.
+
+When `run_analysis()` raises `AnalyzeError` or another existing caught exception,
+failed provenance is attempted at `request.output_root / "analysis"`, also with
+`overwrite=True`. It conservatively contains no artifact references or sampling
+and exactly one root issue: severity `error`, code `analysis_execution_failed`,
+message `Analysis workflow failed.`, stage `analysis_execution`, condition null.
+Original exception text is never stored in the passport. Partial outputs are
+neither inspected nor claimed. The original `Analyze failed: <message>` stderr
+line and exit code 1 are preserved, with no additional stdout.
+
+After scientific success, metadata build/write failure reports one deterministic
+line beginning `Analysis run provenance build failed:` or
+`Analysis run provenance write failed:`, returns 1, and omits the success summary.
+After scientific failure, the original error remains first; metadata failure adds
+exactly one second line beginning `Failed analysis provenance build failed:` or
+`Failed analysis provenance write failed:`, retaining exit code 1. No scientific
+artifacts are rolled back, no partial passport is published, and temporary writer
+files are cleaned up. Normal failures do not emit tracebacks; `BaseException`
+is not caught. Request-construction failure preserves the original behavior
+without inventing a request or passport. Parser errors, missing required arguments,
+invalid parser-level integers, help, version, and other commands do not enter
+this analysis provenance boundary.
+
+Checksums and the complete input/output inventory remain Stage 25.C; stronger
+lineage and the publication bridge remain Stage 25.F. Stage 25.C–25.G are not
+implemented by this provenance work.
+
 ## Explicit non-goals
 
-No analysis provenance, checksum, environment inventory, runtime
+No checksum, complete artifact inventory, environment inventory, runtime
 performance metrics, PBC audit, PBC-aware calculation, sampling change, contact
 or RIN change, lifetime, aggregation, FAIR² package generation, FastAPI, or WANIA
-change is implemented by Stage 25.B.3a–25.B.3b.
+change is implemented by Stage 25.B.

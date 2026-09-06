@@ -8,9 +8,10 @@ is a practical beginner-friendly workflow guide, not a Git internals tutorial.
 The goal is to keep Codex-assisted changes small, reviewable, and safe. The
 scientific/backend CLI is operational through accepted Stage 24.G. The current
 focus is the approved Stage 25 reproducibility and publication-hardening
-roadmap, with Stage 25.A software identity implemented and Stage 25.B run
-provenance and effective sampling as the next focused step. Hardening must
-proceed in separate accepted steps; Stage 25 as a whole remains incomplete.
+roadmap, with Stage 25.A software identity implemented. Stage 25.B run provenance
+and effective sampling is implemented. Stage 25.C input/output artifact
+inventory and opt-in checksums is the next focused step. Hardening must proceed
+in separate accepted steps; Stage 25 as a whole remains incomplete.
 
 ## Branch Model
 

@@ -12,9 +12,11 @@ the current implementation-status overview.
 Stage 25 is approved as reproducibility and publication hardening. Stage 25.A
 is implemented; Stage 25.B.1 provides the run-provenance contract and in-memory
 model, Stage 25.B.2 provides the preprocessing sampling adapter, Stage 25.B.3a
-provides completed preprocessing emission, and Stage 25.B.3b provides failed
-preprocessing emission. Stage 25.B remains incomplete;
-Stages 25.C–25.G remain planned and unimplemented.
+provides completed preprocessing emission, Stage 25.B.3b provides failed
+preprocessing emission, and Stage 25.B.3c provides completed and failed analysis
+emission. Stage 25.B is complete. Stage 25.C input/output artifact inventory and
+opt-in checksums is the next focused step. Stages 25.C–25.G remain planned and
+unimplemented; Stage 25 as a whole remains incomplete. FastAPI remains postponed.
 Existing scientific semantics remain frozen unless changed by
 a separate, explicitly approved task. Older v0.1 planning statements remain
 historical records.
@@ -33,15 +35,15 @@ This roadmap does not claim FAIR² certification or Dataset v1.0 readiness.
 ## Stage decomposition
 
 - Stage 25.A — Software identity and release metadata (implemented)
-- Stage 25.B — Run provenance and effective sampling (25.B.1–25.B.3b implemented; incomplete)
-- Stage 25.C — Input/output artifact inventory and checksums
+- Stage 25.B — Run provenance and effective sampling (25.B.1–25.B.3c implemented; complete)
+- Stage 25.C — Input/output artifact inventory and opt-in checksums (next)
 - Stage 25.D — Unified artifact validation
 - Stage 25.E — PBC audit and runtime metadata
 - Stage 25.F — Reproducibility documentation and FAIR² bridge
 - Stage 25.G — Validation and technical-hardening acceptance
 
-Stage 25.A and Stage 25.B.1–25.B.3b are implemented. The remaining Stage 25.B steps and
-Stages 25.C–25.G require separate, focused implementation and acceptance steps.
+Stage 25.A and Stage 25.B.1–25.B.3c are implemented. Stages 25.C–25.G require
+separate, focused implementation and acceptance steps.
 
 ## Stage 25.A status — implemented
 
@@ -60,12 +62,12 @@ without checkout metadata report Git fields as unavailable (`commit_sha` is
 `None`). Imports and version commands do not inspect Git. Existing version CLI
 output remains `mania-wania 0.1.0`.
 
-Stage 25.A does not yet provide run provenance, effective sampling, checksums,
+Stage 25.A alone does not provide run provenance, effective sampling, checksums,
 artifact inventory, PBC audit, runtime metrics, or FAIR² package generation.
-No `run_provenance.json` is produced yet, and no existing manifest is changed.
+Provenance emission belongs to Stage 25.B below; no existing manifest is changed.
 Stage 25 as a whole remains incomplete.
 
-## Stage 25.B status — completed and failed preprocessing emission implemented
+## Stage 25.B status — complete
 
 Stage 25.B.1 implements the additive run-provenance contract, root in-memory model,
 validation, and deterministic JSON-safe conversion. See
@@ -86,8 +88,20 @@ best-effort emission after covered workflow-stage failures. Requested sampling,
 retained effective observations, and references to earlier successful outputs
 are preserved without replacing the original workflow failure.
 
-Stage 25.B.3c analysis provenance and final Stage 25.B acceptance remain planned.
-Stage 25.B as a whole remains incomplete.
+Stage 25.B.3c implements completed and failed analysis provenance at
+`<output>/analysis/run_provenance.json`, separate from root preprocessing
+provenance and `analysis/extended_metrics.json`. Analysis run IDs derive from
+the UTC start timestamp. Portable command and configuration snapshots describe
+the request; completed runs reference existing outputs and failed runs claim no
+partial artifacts. Analysis sampling stays empty because upstream observations
+belong to preprocessing provenance. The analysis passport is a latest-run record
+in the existing mutable output directory.
+
+Stage 25.B acceptance covers both workflows, output-location separation,
+unchanged CLI summaries and original failure behavior, and preserved manifests,
+scientific schemas, and calculations. Stage 25.B is complete; Stage 25.C
+input/output artifact inventory and opt-in checksums is next. Stage 25 as a whole
+remains incomplete.
 
 ## Compatibility rules
 
@@ -104,7 +118,7 @@ Stage 25.B as a whole remains incomplete.
 
 ## Frozen scientific scope
 
-The following remain outside the current Stage 25.A software-identity task and
+The following remain outside the implemented Stage 25.A–25.B hardening scope and
 require separate scientific or architectural approval:
 
 - contact lifetime;

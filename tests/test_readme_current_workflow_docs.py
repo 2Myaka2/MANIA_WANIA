@@ -163,6 +163,22 @@ def test_readme_does_not_assign_minimal_api_to_stage25() -> None:
     assert "minimal api" not in text
 
 
+def test_readme_documents_completed_stage25b_and_separate_provenance() -> None:
+    text = " ".join(readme_text().split())
+    assert re.search(r"Stage 25\.B[^.]*\bis complete\b", text)
+    assert "<output>/run_provenance.json" in text
+    assert "<output>/analysis/run_provenance.json" in text
+    assert "successful and covered failed analysis" in text.lower()
+    assert "successful and covered failed preprocessing" in text.lower()
+    for record in ("RunMeta", "mania_manifest.json", "analysis/extended_metrics.json"):
+        assert record in text
+    assert "mania analyze" in text
+    assert re.search(r"Stage 25\.C[^.;]*\bis (?:the )?next\b", text)
+    assert re.search(r"FastAPI\s+(?:remains|is)\s+postponed", text)
+    assert re.search(r"Stage 25 as a whole remains incomplete", text)
+    assert not re.search(r"Stage 25(?: as a whole)?\s+is complete\b", text)
+
+
 def test_readme_links_wania_object_json_payload_contract() -> None:
     text = readme_text()
 

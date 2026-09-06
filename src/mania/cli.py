@@ -17,6 +17,13 @@ from mania.analysis import (
     AnalyzeRequest,
     run_analysis,
 )
+from mania.analysis.run_provenance import (
+    ANALYSIS_RUN_PROVENANCE_DIRNAME,
+    AnalysisRunProvenanceBuildError,
+    analysis_run_id_from_started_at,
+    build_completed_analysis_run_provenance,
+    build_failed_analysis_run_provenance,
+)
 from mania.config import load_config
 from mania.pipeline import build_pipeline_plan, format_pipeline_plan
 from mania.pipeline_steps import (
@@ -53,7 +60,7 @@ from mania.preprocessing.trajectory_graph_workflow import (
     load_preprocessing_graph_workflow_condition_runtimes,
     run_preprocessing_graph_workflow_diagnostics,
 )
-from mania.run_provenance import PortableArtifactReference
+from mania.run_provenance import PortableArtifactReference, RunProvenance
 from mania.run_provenance_io import write_run_provenance
 from mania.software_identity import get_software_identity
 from mania.wania import (
@@ -1367,7 +1374,99 @@ def _run_wania_build_payload_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _portable_analysis_input(request: AnalyzeRequest) -> str:
+    if request.input_root == request.output_root:
+        return "."
+    return _portable_input_name(request.input_root)
+
+
+def _portable_analysis_command(
+    argv: tuple[str, ...], request: AnalyzeRequest,
+) -> tuple[str, ...]:
+    tokens = ["mania"]
+    index = 1
+    while index < len(argv):
+        token = argv[index]
+        option, separator, _ = token.partition("=")
+        if option in ("--input", "--output"):
+            if not separator:
+                index += 1
+                if index == len(argv):
+                    raise AnalysisRunProvenanceBuildError(
+                        "Path option requires a value."
+                    )
+            value = "." if option == "--output" else _portable_analysis_input(request)
+            if separator:
+                tokens.append(f"{option}={value}")
+            else:
+                tokens.extend((option, value))
+        else:
+            tokens.append(token)
+        index += 1
+    return tuple(tokens)
+
+
+def _analysis_resolved_configuration(request: AnalyzeRequest) -> dict[str, object]:
+    return {
+        "input_root": _portable_analysis_input(request),
+        "output_root": ".",
+        "analysis_root": ANALYSIS_RUN_PROVENANCE_DIRNAME,
+        "conditions": list(request.conditions),
+        "enable_pca": request.enable_pca,
+        "clustering_basis": request.clustering_basis,
+        "pca_components_for_clustering": request.pca_components_for_clustering,
+    }
+
+
+def _write_analysis_provenance(
+    provenance: RunProvenance, output_dir: Path, *, failed: bool,
+) -> bool:
+    prefix = "Failed analysis provenance" if failed else "Analysis run provenance"
+    try:
+        result = write_run_provenance(provenance, output_dir, overwrite=True)
+        if result.passed:
+            return True
+        message = result.error
+    except Exception:
+        message = "Write operation failed."
+    print(f"{prefix} write failed: {message}", file=sys.stderr)
+    return False
+
+
 def _run_analyze_command(args: argparse.Namespace) -> int:
+    started_at_utc = _utc_now()
+    software_identity = get_software_identity()
+    argv = tuple(sys.argv)
+    command: tuple[str, ...] | None = None
+    run_id = analysis_run_id_from_started_at(started_at_utc)
+    request: AnalyzeRequest | None = None
+
+    def emit_failure(request: AnalyzeRequest) -> None:
+        ended_at_utc = _utc_now()
+        try:
+            if command is None:
+                raise AnalysisRunProvenanceBuildError("Analysis command is invalid.")
+            provenance = build_failed_analysis_run_provenance(
+                request,
+                run_id=run_id,
+                started_at_utc=started_at_utc,
+                ended_at_utc=ended_at_utc,
+                software_identity=software_identity,
+                command=command,
+                resolved_configuration=_analysis_resolved_configuration(request),
+            )
+        except Exception:
+            print(
+                "Failed analysis provenance build failed: "
+                "Failed analysis metadata is invalid.",
+                file=sys.stderr,
+            )
+            return
+        _write_analysis_provenance(
+            provenance, request.output_root / ANALYSIS_RUN_PROVENANCE_DIRNAME,
+            failed=True,
+        )
+
     try:
         request = AnalyzeRequest(
             input_root=args.input,
@@ -1377,14 +1476,53 @@ def _run_analyze_command(args: argparse.Namespace) -> int:
             clustering_basis=args.clustering_basis,
             pca_components_for_clustering=args.pca_components_for_clustering,
         )
+        try:
+            command = _portable_analysis_command(argv, request)
+        except ValueError:
+            # Report invalid portable metadata at the provenance boundary, so
+            # it cannot prevent execution or replace an original analysis error.
+            command = None
         result = run_analysis(request)
     except AnalyzeError as exc:
         print(f"Analyze failed: {exc}", file=sys.stderr)
+        if request is not None:
+            emit_failure(request)
         return 1
     except Exception as exc:
         print(f"Analyze failed: {exc}", file=sys.stderr)
+        if request is not None:
+            emit_failure(request)
         return 1
 
+    ended_at_utc = _utc_now()
+    try:
+        if command is None:
+            raise AnalysisRunProvenanceBuildError("Analysis command is invalid.")
+        if (
+            result.analysis_root
+            != request.output_root / ANALYSIS_RUN_PROVENANCE_DIRNAME
+        ):
+            raise AnalysisRunProvenanceBuildError(
+                "Analysis output directory is invalid."
+            )
+        provenance = build_completed_analysis_run_provenance(
+            result,
+            run_id=run_id,
+            started_at_utc=started_at_utc,
+            ended_at_utc=ended_at_utc,
+            software_identity=software_identity,
+            command=command,
+            resolved_configuration=_analysis_resolved_configuration(request),
+        )
+    except Exception:
+        print(
+            "Analysis run provenance build failed: "
+            "Completed analysis metadata is invalid.",
+            file=sys.stderr,
+        )
+        return 1
+    if not _write_analysis_provenance(provenance, result.analysis_root, failed=False):
+        return 1
     print(json.dumps(result.to_summary(), sort_keys=True))
     return 0
 
