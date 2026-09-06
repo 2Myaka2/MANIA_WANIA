@@ -14,9 +14,12 @@ is implemented; Stage 25.B.1 provides the run-provenance contract and in-memory
 model, Stage 25.B.2 provides the preprocessing sampling adapter, Stage 25.B.3a
 provides completed preprocessing emission, Stage 25.B.3b provides failed
 preprocessing emission, and Stage 25.B.3c provides completed and failed analysis
-emission. Stage 25.B is complete. Stage 25.C input/output artifact inventory and
-opt-in checksums is the next focused step. Stages 25.C–25.G remain planned and
-unimplemented; Stage 25 as a whole remains incomplete. FastAPI remains postponed.
+emission. Stage 25.B is complete. Stage 25.C.1 implements the additive
+artifact-inventory contract, streaming opt-in SHA256 primitives, and atomic
+inventory writing. Stage 25.C.2 preprocessing integration and Stage 25.C.3 analysis
+integration and final Stage 25.C acceptance remain planned. Stage 25.C as a whole
+remains incomplete. Stages 25.D–25.G remain planned and unimplemented; Stage 25 as
+a whole remains incomplete. FastAPI remains postponed.
 Existing scientific semantics remain frozen unless changed by
 a separate, explicitly approved task. Older v0.1 planning statements remain
 historical records.
@@ -36,14 +39,15 @@ This roadmap does not claim FAIR² certification or Dataset v1.0 readiness.
 
 - Stage 25.A — Software identity and release metadata (implemented)
 - Stage 25.B — Run provenance and effective sampling (25.B.1–25.B.3c implemented; complete)
-- Stage 25.C — Input/output artifact inventory and opt-in checksums (next)
+- Stage 25.C — Input/output artifact inventory and opt-in checksums (25.C.1 implemented; incomplete)
 - Stage 25.D — Unified artifact validation
 - Stage 25.E — PBC audit and runtime metadata
 - Stage 25.F — Reproducibility documentation and FAIR² bridge
 - Stage 25.G — Validation and technical-hardening acceptance
 
-Stage 25.A and Stage 25.B.1–25.B.3c are implemented. Stages 25.C–25.G require
-separate, focused implementation and acceptance steps.
+Stage 25.A, Stage 25.B.1–25.B.3c, and Stage 25.C.1 are implemented. Stage 25.C.2,
+Stage 25.C.3, and Stages 25.D–25.G require separate, focused implementation and
+acceptance steps.
 
 ## Stage 25.A status — implemented
 
@@ -99,9 +103,28 @@ in the existing mutable output directory.
 
 Stage 25.B acceptance covers both workflows, output-location separation,
 unchanged CLI summaries and original failure behavior, and preserved manifests,
-scientific schemas, and calculations. Stage 25.B is complete; Stage 25.C
-input/output artifact inventory and opt-in checksums is next. Stage 25 as a whole
-remains incomplete.
+scientific schemas, and calculations. Stage 25.B is complete; Stage 25.C.1
+input/output artifact-inventory primitives are implemented as described below.
+Stage 25.C and Stage 25 as a whole remain incomplete.
+
+## Stage 25.C status — 25.C.1 implemented; incomplete
+
+Stage 25.C.1 implements the independently versioned additive artifact-inventory
+contract, immutable models, explicit file-specification builder, streaming
+opt-in SHA256 primitives, and atomic inventory writing. See
+[`docs/artifact_inventory_contract.md`](artifact_inventory_contract.md).
+
+Default inventory construction records exact byte sizes using file metadata only,
+without opening or reading file contents. SHA256 requires explicit Python API
+opt-in. Specifications are caller-supplied; no output-directory scanning occurs.
+The inventory excludes itself and its own checksum and remains separate from
+provenance, manifests, and scientific artifacts.
+
+Stage 25.C.2 preprocessing integration remains planned. Stage 25.C.3 analysis
+integration and final Stage 25.C acceptance remain planned. Workflows do not yet
+automatically create inventories. Normal preprocessing still does not
+automatically hash trajectories, and no CLI checksum flag or command exists yet.
+Stage 25.C as a whole remains incomplete.
 
 ## Compatibility rules
 
