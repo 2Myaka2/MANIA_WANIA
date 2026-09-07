@@ -262,12 +262,15 @@ def _read_csv(path: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
 
 
 def _analysis_bytes(root: Path) -> dict[str, bytes]:
+    """Compare scientific bytes, excluding per-run technical observations."""
     analysis_root = root / "analysis"
     return {
         path.relative_to(analysis_root).as_posix(): path.read_bytes()
         for path in sorted(analysis_root.rglob("*"))
         if path.is_file()
-        and path.name not in {"run_provenance.json", "artifact_inventory.json"}
+        and path.name not in {
+            "run_provenance.json", "artifact_inventory.json", "runtime_metadata.json",
+        }
     }
 
 
@@ -827,5 +830,6 @@ def test_analyze_outputs_and_stdout_are_deterministic(tmp_path: Path) -> None:
         )
         assert inventory["checksum_mode"] == "none"
         assert inventory["input_artifact_count"] == 6
-        assert inventory["output_artifact_count"] == 17
+        assert inventory["output_artifact_count"] == 18
+        assert inventory["artifacts"][-1]["path"] == "analysis/runtime_metadata.json"
         assert all(entry["sha256"] is None for entry in inventory["artifacts"])

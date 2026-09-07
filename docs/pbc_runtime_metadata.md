@@ -2,13 +2,14 @@
 
 ## Status and boundary
 
-Stage 25.E.1 is implemented: immutable observation models, environment collection,
-runtime summaries, and PBC aggregation are available as Python APIs. Automatic
-workflow integration is deferred to E.2. Stage 25.E remains incomplete.
+Stage 25.E.1 contracts and Stage 25.E.2 workflow integration are implemented.
+Stage 25.E is complete. Stage 25.F reproducibility documentation and FAIR² bridge
+is next; Stage 25 overall remains incomplete. FastAPI remains postponed.
 
-**E.1 observes metadata only. It does not alter trajectories or distance
-calculations.** It creates no automatic artifacts, CLI options, provenance
-references, inventory entries, or validator coverage.
+**Observation only:** MANIA reads sampled timestep dimensions without changing
+coordinates, frame selection, Rg, distances, contacts, graphs, or scientific
+schemas. The scientific PBC protocol remains unresolved and no internal
+minimum-image correction is applied.
 
 ## Runtime/environment contract
 
@@ -21,8 +22,8 @@ Its deterministic key order is `schema_version`, `kind`, `run_id`, `workflow`,
 `scope`, `metadata_path`, `environment`, `performance`. Scope is `preprocessing`
 or `analysis`. Paths are normalized portable relative POSIX paths ending with
 the exact filename `runtime_metadata.json`; absolute paths, backslashes, URI
-schemes, control characters, and `.`/`..` components are rejected. E.2 will enforce
-the exact scope-specific location.
+schemes, control characters, and `.`/`..` components are rejected. E.2 integration
+and unified validation enforce the exact scope-specific location.
 
 Environment fields, in order:
 
@@ -168,34 +169,101 @@ audit = build_pbc_audit(
 payload = audit.to_dict()  # Complete metadata; scientific status unresolved.
 ```
 
-## Future E.2 integration
+## E.2 completed-run integration
 
-Intended future artifacts:
-
-```text
-<output>/runtime_metadata.json
-<output>/pbc_audit.json
-<output>/analysis/runtime_metadata.json
-```
-
-E.2 will capture PBC observations during existing sampled-frame processing,
-without a second trajectory pass or rereading XTC/DCD files. It will reuse
-Stage 25.B timestamps, derive counters already retained by accepted results
-without recomputation, add generated technical artifacts to the existing
-provenance/inventory chain, and update unified validation role coverage.
-E.1 adds contracts only and preserves the current chain:
+The existing commands automatically emit these technical artifacts:
 
 ```text
-SoftwareIdentity -> run_provenance.json -> artifact_inventory.json
-                 -> unified technical validation
+mania preprocessing run-graph-export:
+  <output>/runtime_metadata.json
+  <output>/pbc_audit.json
+mania analyze:
+  <output>/analysis/runtime_metadata.json
 ```
+
+There is no automatic analysis PBC audit and no new PBC CLI option. Automatic
+preprocessing always records `external_pbc_preprocessing_status = "undeclared"`;
+filenames, engine, directory names, manifest free text, coordinates and box values
+never imply an external declaration. Explicit E.1 Python callers may still
+supply a declaration when building their own audit.
+
+The canonical collection rule is deterministic:
+
+1. Observe selected frames from the existing Rg pass when Rg runs.
+2. Otherwise observe selected frames from the existing contacts pass.
+3. With neither computation enabled, collect no observations.
+
+When both computations run, only Rg supplies observations, so frames are never
+double-counted. The dimensions helper reads only the already yielded timestep's
+`dimensions` attribute. Missing or raising attributes are unavailable; invalid
+values remain invalid observations. Every selected frame contributes one
+observation in workflow condition order, even when dimensions are unavailable.
+There is never an extra metadata trajectory pass. No coordinate/trajectory is
+reopened for this audit, and progress stages and scientific stdout remain unchanged.
+
+Runtime wall-clock duration uses the exact existing Stage 25.B start/end
+timestamps; there is no additional clock read. The end remains the end of the
+scientific workflow before technical writing. Environment is collected once after
+successful science. Preprocessing condition count and sampled-frame count come
+from the retained computation and its PBC observation tuple. Contact frame and
+observation counts reuse the retained aggregate `frame_count` and `contact_count`;
+without contacts they are `None`. Seconds/frame divides duration by positive
+sampled-frame count. No CSV reads, filesystem inspection, contact recomputation,
+or trajectory access supplies these counters. Analysis records condition count
+and duration only: sampled-frame count, seconds/frame and contact counters remain
+`None`, without invented upstream observations.
+
+Completed-run writing follows this acyclic order:
+
+```text
+scientific/input artifacts + runtime metadata + preprocessing PBC audit
+  -> artifact_inventory.json
+  -> run_provenance.json references successful artifacts and inventory
+```
+
+Analysis follows the same chain under `analysis/`, without PBC. Technical files
+participate in the existing `--artifact-checksum-mode {none,sha256}`: `none`
+records exact sizes without checksum content reads; `sha256` streams the
+already-written files. Inventory excludes itself and provenance; provenance has
+no reciprocal hashes. Raw MD inputs remain source lineage, without publication
+membership metadata.
+
+`mania.runtime_metadata_io` and `mania.preprocessing.pbc_audit_io` provide strict
+readers and atomic writers. Writers create target parents, use a temporary file
+in the target directory, and publish UTF-8 JSON with indent 2, declared key order,
+literal Unicode, finite values, and exactly one trailing newline. Existing targets
+are preserved by default; overwrite atomically replaces them. Preprocessing uses
+its existing overwrite setting and analysis uses `overwrite=True`. Readers reject
+malformed JSON, duplicate keys, unknown/missing fields and invalid nested values,
+and reconstruct the accepted frozen models without environment recollection,
+clock, Git, hashing, trajectory access, or scans.
+
+Runtime/PBC artifacts are required technical post-processing for completed runs.
+A build/write failure retains scientific outputs, suppresses the successful
+summary and returns exit 1. Inventory and completed provenance are still attempted,
+including only successfully written technical artifacts in runtime, PBC, inventory
+order after scientific references. Error prefixes are `Runtime metadata build
+failed:`, `Runtime metadata write failed:`, `PBC audit build failed:` and `PBC audit
+write failed:`; analysis uses `Analysis runtime metadata build failed:` or
+`Analysis runtime metadata write failed:`. Later inventory/provenance errors
+retain their existing prefixes and order.
+
+Failed scientific runs retain the existing Stage 25.B/C failure metadata boundary:
+they do not automatically persist E.2 runtime/PBC artifacts, even if observations
+were retained in memory before failure. No failed-run inventory matrix is changed.
+
+Unified validation delegates `runtime_metadata` to its strict reader in both
+scopes, enforcing scope and canonical path, and preprocessing `pbc_audit` to its
+strict reader. Unavailable, invalid or partial box observations and scientific
+status `unresolved` can still be technically valid. Unresolved PBC science is
+**not a technical validation failure** and does not imply scientific approval.
 
 ## Deferred scientific decisions
 
 No PBC correction is implemented or promised. PBC preprocessing protocol,
 internal minimum-image correction, lifetime, physical-time window semantics,
 replica aggregation, cross-engine mapping, and Dataset v1.0 scientific
-acceptance remain deferred. E.1 does not wrap, unwrap, center, make molecules
+acceptance remain deferred. Stage 25.E does not wrap, unwrap, center, make molecules
 whole, modify coordinates, change sampling, or change distances, contacts,
 edge counts, RIN results, or Stage 20–24 scientific schemas.
 
@@ -205,5 +273,5 @@ The existing technical validation CLI intentionally returns exit 0 for both
 `passed` and `partial` reports, and exit 1 for `failed`. Stage 25.G publication
 acceptance must require a complete technical report: `report.status == "passed"`
 and `report.complete is True`. This gate and any `--require-complete` option
-are not implemented in E.1. Technical completeness does not resolve scientific
-acceptance. Stages 25.F/G remain planned; Stage 25 overall remains incomplete.
+are not implemented in Stage 25.E. Technical completeness does not resolve
+scientific acceptance. Stages 25.F/G remain planned; Stage 25 overall remains incomplete.

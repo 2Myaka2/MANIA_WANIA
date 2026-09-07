@@ -126,6 +126,8 @@ def collect_analysis_input_file_specs(
 
 def collect_analysis_output_file_specs(
     result: AnalyzeRunResult,
+    *,
+    runtime_metadata_path: Path | None = None,
 ) -> tuple[ArtifactInventoryFileSpec, ...]:
     """Describe completed result paths lexically, without inspecting outputs."""
     if type(result) is not AnalyzeRunResult:
@@ -174,6 +176,14 @@ def collect_analysis_output_file_specs(
                 "analysis_manifest",
                 result.extended_metrics_json,
             )
+        if runtime_metadata_path is not None:
+            if runtime_metadata_path != (
+                result.request.output_root / "analysis/runtime_metadata.json"
+            ):
+                raise AnalysisArtifactInventoryError(
+                    "Runtime metadata must use its exact analysis path."
+                )
+            add("output:runtime_metadata", "runtime_metadata", runtime_metadata_path)
         return tuple(specs)
     except AnalysisArtifactInventoryError:
         raise
@@ -190,6 +200,7 @@ def build_analysis_artifact_inventory(
     resolved_input_paths: tuple[AnalyzeConditionInputPaths, ...],
     result: AnalyzeRunResult | None,
     checksum_mode: ArtifactChecksumMode,
+    runtime_metadata_path: Path | None = None,
 ) -> ArtifactInventory:
     """Inspect declared inputs and completed outputs through the generic builder."""
     inputs = collect_analysis_input_file_specs(
@@ -202,7 +213,9 @@ def build_analysis_artifact_inventory(
             raise AnalysisArtifactInventoryError("result must be AnalyzeRunResult")
         if result.request != request:
             raise AnalysisArtifactInventoryError("result.request must match request")
-        outputs = collect_analysis_output_file_specs(result)
+        outputs = collect_analysis_output_file_specs(
+            result, runtime_metadata_path=runtime_metadata_path,
+        )
     return build_artifact_inventory(
         run_id=run_id,
         workflow=ANALYSIS_RUN_PROVENANCE_WORKFLOW,

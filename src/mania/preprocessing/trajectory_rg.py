@@ -13,6 +13,10 @@ from mania.preprocessing import (
     trajectory_manifest_loader,
     trajectory_runtime,
 )
+from mania.preprocessing.pbc_audit import (
+    PbcObservationCallback,
+    observe_pbc_timestep_dimensions,
+)
 
 PreprocessingConditionLoadResult: TypeAlias = (
     trajectory_runtime.PreprocessingConditionLoadResult
@@ -315,6 +319,7 @@ def compute_condition_rg(
     *,
     rg_unit: str = "angstrom",
     frame_sampling: PreprocessingFrameSamplingOptions | None = None,
+    pbc_observation_callback: PbcObservationCallback | None = None,
 ) -> PreprocessingConditionRgResult:
     """Compute per-frame Rg from one already loaded condition runtime."""
     selected_frame_sampling = _frame_sampling_options(frame_sampling)
@@ -467,6 +472,14 @@ def compute_condition_rg(
                 )
             )
 
+            if pbc_observation_callback is not None:
+                pbc_observation_callback(observe_pbc_timestep_dimensions(
+                    condition=condition_result.condition_name,
+                    frame_index=frame_index,
+                    time_ps=frame_results[-1].time_ps,
+                    timestep=timestep,
+                ))
+
     if not frame_results and not condition_issues:
         condition_issues.append(
             _frame_iteration_issue(
@@ -500,23 +513,19 @@ def _aggregate_manifest_rg(
     *,
     rg_unit: str = "angstrom",
     frame_sampling: PreprocessingFrameSamplingOptions | None = None,
+    pbc_observation_callback: PbcObservationCallback | None = None,
 ) -> PreprocessingManifestRgResult:
     """Compose condition Rg results across one manifest load result."""
     selected_frame_sampling = _frame_sampling_options(frame_sampling)
     condition_results: list[PreprocessingConditionRgResult] = []
     for condition_result in manifest_result.condition_results:
         try:
-            if frame_sampling is None:
-                rg_result = compute_condition_rg(
-                    condition_result,
-                    rg_unit=rg_unit,
-                )
-            else:
-                rg_result = compute_condition_rg(
-                    condition_result,
-                    rg_unit=rg_unit,
-                    frame_sampling=selected_frame_sampling,
-                )
+            rg_kwargs: dict[str, Any] = {"rg_unit": rg_unit}
+            if frame_sampling is not None:
+                rg_kwargs["frame_sampling"] = selected_frame_sampling
+            if pbc_observation_callback is not None:
+                rg_kwargs["pbc_observation_callback"] = pbc_observation_callback
+            rg_result = compute_condition_rg(condition_result, **rg_kwargs)
         except Exception:
             rg_result = _unexpected_condition_rg_result(
                 condition_result,

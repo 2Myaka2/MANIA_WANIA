@@ -13,6 +13,7 @@ from mania.artifact_inventory_io import (
     read_artifact_inventory,
 )
 from mania.run_provenance import PortableArtifactReference
+from mania.runtime_metadata_io import RuntimeMetadataReadError, read_runtime_metadata
 from mania.validation import artifacts, graph, run_artifacts
 from mania.validation.run_artifacts import (
     ArtifactSetValidationIssue,
@@ -255,6 +256,8 @@ _PREPROCESSING_POLICY: dict[str, str | None] = {
     "contacts_perframe": "perframe",
     "graph_diagnostics_report": None,
     "reference_comparison_report": None,
+    "runtime_metadata": "preprocessing_runtime_metadata",
+    "pbc_audit": "pbc_audit",
 }
 _ANALYSIS_POLICY: dict[str, str | None] = {
     "preprocessing_manifest": None,
@@ -273,6 +276,7 @@ _ANALYSIS_POLICY: dict[str, str | None] = {
     "analysis_comparison": "comparison",
     "analysis_stats": "stats",
     "analysis_manifest": None,
+    "runtime_metadata": "analysis_runtime_metadata",
 }
 _PAIR_ROLES = {
     "graph_nodes": ("graph_nodes", "graph_edges"),
@@ -286,6 +290,9 @@ _VALIDATORS = {
     "rg": "validate_rg_timeseries_csv",
     "contacts": "validate_contact_edges_csv",
     "perframe": "validate_contacts_perframe_csv",
+    "preprocessing_runtime_metadata": "read_runtime_metadata",
+    "analysis_runtime_metadata": "read_runtime_metadata",
+    "pbc_audit": "read_pbc_audit",
 }
 
 
@@ -333,6 +340,23 @@ def _invoke(
     condition: str | None,
     peer: Path | None = None,
 ) -> object:
+    if contract in ("preprocessing_runtime_metadata", "analysis_runtime_metadata"):
+        metadata = read_runtime_metadata(path)
+        scope = contract.removesuffix("_runtime_metadata")
+        expected_path = (
+            "runtime_metadata.json"
+            if scope == "preprocessing" else "analysis/runtime_metadata.json"
+        )
+        if metadata.scope != scope or metadata.metadata_path != expected_path:
+            raise RuntimeMetadataReadError("Runtime metadata scope/path mismatch.")
+        return metadata
+    if contract == "pbc_audit":
+        from mania.preprocessing.pbc_audit_io import PbcAuditReadError, read_pbc_audit
+
+        audit = read_pbc_audit(path)
+        if audit.audit_path != "pbc_audit.json":
+            raise PbcAuditReadError("PBC audit path mismatch.")
+        return audit
     if contract == "graph":
         return graph.validate_graph_json(path, expected_condition=condition)
     if contract == "graph_pair":
@@ -365,9 +389,14 @@ def _invoke(
 
 
 def _failure_count(call: Callable[[], object]) -> int:
+    from mania.preprocessing.pbc_audit_io import PbcAuditReadError
+
     try:
         result = call()
-    except (artifacts.ArtifactValidationError, OSError, UnicodeError, csv.Error):
+    except (
+        artifacts.ArtifactValidationError, OSError, UnicodeError, csv.Error,
+        RuntimeMetadataReadError, PbcAuditReadError,
+    ):
         # Public validator exceptions and ordinary file/read failures only.
         return 1
     if (

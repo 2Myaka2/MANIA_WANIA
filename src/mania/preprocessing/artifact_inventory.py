@@ -169,6 +169,8 @@ def collect_preprocessing_output_file_specs(
     diagnostics: PreprocessingGraphWorkflowDiagnosticsResult | None = None,
     reference_comparison: PreprocessingGraphWorkflowReferenceComparisonResult
     | None = None,
+    runtime_metadata_path: Path | None = None,
+    pbc_audit_path: Path | None = None,
 ) -> tuple[ArtifactInventoryFileSpec, ...]:
     """Describe supplied successful stages in execution order, without discovery.
 
@@ -209,7 +211,7 @@ def collect_preprocessing_output_file_specs(
         except ValueError:
             raise PreprocessingArtifactInventoryError(
                 "Output path must be portable, inside the output root, "
-                "and nontechnical."
+                "and exclude inventory/provenance."
             ) from None
 
     if graph_export is not None and graph_export.passed:
@@ -284,6 +286,16 @@ def collect_preprocessing_output_file_specs(
             "reference_comparison_report",
             reference_comparison.reference_comparison_json_path,
         )
+    for role, technical_path in (
+        ("runtime_metadata", runtime_metadata_path),
+        ("pbc_audit", pbc_audit_path),
+    ):
+        if technical_path is not None:
+            if technical_path != output_root / f"{role}.json":
+                raise PreprocessingArtifactInventoryError(
+                    "Technical output must use its exact preprocessing path."
+                )
+            add(role, technical_path)
     return tuple(specs)
 
 
@@ -305,6 +317,8 @@ def build_preprocessing_artifact_inventory(
     diagnostics: PreprocessingGraphWorkflowDiagnosticsResult | None = None,
     reference_comparison: PreprocessingGraphWorkflowReferenceComparisonResult
     | None = None,
+    runtime_metadata_path: Path | None = None,
+    pbc_audit_path: Path | None = None,
 ) -> ArtifactInventory:
     """Inspect authoritative files through the generic builder; never write."""
     inputs = collect_preprocessing_input_file_specs(
@@ -321,6 +335,8 @@ def build_preprocessing_artifact_inventory(
         scientific_csv_export=scientific_csv_export,
         diagnostics=diagnostics,
         reference_comparison=reference_comparison,
+        runtime_metadata_path=runtime_metadata_path,
+        pbc_audit_path=pbc_audit_path,
     )
     return build_artifact_inventory(
         run_id=run_id,

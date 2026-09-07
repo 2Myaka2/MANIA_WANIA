@@ -491,3 +491,38 @@ def test_builder_delegates_without_changing_science(tmp_path, monkeypatch, mode)
             if mode == "sha256"
             else None
         )
+
+
+@pytest.mark.parametrize("runtime,pbc", [(True, True), (True, False), (False, True)])
+def test_explicit_technical_output_paths_are_appended_without_discovery(
+    monkeypatch, tmp_path, runtime, pbc,
+):
+    root = tmp_path / "out"
+    known = {
+        "runtime_metadata_path": root / "runtime_metadata.json" if runtime else None,
+        "pbc_audit_path": root / "pbc_audit.json" if pbc else None,
+    }
+    with monkeypatch.context() as patch:
+        guard_discovery(patch)
+        patch.setattr(Path, "stat", forbid)
+        patch.setattr(Path, "open", forbid)
+        specs = adapter.collect_preprocessing_output_file_specs(
+            output_root=root, **known,
+        )
+    roles = (["runtime_metadata"] if runtime else []) + (["pbc_audit"] if pbc else [])
+    assert [s.role for s in specs] == roles
+    for spec in specs:
+        assert spec.artifact_id == f"output:{spec.role}"
+        assert spec.path == f"{spec.role}.json" and spec.format == "json"
+        assert spec.local_path is known[f"{spec.role}_path"]
+        assert spec.condition is None
+    assert adapter.collect_preprocessing_output_file_specs(output_root=root) == ()
+
+
+@pytest.mark.parametrize("field", ["runtime_metadata_path", "pbc_audit_path"])
+def test_technical_outputs_reject_noncanonical_paths(tmp_path, field):
+    role = field.removesuffix("_path")
+    with pytest.raises(adapter.PreprocessingArtifactInventoryError):
+        adapter.collect_preprocessing_output_file_specs(
+            output_root=tmp_path, **{field: tmp_path / "nested" / f"{role}.json"},
+        )

@@ -8,7 +8,8 @@ preprocessing sampling adapter described below. Stage 25.B.3a implements automat
 completed preprocessing file emission; Stage 25.B.3b implements failed preprocessing
 emission. Stage 25.B.3c implements completed and failed analysis provenance.
 Stage 25.B and Stage 25.C input/output artifact inventory and opt-in checksums
-are complete. Stage 25.D unified artifact validation is next.
+are complete. Stage 25.D unified artifact validation and Stage 25.E observation-only
+PBC/runtime metadata are complete. Stage 25.F is next.
 Stage 25 as a whole remains incomplete.
 
 `RunProvenance` is the in-memory final-run passport for one MANIA execution.
@@ -35,6 +36,32 @@ is `artifact_inventory.json` for preprocessing and
 `analysis/artifact_inventory.json` for analysis. A portable reference is
 sufficient: provenance does not hash inventory, and inventory excludes its
 corresponding provenance. No reciprocal checksum loop is required.
+
+## Stage 25.E.2 — completed-run technical references
+
+Completed preprocessing appends these portable references, in order, after the
+existing scientific references:
+
+1. `runtime_metadata` → `runtime_metadata.json`;
+2. `pbc_audit` → `pbc_audit.json`;
+3. `artifact_inventory` → `artifact_inventory.json`.
+
+Completed analysis appends `runtime_metadata` → `analysis/runtime_metadata.json`,
+then `artifact_inventory` → `analysis/artifact_inventory.json`. Analysis emits
+no PBC audit. Each reference requires a successful write in the current run;
+stale files and unsuccessful writes are never claimed.
+
+Scientific execution ends at the existing Stage 25.B timestamp. Runtime duration
+reuses that timestamp and the existing start, without another clock read. Runtime
+and preprocessing PBC artifacts are written first, then inventoried, then referenced
+by provenance. There is no schema change, provenance hash, inventory self-hash,
+or reciprocal checksum loop. Scientific manifests remain unchanged.
+
+Runtime/PBC technical failure after successful science retains scientific outputs
+and still attempts inventory and completed provenance with successful technical
+references only; it suppresses the successful summary and returns exit 1.
+Failed scientific runs preserve the existing Stage 25.B/C failure boundary and
+do not automatically persist E.2 runtime/PBC artifacts.
 
 ## Public API and root contract
 

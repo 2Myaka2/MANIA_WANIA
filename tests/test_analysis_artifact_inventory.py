@@ -434,3 +434,28 @@ def test_builder_rejects_wrong_result_and_request_before_io(tmp_path, monkeypatc
                     checksum_mode="none",
                 )
         forbidden.assert_not_called()
+
+
+def test_runtime_output_is_explicit_last(tmp_path, monkeypatch):
+    from test_analysis_run_provenance import analysis_result
+
+    request = AnalyzeRequest(tmp_path / "in", tmp_path / "out", ("normal", "tumor"))
+    result = analysis_result(request)
+    path = request.output_root / "analysis/runtime_metadata.json"
+    before = adapter.collect_analysis_output_file_specs(result)
+    with monkeypatch.context() as patch:
+        forbid_discovery(patch)
+        after = adapter.collect_analysis_output_file_specs(
+            result, runtime_metadata_path=path,
+        )
+    assert after[:-1] == before
+    entry = after[-1]
+    assert entry.artifact_id == "output:runtime_metadata"
+    assert entry.role == "runtime_metadata"
+    assert entry.path == "analysis/runtime_metadata.json"
+    assert entry.local_path is path
+    assert entry.format == "json" and entry.condition is None
+    with pytest.raises(adapter.AnalysisArtifactInventoryError):
+        adapter.collect_analysis_output_file_specs(
+            result, runtime_metadata_path=request.output_root / "runtime_metadata.json",
+        )

@@ -28,15 +28,20 @@ from test_preprocessing_artifact_inventory import (
 import mania.artifact_inventory_io as inventory_io
 import mania.cli as cli
 import mania.preprocessing.artifact_inventory as adapter
+import mania.preprocessing.pbc_audit_io as cli_pbc_io
+import mania.runtime_metadata_io as cli_runtime_io
+from mania.preprocessing.pbc_audit_io import write_pbc_audit
 from mania.preprocessing.run_provenance import (
     PREPROCESSING_RUN_FAILURE_STAGES,
     build_completed_preprocessing_run_provenance,
     build_failed_preprocessing_run_provenance,
 )
+from mania.preprocessing.runtime_metadata import build_preprocessing_runtime_metadata
 from mania.preprocessing.trajectory_graph_workflow import (
     PreprocessingGraphWorkflowRuntimeLoadingIssue,
 )
 from mania.run_provenance_io import RunProvenanceWriteResult, write_run_provenance
+from mania.runtime_metadata_io import write_runtime_metadata
 
 INVENTORY_REF = {"role": "artifact_inventory", "path": "artifact_inventory.json"}
 
@@ -128,6 +133,10 @@ def install_inventory_workflow(monkeypatch, root, *, failure=None, incomplete=Fa
 
         monkeypatch.setattr(cli, name, stage)
     for name, key, function in (
+        ("build_preprocessing_runtime_metadata", "runtime_builder",
+         build_preprocessing_runtime_metadata),
+        ("write_runtime_metadata", "runtime_writer", write_runtime_metadata),
+        ("write_pbc_audit", "pbc_writer", write_pbc_audit),
         (
             "build_preprocessing_artifact_inventory",
             "inventory_builder",
@@ -265,6 +274,12 @@ def test_default_run_preserves_stdout_order_verbose_and_timing(
     assert '"artifact_inventory"' not in stdout and '"checksum_mode"' not in stdout
     # Repeat the identical scientific workflow with the original no-I/O metadata fakes.
     _, baseline = install_inventory_workflow(monkeypatch, tmp_path)
+    monkeypatch.setattr(cli, "write_runtime_metadata", Mock(return_value=
+        cli_runtime_io.RuntimeMetadataWriteResult(
+            tmp_path / "out/runtime_metadata.json", True)))
+    monkeypatch.setattr(cli, "write_pbc_audit", Mock(return_value=
+        cli_pbc_io.PbcAuditWriteResult(tmp_path / "out/pbc_audit.json", True)))
+
     monkeypatch.setattr(
         cli,
         "write_artifact_inventory",
@@ -326,9 +341,9 @@ def test_real_inventory_and_provenance_smoke(monkeypatch, capsys, tmp_path, mode
     payload = json.loads((root / "artifact_inventory.json").read_text())
     assert payload["checksum_mode"] == mode
     specs = generic.call_args.kwargs["file_specs"]
-    assert payload["artifact_count"] == len(specs) == 29
+    assert payload["artifact_count"] == len(specs) == 31
     assert (
-        payload["input_artifact_count"] == 12 and payload["output_artifact_count"] == 17
+        payload["input_artifact_count"] == 12 and payload["output_artifact_count"] == 19
     )
     for spec, entry in zip(specs, payload["artifacts"], strict=True):
         assert entry["byte_size"] == len(spec.local_path.read_bytes())
@@ -434,6 +449,9 @@ def test_failed_workflow_inventory_preserves_primary_failure(
             *command(tmp_path, all_stages=True),
             expected_exit_code=1,
         )
+    for name in ("environment", "runtime_builder", "runtime_writer",
+                 "pbc_builder", "pbc_writer"):
+        received[name].assert_not_called()
     assert json.loads(stdout)["stage"] == stage
     assert json.loads(stdout)["passed"] is False
     received["failed_provenance_builder"].assert_called_once()

@@ -1,6 +1,6 @@
 """Validate and aggregate caller-supplied box observations, without correction."""
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from itertools import islice
 from math import isfinite
@@ -145,6 +145,29 @@ def observe_pbc_frame_dimensions(
         dimensions_valid=box is not None,
         box_lengths_A=None if box is None else box[0],
         box_angles_deg=None if box is None else box[1],
+    )
+
+
+PbcObservationCallback = Callable[[PbcFrameObservation], None]
+
+
+def observe_pbc_timestep_dimensions(
+    *,
+    condition: str,
+    frame_index: int,
+    time_ps: float | None,
+    timestep: object,
+) -> PbcFrameObservation:
+    """Read only dimensions from an already yielded timestep, without correction."""
+    try:
+        dimensions = getattr(timestep, "dimensions", None)
+    except Exception:
+        dimensions = None
+    return observe_pbc_frame_dimensions(
+        condition=condition,
+        frame_index=frame_index,
+        time_ps=time_ps,
+        dimensions=dimensions,
     )
 
 
@@ -404,7 +427,9 @@ __all__ = [
     "PbcConditionAudit",
     "PbcFrameObservation",
     "PbcMetadataStatus",
+    "PbcObservationCallback",
     "build_pbc_audit",
     "observe_pbc_frame_dimensions",
+    "observe_pbc_timestep_dimensions",
     "summarize_pbc_condition_observations",
 ]

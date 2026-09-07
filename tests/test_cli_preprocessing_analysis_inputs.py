@@ -379,10 +379,12 @@ def _install_synthetic_preprocessing_runtime(
         contact_options: PreprocessingContactDetectionOptions,
         contact_computation_limits: object | None = None,
         progress_callback: object | None = None,
+        collect_pbc_observations: bool = False,
     ) -> PreprocessingGraphWorkflowComputationResult:
         assert include_rg is True
         assert include_contacts is True
         assert contact_options.contact_selection == "protein"
+        assert collect_pbc_observations is True
         return PreprocessingGraphWorkflowComputationResult(
             runtime_loading=runtime_loading,
             condition_names=conditions,

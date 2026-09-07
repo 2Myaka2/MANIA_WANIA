@@ -156,7 +156,10 @@ def test_completed_real_writer_preserves_stdout_and_root(
     assert payload["started_at_utc"] == "2026-09-06T12:03:04.123456Z"
     assert payload["ended_at_utc"] == "2026-09-06T12:03:09.123456Z"
     assert payload["sampling_by_condition"] == []
-    assert len(payload["artifact_references"]) == 18
+    assert len(payload["artifact_references"]) == 19
+    assert payload["artifact_references"][-2] == {
+        "role": "runtime_metadata", "path": "analysis/runtime_metadata.json",
+    }
     assert payload["artifact_references"][-1] == {
         "role": "artifact_inventory", "path": "analysis/artifact_inventory.json",
     }
@@ -193,7 +196,9 @@ def test_completed_real_writer_preserves_stdout_and_root(
     }
     assert str(request.output_root) not in target.read_text()
     assert "/private/" not in target.read_text()
-    assert list(result.analysis_root.iterdir()) == [target]
+    assert set(result.analysis_root.iterdir()) == {
+        target, result.analysis_root / "runtime_metadata.json",
+    }
     assert sentinel.read_bytes() == b"existing preprocessing provenance\n"
 
 
@@ -209,7 +214,9 @@ def test_real_writer_creates_no_root_and_replaces_latest_analysis(
     invoke(monkeypatch, capsys, request)
     assert json.loads(target.read_text())["status"] == "completed"
     assert not (request.output_root / "run_provenance.json").exists()
-    assert list(result.analysis_root.iterdir()) == [target]
+    assert set(result.analysis_root.iterdir()) == {
+        target, result.analysis_root / "runtime_metadata.json",
+    }
 
 
 def test_portable_command_is_captured_before_execution(
@@ -374,7 +381,10 @@ def test_meta_failure_preserves_scientific_outputs_and_error_order(
     assert captured.err.splitlines() == [*expected, meta_line]
     assert scientific.read_bytes() == b"existing scientific manifest"
     assert sentinel.read_bytes() == b"preprocessing sentinel"
-    assert list(result.analysis_root.iterdir()) == [scientific]
+    expected_files = {scientific}
+    if not analysis_failed:
+        expected_files.add(result.analysis_root / "runtime_metadata.json")
+    assert set(result.analysis_root.iterdir()) == expected_files
 
 
 def test_real_atomic_writer_failure_leaves_no_temporary_file(
@@ -385,15 +395,24 @@ def test_real_atomic_writer_failure_leaves_no_temporary_file(
     import mania.run_provenance_io as writer_module
 
     request, result, _, _, _, _, _, _ = execution
+    real_replace = writer_module.os.replace
+
+    def fail_provenance_replace(source, destination):
+        if Path(destination) == result.analysis_root / "run_provenance.json":
+            raise OSError("private")
+        return real_replace(source, destination)
+
     monkeypatch.setattr(
-        writer_module.os, "replace", Mock(side_effect=OSError("private"))
+        writer_module.os, "replace", Mock(side_effect=fail_provenance_replace)
     )
     captured = invoke(monkeypatch, capsys, request, code=1)
     assert captured.out == ""
     assert captured.err == (
         "Analysis run provenance write failed: Filesystem write failed.\n"
     )
-    assert list(result.analysis_root.iterdir()) == []
+    assert set(result.analysis_root.iterdir()) == {
+        result.analysis_root / "runtime_metadata.json",
+    }
     assert not (request.output_root / "run_provenance.json").exists()
 
 
@@ -524,7 +543,7 @@ def test_synthetic_stage20_analysis_smoke_protects_shared_root(
     assert payload["sampling_by_condition"] == []
     assert {ref["path"] for ref in payload["artifact_references"]} == set(
         summary["artifacts"]["written"]
-    ) | {"analysis/artifact_inventory.json"}
+    ) | {"analysis/runtime_metadata.json", "analysis/artifact_inventory.json"}
     assert (tmp_path / "analysis" / "extended_metrics.json").is_file()
     assert sentinel.read_bytes() == b"preprocessing sampling sentinel"
 

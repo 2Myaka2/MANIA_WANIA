@@ -303,17 +303,21 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
         reference_edges_path=options.reference_edges_csv_path,
         reference_graph_path=options.reference_graph_json_path,
     ) + preprocessing_adapter.collect_preprocessing_output_file_specs(
-        output_root=root, **stages
+        output_root=root, runtime_metadata_path=root / "runtime_metadata.json",
+        pbc_audit_path=root / "pbc_audit.json", **stages
     )
     request = AnalyzeRequest(tmp_path / "in", root, ("normal", "tumor"))
     analysis = analysis_adapter.collect_analysis_input_file_specs(
         request=request,
         resolved_input_paths=declared_inputs(request),
-    ) + analysis_adapter.collect_analysis_output_file_specs(analysis_result(request))
+    ) + analysis_adapter.collect_analysis_output_file_specs(
+        analysis_result(request),
+        runtime_metadata_path=root / "analysis/runtime_metadata.json",
+    )
     assert {e.role for e in prep} == unified._PREPROCESSING_POLICY.keys()
     assert {e.role for e in analysis} == unified._ANALYSIS_POLICY.keys()
-    assert len({e.role for e in prep}) == 21
-    assert len({e.role for e in analysis}) == 16
+    assert len({e.role for e in prep}) == 23
+    assert len({e.role for e in analysis}) == 17
 
 
 @pytest.mark.parametrize(
@@ -699,3 +703,80 @@ def test_report_models_public_frozen_json_safe_and_validated(tmp_path):
 def test_api_programming_misuse_raises(args, kwargs):
     with pytest.raises(ValueError):
         validation.validate_run_artifacts(*args, **kwargs)
+
+
+@pytest.mark.parametrize("scope", ["preprocessing", "analysis"])
+@pytest.mark.parametrize("damage", [None, "schema", "scope", "path", "environment"])
+def test_runtime_metadata_strict_dispatch_and_scope_path(
+    tmp_path, monkeypatch, scope, damage,
+):
+    from test_runtime_metadata import metadata_model
+
+    portable = ("analysis/" if scope == "analysis" else "") + "runtime_metadata.json"
+    payload = metadata_model(scope=scope, metadata_path=portable).to_dict()
+    if damage == "schema":
+        payload["schema_version"] = "future"
+    elif damage == "scope":
+        payload["scope"] = "analysis" if scope == "preprocessing" else "preprocessing"
+    elif damage == "path":
+        payload["metadata_path"] = "nested/runtime_metadata.json"
+    elif damage == "environment":
+        payload["environment"]["python_version"] = 3
+    bundle = make_bundle(tmp_path, scope=scope, outputs=(
+        ("runtime_metadata", json.dumps(payload).encode(), None),
+    ))
+    reader = Mock(wraps=unified.read_runtime_metadata)
+    monkeypatch.setattr(unified, "read_runtime_metadata", reader)
+    with monkeypatch.context() as patch:
+        guard_validation(patch)
+        report = validate(bundle)
+    reader.assert_called_once_with(bundle.paths["output:0"])
+    assert report.unsupported_count == 0
+    assert report.status == ("failed" if damage else "passed")
+    assert report.specialized_records[0].validator == "read_runtime_metadata"
+    assert report.specialized_records[0].status == report.status
+
+
+@pytest.mark.parametrize("boxes", [(), (None,), ((0, 20, 30, 90, 90, 90),),
+                                   ((10, 20, 30, 90, 90, 90), None)])
+def test_pbc_metadata_status_never_fails_technical_validation(tmp_path, boxes):
+    from test_preprocessing_pbc_audit import audit, observe
+
+    payload = audit(observations=tuple(observe(box, index=i)
+                                       for i, box in enumerate(boxes))).to_dict()
+    bundle = make_bundle(
+        tmp_path, outputs=(("pbc_audit", json.dumps(payload).encode(), None),),
+    )
+    report = validate(bundle)
+    assert report.status == "passed" and report.complete
+    assert report.issues == () and report.unsupported_count == 0
+    assert report.specialized_records[0].validator == "read_pbc_audit"
+    assert report.specialized_records[0].status == "passed"
+
+
+@pytest.mark.parametrize("field,value", [
+    ("scientific_pbc_status", "approved"),
+    ("mania_internal_minimum_image_correction_applied", True),
+    ("audit_path", "nested/pbc_audit.json"),
+])
+def test_invalid_pbc_claims_and_path_are_technical_failures(tmp_path, field, value):
+    from test_preprocessing_pbc_audit import audit
+
+    payload = audit().to_dict()
+    payload[field] = value
+    bundle = make_bundle(
+        tmp_path, outputs=(("pbc_audit", json.dumps(payload).encode(), None),),
+    )
+    report = validate(bundle)
+    assert report.status == "failed" and report.specialized_failed_count == 1
+    assert report.issues[0].code == "specialized_validation_failed"
+
+
+def test_analysis_does_not_support_pbc_audit_role(tmp_path):
+    from test_preprocessing_pbc_audit import audit
+
+    bundle = make_bundle(tmp_path, scope="analysis", outputs=(
+        ("pbc_audit", json.dumps(audit().to_dict()).encode(), None),
+    ))
+    report = validate(bundle)
+    assert report.status == "partial" and report.unsupported_count == 1

@@ -15,8 +15,10 @@ See [Stage 25 reproducibility hardening](stage25_reproducibility_hardening.md)
 for the approved current roadmap. Stage 25.A software identity is complete.
 Stage 25.B run provenance and effective sampling is complete. Stage 25.C
 input/output artifact inventory and opt-in checksums is complete. Stage 25.D
-unified technical artifact validation is complete. Stage 25.E PBC audit and
-runtime metadata is next. Stage 25 as a whole remains incomplete.
+unified technical artifact validation is complete. Stage 25.E observation-only PBC audit and runtime metadata is complete.
+Stage 25.F reproducibility documentation and FAIR² bridge is next.
+The scientific PBC protocol remains unresolved; MANIA applies no internal
+minimum-image correction. Stage 25 as a whole remains incomplete.
 FastAPI remains postponed.
 
 ## Purpose

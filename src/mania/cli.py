@@ -30,6 +30,7 @@ from mania.analysis.orchestration import (
 )
 from mania.analysis.run_provenance import (
     ANALYSIS_RUN_PROVENANCE_DIRNAME,
+    ANALYSIS_RUN_PROVENANCE_WORKFLOW,
     AnalysisRunProvenanceBuildError,
     analysis_run_id_from_started_at,
     build_completed_analysis_run_provenance,
@@ -47,12 +48,20 @@ from mania.preprocessing.artifact_inventory import (
     PREPROCESSING_ARTIFACT_INVENTORY_ROLE,
     build_preprocessing_artifact_inventory,
 )
+from mania.preprocessing.pbc_audit import PBC_AUDIT_FILENAME, build_pbc_audit
+from mania.preprocessing.pbc_audit_io import write_pbc_audit
 from mania.preprocessing.run_provenance import (
     PREPROCESSING_RUN_FAILURE_STAGES,
+    PREPROCESSING_RUN_PROVENANCE_WORKFLOW,
     PreprocessingRunFailureStage,
     PreprocessingRunProvenanceBuildError,
     build_completed_preprocessing_run_provenance,
     build_failed_preprocessing_run_provenance,
+)
+from mania.preprocessing.runtime_metadata import (
+    PREPROCESSING_RUNTIME_METADATA_PATH,
+    PREPROCESSING_RUNTIME_METADATA_ROLE,
+    build_preprocessing_runtime_metadata,
 )
 from mania.preprocessing.trajectory_contacts import (
     ContactProgressCallback,
@@ -86,6 +95,13 @@ from mania.preprocessing.trajectory_runtime import (
 )
 from mania.run_provenance import PortableArtifactReference, RunProvenance
 from mania.run_provenance_io import write_run_provenance
+from mania.runtime_metadata import (
+    RUNTIME_METADATA_FILENAME,
+    build_runtime_metadata,
+    build_runtime_performance,
+    collect_runtime_environment,
+)
+from mania.runtime_metadata_io import write_runtime_metadata
 from mania.software_identity import get_software_identity
 from mania.validation import validate_run_artifacts
 from mania.wania import (
@@ -1249,6 +1265,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         computation_kwargs["progress_callback"] = progress_callback
     computation = compute_preprocessing_graph_workflow_rg_contacts(
         runtime_loading,
+        collect_pbc_observations=True,
         **computation_kwargs,
     )
     if not computation.passed:
@@ -1449,6 +1466,68 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     if options.enable_reference_comparison:
         inventory_outputs["reference_comparison"] = reference_comparison
     ended_at_utc = _utc_now()
+    metadata_passed = True
+    technical_references: list[PortableArtifactReference] = []
+    try:
+        runtime_metadata = build_preprocessing_runtime_metadata(
+            run_id=options.run_name,
+            started_at_utc=started_at_utc,
+            ended_at_utc=ended_at_utc,
+            environment=collect_runtime_environment(),
+            computation=computation,
+        )
+    except Exception:
+        print("Runtime metadata build failed: Runtime metadata is unavailable.",
+              file=sys.stderr)
+        metadata_passed = False
+    else:
+        try:
+            runtime_written = write_runtime_metadata(
+                runtime_metadata, plan.output_layout.output_dir,
+                overwrite=options.overwrite,
+            )
+            if not runtime_written.passed:
+                print(f"Runtime metadata write failed: {runtime_written.error}",
+                      file=sys.stderr)
+                metadata_passed = False
+            else:
+                inventory_outputs["runtime_metadata_path"] = runtime_written.output_path
+                technical_references.append(PortableArtifactReference(
+                    role=PREPROCESSING_RUNTIME_METADATA_ROLE,
+                    path=PREPROCESSING_RUNTIME_METADATA_PATH,
+                ))
+        except Exception:
+            print("Runtime metadata write failed: Write operation failed.",
+                  file=sys.stderr)
+            metadata_passed = False
+    try:
+        pbc_audit = build_pbc_audit(
+            run_id=options.run_name,
+            workflow=PREPROCESSING_RUN_PROVENANCE_WORKFLOW,
+            condition_names=computation.condition_names,
+            observations=computation.pbc_observations,
+            audit_path=PBC_AUDIT_FILENAME,
+            external_pbc_preprocessing_status="undeclared",
+        )
+    except Exception:
+        print("PBC audit build failed: PBC metadata is unavailable.", file=sys.stderr)
+        metadata_passed = False
+    else:
+        try:
+            pbc_written = write_pbc_audit(
+                pbc_audit, plan.output_layout.output_dir, overwrite=options.overwrite,
+            )
+            if not pbc_written.passed:
+                print(f"PBC audit write failed: {pbc_written.error}", file=sys.stderr)
+                metadata_passed = False
+            else:
+                inventory_outputs["pbc_audit_path"] = pbc_written.output_path
+                technical_references.append(PortableArtifactReference(
+                    role="pbc_audit", path=PBC_AUDIT_FILENAME,
+                ))
+        except Exception:
+            print("PBC audit write failed: Write operation failed.", file=sys.stderr)
+            metadata_passed = False
     inventory_references, inventory_passed = emit_inventory()
     try:
         provenance = build_completed_preprocessing_run_provenance(
@@ -1461,7 +1540,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             resolved_configuration=_preprocessing_resolved_configuration(args, options),
             artifact_references=_completed_preprocessing_artifact_references(
                 args, options, plan.output_layout
-            ) + inventory_references,
+            ) + tuple(technical_references) + inventory_references,
         )
     except PreprocessingRunProvenanceBuildError as exc:
         print(f"Run provenance build failed: {exc}", file=sys.stderr)
@@ -1482,7 +1561,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     if not write_result.passed:
         print(f"Run provenance write failed: {write_result.error}", file=sys.stderr)
         return 1
-    if not inventory_passed:
+    if not metadata_passed or not inventory_passed:
         return 1
 
     _print_preprocessing_graph_export_progress(
@@ -1639,16 +1718,22 @@ def _run_analyze_command(args: argparse.Namespace) -> int:
 
     def emit_inventory(
         request: AnalyzeRequest, result: AnalyzeRunResult | None,
+        *, runtime_metadata_path: Path | None = None,
     ) -> tuple[tuple[PortableArtifactReference, ...], bool]:
         if resolved_input_paths is None:
             return (), False
         try:
+            metadata_outputs = (
+                {} if runtime_metadata_path is None
+                else {"runtime_metadata_path": runtime_metadata_path}
+            )
             inventory = build_analysis_artifact_inventory(
                 run_id=run_id,
                 request=request,
                 resolved_input_paths=resolved_input_paths,
                 result=result,
                 checksum_mode=args.artifact_checksum_mode,
+                **metadata_outputs,
             )
         except Exception:
             print(
@@ -1737,7 +1822,56 @@ def _run_analyze_command(args: argparse.Namespace) -> int:
         return 1
 
     ended_at_utc = _utc_now()
-    inventory_references, inventory_passed = emit_inventory(request, result)
+    metadata_passed = True
+    runtime_metadata_path: Path | None = None
+    technical_references: tuple[PortableArtifactReference, ...] = ()
+    analysis_runtime_path = f"analysis/{RUNTIME_METADATA_FILENAME}"
+    try:
+        environment = collect_runtime_environment()
+        runtime_metadata = build_runtime_metadata(
+            run_id=run_id,
+            workflow=ANALYSIS_RUN_PROVENANCE_WORKFLOW,
+            scope="analysis",
+            metadata_path=analysis_runtime_path,
+            environment=environment,
+            performance=build_runtime_performance(
+                started_at_utc=started_at_utc,
+                ended_at_utc=ended_at_utc,
+                condition_count=len(request.conditions),
+                sampled_frame_count=None,
+                contact_frame_count=None,
+                contact_observation_count=None,
+            ),
+        )
+    except Exception:
+        print(
+            "Analysis runtime metadata build failed: Runtime metadata is unavailable.",
+            file=sys.stderr,
+        )
+        metadata_passed = False
+    else:
+        try:
+            runtime_written = write_runtime_metadata(
+                runtime_metadata, request.output_root, overwrite=True,
+            )
+            if not runtime_written.passed:
+                print(
+                    f"Analysis runtime metadata write failed: {runtime_written.error}",
+                    file=sys.stderr,
+                )
+                metadata_passed = False
+            else:
+                runtime_metadata_path = runtime_written.output_path
+                technical_references = (PortableArtifactReference(
+                    role="runtime_metadata", path=analysis_runtime_path,
+                ),)
+        except Exception:
+            print("Analysis runtime metadata write failed: Write operation failed.",
+                  file=sys.stderr)
+            metadata_passed = False
+    inventory_references, inventory_passed = emit_inventory(
+        request, result, runtime_metadata_path=runtime_metadata_path,
+    )
     try:
         if command is None:
             raise AnalysisRunProvenanceBuildError("Analysis command is invalid.")
@@ -1758,7 +1892,7 @@ def _run_analyze_command(args: argparse.Namespace) -> int:
             resolved_configuration=_analysis_resolved_configuration(
                 request, args.artifact_checksum_mode,
             ),
-            additional_artifact_references=inventory_references,
+            additional_artifact_references=technical_references + inventory_references,
         )
     except Exception:
         print(
@@ -1769,7 +1903,7 @@ def _run_analyze_command(args: argparse.Namespace) -> int:
         return 1
     if not _write_analysis_provenance(provenance, result.analysis_root, failed=False):
         return 1
-    if not inventory_passed:
+    if not metadata_passed or not inventory_passed:
         return 1
     print(json.dumps(result.to_summary(), sort_keys=True))
     return 0

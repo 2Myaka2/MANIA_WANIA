@@ -173,7 +173,7 @@ def test_readme_documents_completed_stage25b_and_separate_provenance() -> None:
     for record in ("RunMeta", "mania_manifest.json", "analysis/extended_metrics.json"):
         assert record in text
     assert "mania analyze" in text
-    assert re.search(r"Stage 25\.E[^.;]*\bis (?:the )?next\b", text)
+    assert re.search(r"Stage 25\.F[^.;]*\bis (?:the )?next\b", text)
     assert re.search(r"FastAPI\s+(?:remains|is)\s+postponed", text)
     assert re.search(r"Stage 25 as a whole remains incomplete", text)
     assert not re.search(r"Stage 25(?: as a whole)?\s+is complete\b", text)
@@ -227,7 +227,7 @@ def test_readme_documents_completed_stage25c_inventory_and_next_boundary() -> No
     assert "FastAPI remains postponed" in text
 
 
-def test_current_status_documents_completed_stage25d_and_next_stage25e() -> None:
+def test_current_status_documents_completed_stage25e_and_next_stage25f() -> None:
     root = Path(__file__).resolve().parents[1]
     for name in (
         "README.md", "AGENTS.md", "docs/architecture.md", "docs/code_review.md",
@@ -235,7 +235,25 @@ def test_current_status_documents_completed_stage25d_and_next_stage25e() -> None
     ):
         text = " ".join((root / name).read_text(encoding="utf-8").split())
         assert "Stage 25.D unified technical artifact validation is complete" in text
-        assert "Stage 25.E PBC audit and runtime metadata is next" in text
+        assert re.search(r"Stage 25\.E[^.;]*observation-only[^.;]*is complete", text)
+        assert re.search(r"Stage 25\.F[^.;]*is next", text)
+        assert "scientific PBC protocol remains unresolved" in text
+        assert "no internal minimum-image correction" in text
         assert "Stage 25 as a whole remains incomplete" in text
         assert "FastAPI remains postponed" in text
     assert "mania artifacts validate out --scope preprocessing" in readme_text()
+
+
+def test_readme_documents_completed_runtime_pbc_artifacts_and_boundary():
+    text = " ".join(readme_text().split())
+    for path in ("<output>/runtime_metadata.json", "<output>/pbc_audit.json",
+                 "<output>/analysis/runtime_metadata.json"):
+        assert path in text
+    assert "There is no new PBC CLI option" in text
+    assert "`undeclared` automatically" in text
+    assert "scientific PBC status remains `unresolved`" in text
+    assert (
+        "Failed scientific runs retain the existing Stage 25.B/C metadata boundary"
+        in text
+    )
+    assert "docs/pbc_runtime_metadata.md" in text

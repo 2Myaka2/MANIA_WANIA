@@ -159,6 +159,7 @@ def test_default_call_order_preserves_context_and_stdout(
     completed = spies["build_completed_analysis_run_provenance"]
     completed.assert_called_once()
     assert completed.call_args.kwargs["additional_artifact_references"] == (
+        PortableArtifactReference("runtime_metadata", "analysis/runtime_metadata.json"),
         INVENTORY_REFERENCE,
     )
     assert (
@@ -261,12 +262,12 @@ def test_real_inventory_smoke_sizes_hashes_stale_files_and_collision(
     assert payload["workflow"] == "analysis"
     assert payload["inventory_path"] == "analysis/artifact_inventory.json"
     assert payload["input_artifact_count"] == 9
-    assert payload["output_artifact_count"] == 17
-    assert payload["artifact_count"] == 26
+    assert payload["output_artifact_count"] == 18
+    assert payload["artifact_count"] == 27
     assert summary["artifacts"]["count"] == 17
     assert [
         a["path"] for a in payload["artifacts"] if a["direction"] == "output"
-    ] == summary["artifacts"]["written"]
+    ] == summary["artifacts"]["written"] + ["analysis/runtime_metadata.json"]
     for entry, spec in zip(payload["artifacts"], captured_specs, strict=True):
         content = spec.local_path.read_bytes()
         assert entry["byte_size"] == len(content)
@@ -281,7 +282,7 @@ def test_real_inventory_smoke_sizes_hashes_stale_files_and_collision(
     assert any(
         e["artifact_id"] == "output:extended_metrics" for e in payload["artifacts"]
     )
-    assert hashing.call_count == (26 if mode == "sha256" else 0)
+    assert hashing.call_count == (27 if mode == "sha256" else 0)
     assert bool(read_sizes) == (mode == "sha256")
     if mode == "sha256":
         assert [c.args[0] for c in hashing.call_args_list] == [
@@ -446,7 +447,13 @@ def test_inventory_meta_failures_preserve_outputs_and_error_order(
         expected.append(f"{prefix} {provenance_failure} failed: {message}")
     assert captured.err.splitlines() == expected
     builder.assert_called_once()
-    assert builder.call_args.kwargs["additional_artifact_references"] == ()
+    assert builder.call_args.kwargs["additional_artifact_references"] == (
+        () if analysis_failed else (
+            PortableArtifactReference(
+                "runtime_metadata", "analysis/runtime_metadata.json",
+            ),
+        )
+    )
     if provenance_failure is None:
         provenance = json.loads((root / "run_provenance.json").read_text())
         assert provenance["status"] == ("failed" if analysis_failed else "completed")

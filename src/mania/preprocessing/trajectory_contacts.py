@@ -15,6 +15,10 @@ from mania.preprocessing import (
     trajectory_manifest_loader,
     trajectory_runtime,
 )
+from mania.preprocessing.pbc_audit import (
+    PbcObservationCallback,
+    observe_pbc_timestep_dimensions,
+)
 
 InteractionAccumulator: TypeAlias = (
     trajectory_contact_accumulator.InteractionAccumulator
@@ -1129,6 +1133,7 @@ def compute_condition_contacts(
     computation_limits: PreprocessingContactComputationLimits | None = None,
     frame_sampling: PreprocessingFrameSamplingOptions | None = None,
     progress_callback: ContactProgressCallback | None = None,
+    pbc_observation_callback: PbcObservationCallback | None = None,
 ) -> PreprocessingConditionContactsResult:
     """Compute per-frame contacts from one already loaded condition."""
     selected_options = options or PreprocessingContactDetectionOptions()
@@ -1310,6 +1315,13 @@ def compute_condition_contacts(
                     ),
                 )
             frame_results.append(frame_result)
+            if pbc_observation_callback is not None:
+                pbc_observation_callback(observe_pbc_timestep_dimensions(
+                    condition=condition_load_result.condition_name,
+                    frame_index=frame_index,
+                    time_ps=frame_result.time_ps,
+                    timestep=timestep,
+                ))
 
     if not frame_results and not condition_issues:
         condition_issues.append(
@@ -1365,6 +1377,7 @@ def _aggregate_manifest_contacts(
     computation_limits: PreprocessingContactComputationLimits | None = None,
     frame_sampling: PreprocessingFrameSamplingOptions | None = None,
     progress_callback: ContactProgressCallback | None = None,
+    pbc_observation_callback: PbcObservationCallback | None = None,
 ) -> PreprocessingManifestContactsResult:
     """Compose condition contact results across one manifest load result."""
     selected_options = options or PreprocessingContactDetectionOptions()
@@ -1380,6 +1393,8 @@ def _aggregate_manifest_contacts(
                 contact_kwargs["frame_sampling"] = selected_frame_sampling
             if progress_callback is not None:
                 contact_kwargs["progress_callback"] = progress_callback
+            if pbc_observation_callback is not None:
+                contact_kwargs["pbc_observation_callback"] = pbc_observation_callback
             contact_result = compute_condition_contacts(
                 condition_load_result,
                 **contact_kwargs,

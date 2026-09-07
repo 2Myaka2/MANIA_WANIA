@@ -567,8 +567,10 @@ def test_module_has_only_standard_library_imports_and_no_transformation_api(
         "PbcConditionAudit",
         "PbcFrameObservation",
         "PbcMetadataStatus",
+        "PbcObservationCallback",
         "build_pbc_audit",
         "observe_pbc_frame_dimensions",
+        "observe_pbc_timestep_dimensions",
         "summarize_pbc_condition_observations",
     }
     for name in (

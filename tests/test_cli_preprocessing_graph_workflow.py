@@ -8,6 +8,7 @@ from typing import Any
 from unittest.mock import Mock
 
 import pytest
+from test_runtime_metadata import environment, metadata_model
 
 import mania.cli as cli
 import mania.software_identity as identity_module
@@ -20,6 +21,8 @@ from mania.preprocessing import (
     PreprocessingContactProgressEvent,
     PreprocessingFrameSamplingOptions,
 )
+from mania.preprocessing.pbc_audit import build_pbc_audit
+from mania.preprocessing.pbc_audit_io import PbcAuditWriteResult
 from mania.preprocessing.run_provenance import PreprocessingRunProvenanceBuildError
 from mania.preprocessing.trajectory_graph_workflow import (
     PreprocessingGraphWorkflowOutputLayout,
@@ -27,6 +30,7 @@ from mania.preprocessing.trajectory_graph_workflow import (
 )
 from mania.run_provenance import RunProvenance
 from mania.run_provenance_io import RunProvenanceWriteResult, write_run_provenance
+from mania.runtime_metadata_io import RuntimeMetadataWriteResult
 from mania.software_identity import SoftwareIdentity
 
 FIXED_IDENTITY = SoftwareIdentity(
@@ -182,6 +186,8 @@ class FakeResult:
 
 @dataclass(frozen=True)
 class FakeComputationResult(FakeResult):
+    condition_names: tuple[str, ...] = ("normal", "tumor")
+    pbc_observations: tuple = ()
     include_rg: bool = True
     include_contacts: bool = True
     frame_sampling: dict[str, object] | None = None
@@ -409,8 +415,10 @@ def install_fake_stage15(
             PreprocessingContactComputationLimits | None
         ) = None,
         progress_callback: ContactProgressCallback | None = None,
+        collect_pbc_observations: bool = False,
     ) -> FakeComputationResult:
         calls.append("compute_preprocessing_graph_workflow_rg_contacts")
+        received["collect_pbc_observations"] = collect_pbc_observations
         received["runtime_loading"] = runtime_loading
         received["include_rg"] = include_rg
         received["include_contacts"] = include_contacts
@@ -606,6 +614,15 @@ def install_fake_stage15(
         "compare_preprocessing_graph_workflow_reference_artifacts",
         fake_reference,
     )
+    received["environment"] = Mock(return_value=environment())
+    received["runtime_builder"] = Mock(return_value=metadata_model())
+    received["runtime_writer"] = Mock(side_effect=lambda metadata, root, **kw: (
+        RuntimeMetadataWriteResult(Path(root) / "runtime_metadata.json", True)
+    ))
+    received["pbc_builder"] = Mock(wraps=build_pbc_audit)
+    received["pbc_writer"] = Mock(side_effect=lambda audit, root, **kw: (
+        PbcAuditWriteResult(Path(root) / "pbc_audit.json", True)
+    ))
     received["clock"] = Mock(side_effect=timestamps)
     received["inventory_builder"] = Mock(return_value=ArtifactInventory(
         "fixed", "preprocessing_graph_export", "artifact_inventory.json", "none", ()
@@ -628,6 +645,11 @@ def install_fake_stage15(
         )
     )
     for name, key in (
+        ("collect_runtime_environment", "environment"),
+        ("build_preprocessing_runtime_metadata", "runtime_builder"),
+        ("write_runtime_metadata", "runtime_writer"),
+        ("build_pbc_audit", "pbc_builder"),
+        ("write_pbc_audit", "pbc_writer"),
         ("build_preprocessing_artifact_inventory", "inventory_builder"),
         ("write_artifact_inventory", "inventory_writer"),
         ("_utc_now", "clock"),
@@ -2167,6 +2189,8 @@ def test_completed_artifact_references_follow_successful_exports(
         "graph_edges",
         "graph_json",
         *roles,
+        "runtime_metadata",
+        "pbc_audit",
         "artifact_inventory",
     )
     expected = {
@@ -2179,6 +2203,8 @@ def test_completed_artifact_references_follow_successful_exports(
         "contacts_perframe": "contacts/contacts_perframe.csv",
         "graph_diagnostics_report": "reports/graph_diagnostics_report.json",
         "reference_comparison_report": "reports/graph_reference_comparison.json",
+        "runtime_metadata": "runtime_metadata.json",
+        "pbc_audit": "pbc_audit.json",
         "artifact_inventory": "artifact_inventory.json",
     }
     assert [item.to_dict() for item in references] == [

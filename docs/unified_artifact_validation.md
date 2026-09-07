@@ -4,9 +4,9 @@
 
 Stage 25.D.1 integrity/reference readers and API are implemented. Stage 25.D.2
 existing-validator coordination, unified Python API, and CLI are implemented.
-Stage 25.D is complete. Stage 25.E PBC audit and runtime metadata is next;
-Stages 25.F/G remain planned. Stage 25 as a whole remains incomplete. FastAPI
-remains postponed.
+Stage 25.D is complete. Stage 25.E observation-only PBC audit and runtime metadata
+is complete. Stage 25.F is next; Stages 25.F/G remain planned. Stage 25 as a whole
+remains incomplete. FastAPI remains postponed.
 
 ## Purpose and boundary
 
@@ -83,9 +83,10 @@ require-complete, scientific, publication, or skip-validator option.
 ## Existing-validator coordination and role audit
 
 D.2 calls `validate_run_artifact_integrity` exactly once, then rereads the inventory
-with `read_artifact_inventory`. Metadata artifacts use only D.1 and never receive
-synthetic inventory entries. An unreadable inventory or changed artifact identities
-prevents dispatch. Missing/nonregular files, size mismatch, declared checksum
+with `read_artifact_inventory`. Inventory and provenance use only D.1 and never
+receive synthetic inventory entries. E.2 runtime/PBC artifacts have explicit inventory
+entries and strict reader dispatch. An unreadable inventory or changed artifact
+identities prevents dispatch. Missing/nonregular files, size mismatch, declared checksum
 mismatch, and checksum read failures produce `skipped_integrity_failure` records
 without duplicate specialized errors. Matching size permits validation in `none`
 mode. In `sha256` mode the declared checksum must also match first.
@@ -104,6 +105,8 @@ using synthetic retained objects and requires exact policy coverage.
 | Preprocessing `contacts_perframe` | `validate_contacts_perframe_csv` (older optional export contract) |
 | Both scopes `residue_table`, `protein_contact_edges`; preprocessing `protein_contacts_perframe`; analysis `contacts_perframe` | `validate_csv_artifact_schema` with Stage 20 `RESIDUE_TABLE_COLUMNS`, `PROTEIN_CONTACT_EDGE_COLUMNS`, `PROTEIN_CONTACT_PERFRAME_COLUMNS` respectively; `validate_condition_column` when condition-scoped |
 | Analysis `analysis_centrality`, `analysis_communities`, `analysis_region_enrichment`, `analysis_temporal_rin`, `analysis_conformation_pca`, `analysis_conformation_labels` | `validate_csv_artifact_schema` with the corresponding exported `STATIC_RIN_METRICS_COLUMNS`, `STATIC_RIN_COMMUNITIES_COLUMNS`, `STATIC_RIN_REGION_ENRICHMENT_COLUMNS`, `TEMPORAL_RIN_METRICS_COLUMNS`, `CONFORMATION_PCA_COLUMNS`, `CONFORMATION_LABELS_COLUMNS`; `validate_condition_column` when condition-scoped |
+| Both scopes `runtime_metadata` | `read_runtime_metadata`, with scope and canonical metadata path checks |
+| Preprocessing `pbc_audit` | `read_pbc_audit`, requiring `pbc_audit.json` |
 | Analysis `analysis_comparison`, `analysis_stats` | `validate_csv_artifact_schema` with `STATIC_RIN_COMPARISON_COLUMNS`, `STATIC_RIN_STATS_COLUMNS`; no forced per-condition check |
 
 Stage 20 has no matching standalone public row validator; its existing exported
@@ -128,8 +131,21 @@ called. Source MD files remain integrity-only even when mapped. Unmapped known
 raw inputs are `not_applicable` here and partial in D.1. Unmapped recognized
 analysis tables are `not_resolved` here. Unknown future roles are `unsupported`,
 with a warning and partial status if no other error exists. Current coverage is
-12 specialized + 9 integrity-only preprocessing roles, and 12 specialized + 4
+14 specialized + 9 integrity-only preprocessing roles, and 13 specialized + 4
 integrity-only analysis roles; zero unsupported current roles.
+
+Runtime metadata reconstructs the recorded environment and performance through
+its strict reader. Preprocessing requires scope `preprocessing` and path
+`runtime_metadata.json`; analysis requires scope `analysis` and path
+`analysis/runtime_metadata.json`. Validation does not compare recorded versions
+to the current machine or recollect the original environment.
+
+PBC audits use a strict reader that rejects claims of internal minimum-image
+correction or any scientific status other than `unresolved`. PBC audit scientific
+status `unresolved` can still be technically valid: unavailable, partial and invalid
+box metadata are observations, not scientific failures or warnings. Technical
+validation does not approve the unresolved scientific PBC protocol. The PBC role
+is supported only for preprocessing. No coordinates or trajectory frames are read.
 
 Graph CSV pairs are selected only from inventory roles, with matching direction
 and condition. Exactly one nodes and one edges entry must be declared in each
@@ -342,5 +358,7 @@ SHA256 exactly when declared and introduces no checksum flags. Raw input invento
 is lineage only, not publication membership. Existing readers, schemas, scientific
 validators, calculations, and scientific artifacts remain unchanged.
 
-Stage 25.D is complete. Stage 25.E PBC audit and runtime metadata is next;
-Stage 25 overall remains incomplete.
+Stage 25.D and Stage 25.E are complete. Stage 25.F reproducibility documentation
+and FAIR² bridge is next; Stage 25 overall remains incomplete. The scientific
+PBC protocol remains unresolved, no internal minimum-image correction is applied,
+and FastAPI remains postponed.

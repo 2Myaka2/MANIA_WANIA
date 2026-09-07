@@ -14,6 +14,7 @@ from mania.preprocessing.input_manifest import PreprocessingInputManifest
 from mania.preprocessing.path_validation import (
     PreprocessingPathValidationReport,
 )
+from mania.preprocessing.pbc_audit import PbcFrameObservation, PbcObservationCallback
 from mania.preprocessing.trajectory_frame_sampling import (
     PreprocessingFrameSamplingOptions,
 )
@@ -134,6 +135,7 @@ class _ManifestRgComputer(Protocol):
         manifest_result: object,
         *,
         frame_sampling: object | None = None,
+        pbc_observation_callback: PbcObservationCallback | None = None,
     ) -> object: ...
 
 
@@ -146,6 +148,7 @@ class _ManifestContactsComputer(Protocol):
         computation_limits: object | None = None,
         frame_sampling: object | None = None,
         progress_callback: object | None = None,
+        pbc_observation_callback: PbcObservationCallback | None = None,
     ) -> object: ...
 
 
@@ -849,6 +852,7 @@ class PreprocessingGraphWorkflowComputationResult:
     rg_result: object | None = None
     contacts_result: object | None = None
     issues: tuple[PreprocessingGraphWorkflowComputationIssue, ...] = ()
+    pbc_observations: tuple[PbcFrameObservation, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(
@@ -880,6 +884,10 @@ class PreprocessingGraphWorkflowComputationResult:
             self.contact_computation_limits,
             "contact_computation_limits",
         )
+        if not isinstance(self.pbc_observations, tuple) or any(
+            type(item) is not PbcFrameObservation for item in self.pbc_observations
+        ):
+            raise ValueError("pbc_observations must be a tuple of PbcFrameObservation")
         if not isinstance(self.issues, tuple):
             raise ValueError(
                 "issues must be a tuple of "
@@ -2160,6 +2168,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
     contact_computation_limits: PreprocessingContactComputationLimits | None = None,
     frame_sampling: PreprocessingFrameSamplingOptions | None = None,
     progress_callback: ContactProgressCallback | None = None,
+    collect_pbc_observations: bool = False,
 ) -> PreprocessingGraphWorkflowComputationResult:
     """Orchestrate accepted manifest-level Rg and contacts computations."""
     if not isinstance(
@@ -2170,6 +2179,8 @@ def compute_preprocessing_graph_workflow_rg_contacts(
             "runtime_loading must be "
             "PreprocessingGraphWorkflowRuntimeLoadingResult"
         )
+    _require_bool(collect_pbc_observations, "collect_pbc_observations")
+    pbc_observations: list[PbcFrameObservation] = []
     _require_bool(include_rg, "include_rg")
     _require_bool(include_contacts, "include_contacts")
     selected_frame_sampling = _frame_sampling_options(frame_sampling)
@@ -2266,13 +2277,12 @@ def compute_preprocessing_graph_workflow_rg_contacts(
 
     if include_rg:
         try:
-            if frame_sampling is None:
-                rg_result = _manifest_rg_computer()(runtime_result)
-            else:
-                rg_result = _manifest_rg_computer()(
-                    runtime_result,
-                    frame_sampling=selected_frame_sampling,
-                )
+            rg_kwargs: dict[str, Any] = {}
+            if frame_sampling is not None:
+                rg_kwargs["frame_sampling"] = selected_frame_sampling
+            if collect_pbc_observations:
+                rg_kwargs["pbc_observation_callback"] = pbc_observations.append
+            rg_result = _manifest_rg_computer()(runtime_result, **rg_kwargs)
         except Exception as exc:
             issues.append(
                 _computation_exception_issue(
@@ -2293,7 +2303,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
 
     if include_contacts:
         try:
-            contact_kwargs: dict[str, object] = {}
+            contact_kwargs: dict[str, Any] = {}
             if not _contact_detection_options_are_default(
                 selected_contact_options
             ):
@@ -2306,6 +2316,8 @@ def compute_preprocessing_graph_workflow_rg_contacts(
                 contact_kwargs["frame_sampling"] = selected_frame_sampling
             if progress_callback is not None:
                 contact_kwargs["progress_callback"] = progress_callback
+            if collect_pbc_observations and not include_rg:
+                contact_kwargs["pbc_observation_callback"] = pbc_observations.append
             contacts_result = _manifest_contacts_computer()(
                 runtime_result,
                 **contact_kwargs,
@@ -2338,6 +2350,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
         contact_computation_limits=selected_contact_limits,
         rg_result=rg_result,
         contacts_result=contacts_result,
+        pbc_observations=tuple(pbc_observations),
         issues=tuple(issues),
     )
 

@@ -6,7 +6,8 @@ Stage 25.C.1 is implemented: immutable models, an explicit file-specification
 builder, streaming opt-in SHA256, and an atomic JSON writer are available through
 the Python API. Stage 25.C.2 preprocessing integration is implemented.
 Stage 25.C.3 analysis integration is implemented and Stage 25.C is complete.
-Stage 25.D unified artifact validation is next; Stage 25 overall remains incomplete.
+Stage 25.D unified artifact validation and Stage 25.E observation-only PBC/runtime
+metadata are complete. Stage 25.F is next; Stage 25 overall remains incomplete.
 
 Artifact inventory is an additive per-run registry connecting declared inputs,
 one MANIA run, and known outputs. It records file identity and integrity metadata
@@ -372,6 +373,33 @@ only in this additive contract.
 
 Deferred work:
 
-- unified publication validation in Stage 25.D;
-- PBC audit in Stage 25.E;
-- FAIR² software/dataset bridge in Stage 25.F.
+- reproducibility documentation and FAIR² software/dataset bridge in Stage 25.F;
+- publication acceptance requiring complete technical validation in Stage 25.G.
+
+## Stage 25.E.2 — completed-run technical artifacts
+
+Completed preprocessing appends these explicit known output paths after existing
+scientific, diagnostic and reference outputs:
+
+| Artifact ID | Role | Portable path | Format | Condition |
+| --- | --- | --- | --- | --- |
+| `output:runtime_metadata` | `runtime_metadata` | `runtime_metadata.json` | `json` | `null` |
+| `output:pbc_audit` | `pbc_audit` | `pbc_audit.json` | `json` | `null` |
+
+Completed analysis appends `output:runtime_metadata`, role `runtime_metadata`,
+portable path `analysis/runtime_metadata.json`, format `json`, condition `null`,
+after condition outputs, comparison, stats and extended metrics. Analysis emits
+no PBC audit. Existing adapter calls without supplied technical paths are unchanged.
+
+The CLI supplies exact local paths only after successful technical writes, never
+from directory discovery or stale-file existence. These artifacts participate in
+the existing `--artifact-checksum-mode {none,sha256}`: exact sizes with no checksum
+content reads in `none`; streamed hashes of already-written JSON in `sha256`.
+They do not enter scientific artifact counts, manifests or scientific schemas.
+
+The completed-run order is runtime metadata, preprocessing PBC audit, inventory,
+then provenance. Inventory still excludes itself and run provenance and has no
+self-hash. Technical failures retain scientific outputs and attempt inventory with
+only successful technical artifacts, followed by completed provenance; the final
+exit is 1 and the successful summary is suppressed. Failed scientific workflows
+retain their Stage 25.B/C matrix above and gain no automatic E.2 artifacts.
