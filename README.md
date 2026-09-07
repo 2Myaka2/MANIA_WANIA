@@ -16,9 +16,24 @@ reference artifact paths.
 Stage 25 is reproducibility and publication hardening. Stage 25.A software
 identity is complete. Stage 25.B run provenance and effective sampling is
 complete. Stage 25.C input/output artifact inventory and opt-in checksums is
-complete. Stage 25.D unified artifact validation is next. Stage 25 as a whole
+complete. Stage 25.D unified technical artifact validation is complete. Stage
+25.E PBC audit and runtime metadata is next. Stage 25 as a whole
 remains incomplete. FastAPI remains postponed.
 See the [Stage 25 roadmap](docs/stage25_reproducibility_hardening.md).
+
+Stage 25.D.1 integrity/reference checks and D.2 existing-validator coordination
+are implemented through `validate_run_artifacts` and the technical validation CLI:
+
+```bash
+mania artifacts validate out --scope preprocessing
+```
+
+Scope is explicit (`preprocessing` or `analysis`). Optional repeated
+`--input-artifact-path ARTIFACT_ID=PATH` mappings resolve external inputs; their
+paths are never guessed. `passed` and `partial` return exit 0; `failed` returns
+exit 1. A partial report has no technical errors but incomplete validation.
+Technical success does not certify scientific correctness or publication readiness.
+See [unified artifact validation](docs/unified_artifact_validation.md).
 
 MANIA has one package-version source, `src/mania/_version.py`, shared by
 `mania.__version__` and dynamic package metadata. `mania --version` remains the
@@ -1300,8 +1315,9 @@ The planning-level scientific roadmap is:
   capacity correction.**
 - **Stage 25 — Reproducibility and publication hardening:** Stage 25.A software
   identity, Stage 25.B run provenance, and Stage 25.C artifact inventory are
-  complete. Stage 25.D unified artifact validation is next; Stages 25.D–25.G
-  remain planned, and Stage 25 as a whole remains incomplete.
+  complete. Stage 25.D unified technical artifact validation is complete.
+  Stage 25.E PBC audit and runtime metadata is next; Stages 25.E–25.G remain
+  planned, and Stage 25 as a whole remains incomplete.
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
 Stages 20–23 are now complete within their accepted boundaries. Stage 24.A

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NoReturn, cast
@@ -86,6 +87,7 @@ from mania.preprocessing.trajectory_runtime import (
 from mania.run_provenance import PortableArtifactReference, RunProvenance
 from mania.run_provenance_io import write_run_provenance
 from mania.software_identity import get_software_identity
+from mania.validation import validate_run_artifacts
 from mania.wania import (
     WaniaGraphPayloadArtifactPaths,
     WaniaGraphPayloadRunMetadata,
@@ -138,6 +140,28 @@ def _exit_with_error(message: str) -> NoReturn:
     raise SystemExit(message)
 
 
+class _InputArtifactPathAction(argparse.Action):
+    """Parse explicit input mappings without observing the filesystem."""
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
+    ) -> None:
+        if not isinstance(values, str):
+            raise argparse.ArgumentError(self, "expected ARTIFACT_ID=PATH")
+        artifact_id, separator, path = values.partition("=")
+        if not separator or not artifact_id or not path:
+            raise argparse.ArgumentError(self, "expected non-empty ARTIFACT_ID=PATH")
+        mappings = dict(getattr(namespace, self.dest, None) or {})
+        if artifact_id in mappings:
+            raise argparse.ArgumentError(self, "duplicate input artifact ID")
+        mappings[artifact_id] = Path(path)
+        setattr(namespace, self.dest, mappings)
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the MANIA command-line parser."""
     parser = argparse.ArgumentParser(
@@ -151,6 +175,34 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     subparsers = parser.add_subparsers(dest="command")
+
+    artifacts_parser = subparsers.add_parser(
+        "artifacts",
+        help="Technical artifact/integrity validation: mania artifacts validate.",
+    )
+    artifact_commands = artifacts_parser.add_subparsers(
+        dest="artifacts_command", required=True,
+    )
+    artifact_validate = artifact_commands.add_parser(
+        "validate",
+        help="Validate declared run artifacts with an explicit scope.",
+        description=(
+            "Technical artifact/integrity validation with explicit --scope. "
+            "External input mappings are optional; unresolved external inputs may "
+            "yield partial (exit 0). This command does not certify scientific "
+            "correctness or publication readiness."
+        ),
+    )
+    artifact_validate.add_argument("run_root", type=Path, metavar="RUN_ROOT")
+    artifact_validate.add_argument(
+        "--scope", choices=("preprocessing", "analysis"), required=True,
+        help="Explicit metadata scope; never auto-detected.",
+    )
+    artifact_validate.add_argument(
+        "--input-artifact-path", action=_InputArtifactPathAction,
+        dest="input_artifact_paths", metavar="ARTIFACT_ID=PATH",
+        help="Optional external input mapping; repeat for distinct artifact IDs.",
+    )
 
     validate_parser = subparsers.add_parser(
         "validate-config",
@@ -1727,6 +1779,24 @@ def main() -> None:
     """Run the MANIA command-line interface."""
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.command == "artifacts" and args.artifacts_command == "validate":
+        try:
+            report = validate_run_artifacts(
+                args.run_root, scope=args.scope,
+                input_artifact_paths=args.input_artifact_paths,
+            )
+            payload = json.dumps(report.to_dict(), sort_keys=True)
+        except Exception:
+            print(
+                "Artifact validation failed: unexpected internal error.",
+                file=sys.stderr,
+            )
+            raise SystemExit(1) from None
+        print(payload)
+        if report.status == "failed":
+            raise SystemExit(1)
+        return
 
     if args.command == "validate-config":
         try:

@@ -19,7 +19,8 @@ including preprocessing and analysis. Stage 25 is approved as reproducibility
 and publication hardening; Stage 25.A software identity is complete.
 Stage 25.B run provenance and effective sampling is complete. Stage 25.C
 input/output artifact inventory and opt-in checksums is complete. Stage 25.D
-unified artifact validation is next. Stage 25 as a whole remains incomplete.
+unified technical artifact validation is complete. Stage 25.E PBC audit and
+runtime metadata is next. Stage 25 as a whole remains incomplete.
 FastAPI remains postponed.
 
 Preserve accepted scientific semantics and established Stage 20–24 artifact

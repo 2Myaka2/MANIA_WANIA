@@ -15,8 +15,9 @@ accepted Stage 24.G. [Stage 25 reproducibility
 hardening](stage25_reproducibility_hardening.md) contains the approved Stage 25
 roadmap; Stage 25.A software identity is complete. Stage 25.B run provenance
 and effective sampling is complete. Stage 25.C input/output artifact inventory
-and opt-in checksums is complete. Stage 25.D unified artifact validation is
-next. Stage 25 as a whole remains incomplete. FastAPI remains postponed.
+and opt-in checksums is complete. Stage 25.D unified technical artifact validation is
+complete. Stage 25.E PBC audit and runtime metadata is next. Stage 25 as a whole
+remains incomplete. FastAPI remains postponed.
 
 ## Project Scope
 

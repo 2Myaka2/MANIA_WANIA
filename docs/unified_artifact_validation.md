@@ -1,12 +1,12 @@
-# Unified artifact validation — Stage 25.D.1
+# Unified technical artifact validation — Stage 25.D
 
 ## Status
 
-Stage 25.D.1 is implemented as a Python integrity/reference API with strict disk
-readers for the existing provenance and inventory contracts. Specialized-validator
-coordination and the final unified CLI/API remain Stage 25.D.2. There is no
-`mania artifacts validate` command yet. Stage 25.D and Stage 25 overall remain
-incomplete; Stage 25.E–G remain planned.
+Stage 25.D.1 integrity/reference readers and API are implemented. Stage 25.D.2
+existing-validator coordination, unified Python API, and CLI are implemented.
+Stage 25.D is complete. Stage 25.E PBC audit and runtime metadata is next;
+Stages 25.F/G remain planned. Stage 25 as a whole remains incomplete. FastAPI
+remains postponed.
 
 ## Purpose and boundary
 
@@ -27,7 +27,149 @@ can have technically consistent metadata and retained artifacts that pass D.1.
 D.1 neither calls nor duplicates existing CSV, graph, manifest, Stage 20, Rg,
 contacts, diagnostics, PCA, clustering, or temporal RIN validators. Scientific
 content can pass these integrity checks even when it would fail a specialized
-validator. D.2 will coordinate the existing validators.
+validator. D.2 coordinates the existing validators after D.1 succeeds for each
+applicable artifact, as described below.
+
+## Unified Python API
+
+```python
+from pathlib import Path
+from mania.validation import validate_run_artifacts
+
+report = validate_run_artifacts(
+    Path("out"),
+    scope="preprocessing",
+)
+payload = report.to_dict()
+```
+
+The scope is required and selects the same exact metadata layouts as D.1 below.
+`run_root` must be an exact native `Path`. Optional `input_artifact_paths` is an
+explicit artifact-ID to local `Path` mapping passed unchanged to D.1. No local
+input path is guessed, even when a file exists under the portable inventory path.
+Outputs resolve only as `run_root / entry.path`. Validation is read-only and
+uses no directory discovery, clock, Git, network, or scientific runtime.
+
+| Unified status | Meaning | CLI exit |
+| --- | --- | --- |
+| `passed` | Integrity passed and every applicable specialized check passed. | 0 |
+| `partial` | No technical errors, but unresolved inputs or unknown roles leave validation incomplete. | 0 |
+| `failed` | Integrity, an existing specialized check, or a coordinator contract check failed. | 1 |
+
+`report.passed` means no technical validation errors and is true for partial
+reports too. `report.complete` is true **only** for unified status `passed`.
+Use `report.status` to distinguish all three outcomes. The embedded D.1 report
+retains its original `complete` semantics described under integrity reports below.
+
+## CLI
+
+```bash
+mania artifacts validate out --scope preprocessing
+mania artifacts validate out --scope preprocessing \
+  --input-artifact-path \
+  input:condition:0001:trajectory:0001=source/trajectory.xtc
+mania artifacts validate out --scope analysis
+```
+
+Repeat `--input-artifact-path ARTIFACT_ID=PATH` for multiple distinct input IDs.
+The parser splits at the first `=`; both sides must be non-empty. Duplicate IDs
+and syntax errors return argparse exit 2. Unknown input IDs are validation errors.
+Ordinary validation prints exactly one JSON line, with sorted keys, to stdout
+and nothing to stderr. Partial returns exit 0; failed returns exit 1. Unexpected
+internal failures return exit 1 with `Artifact validation failed:` on stderr,
+without exception details or traceback. There is no auto-scope, checksum, strict,
+require-complete, scientific, publication, or skip-validator option.
+
+## Existing-validator coordination and role audit
+
+D.2 calls `validate_run_artifact_integrity` exactly once, then rereads the inventory
+with `read_artifact_inventory`. Metadata artifacts use only D.1 and never receive
+synthetic inventory entries. An unreadable inventory or changed artifact identities
+prevents dispatch. Missing/nonregular files, size mismatch, declared checksum
+mismatch, and checksum read failures produce `skipped_integrity_failure` records
+without duplicate specialized errors. Matching size permits validation in `none`
+mode. In `sha256` mode the declared checksum must also match first.
+
+Dispatch uses the following explicit roles and accepted contracts, with static
+imports and no metadata-selected callables, plugins, or file-extension discovery.
+The regression test derives the emitted roles from both current inventory adapters
+using synthetic retained objects and requires exact policy coverage.
+
+| Scope and roles | Existing delegated validators |
+| --- | --- |
+| Preprocessing `graph_nodes` + `graph_edges`; `reference_nodes` + `reference_edges` | `validate_preprocessing_graph_csvs`, once per pair |
+| Preprocessing `graph_json`, `reference_graph`; analysis `analysis_graph` | `validate_graph_json`, with `expected_condition` when supplied |
+| Preprocessing `rg_timeseries` | `validate_rg_timeseries_csv` |
+| Preprocessing `contact_edges` | `validate_contact_edges_csv` |
+| Preprocessing `contacts_perframe` | `validate_contacts_perframe_csv` (older optional export contract) |
+| Both scopes `residue_table`, `protein_contact_edges`; preprocessing `protein_contacts_perframe`; analysis `contacts_perframe` | `validate_csv_artifact_schema` with Stage 20 `RESIDUE_TABLE_COLUMNS`, `PROTEIN_CONTACT_EDGE_COLUMNS`, `PROTEIN_CONTACT_PERFRAME_COLUMNS` respectively; `validate_condition_column` when condition-scoped |
+| Analysis `analysis_centrality`, `analysis_communities`, `analysis_region_enrichment`, `analysis_temporal_rin`, `analysis_conformation_pca`, `analysis_conformation_labels` | `validate_csv_artifact_schema` with the corresponding exported `STATIC_RIN_METRICS_COLUMNS`, `STATIC_RIN_COMMUNITIES_COLUMNS`, `STATIC_RIN_REGION_ENRICHMENT_COLUMNS`, `TEMPORAL_RIN_METRICS_COLUMNS`, `CONFORMATION_PCA_COLUMNS`, `CONFORMATION_LABELS_COLUMNS`; `validate_condition_column` when condition-scoped |
+| Analysis `analysis_comparison`, `analysis_stats` | `validate_csv_artifact_schema` with `STATIC_RIN_COMPARISON_COLUMNS`, `STATIC_RIN_STATS_COLUMNS`; no forced per-condition check |
+
+Stage 20 has no matching standalone public row validator; its existing exported
+column constants are used by the generic validator. The older optional contact
+validator does **not** match Stage 20 per-frame tables. Analysis producers have
+writer/in-memory checks, not additional reusable on-disk scientific validators.
+D.2 does not copy their assertions, parse CSV/graph content itself, or add
+centrality/community/PCA/clustering/temporal calculations or row semantics.
+
+The following roles are explicitly integrity-only (`not_applicable`):
+
+- Preprocessing: `input_manifest`, `condition_topology`, `condition_trajectory`,
+  `condition_reference_structure`, `edge_semantics`, `residue_library`,
+  `preprocessing_manifest`, `graph_diagnostics_report`, `reference_comparison_report`.
+- Analysis: `edge_semantics`, `residue_library`, `preprocessing_manifest`,
+  `analysis_manifest` (`analysis/extended_metrics.json`).
+
+These source, manifest, and report types have no matching public specialized
+validator in this scope. `validate_global_features` is a legacy manifest contract
+that does not match `mania_manifest.json` or `extended_metrics.json`; it is not
+called. Source MD files remain integrity-only even when mapped. Unmapped known
+raw inputs are `not_applicable` here and partial in D.1. Unmapped recognized
+analysis tables are `not_resolved` here. Unknown future roles are `unsupported`,
+with a warning and partial status if no other error exists. Current coverage is
+12 specialized + 9 integrity-only preprocessing roles, and 12 specialized + 4
+integrity-only analysis roles; zero unsupported current roles.
+
+Graph CSV pairs are selected only from inventory roles, with matching direction
+and condition. Exactly one nodes and one edges entry must be declared in each
+participating group; missing or ambiguous membership is a coordinator contract
+error. Both files must pass integrity before the single pair invocation. If a
+member fails integrity, resolved members are skipped; unmapped members retain
+`not_resolved`. If only input resolution blocks the pair, both records are
+`not_resolved`. Invalid membership also preserves each member's integrity gate.
+The validator owns pair consistency, with no duplicated parsing.
+
+## Unified report records
+
+Frozen `SpecializedArtifactValidationRecord`, `UnifiedArtifactValidationIssue`,
+and `UnifiedArtifactValidationReport` expose JSON-safe `to_dict()` results.
+Schema is `mania.unified_artifact_validation.v0.1`; kind is
+`mania_unified_artifact_validation`. The report contains the unchanged integrity
+report, portable artifact/check records, and additional coordinator issues.
+Root error/warning counts include D.1 plus coordinator issues; root `issues`
+contains only the additional issues, avoiding copies of the embedded diagnostics.
+
+Records follow inventory order. Generic schema and condition checks have separate
+records naming their public functions, in that order; the condition check runs
+only after schema success. Each grouped check supplies one record per member.
+Thus specialized validation/passed/failed counts count artifact/check records,
+including both pair members, rather than function invocations. Counts exclude
+not-applicable, unresolved, skipped, and unsupported records. Unsupported count
+counts unknown-role records.
+
+Exactly one normalized error issue is added per failed invocation, including a
+failed pair invocation. Its message is `Existing specialized artifact validation
+failed.` The issue identifies the artifact, portable path, condition, and validator;
+the record also names the role. `issue_count` is the existing issue collection's
+length when safely available, otherwise 1. Raw result objects, local paths, and
+validator exception messages are never serialized. Expected public validation and
+file-read failures become reports; unexpected programming errors propagate to the
+Python caller. Validation neither locks files nor claims an atomic snapshot.
+
+A technically passed report does not certify PBC correctness, contact definitions,
+lifetime definitions, aggregation semantics, Dataset v1.0 scientific approval,
+publication readiness, or scientific conclusions.
 
 ## Strict disk readers
 
@@ -132,7 +274,7 @@ match observations, `sha256_checked=False`, and `sha256_matches=None`. It is not
 reported as missing or invalid. One aggregate `external_inputs_not_resolved`
 warning contains the unresolved count; there is no warning per trajectory.
 
-## Deterministic reports
+## Deterministic integrity reports (D.1)
 
 Frozen `ArtifactSetValidationIssue`, `ArtifactSetValidationRecord`, and
 `ArtifactSetValidationReport` models expose independent JSON-safe `to_dict()`
@@ -192,8 +334,13 @@ The current FAIR² plan still assumes publication of derived dynRIN resources
 rather than raw trajectories unless the dataset contract is changed later by the
 authors. Publication membership belongs to the future FAIR² dataset package.
 
-## Next step
+## Invariants and next step
 
-Stage 25.D.2 will coordinate the existing specialized validators and expose the
-final unified CLI/API. D.1 provides the reusable integrity/reference foundation
-only; Stage 25.D acceptance remains outstanding.
+No self-hash, no provenance/inventory checksum cycle, no blind scans, and the
+single checksum contract `{none,sha256}` remain unchanged. Validation verifies
+SHA256 exactly when declared and introduces no checksum flags. Raw input inventory
+is lineage only, not publication membership. Existing readers, schemas, scientific
+validators, calculations, and scientific artifacts remain unchanged.
+
+Stage 25.D is complete. Stage 25.E PBC audit and runtime metadata is next;
+Stage 25 overall remains incomplete.
