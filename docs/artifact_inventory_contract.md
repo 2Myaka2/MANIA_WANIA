@@ -126,6 +126,16 @@ artifact entries by both its portable path and the reserved role
 `artifact_inventory`. It has no self-SHA256. No separate `checksums.sha256` file
 is created.
 
+The [Stage 25.D.1 integrity/reference API](unified_artifact_validation.md)
+preserves the no-self-hash rule and rejects an entry for the corresponding
+`run_provenance.json` (or `analysis/run_provenance.json`). Technical metadata
+remains acyclic: provenance references inventory; inventory excludes both itself
+and its corresponding provenance.
+
+An inventoried input XTC, TPR, or other source MD file records run lineage, not
+publication membership. It is not automatically included in Dataset v1.0;
+publication membership belongs to the future FAIR² dataset package.
+
 Stage 25.C.2 excludes `run_provenance.json` from inventory as well. A successfully
 written preprocessing inventory adds exactly one portable reference to completed
 or failed preprocessing provenance: role `artifact_inventory`, path

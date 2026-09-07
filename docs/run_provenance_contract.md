@@ -29,6 +29,13 @@ references can point to existing manifests; the manifests have no backlinks.
 Existing Stage 20–24 schemas, scientific rows, calculation semantics, and CLI
 behavior remain unchanged.
 
+The [Stage 25.D.1 integrity/reference API](unified_artifact_validation.md) checks
+the existing portable provenance-to-inventory reference. The appropriate path
+is `artifact_inventory.json` for preprocessing and
+`analysis/artifact_inventory.json` for analysis. A portable reference is
+sufficient: provenance does not hash inventory, and inventory excludes its
+corresponding provenance. No reciprocal checksum loop is required.
+
 ## Public API and root contract
 
 ```python

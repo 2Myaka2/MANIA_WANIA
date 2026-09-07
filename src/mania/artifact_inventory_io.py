@@ -6,12 +6,14 @@ import json
 import os
 import stat
 import tempfile
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, fields, replace
 from pathlib import Path
-from typing import BinaryIO
+from typing import Any, BinaryIO
 
 from mania.artifact_inventory import (
     ARTIFACT_INVENTORY_FILENAME,
+    ARTIFACT_INVENTORY_KIND,
+    ARTIFACT_INVENTORY_SCHEMA_VERSION,
     ArtifactChecksumMode,
     ArtifactDirection,
     ArtifactInventory,
@@ -19,6 +21,102 @@ from mania.artifact_inventory import (
 )
 
 ARTIFACT_INVENTORY_DEFAULT_HASH_CHUNK_SIZE = 1024 * 1024
+
+
+class ArtifactInventoryReadError(ValueError):
+    """An inventory cannot be read as the supported portable contract."""
+
+
+def _inventory_json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate JSON key.")
+        result[key] = value
+    return result
+
+
+def _reject_inventory_json_constant(value: str) -> None:
+    raise ValueError("Non-finite JSON constant.")
+
+
+def _inventory_fields(value: Any, expected: set[str]) -> dict[str, Any]:
+    if not isinstance(value, dict) or set(value) != expected:
+        raise ValueError("Invalid object fields.")
+    return value.copy()
+
+
+def read_artifact_inventory(path: str | Path) -> ArtifactInventory:
+    """Read exact v0.1 JSON, delegating artifact semantics to the existing models."""
+    if not isinstance(path, (str, Path)) or path == "":
+        raise ArtifactInventoryReadError("path must be a Path or non-empty string.")
+    try:
+        target = Path(path)
+        if not stat.S_ISREG(target.stat().st_mode):
+            raise ArtifactInventoryReadError(
+                "Artifact inventory must be a regular file."
+            )
+        with target.open(encoding="utf-8") as stream:
+            data = json.load(
+                stream,
+                object_pairs_hook=_inventory_json_object,
+                parse_constant=_reject_inventory_json_constant,
+            )
+    except ArtifactInventoryReadError:
+        raise
+    except FileNotFoundError:
+        raise ArtifactInventoryReadError(
+            "Artifact inventory file is missing."
+        ) from None
+    except OSError:
+        raise ArtifactInventoryReadError(
+            "Artifact inventory file cannot be read."
+        ) from None
+    except (ValueError, RecursionError):
+        raise ArtifactInventoryReadError(
+            "Artifact inventory is not valid UTF-8 JSON."
+        ) from None
+    if not isinstance(data, dict):
+        raise ArtifactInventoryReadError(
+            "Artifact inventory root must be a JSON object."
+        )
+    if data.get("schema_version") != ARTIFACT_INVENTORY_SCHEMA_VERSION:
+        raise ArtifactInventoryReadError(
+            "Unsupported artifact inventory schema_version."
+        )
+    if data.get("kind") != ARTIFACT_INVENTORY_KIND:
+        raise ArtifactInventoryReadError("Unsupported artifact inventory kind.")
+    try:
+        count_names = {
+            "artifact_count",
+            "input_artifact_count",
+            "output_artifact_count",
+        }
+        values = _inventory_fields(
+            data, {item.name for item in fields(ArtifactInventory)} | count_names
+        )
+        values.pop("schema_version")
+        values.pop("kind")
+        counts = {name: values.pop(name) for name in count_names}
+        if not isinstance(values["artifacts"], list):
+            raise ValueError("artifacts must be a JSON array.")
+        values["artifacts"] = tuple(
+            ArtifactInventoryEntry(
+                **_inventory_fields(
+                    entry, {item.name for item in fields(ArtifactInventoryEntry)}
+                )
+            )
+            for entry in values["artifacts"]
+        )
+        inventory = ArtifactInventory(**values)
+        if any(
+            type(count) is not int or count != getattr(inventory, name)
+            for name, count in counts.items()
+        ):
+            raise ValueError("Invalid derived counts.")
+        return inventory
+    except (TypeError, ValueError, OverflowError, RecursionError):
+        raise ArtifactInventoryReadError("Invalid artifact inventory fields.") from None
 
 
 @dataclass(frozen=True)
@@ -256,8 +354,10 @@ __all__ = [
     "ARTIFACT_INVENTORY_DEFAULT_HASH_CHUNK_SIZE",
     "ArtifactInventoryBuildError",
     "ArtifactInventoryFileSpec",
+    "ArtifactInventoryReadError",
     "ArtifactInventoryWriteResult",
     "build_artifact_inventory",
+    "read_artifact_inventory",
     "stream_file_sha256",
     "write_artifact_inventory",
 ]

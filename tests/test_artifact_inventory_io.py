@@ -19,6 +19,8 @@ from pathlib import Path, PurePath
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+import pytest
+
 import mania
 from mania import artifact_inventory_io as inventory_io
 from mania.artifact_inventory import ArtifactInventory, ArtifactInventoryEntry
@@ -26,8 +28,10 @@ from mania.artifact_inventory_io import (
     ARTIFACT_INVENTORY_DEFAULT_HASH_CHUNK_SIZE,
     ArtifactInventoryBuildError,
     ArtifactInventoryFileSpec,
+    ArtifactInventoryReadError,
     ArtifactInventoryWriteResult,
     build_artifact_inventory,
+    read_artifact_inventory,
     stream_file_sha256,
     write_artifact_inventory,
 )
@@ -95,8 +99,10 @@ class ArtifactInventoryIOTests(unittest.TestCase):
                 "ARTIFACT_INVENTORY_DEFAULT_HASH_CHUNK_SIZE",
                 "ArtifactInventoryBuildError",
                 "ArtifactInventoryFileSpec",
+                "ArtifactInventoryReadError",
                 "ArtifactInventoryWriteResult",
                 "build_artifact_inventory",
+                "read_artifact_inventory",
                 "stream_file_sha256",
                 "write_artifact_inventory",
             ],
@@ -819,6 +825,174 @@ class ArtifactInventoryIOTests(unittest.TestCase):
             self.assertIn(name, contract)
         self.assertIn("None replaces another", contract)
         self.assertIn("no scientific row, schema, value", contract)
+
+
+@pytest.fixture
+def stored_inventory(tmp_path):
+    source = tmp_path / "source.bin"
+    source.write_bytes(b"abc")
+    model = build((file_spec(source),))
+    target = tmp_path / "artifact_inventory.json"
+    target.write_text(json.dumps(model.to_dict()), encoding="utf-8")
+    return target, model
+
+
+@pytest.mark.parametrize("mode", ["none", "sha256"])
+@pytest.mark.parametrize("scope", ["preprocessing", "analysis"])
+def test_reader_round_trip(stored_inventory, scope, mode):
+    target, model = stored_inventory
+    model = replace(
+        model,
+        workflow=scope,
+        checksum_mode=mode,
+        inventory_path=("analysis/" if scope == "analysis" else "") + target.name,
+        artifacts=(
+            replace(model.artifacts[0], sha256="a" * 64 if mode == "sha256" else None),
+        ),
+    )
+    target.write_text(json.dumps(model.to_dict()), encoding="utf-8")
+    before = target.read_bytes(), target.stat().st_mtime_ns
+    with no_discovery(), patch.object(inventory_io, "stream_file_sha256", forbidden):
+        actual = read_artifact_inventory(str(target))
+    assert actual == model
+    assert actual.to_dict() == model.to_dict()
+    assert (target.read_bytes(), target.stat().st_mtime_ns) == before
+
+
+@pytest.mark.parametrize(
+    "payload,message",
+    [
+        (b"{", "valid UTF-8 JSON"),
+        (b"\xff", "valid UTF-8 JSON"),
+        (b"{} {}", "valid UTF-8 JSON"),
+        (b'{"kind": 1, "kind": 2}', "valid UTF-8 JSON"),
+        (b'{"invalid": NaN}', "valid UTF-8 JSON"),
+        (b"[]", "JSON object"),
+        (b"null", "JSON object"),
+    ],
+)
+def test_reader_invalid_json(stored_inventory, payload, message):
+    target, _ = stored_inventory
+    target.write_bytes(payload)
+    with pytest.raises(ArtifactInventoryReadError, match=message) as error:
+        read_artifact_inventory(target)
+    assert str(target) not in str(error.value)
+    assert target.read_bytes() == payload
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("schema_version", "future"),
+        ("kind", "other"),
+        ("run_id", None),
+        ("workflow", 3),
+        ("artifacts", {}),
+        ("artifacts", [None]),
+        ("checksum_mode", "mixed"),
+        ("artifact_count", True),
+        ("input_artifact_count", 4),
+        ("output_artifact_count", "0"),
+        ("inventory_path", "../artifact_inventory.json"),
+        ("extra", "unknown"),
+    ],
+)
+def test_reader_rejects_root_fields(stored_inventory, field, value):
+    target, model = stored_inventory
+    data = model.to_dict()
+    data[field] = value
+    target.write_text(json.dumps(data))
+    message = field if field in ("schema_version", "kind") else "fields"
+    with pytest.raises(ArtifactInventoryReadError, match=message):
+        read_artifact_inventory(target)
+
+
+@pytest.mark.parametrize(
+    "field",
+    list(
+        ArtifactInventory(
+            "run",
+            "analysis",
+            "artifact_inventory.json",
+            "none",
+            (),
+        ).to_dict()
+    ),
+)
+def test_reader_requires_all_serialized_root_fields(stored_inventory, field):
+    target, model = stored_inventory
+    data = model.to_dict()
+    del data[field]
+    target.write_text(json.dumps(data))
+    with pytest.raises(ArtifactInventoryReadError):
+        read_artifact_inventory(target)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("artifact_id", 1),
+        ("direction", "other"),
+        ("role", "artifact_inventory"),
+        ("path", "artifact_inventory.json"),
+        ("path", "/private/file"),
+        ("byte_size", True),
+        ("byte_size", "3"),
+        ("byte_size", -1),
+        ("sha256", "a" * 64),
+        ("format", "XTC"),
+        ("condition", []),
+    ],
+)
+def test_reader_delegates_entry_invariants(stored_inventory, field, value):
+    target, model = stored_inventory
+    data = model.to_dict()
+    data["artifacts"][0][field] = value
+    target.write_text(json.dumps(data))
+    with pytest.raises(ArtifactInventoryReadError, match="fields"):
+        read_artifact_inventory(target)
+
+
+@pytest.mark.parametrize("change", ["missing_field", "duplicate_id", "duplicate_path"])
+def test_reader_rejects_incomplete_or_duplicate_entries(stored_inventory, change):
+    target, model = stored_inventory
+    data = model.to_dict()
+    if change == "missing_field":
+        del data["artifacts"][0]["condition"]
+    else:
+        extra = dict(data["artifacts"][0])
+        extra["path" if change == "duplicate_id" else "artifact_id"] = "other"
+        data["artifacts"].append(extra)
+        data["artifact_count"] = data["input_artifact_count"] = 2
+    target.write_text(json.dumps(data))
+    with pytest.raises(ArtifactInventoryReadError, match="fields"):
+        read_artifact_inventory(target)
+
+
+def test_reader_leaves_provenance_cycle_to_cross_validation(stored_inventory):
+    target, model = stored_inventory
+    model = replace(
+        model, artifacts=(replace(model.artifacts[0], path="run_provenance.json"),)
+    )
+    target.write_text(json.dumps(model.to_dict()))
+    assert read_artifact_inventory(target) == model
+
+
+@pytest.mark.parametrize("value", ["", None, 4, b"file"])
+def test_reader_rejects_invalid_path_arguments(value):
+    with pytest.raises(ArtifactInventoryReadError, match="path must"):
+        read_artifact_inventory(value)
+
+
+def test_reader_filesystem_errors_are_deterministic(tmp_path):
+    with pytest.raises(ArtifactInventoryReadError, match="missing"):
+        read_artifact_inventory(tmp_path / "missing")
+    with pytest.raises(ArtifactInventoryReadError, match="regular file"):
+        read_artifact_inventory(tmp_path)
+    with patch.object(Path, "stat", side_effect=PermissionError("/private/secret")):
+        with pytest.raises(ArtifactInventoryReadError, match="cannot be read") as error:
+            read_artifact_inventory(tmp_path)
+    assert "/private" not in str(error.value)
 
 
 if __name__ == "__main__":

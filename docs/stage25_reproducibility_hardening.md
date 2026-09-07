@@ -17,8 +17,10 @@ preprocessing emission, and Stage 25.B.3c provides completed and failed analysis
 emission. Stage 25.B is complete. Stage 25.C.1 implements the additive
 artifact-inventory contract, streaming opt-in SHA256 primitives, and atomic
 inventory writing. Stage 25.C.2 preprocessing integration and Stage 25.C.3
-analysis integration are implemented. Stage 25.C is complete. Stage 25.D unified
-artifact validation is next. Stages 25.D–25.G remain planned and unimplemented;
+analysis integration are implemented. Stage 25.C is complete. Stage 25.D.1
+integrity/reference validation is implemented as a Python API. Stage 25.D.2
+specialized-validator coordination and CLI remain next; Stage 25.D is incomplete.
+Stages 25.E–25.G remain planned and unimplemented;
 Stage 25 as a whole remains incomplete. FastAPI remains postponed.
 Existing scientific semantics remain frozen unless changed by
 a separate, explicitly approved task. Older v0.1 planning statements remain
@@ -40,14 +42,14 @@ This roadmap does not claim FAIR² certification or Dataset v1.0 readiness.
 - Stage 25.A — Software identity and release metadata (implemented)
 - Stage 25.B — Run provenance and effective sampling (25.B.1–25.B.3c implemented; complete)
 - Stage 25.C — Input/output artifact inventory and opt-in checksums (25.C.1–25.C.3 implemented; complete)
-- Stage 25.D — Unified artifact validation
+- Stage 25.D — Unified artifact validation (D.1 implemented; D.2 next; incomplete)
 - Stage 25.E — PBC audit and runtime metadata
 - Stage 25.F — Reproducibility documentation and FAIR² bridge
 - Stage 25.G — Validation and technical-hardening acceptance
 
-Stage 25.A, Stage 25.B.1–25.B.3c, and Stage 25.C.1–25.C.3 are implemented.
-Stages 25.D–25.G require separate, focused implementation and
-acceptance steps.
+Stage 25.A, Stage 25.B.1–25.B.3c, Stage 25.C.1–25.C.3, and Stage 25.D.1 are
+implemented. Stage 25.D.2 and Stages 25.E–25.G require separate, focused
+implementation and acceptance steps.
 
 ## Stage 25.A status — implemented
 
@@ -147,9 +149,23 @@ preprocessing technical file is modified, including with equal input/output root
 Stage 25.C acceptance covers generic C.1 compatibility, preprocessing and analysis
 in both checksum modes, conservative failure handling, separate technical metadata
 locations, no directory scanning, and unchanged manifests, scientific results,
-CLI summaries, and dependencies. Stage 25.C is complete. Stage 25.D unified
-artifact validation is next. Stages 25.D–25.G remain planned; Stage 25 as a whole
-remains incomplete.
+CLI summaries, and dependencies. Stage 25.C is complete.
+
+## Stage 25.D status — D.1 implemented; D.2 next; incomplete
+
+Stage 25.D.1 provides strict readers for the existing inventory and provenance
+contracts and a reusable Python artifact-set integrity/reference API. It checks
+technical metadata, run IDs, workflows, conditions, portable references, regular
+file existence, exact byte sizes, and SHA256 only when declared. External input
+paths require explicit artifact-ID mappings; unavailable inputs produce a partial
+technical report, not a missing-file error. Inventory excludes itself and its
+corresponding provenance; source-input lineage does not imply publication
+membership. See [unified artifact validation](unified_artifact_validation.md).
+
+D.1 does not coordinate or duplicate specialized scientific/schema validators
+and adds no CLI command. Stage 25.D.2 specialized validation coordination and the
+final unified CLI/API remain next. Stage 25.D remains incomplete. Stages 25.E–G
+remain planned; Stage 25 as a whole remains incomplete.
 
 ## Compatibility rules
 
@@ -166,7 +182,7 @@ remains incomplete.
 
 ## Frozen scientific scope
 
-The following remain outside the implemented Stage 25.A–25.C hardening scope and
+The following remain outside the implemented Stage 25.A–25.D.1 hardening scope and
 require separate scientific or architectural approval:
 
 - contact lifetime;
