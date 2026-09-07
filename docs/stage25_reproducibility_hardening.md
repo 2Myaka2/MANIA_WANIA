@@ -20,8 +20,9 @@ inventory writing. Stage 25.C.2 preprocessing integration and Stage 25.C.3
 analysis integration are implemented. Stage 25.C is complete. Stage 25.D.1
 integrity/reference validation is implemented as a Python API. Stage 25.D.2
 specialized-validator coordination and CLI are implemented; Stage 25.D is complete.
-Stage 25.E PBC audit and runtime metadata is next. Stages 25.E–25.G remain
-planned and unimplemented;
+Stage 25.E.1 observation contracts are implemented. Stage 25.E.2 workflow
+integration is next and remains planned; Stage 25.E remains incomplete.
+Stages 25.F/G remain planned and unimplemented;
 Stage 25 as a whole remains incomplete. FastAPI remains postponed.
 Existing scientific semantics remain frozen unless changed by
 a separate, explicitly approved task. Older v0.1 planning statements remain
@@ -44,12 +45,12 @@ This roadmap does not claim FAIR² certification or Dataset v1.0 readiness.
 - Stage 25.B — Run provenance and effective sampling (25.B.1–25.B.3c implemented; complete)
 - Stage 25.C — Input/output artifact inventory and opt-in checksums (25.C.1–25.C.3 implemented; complete)
 - Stage 25.D — Unified technical artifact validation (D.1 and D.2 implemented; complete)
-- Stage 25.E — PBC audit and runtime metadata (next; planned)
+- Stage 25.E — PBC audit and runtime metadata (E.1 implemented; E.2 next; incomplete)
 - Stage 25.F — Reproducibility documentation and FAIR² bridge
 - Stage 25.G — Validation and technical-hardening acceptance
 
-Stage 25.A, Stage 25.B.1–25.B.3c, Stage 25.C.1–25.C.3, and Stage 25.D.1–D.2 are
-implemented. Stages 25.E–25.G require separate, focused
+Stage 25.A, Stage 25.B.1–25.B.3c, Stage 25.C.1–25.C.3, Stage 25.D.1–D.2, and
+Stage 25.E.1 are implemented. Stages 25.E.2–25.G require separate, focused
 implementation and acceptance steps.
 
 ## Stage 25.A status — implemented
@@ -170,10 +171,39 @@ artifacts without matching public validators remain integrity-only. Unknown
 future roles yield warnings and partial reports. Integrity failures gate content
 checks. No scientific validator, schema, or calculation is changed.
 
-Stage 25.D is complete. Stage 25.E PBC audit and runtime metadata is next;
+Stage 25.D is complete. Stage 25.E.1 is implemented; Stage 25.E.2 is next;
 Stages 25.F/G remain planned. Stage 25 as a whole remains incomplete. FastAPI
 remains postponed. A technically passed report does not certify scientific
 correctness or publication readiness.
+
+## Stage 25.E status — E.1 implemented; E.2 planned; incomplete
+
+Stage 25.E.1 provides immutable runtime/environment metadata and observation-only
+PBC audit contracts, safe distribution-version collection, duration/counter
+builders using supplied timestamps, and aggregation of caller-supplied sampled
+frame dimensions. See [PBC and runtime metadata](pbc_runtime_metadata.md).
+
+E.1 observes metadata only. Current MANIA distances use Euclidean selected-atom
+coordinates without MANIA internal minimum-image correction. No PBC correction
+has been implemented; scientific PBC status remains unresolved. Complete box
+metadata with undeclared external preprocessing and no internal correction is a
+valid observation audit, not a scientific verdict or validation failure by itself.
+
+E.2 workflow integration remains planned. It will observe dimensions during
+existing sampled-frame processing, reuse Stage 25.B timestamps and retained
+counters, and integrate technical artifacts into provenance, inventory, and
+unified validation. E.1 does not write automatic artifacts or references, add CLI
+options, iterate trajectories, or change existing scientific calculations.
+Stage 25.E and Stage 25 overall remain incomplete; Stages 25.F/G remain planned.
+
+## Stage 25.G publication acceptance — planned
+
+The ordinary unified technical validator retains `passed -> exit 0`,
+`partial -> exit 0`, and `failed -> exit 1`. Stage 25.G publication acceptance
+must require a **complete** technical report, equivalent to
+`report.status == "passed"` and `report.complete is True`. E.1 does not implement
+this publication gate or add `--require-complete`. A complete technical report
+does not itself certify scientific correctness or Dataset v1.0 readiness.
 
 ## Compatibility rules
 
@@ -190,7 +220,7 @@ correctness or publication readiness.
 
 ## Frozen scientific scope
 
-The following remain outside the implemented Stage 25.A–25.D hardening scope and
+The following remain outside the implemented Stage 25.A–25.E.1 hardening scope and
 require separate scientific or architectural approval:
 
 - contact lifetime;
