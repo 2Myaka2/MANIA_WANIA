@@ -9,7 +9,8 @@ completed preprocessing file emission; Stage 25.B.3b implements failed preproces
 emission. Stage 25.B.3c implements completed and failed analysis provenance.
 Stage 25.B and Stage 25.C input/output artifact inventory and opt-in checksums
 are complete. Stage 25.D unified artifact validation and Stage 25.E observation-only
-PBC/runtime metadata are complete. Stage 25.F is next.
+PBC/runtime metadata are complete. Stage 25.F reproducibility documentation and
+FAIR² bridge is complete. Stage 25.G final technical-hardening acceptance is next.
 Stage 25 as a whole remains incomplete.
 
 `RunProvenance` is the in-memory final-run passport for one MANIA execution.
@@ -36,6 +37,12 @@ is `artifact_inventory.json` for preprocessing and
 `analysis/artifact_inventory.json` for analysis. A portable reference is
 sufficient: provenance does not hash inventory, and inventory excludes its
 corresponding provenance. No reciprocal checksum loop is required.
+
+Software identity remains the run's software-source identity. Dataset release
+metadata, dataset version/DOI, consumer repository URL and reference status are
+outside this contract; they do not extend SoftwareIdentity. The
+[software release reference](software_release_reference.md) describes how a
+consumer refreshes its own record from actual generation provenance.
 
 ## Stage 25.E.2 — completed-run technical references
 
@@ -305,8 +312,8 @@ and `--option=value` forms. Input values become filename-only references and
 output becomes `.`; empty portable filenames are rejected. Other argument
 values and order are preserved without path guessing. Runtime paths and
 `sys.argv` are unchanged. This representation is not a replacement for the
-runtime command. Stage 25.C and Stage 25.F will provide the stronger input
-inventory and publication bridge.
+runtime command. Stage 25.C provides input inventory; Stage 25.F documents the
+[reproduction procedure](reproducibility.md) and consumer publication bridge.
 
 Resolved configuration contains `manifest_name`, `output_root`, `run_name`,
 `expected_condition_names`, `include_rg`, `include_contacts`,

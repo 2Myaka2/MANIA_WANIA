@@ -10,7 +10,7 @@ analysis orchestration and CLI integration. See [README.md](../README.md) for
 the current implementation-status overview.
 
 Stage 25 is approved as reproducibility and publication hardening. Stage 25.A
-is implemented; Stage 25.B.1 provides the run-provenance contract and in-memory
+is complete; Stage 25.B.1 provides the run-provenance contract and in-memory
 model, Stage 25.B.2 provides the preprocessing sampling adapter, Stage 25.B.3a
 provides completed preprocessing emission, Stage 25.B.3b provides failed
 preprocessing emission, and Stage 25.B.3c provides completed and failed analysis
@@ -22,7 +22,8 @@ integrity/reference validation is implemented as a Python API. Stage 25.D.2
 specialized-validator coordination and CLI are implemented; Stage 25.D is complete.
 Stage 25.E.1 observation contracts and Stage 25.E.2 completed-workflow integration
 are implemented; Stage 25.E is complete. Stage 25.F reproducibility documentation
-and FAIR² bridge is next. Stages 25.F/G remain planned and unimplemented;
+and FAIR² bridge is complete. Stage 25.G final technical-hardening acceptance is
+next and remains planned;
 Stage 25 as a whole remains incomplete. FastAPI remains postponed.
 Existing scientific semantics remain frozen unless changed by
 a separate, explicitly approved task. Older v0.1 planning statements remain
@@ -41,19 +42,19 @@ This roadmap does not claim FAIR² certification or Dataset v1.0 readiness.
 
 ## Stage decomposition
 
-- Stage 25.A — Software identity and release metadata (implemented)
+- Stage 25.A — Software identity and release metadata (implemented; complete)
 - Stage 25.B — Run provenance and effective sampling (25.B.1–25.B.3c implemented; complete)
 - Stage 25.C — Input/output artifact inventory and opt-in checksums (25.C.1–25.C.3 implemented; complete)
 - Stage 25.D — Unified technical artifact validation (D.1 and D.2 implemented; complete)
 - Stage 25.E — PBC audit and runtime metadata (E.1 and E.2 implemented; complete)
-- Stage 25.F — Reproducibility documentation and FAIR² bridge
-- Stage 25.G — Validation and technical-hardening acceptance
+- Stage 25.F — Reproducibility documentation and FAIR² bridge (complete)
+- Stage 25.G — Full technical-hardening acceptance (next; planned)
 
 Stage 25.A, Stage 25.B.1–25.B.3c, Stage 25.C.1–25.C.3, Stage 25.D.1–D.2, and
-Stage 25.E.1–E.2 are implemented. Stages 25.F–25.G require separate, focused
-implementation and acceptance steps.
+Stage 25.E.1–E.2 are implemented. Stage 25.F documentation and focused regression
+tests are complete. Stage 25.G requires a separate, focused acceptance step.
 
-## Stage 25.A status — implemented
+## Stage 25.A status — implemented; complete
 
 Stage 25.A provides `src/mania/_version.py` as the single package-version
 source; dynamic Setuptools package/build metadata reads the same version.
@@ -172,7 +173,7 @@ future roles yield warnings and partial reports. Integrity failures gate content
 checks. No scientific validator, schema, or calculation is changed.
 
 Stage 25.D is complete. Stage 25.E.1 and E.2 are implemented; Stage 25.E is
-complete. Stage 25.F is next; Stages 25.F/G remain planned. Stage 25 as a whole
+complete. Stage 25.F is complete; Stage 25.G is next. Stage 25 as a whole
 remains incomplete. FastAPI remains postponed. A technically passed report does
 not certify scientific correctness or publication readiness.
 
@@ -203,14 +204,36 @@ Automatic external PBC preprocessing remains undeclared; scientific PBC status
 remains unresolved. No internal minimum-image correction is applied. A structurally
 valid unresolved PBC audit can pass technical validation without scientific approval.
 Stage 25.E is complete. Stage 25.F reproducibility documentation and FAIR² bridge
-is next; Stages 25.F/G remain planned. Stage 25 overall remains incomplete.
+is complete; Stage 25.G is next. Stage 25 overall remains incomplete.
+
+## Stage 25.F status — complete
+
+The [reproducibility guide](reproducibility.md) covers exact SoftwareIdentity,
+preprocessing and analysis execution, provenance, inventory/checksums,
+runtime/environment metadata, sampled-frame PBC audit, and unified validation.
+The [software release reference](software_release_reference.md) defines a generic
+MANIA run-to-consumer FAIR² bridge and a non-normative NaPi2b example.
+
+Consumer software references must be refreshed from actual production-generation
+identity. Software releases/commits remain separate from dataset releases; raw
+MD inventory records lineage without implying publication membership. No new
+machine schema, production code, CLI, dependency, dataset release model, or
+scientific calculation is introduced. Focused documentation tests protect these
+boundaries and current-status alignment.
+
+PBC observations cover sampled frames actually observed only; box metadata does
+not establish scientific PBC correctness. Scientific PBC status remains
+unresolved, with no MANIA internal minimum-image correction. Technical validation
+does not resolve deferred scientific protocols or Dataset v1.0 approval.
+Stage 25.F is complete. Stage 25.G final technical-hardening acceptance is next;
+Stage 25 as a whole remains incomplete. FastAPI remains postponed.
 
 ## Stage 25.G publication acceptance — planned
 
 The ordinary unified technical validator retains `passed -> exit 0`,
 `partial -> exit 0`, and `failed -> exit 1`. Stage 25.G publication acceptance
 must require a **complete** technical report, equivalent to
-`report.status == "passed"` and `report.complete is True`. Stage 25.E does not
+`report.status == "passed"` and `report.complete is True`. Stage 25.F does not
 implement this publication gate or add `--require-complete`. A complete technical report
 does not itself certify scientific correctness or Dataset v1.0 readiness.
 
@@ -229,7 +252,7 @@ does not itself certify scientific correctness or Dataset v1.0 readiness.
 
 ## Frozen scientific scope
 
-The following remain outside the implemented Stage 25.A–25.E hardening scope and
+The following remain outside the completed Stage 25.A–25.F hardening scope and
 require separate scientific or architectural approval:
 
 - contact lifetime;

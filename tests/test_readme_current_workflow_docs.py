@@ -173,7 +173,7 @@ def test_readme_documents_completed_stage25b_and_separate_provenance() -> None:
     for record in ("RunMeta", "mania_manifest.json", "analysis/extended_metrics.json"):
         assert record in text
     assert "mania analyze" in text
-    assert re.search(r"Stage 25\.F[^.;]*\bis (?:the )?next\b", text)
+    assert re.search(r"Stage 25\.G[^.;]*\bis (?:the )?next\b", text)
     assert re.search(r"FastAPI\s+(?:remains|is)\s+postponed", text)
     assert re.search(r"Stage 25 as a whole remains incomplete", text)
     assert not re.search(r"Stage 25(?: as a whole)?\s+is complete\b", text)
@@ -227,21 +227,32 @@ def test_readme_documents_completed_stage25c_inventory_and_next_boundary() -> No
     assert "FastAPI remains postponed" in text
 
 
-def test_current_status_documents_completed_stage25e_and_next_stage25f() -> None:
+def test_current_status_documents_completed_stage25f_and_next_stage25g() -> None:
     root = Path(__file__).resolve().parents[1]
     for name in (
         "README.md", "AGENTS.md", "docs/architecture.md", "docs/code_review.md",
         "docs/decisions.md", "docs/git_workflow.md",
     ):
         text = " ".join((root / name).read_text(encoding="utf-8").split())
+        for stage in ("A", "B", "C"):
+            assert re.search(rf"Stage 25\.{stage}[^.;]*is complete", text)
         assert "Stage 25.D unified technical artifact validation is complete" in text
         assert re.search(r"Stage 25\.E[^.;]*observation-only[^.;]*is complete", text)
-        assert re.search(r"Stage 25\.F[^.;]*is next", text)
+        assert re.search(r"Stage 25\.F[^.;]*FAIR² bridge[^.;]*is complete", text)
+        assert re.search(r"Stage 25\.G[^.;]*acceptance[^.;]*is next", text)
+        assert not re.search(r"Stage 25\.[EF][^.;]*is next", text)
         assert "scientific PBC protocol remains unresolved" in text
         assert "no internal minimum-image correction" in text
         assert "Stage 25 as a whole remains incomplete" in text
         assert "FastAPI remains postponed" in text
+        assert not re.search(r"Stage 25(?: as a whole)?\s+is complete\b", text)
     assert "mania artifacts validate out --scope preprocessing" in readme_text()
+
+
+def test_readme_links_stage25f_reproducibility_and_software_reference() -> None:
+    text = readme_text()
+    for path in ("docs/reproducibility.md", "docs/software_release_reference.md"):
+        assert re.search(rf"\[[^\]]+\]\({re.escape(path)}\)", text)
 
 
 def test_readme_documents_completed_runtime_pbc_artifacts_and_boundary():

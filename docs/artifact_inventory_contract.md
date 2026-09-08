@@ -7,7 +7,9 @@ builder, streaming opt-in SHA256, and an atomic JSON writer are available throug
 the Python API. Stage 25.C.2 preprocessing integration is implemented.
 Stage 25.C.3 analysis integration is implemented and Stage 25.C is complete.
 Stage 25.D unified artifact validation and Stage 25.E observation-only PBC/runtime
-metadata are complete. Stage 25.F is next; Stage 25 overall remains incomplete.
+metadata are complete. Stage 25.F reproducibility documentation and FAIR² bridge
+is complete. Stage 25.G final technical-hardening acceptance is next;
+Stage 25 overall remains incomplete.
 
 Artifact inventory is an additive per-run registry connecting declared inputs,
 one MANIA run, and known outputs. It records file identity and integrity metadata
@@ -136,6 +138,9 @@ and its corresponding provenance.
 An inventoried input XTC, TPR, or other source MD file records run lineage, not
 publication membership. It is not automatically included in Dataset v1.0;
 publication membership belongs to the future FAIR² dataset package.
+Raw MD inventory does not imply dataset membership or permission to distribute
+raw files. The [consumer software/run bridge](software_release_reference.md)
+describes this distinction without requiring raw trajectory or MANIA source copies.
 
 Stage 25.C.2 excludes `run_provenance.json` from inventory as well. A successfully
 written preprocessing inventory adds exactly one portable reference to completed

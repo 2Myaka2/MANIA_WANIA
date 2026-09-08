@@ -4,12 +4,26 @@
 
 Stage 25.E.1 contracts and Stage 25.E.2 workflow integration are implemented.
 Stage 25.E is complete. Stage 25.F reproducibility documentation and FAIR² bridge
-is next; Stage 25 overall remains incomplete. FastAPI remains postponed.
+is complete. Stage 25.G final technical-hardening acceptance is next;
+Stage 25 overall remains incomplete. FastAPI remains postponed.
 
 **Observation only:** MANIA reads sampled timestep dimensions without changing
 coordinates, frame selection, Rg, distances, contacts, graphs, or scientific
 schemas. The scientific PBC protocol remains unresolved and no internal
 minimum-image correction is applied.
+
+For publication-facing interpretation, observations cover **sampled frames only**:
+the frames actually observed by the selected pass, not the entire unsampled
+trajectory. For 1001 source frames and 101 observed sampled frames, the audit
+describes only those 101 frames. **Box metadata presence does not establish that
+the protein was made whole, centered, unwrapped, minimum-image corrected, or that
+contacts are scientifically PBC-correct.** This remains true for finite positive
+dimensions and constant or consistently varying observed boxes. Scientific PBC
+status remains unresolved.
+
+See the [reproducibility guide](reproducibility.md) and
+[software release reference](software_release_reference.md) for run verification
+and the consumer dataset boundary.
 
 ## Runtime/environment contract
 
@@ -40,6 +54,13 @@ and package-metadata APIs; no separate file reads, clock calls, Git commands,
 or network access are performed. Environment metadata contains no hostnames,
 usernames, local paths, environment variables, cwd, or processor/host identifiers.
 The root's portable artifact path is a reference, not a machine location.
+
+Analysis-only metadata collection must not import MDAnalysis merely to report
+its installed distribution version. Publication-facing metadata must exclude
+username, hostname, home-directory path, absolute local paths (source or output),
+environment variables and machine serial identifiers. Consumers must also review
+caller-supplied free text and input manifests; portable references are not a
+general privacy filter for arbitrary user content.
 
 Performance fields, in order:
 
@@ -108,6 +129,19 @@ but invalid, with no lengths/angles retained. Bool is not numeric. Generic
 iterables are supported without NumPy APIs; consumption is bounded to seven
 items to detect excess values. Non-90-degree angles are accepted. Validity here
 does not assess scientific box adequacy or triclinic suitability.
+
+Units are explicit and unchanged from E.1:
+
+| Fields | Units and component order |
+| --- | --- |
+| `box_lengths_A` | Observation lx, ly, lz in ångström (Å) |
+| `box_angles_deg` | Observation alpha, beta, gamma in degrees |
+| `box_lengths_min_A`, `box_lengths_max_A` | Component-wise valid observed length bounds in Å |
+| `box_angles_min_deg`, `box_angles_max_deg` | Component-wise valid observed angle bounds in degrees |
+
+The per-frame fields belong to `PbcFrameObservation`; persisted condition
+aggregates contain the min/max fields, without a per-frame list. Units do not
+change the scientific meaning of metadata validity.
 
 Each observation has a stripped condition name, a non-negative integer frame
 index (excluding bool), and finite non-negative `time_ps` or `None`. Dimensions
@@ -273,5 +307,6 @@ The existing technical validation CLI intentionally returns exit 0 for both
 `passed` and `partial` reports, and exit 1 for `failed`. Stage 25.G publication
 acceptance must require a complete technical report: `report.status == "passed"`
 and `report.complete is True`. This gate and any `--require-complete` option
-are not implemented in Stage 25.E. Technical completeness does not resolve
-scientific acceptance. Stages 25.F/G remain planned; Stage 25 overall remains incomplete.
+are not implemented in Stage 25.F. Technical completeness does not resolve
+scientific acceptance. Stage 25.F is complete; Stage 25.G is next and remains
+planned. Stage 25 overall remains incomplete.

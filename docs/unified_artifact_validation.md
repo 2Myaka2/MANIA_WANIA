@@ -5,7 +5,8 @@
 Stage 25.D.1 integrity/reference readers and API are implemented. Stage 25.D.2
 existing-validator coordination, unified Python API, and CLI are implemented.
 Stage 25.D is complete. Stage 25.E observation-only PBC audit and runtime metadata
-is complete. Stage 25.F is next; Stages 25.F/G remain planned. Stage 25 as a whole
+is complete. Stage 25.F reproducibility documentation and FAIR² bridge is complete.
+Stage 25.G final technical-hardening acceptance is next. Stage 25 as a whole
 remains incomplete. FastAPI remains postponed.
 
 ## Purpose and boundary
@@ -60,6 +61,15 @@ uses no directory discovery, clock, Git, network, or scientific runtime.
 reports too. `report.complete` is true **only** for unified status `passed`.
 Use `report.status` to distinguish all three outcomes. The embedded D.1 report
 retains its original `complete` semantics described under integrity reports below.
+
+**Future publication gate:** normal validation retains `passed -> exit 0`,
+`partial -> exit 0`, and `failed -> exit 1`. Exit 0 alone is insufficient for
+publication-style technical acceptance. Stage 25.G must require both
+`report.status == "passed"` and `report.complete is True` (JSON `complete == true`).
+Stage 25.F documents this requirement without changing CLI behavior or adding
+`--require-complete`. Complete technical validation still does not establish
+scientific acceptance or publication readiness. See the
+[reproducibility guide](reproducibility.md) for explicit input mapping and interpretation.
 
 ## CLI
 
@@ -359,6 +369,7 @@ is lineage only, not publication membership. Existing readers, schemas, scientif
 validators, calculations, and scientific artifacts remain unchanged.
 
 Stage 25.D and Stage 25.E are complete. Stage 25.F reproducibility documentation
-and FAIR² bridge is next; Stage 25 overall remains incomplete. The scientific
+and FAIR² bridge is complete. Stage 25.G final technical-hardening acceptance is
+next; Stage 25 overall remains incomplete. The scientific
 PBC protocol remains unresolved, no internal minimum-image correction is applied,
 and FastAPI remains postponed.
