@@ -23,15 +23,14 @@ specialized-validator coordination and CLI are implemented; Stage 25.D is comple
 Stage 25.E.1 observation contracts and Stage 25.E.2 completed-workflow integration
 are implemented; Stage 25.E is complete. Stage 25.F reproducibility documentation
 and FAIR² bridge is complete. Stage 25.G final technical-hardening acceptance is
-next and remains planned;
-Stage 25 as a whole remains incomplete. FastAPI remains postponed.
+complete; Stage 25 is complete. FastAPI remains postponed.
 Existing scientific semantics remain frozen unless changed by
 a separate, explicitly approved task. Older v0.1 planning statements remain
 historical records.
 
 ## Stage 25 objective
 
-Stage 25 aims to make each MANIA run:
+Stage 25 technical hardening makes each MANIA run:
 
 - unambiguously identifiable;
 - reproducible;
@@ -48,11 +47,11 @@ This roadmap does not claim FAIR² certification or Dataset v1.0 readiness.
 - Stage 25.D — Unified technical artifact validation (D.1 and D.2 implemented; complete)
 - Stage 25.E — PBC audit and runtime metadata (E.1 and E.2 implemented; complete)
 - Stage 25.F — Reproducibility documentation and FAIR² bridge (complete)
-- Stage 25.G — Full technical-hardening acceptance (next; planned)
+- Stage 25.G — Full technical-hardening acceptance (complete)
 
 Stage 25.A, Stage 25.B.1–25.B.3c, Stage 25.C.1–25.C.3, Stage 25.D.1–D.2, and
 Stage 25.E.1–E.2 are implemented. Stage 25.F documentation and focused regression
-tests are complete. Stage 25.G requires a separate, focused acceptance step.
+tests are complete. Stage 25.G final technical-hardening acceptance is complete.
 
 ## Stage 25.A status — implemented; complete
 
@@ -74,7 +73,7 @@ output remains `mania-wania 0.1.0`.
 Stage 25.A alone does not provide run provenance, effective sampling, checksums,
 artifact inventory, PBC audit, runtime metrics, or FAIR² package generation.
 Provenance emission belongs to Stage 25.B below; no existing manifest is changed.
-Stage 25 as a whole remains incomplete.
+Stage 25 is complete.
 
 ## Stage 25.B status — complete
 
@@ -109,7 +108,7 @@ in the existing mutable output directory.
 Stage 25.B acceptance covers both workflows, output-location separation,
 unchanged CLI summaries and original failure behavior, and preserved manifests,
 scientific schemas, and calculations. Stage 25.B is complete. Stage 25.C is
-complete as described below; Stage 25 as a whole remains incomplete.
+complete as described below; Stage 25 is complete.
 
 ## Stage 25.C status — complete
 
@@ -173,9 +172,9 @@ future roles yield warnings and partial reports. Integrity failures gate content
 checks. No scientific validator, schema, or calculation is changed.
 
 Stage 25.D is complete. Stage 25.E.1 and E.2 are implemented; Stage 25.E is
-complete. Stage 25.F is complete; Stage 25.G is next. Stage 25 as a whole
-remains incomplete. FastAPI remains postponed. A technically passed report does
-not certify scientific correctness or publication readiness.
+complete. Stage 25.F is complete; Stage 25.G is complete. Stage 25 is complete.
+FastAPI remains postponed. A technically passed report does not certify
+scientific correctness or publication readiness.
 
 ## Stage 25.E status — E.1 and E.2 implemented; complete
 
@@ -204,7 +203,7 @@ Automatic external PBC preprocessing remains undeclared; scientific PBC status
 remains unresolved. No internal minimum-image correction is applied. A structurally
 valid unresolved PBC audit can pass technical validation without scientific approval.
 Stage 25.E is complete. Stage 25.F reproducibility documentation and FAIR² bridge
-is complete; Stage 25.G is next. Stage 25 overall remains incomplete.
+is complete; Stage 25.G is complete. Stage 25 is complete.
 
 ## Stage 25.F status — complete
 
@@ -225,17 +224,37 @@ PBC observations cover sampled frames actually observed only; box metadata does
 not establish scientific PBC correctness. Scientific PBC status remains
 unresolved, with no MANIA internal minimum-image correction. Technical validation
 does not resolve deferred scientific protocols or Dataset v1.0 approval.
-Stage 25.F is complete. Stage 25.G final technical-hardening acceptance is next;
-Stage 25 as a whole remains incomplete. FastAPI remains postponed.
+Stage 25.F is complete. Stage 25.G final technical-hardening acceptance is complete;
+Stage 25 is complete. FastAPI remains postponed.
 
-## Stage 25.G publication acceptance — planned
+## Stage 25.G publication acceptance — complete
 
-The ordinary unified technical validator retains `passed -> exit 0`,
-`partial -> exit 0`, and `failed -> exit 1`. Stage 25.G publication acceptance
-must require a **complete** technical report, equivalent to
-`report.status == "passed"` and `report.complete is True`. Stage 25.F does not
-implement this publication gate or add `--require-complete`. A complete technical report
-does not itself certify scientific correctness or Dataset v1.0 readiness.
+The [final acceptance record](stage25_final_acceptance.md) records the exact
+code snapshot, pre-Stage-25 base, regression and wheel checks, synthetic and real
+NaPi2b runs, and all 18 passing acceptance criteria. All 29 deterministic
+scientific artifacts match the accepted PoC byte-for-byte. The accepted baseline
+was preserved; the reproduction used a new ignored local output root.
+
+Both real scopes satisfy the complete technical publication-style validation
+gate: `report.status == "passed"` and `report.complete is True`, with all external
+inputs explicitly mapped. The ordinary validator retains `passed -> exit 0`,
+`partial -> exit 0`, and `failed -> exit 1`; acceptance adds no `--require-complete`.
+PBC observations cover the 101 actually sampled frames per condition only.
+Scientific PBC status remains unresolved and internal minimum-image correction
+remains false. A complete technical report does not certify scientific
+correctness or Dataset v1.0 readiness.
+
+**Stage 25 — COMPLETE.** Stage 25 proves technical reproducibility/integrity
+hardening, not final scientific Dataset v1.0 semantics.
+
+MANIA technical publication hardening is complete. Review scientific decisions
+with Ramila Akhmetovna, then freeze the Dataset v1.0 scientific contract,
+and only then design scientific extensions. Dataset v1.0 remains unreleased
+and not scientifically frozen.
+
+Scientific PBC remains unresolved until the scientific decision. FastAPI remains
+postponed. The A–F contract documents retain their milestone acceptance context;
+this roadmap and the final acceptance record define the current Stage 25 status.
 
 ## Compatibility rules
 
@@ -252,7 +271,7 @@ does not itself certify scientific correctness or Dataset v1.0 readiness.
 
 ## Frozen scientific scope
 
-The following remain outside the completed Stage 25.A–25.F hardening scope and
+The following remain outside the completed Stage 25 hardening scope and
 require separate scientific or architectural approval:
 
 - contact lifetime;

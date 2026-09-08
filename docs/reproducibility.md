@@ -7,6 +7,13 @@ preprocessing and analysis workflows. It does not freeze unresolved scientific
 Dataset v1.0 choices or establish publication readiness. Software-to-dataset
 handoff is described in the [software release reference](software_release_reference.md).
 
+Stage 25.A–G technical hardening is complete; see the
+[final acceptance record](stage25_final_acceptance.md).
+MANIA technical publication hardening is complete. Review scientific decisions
+with Ramila Akhmetovna, then freeze the Dataset v1.0 scientific contract,
+and only then design scientific extensions. Dataset v1.0 remains unreleased
+and not scientifically frozen.
+
 ## Identify the exact software
 
 Use the same environment for version checks and execution:
@@ -303,11 +310,13 @@ mapping values are not serialized into the report. Validation never guesses path
 
 Ordinary validation prints one JSON report line to stdout. `report.passed` may
 be true while `report.complete` is false: `partial` currently exits 0 because no
-technical error was established. The future Stage 25.G publication gate must
-require **both `report.status == "passed"` and `report.complete is True`**.
-Stage 25.F documents this requirement only; it adds no `--require-complete`
-option or changed exit codes. Retain the serialized report when needed, for
-example by redirecting stdout to a consumer-chosen file outside the run inventory.
+technical error was established. The accepted Stage 25.G publication gate
+requires **both `report.status == "passed"` and `report.complete is True`**.
+The [final acceptance record](stage25_final_acceptance.md) demonstrates this gate
+for both real PoC scopes with explicit input mappings. Acceptance adds no
+`--require-complete` option or changed exit codes. Retain the serialized report
+when needed, for example by redirecting stdout to a consumer-chosen file outside
+the run inventory.
 
 Technical validation can establish matching declared SHA256 and byte sizes,
 parseable metadata, agreeing artifact/condition references, and passing existing

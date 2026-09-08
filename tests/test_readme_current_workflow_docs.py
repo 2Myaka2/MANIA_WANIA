@@ -173,10 +173,10 @@ def test_readme_documents_completed_stage25b_and_separate_provenance() -> None:
     for record in ("RunMeta", "mania_manifest.json", "analysis/extended_metrics.json"):
         assert record in text
     assert "mania analyze" in text
-    assert re.search(r"Stage 25\.G[^.;]*\bis (?:the )?next\b", text)
+    assert re.search(r"Stage 25\.G[^.;]*\bis complete\b", text)
     assert re.search(r"FastAPI\s+(?:remains|is)\s+postponed", text)
-    assert re.search(r"Stage 25 as a whole remains incomplete", text)
-    assert not re.search(r"Stage 25(?: as a whole)?\s+is complete\b", text)
+    assert "Stage 25 is complete" in text
+    assert "Stage 25 as a whole remains incomplete" not in text
 
 
 def test_readme_links_wania_object_json_payload_contract() -> None:
@@ -209,7 +209,7 @@ def test_readme_documents_protein_agnostic_boundary() -> None:
         assert phrase in text
 
 
-def test_readme_documents_completed_stage25c_inventory_and_next_boundary() -> None:
+def test_readme_stage25c_inventory_and_scientific_boundary() -> None:
     text = " ".join(readme_text().split())
     assert re.search(r"Stage 25\.C[^.;]*\bis complete\b", text)
     assert "<output>/artifact_inventory.json" in text
@@ -223,11 +223,11 @@ def test_readme_documents_completed_stage25c_inventory_and_next_boundary() -> No
     assert re.search(
         r"Stage 25\.D unified technical artifact validation is complete", text
     )
-    assert "Stage 25 as a whole remains incomplete" in text
+    assert "Stage 25 is complete" in text
     assert "FastAPI remains postponed" in text
 
 
-def test_current_status_documents_completed_stage25f_and_next_stage25g() -> None:
+def test_current_status_documents_completed_stage25g_and_scientific_pause() -> None:
     root = Path(__file__).resolve().parents[1]
     for name in (
         "README.md", "AGENTS.md", "docs/architecture.md", "docs/code_review.md",
@@ -239,14 +239,20 @@ def test_current_status_documents_completed_stage25f_and_next_stage25g() -> None
         assert "Stage 25.D unified technical artifact validation is complete" in text
         assert re.search(r"Stage 25\.E[^.;]*observation-only[^.;]*is complete", text)
         assert re.search(r"Stage 25\.F[^.;]*FAIR² bridge[^.;]*is complete", text)
-        assert re.search(r"Stage 25\.G[^.;]*acceptance[^.;]*is next", text)
-        assert not re.search(r"Stage 25\.[EF][^.;]*is next", text)
+        assert re.search(r"Stage 25\.G[^.;]*acceptance[^.;]*is complete", text)
+        assert not re.search(r"Stage 25\.[EFG][^.;]*is next", text)
         assert "scientific PBC protocol remains unresolved" in text
         assert "no internal minimum-image correction" in text
-        assert "Stage 25 as a whole remains incomplete" in text
+        assert "Stage 25 is complete" in text
         assert "FastAPI remains postponed" in text
-        assert not re.search(r"Stage 25(?: as a whole)?\s+is complete\b", text)
+        assert "Stage 25 as a whole remains incomplete" not in text
+        assert "Review scientific decisions with Ramila Akhmetovna" in text
+        assert "then freeze the Dataset v1.0 scientific contract" in text
+        assert "only then design scientific extensions" in text
+        assert "Dataset v1.0 remains unreleased and not scientifically frozen" in text
+        assert not re.search(r"Stage 26", text)
     assert "mania artifacts validate out --scope preprocessing" in readme_text()
+    assert "docs/stage25_final_acceptance.md" in readme_text()
 
 
 def test_readme_links_stage25f_reproducibility_and_software_reference() -> None:

@@ -1,4 +1,4 @@
-"""Stage 25.F documentation coverage against the accepted local contracts."""
+"""Stage 25 reproducibility guidance and final technical acceptance boundaries."""
 
 import ast
 import re
@@ -50,7 +50,7 @@ def test_reproduction_commands_and_scope_specific_artifacts() -> None:
     GUIDE, BRIDGE, "docs/unified_artifact_validation.md",
     "docs/stage25_reproducibility_hardening.md",
 ])
-def test_future_publication_gate_keeps_partial_exit_semantics(name: str) -> None:
+def test_publication_gate_keeps_partial_exit_semantics(name: str) -> None:
     text = normalized(read(name))
     assert 'report.status == "passed"' in text
     assert "report.complete is True" in text
@@ -210,13 +210,14 @@ def test_scientific_and_publication_decisions_remain_deferred() -> None:
     assert "final Dataset v1.0 schema and final Croissant remain deferred" in fair
 
 
-def test_contract_docs_align_completed_stage25f_and_next_stage25g() -> None:
+def test_contract_milestones_and_current_stage25g_acceptance() -> None:
+    # A–F contract documents preserve their milestone context; the roadmap owns
+    # current project status and links the completed final acceptance record.
     for name in (
         PBC,
         "docs/unified_artifact_validation.md",
         "docs/run_provenance_contract.md",
         "docs/artifact_inventory_contract.md",
-        "docs/stage25_reproducibility_hardening.md",
     ):
         text = normalized(read(name))
         assert re.search(r"Stage 25\.F[^.;]*is complete", text), name
@@ -224,6 +225,24 @@ def test_contract_docs_align_completed_stage25f_and_next_stage25g() -> None:
         assert not re.search(r"Stage 25\.[EF][^.;]*is next", text), name
         assert not re.search(r"Stages 25\.F[/–-](?:25\.)?G remain planned", text), name
         assert re.search(r"Stage 25 (?:as a whole|overall) remains incomplete", text)
+    roadmap = normalized(read("docs/stage25_reproducibility_hardening.md"))
+    assert re.search(r"Stage 25\.G[^.;]*acceptance[^.;]*is complete", roadmap)
+    assert "Stage 25 is complete" in roadmap
+    assert "stage25_final_acceptance.md" in roadmap
+    assert not re.search(r"Stage 25\.G[^.;]*is next|remains incomplete", roadmap)
+    acceptance = normalized(read("docs/stage25_final_acceptance.md"))
+    assert "Stage 25.G acceptance: PASS" in acceptance
+    assert "Stage 25 — COMPLETE" in acceptance
+    assert len(re.findall(r"\b[0-9a-f]{40}\b", acceptance)) == 2
+    assert "29 deterministic scientific artifacts are byte-identical" in acceptance
+    assert 'report.status == "passed"' in acceptance
+    assert "report.complete is True" in acceptance
+    assert "101 actually sampled frames per condition" in acceptance
+    assert "scientific_pbc_status: unresolved" in acceptance
+    assert "mania_internal_minimum_image_correction_applied: false" in acceptance
+    assert "not final scientific Dataset v1.0 semantics" in acceptance
+    assert "Dataset v1.0 remains unreleased and not scientifically frozen" in acceptance
+    assert not re.search(r"/(?:home|Users)/|[A-Za-z]:[\\/]|Stage 26", acceptance)
 
 
 @pytest.mark.parametrize("name", [GUIDE, BRIDGE])

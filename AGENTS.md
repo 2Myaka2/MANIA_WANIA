@@ -21,10 +21,15 @@ Stage 25.B run provenance and effective sampling is complete. Stage 25.C
 input/output artifact inventory and opt-in checksums is complete. Stage 25.D
 unified technical artifact validation is complete. Stage 25.E observation-only PBC audit and runtime metadata is complete.
 Stage 25.F reproducibility documentation and FAIR² bridge is complete.
-Stage 25.G final technical-hardening acceptance is next.
+Stage 25.G final technical-hardening acceptance is complete.
 The scientific PBC protocol remains unresolved; MANIA applies no internal
-minimum-image correction. Stage 25 as a whole remains incomplete.
+minimum-image correction. Stage 25 is complete.
 FastAPI remains postponed.
+
+MANIA technical publication hardening is complete. Review scientific decisions
+with Ramila Akhmetovna, then freeze the Dataset v1.0 scientific contract,
+and only then design scientific extensions. Dataset v1.0 remains unreleased
+and not scientifically frozen.
 
 Preserve accepted scientific semantics and established Stage 20–24 artifact
 contracts. Do not treat approved roadmap items as implemented features.
