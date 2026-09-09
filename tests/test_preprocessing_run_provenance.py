@@ -1156,3 +1156,51 @@ def test_failed_builder_has_no_external_side_effects(
         0
     ].runtime.runtime_object.trajectory
     assert trajectory.iterations == 0
+
+
+@pytest.mark.parametrize(
+    "source", ["inline_manifest", "parameter_table", "inline_and_parameter_table"]
+)
+@pytest.mark.parametrize("failed", [False, True])
+def test_dataset_context_in_completed_and_failed_builders(source, failed):
+    from test_preprocessing_dataset_binding import spec
+
+    from mania.preprocessing.dataset_binding import (
+        PreprocessingDatasetBinding,
+        PreprocessingDatasetContext,
+    )
+
+    context = PreprocessingDatasetContext(
+        bindings=(
+            PreprocessingDatasetBinding(
+                execution_condition="sample",
+                source=source,
+                dataset_spec=spec(condition=None, engine="namd"),
+            ),
+        )
+    )
+    kwargs = completed_kwargs()
+    original_config = dict(kwargs["resolved_configuration"])
+    if failed:
+        result = adapter.build_failed_preprocessing_run_provenance(
+            **kwargs,
+            failure_stage="computation",
+            conditions=("sample",),
+            frame_sampling=PreprocessingFrameSamplingOptions(),
+            dataset_context=context,
+        )
+    else:
+        result = adapter.build_completed_preprocessing_run_provenance(
+            computation(contacts=contact_source(((0, 0.0),))),
+            **kwargs,
+            dataset_context=context,
+        )
+    config = result.to_dict()["resolved_configuration"]
+    assert config == original_config | {"dataset_context": context.to_dict()}
+    assert kwargs["resolved_configuration"] == original_config
+    assert (
+        config["dataset_context"]["bindings"][0]["dataset_spec"]["identity"][
+            "condition"
+        ]
+        is None
+    )

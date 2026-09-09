@@ -298,6 +298,7 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
     options = stages["reference_comparison"].options
     prep = preprocessing_adapter.collect_preprocessing_input_file_specs(
         runtime,
+        parameter_table_local_path=tmp_path / "parameters.csv",
         include_reference_inputs=True,
         reference_nodes_path=options.reference_nodes_csv_path,
         reference_edges_path=options.reference_edges_csv_path,
@@ -316,7 +317,7 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
     )
     assert {e.role for e in prep} == unified._PREPROCESSING_POLICY.keys()
     assert {e.role for e in analysis} == unified._ANALYSIS_POLICY.keys()
-    assert len({e.role for e in prep}) == 23
+    assert len({e.role for e in prep}) == 24
     assert len({e.role for e in analysis}) == 17
 
 
@@ -780,3 +781,145 @@ def test_analysis_does_not_support_pbc_audit_role(tmp_path):
     ))
     report = validate(bundle)
     assert report.status == "partial" and report.unsupported_count == 1
+
+
+def dataset_bundle(root, *, source="parameter_table", table=True, context=True):
+    from test_preprocessing_dataset_binding import spec, table_bytes
+
+    from mania.preprocessing.dataset_binding import (
+        PreprocessingDatasetBinding,
+        PreprocessingDatasetContext,
+    )
+
+    value = spec(condition="normal")
+    bundle = make_bundle(
+        root,
+        inputs=(
+            (
+                (
+                    "dataset_parameter_table",
+                    table_bytes(
+                        spec(condition="normal", replica_id="unused"),
+                        value,
+                    ),
+                    None,
+                ),
+            )
+            if table
+            else ()
+        ),
+    )
+    if context:
+        dataset_context = PreprocessingDatasetContext(
+            bindings=(
+                PreprocessingDatasetBinding(
+                    execution_condition="normal",
+                    source=source,
+                    dataset_spec=value,
+                ),
+            )
+        )
+        bundle.provenance = replace(
+            bundle.provenance,
+            resolved_configuration={
+                "dataset_context": dataset_context.to_dict(),
+            },
+        )
+        write_metadata(bundle)
+    return bundle
+
+
+def test_inline_dataset_context_technical_validation(tmp_path):
+    bundle = dataset_bundle(tmp_path / "run", source="inline_manifest", table=False)
+    report = validate(bundle)
+    assert report.status == "passed" and report.complete
+    assert report.unsupported_count == 0
+
+
+@pytest.mark.parametrize("value", [None, {}, {"bindings": []}])
+def test_malformed_dataset_context_fails(tmp_path, value):
+    bundle = dataset_bundle(tmp_path / "run", table=False)
+    bundle.provenance = replace(
+        bundle.provenance, resolved_configuration={"dataset_context": value}
+    )
+    write_metadata(bundle)
+    report = validate(bundle)
+    assert report.status == "failed"
+    assert "dataset_context_invalid" in [issue.code for issue in report.issues]
+
+
+@pytest.mark.parametrize(
+    "table,context,source",
+    [
+        (False, True, "parameter_table"),
+        (True, False, "parameter_table"),
+        (True, True, "inline_manifest"),
+    ],
+)
+def test_dataset_lineage_consistency_both_directions(tmp_path, table, context, source):
+    bundle = dataset_bundle(
+        tmp_path / "run", table=table, context=context, source=source
+    )
+    report = validate(bundle, mapped=True)
+    assert report.status == "failed"
+    assert "dataset_parameter_table_lineage_mismatch" in [i.code for i in report.issues]
+
+
+@pytest.mark.parametrize("source", ["parameter_table", "inline_and_parameter_table"])
+def test_dataset_table_specialized_and_exact_semantic_validation(
+    tmp_path, monkeypatch, source
+):
+    bundle = dataset_bundle(tmp_path / "run", source=source)
+    reader = Mock(wraps=unified.read_dataset_parameter_table_csv)
+    monkeypatch.setattr(unified, "read_dataset_parameter_table_csv", reader)
+    report = validate(bundle)
+    assert report.status == "partial" and not report.complete
+    assert (
+        next(
+            r for r in report.specialized_records if r.role == "dataset_parameter_table"
+        ).status
+        == "not_resolved"
+    )
+    reader.assert_not_called()
+    report = validate(bundle, mapped=True)
+    assert report.status == "passed" and report.complete
+    assert report.unsupported_count == 0
+    reader.assert_called_once_with(bundle.mappings["input:0"])
+    table_record = next(
+        r for r in report.specialized_records if r.role == "dataset_parameter_table"
+    )
+    assert table_record.status == "passed"
+    assert table_record.validator == "read_dataset_parameter_table_csv"
+
+
+@pytest.mark.parametrize(
+    "change", ["temporal", "missing", "invalid", "engine", "condition", "disulfide"]
+)
+def test_mapped_table_tampering_fails_without_checksums(tmp_path, change):
+    bundle = dataset_bundle(tmp_path / "run")
+    path = bundle.mappings["input:0"]
+    original = path.read_bytes()
+    replacements = {
+        "temporal": (b"17.3", b"19.3"),
+        "missing": (b",A,", b",B,"),
+        "invalid": (b"dataset_id", b"dataset_zz"),
+        "engine": (b"gromacs", b"namd   "),
+        "condition": (b",normal,", b",tumor ,"),
+        "disulfide": (b",A,,", b",A,X,"),
+    }
+    changed = original.replace(*replacements[change])
+    assert original != changed
+    if change == "disulfide":
+        # Preserve size to isolate semantic checking from the integrity gate.
+        changed = changed.replace(b"unused", b"unuse", 1)
+    assert len(changed) == len(original)
+    path.write_bytes(changed)
+    report = validate(bundle, mapped=True)
+    assert report.integrity_report.status == "passed"
+    assert report.status == "failed" and not report.complete
+    assert report.unsupported_count == 0
+    assert any(
+        r.role == "dataset_parameter_table" and r.status == "failed"
+        for r in report.specialized_records
+    )
+    assert str(path) not in str(report.to_dict())

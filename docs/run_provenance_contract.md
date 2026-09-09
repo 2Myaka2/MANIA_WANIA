@@ -549,3 +549,24 @@ No checksum, complete artifact inventory, environment inventory, runtime
 performance metrics, PBC audit, PBC-aware calculation, sampling change, contact
 or RIN change, lifetime, aggregation, FAIR² package generation, FastAPI, or WANIA
 change is implemented by Stage 25.B.
+
+## Stage 26.C — preprocessing Dataset context
+
+Completed and failed preprocessing builders accept optional
+`dataset_context: PreprocessingDatasetContext | None = None`. They add the
+portable `PreprocessingDatasetContext.to_dict()` under configuration key
+`dataset_context`; the on-disk location is
+`resolved_configuration.dataset_context`. The key is absent for legacy runs,
+never emitted as null. The generic `RunProvenance` schema is unchanged.
+
+Bindings preserve manifest order, execution condition, binding source, exact
+Dataset identity, and all requested temporal model values. Scientific condition
+`None` stays `None`. Context contains no local parameter-table path, topology or
+trajectory path, runtime object, or derived frame/window value.
+
+The CLI resolves context before scientific execution. Completed runs and covered
+later workflow failures retain it; binding failures produce no normal provenance
+or inventory. Failed-run inventory still follows the Stage 25 authoritative-input
+boundary. A used table is portable input lineage in the inventory, not a path in
+Dataset context. No Dataset fields enter scientific `mania_manifest.json`, graph,
+or CSV artifacts. `mania analyze` does not propagate Dataset context in Stage 26.

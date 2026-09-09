@@ -1,6 +1,14 @@
 # Unified technical artifact validation — Stage 25.D
 
-## Status
+## Current status
+
+Stage 25 is complete. Stage 26 is complete; Stage 27 physical-time sampling/window
+engine is next and is not implemented yet. FastAPI remains postponed.
+
+## Historical Stage 25.F milestone status
+
+The following preserves the acceptance context before Stage 25.G. Current
+Dataset validation additions are described in the Stage 26.C section below.
 
 Stage 25.D.1 integrity/reference readers and API are implemented. Stage 25.D.2
 existing-validator coordination, unified Python API, and CLI are implemented.
@@ -93,8 +101,10 @@ require-complete, scientific, publication, or skip-validator option.
 ## Existing-validator coordination and role audit
 
 D.2 calls `validate_run_artifact_integrity` exactly once, then rereads the inventory
-with `read_artifact_inventory`. Inventory and provenance use only D.1 and never
-receive synthetic inventory entries. E.2 runtime/PBC artifacts have explicit inventory
+with `read_artifact_inventory`. Inventory and generic provenance use D.1 and never
+receive synthetic inventory entries. Stage 26.C additionally reconstructs optional
+preprocessing Dataset context from provenance and verifies its parameter-table
+lineage. E.2 runtime/PBC artifacts have explicit inventory
 entries and strict reader dispatch. An unreadable inventory or changed artifact
 identities prevents dispatch. Missing/nonregular files, size mismatch, declared checksum
 mismatch, and checksum read failures produce `skipped_integrity_failure` records
@@ -116,6 +126,7 @@ using synthetic retained objects and requires exact policy coverage.
 | Both scopes `residue_table`, `protein_contact_edges`; preprocessing `protein_contacts_perframe`; analysis `contacts_perframe` | `validate_csv_artifact_schema` with Stage 20 `RESIDUE_TABLE_COLUMNS`, `PROTEIN_CONTACT_EDGE_COLUMNS`, `PROTEIN_CONTACT_PERFRAME_COLUMNS` respectively; `validate_condition_column` when condition-scoped |
 | Analysis `analysis_centrality`, `analysis_communities`, `analysis_region_enrichment`, `analysis_temporal_rin`, `analysis_conformation_pca`, `analysis_conformation_labels` | `validate_csv_artifact_schema` with the corresponding exported `STATIC_RIN_METRICS_COLUMNS`, `STATIC_RIN_COMMUNITIES_COLUMNS`, `STATIC_RIN_REGION_ENRICHMENT_COLUMNS`, `TEMPORAL_RIN_METRICS_COLUMNS`, `CONFORMATION_PCA_COLUMNS`, `CONFORMATION_LABELS_COLUMNS`; `validate_condition_column` when condition-scoped |
 | Both scopes `runtime_metadata` | `read_runtime_metadata`, with scope and canonical metadata path checks |
+| Preprocessing `dataset_parameter_table` | `read_dataset_parameter_table_csv`, then exact context/spec cross-check |
 | Preprocessing `pbc_audit` | `read_pbc_audit`, requiring `pbc_audit.json` |
 | Analysis `analysis_comparison`, `analysis_stats` | `validate_csv_artifact_schema` with `STATIC_RIN_COMPARISON_COLUMNS`, `STATIC_RIN_STATS_COLUMNS`; no forced per-condition check |
 
@@ -141,7 +152,7 @@ called. Source MD files remain integrity-only even when mapped. Unmapped known
 raw inputs are `not_applicable` here and partial in D.1. Unmapped recognized
 analysis tables are `not_resolved` here. Unknown future roles are `unsupported`,
 with a warning and partial status if no other error exists. Current coverage is
-14 specialized + 9 integrity-only preprocessing roles, and 13 specialized + 4
+15 specialized + 9 integrity-only preprocessing roles, and 13 specialized + 4
 integrity-only analysis roles; zero unsupported current roles.
 
 Runtime metadata reconstructs the recorded environment and performance through
@@ -370,6 +381,46 @@ validators, calculations, and scientific artifacts remain unchanged.
 
 Stage 25.D and Stage 25.E are complete. Stage 25.F reproducibility documentation
 and FAIR² bridge is complete. Stage 25.G final technical-hardening acceptance is
-next; Stage 25 overall remains incomplete. The scientific
+complete; Stage 25 is complete. Stage 26 is complete; Stage 27 physical-time
+sampling/window engine is next and is not implemented yet. The scientific
 PBC protocol remains unresolved, no internal minimum-image correction is applied,
 and FastAPI remains postponed.
+
+## Stage 26.C — Dataset context and table consistency
+
+For preprocessing, optional `resolved_configuration.dataset_context` is strictly
+reconstructed as `PreprocessingDatasetContext`. Schema/kind, nested specs, binding
+sources, non-empty ordered bindings, unique execution conditions and replica keys,
+and scientific-condition consistency must validate. Binding conditions must be
+an ordered subset of provenance execution conditions. Malformed context yields
+`dataset_context_invalid`; absent context remains valid for legacy runs.
+
+Context with `parameter_table` or `inline_and_parameter_table` sources requires
+exactly one `dataset_parameter_table` input, CSV format and null condition.
+Conversely, declaring that role without table-backed context fails. This gives a
+portable `dataset_parameter_table_lineage_mismatch` technical error.
+
+The table role is specialized only for preprocessing. When mapped and permitted
+by the existing integrity gate, validation calls the strict accepted
+`read_dataset_parameter_table_csv` reader. It locates every table-backed binding
+by exact `(dataset_id, system_id, trajectory_id, replica_id)` and requires full
+Dataset spec equality. Repeated conditions and unused rows are valid; condition
+is never a lookup key. Missing rows, malformed tables, and changed requested or
+identity fields fail technical validation, even for same-size changes in checksum
+mode `none`. Semantic checking is independent of optional SHA256. Diagnostics
+contain no local mapped path.
+
+An unresolved table receives specialized `not_resolved` and keeps overall status
+`partial` under existing semantics. Complete validation must explicitly map every
+input, including:
+
+```bash
+mania artifacts validate out --scope preprocessing \
+  --input-artifact-path input:dataset_parameter_table=source/parameters.csv
+```
+
+Add mappings for the manifest, topology, trajectories, and every other inventoried
+input. Require both `report.status == "passed"` and `report.complete is True` for
+complete technical acceptance. Ordinary CLI exit behavior is unchanged. This
+performs no trajectory access, frame/window calculation, condition inference,
+scientific validation extension, or analysis Dataset-context propagation.

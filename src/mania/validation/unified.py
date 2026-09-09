@@ -12,7 +12,12 @@ from mania.artifact_inventory_io import (
     ArtifactInventoryReadError,
     read_artifact_inventory,
 )
+from mania.dataset_parameter_table import (
+    DatasetParameterTableReadError,
+    read_dataset_parameter_table_csv,
+)
 from mania.run_provenance import PortableArtifactReference
+from mania.run_provenance_io import RunProvenanceReadError, read_run_provenance
 from mania.runtime_metadata_io import RuntimeMetadataReadError, read_runtime_metadata
 from mania.validation import artifacts, graph, run_artifacts
 from mania.validation.run_artifacts import (
@@ -236,6 +241,7 @@ class UnifiedArtifactValidationReport:
 # or callable names supplied by metadata. Analysis reuses a Stage 20 role alias.
 _PREPROCESSING_POLICY: dict[str, str | None] = {
     "input_manifest": None,
+    "dataset_parameter_table": "dataset_parameter_table",
     "condition_topology": None,
     "condition_trajectory": None,
     "condition_reference_structure": None,
@@ -285,6 +291,7 @@ _PAIR_ROLES = {
     "reference_edges": ("reference_nodes", "reference_edges"),
 }
 _VALIDATORS = {
+    "dataset_parameter_table": "read_dataset_parameter_table_csv",
     "graph_pair": "validate_preprocessing_graph_csvs",
     "graph": "validate_graph_json",
     "rg": "validate_rg_timeseries_csv",
@@ -389,6 +396,7 @@ def _invoke(
 
 
 def _failure_count(call: Callable[[], object]) -> int:
+    from mania.preprocessing.dataset_binding import PreprocessingDatasetBindingError
     from mania.preprocessing.pbc_audit_io import PbcAuditReadError
 
     try:
@@ -396,6 +404,7 @@ def _failure_count(call: Callable[[], object]) -> int:
     except (
         artifacts.ArtifactValidationError, OSError, UnicodeError, csv.Error,
         RuntimeMetadataReadError, PbcAuditReadError,
+        DatasetParameterTableReadError, PreprocessingDatasetBindingError,
     ):
         # Public validator exceptions and ordinary file/read failures only.
         return 1
@@ -485,6 +494,71 @@ def validate_run_artifacts(
     policy = _PREPROCESSING_POLICY if scope == "preprocessing" else _ANALYSIS_POLICY
     mappings = {} if input_artifact_paths is None else input_artifact_paths
     completed: set[str] = set()
+    # Keep imports local to preserve the validation/preprocessing import boundary.
+    from mania.preprocessing.dataset_binding import (
+        PreprocessingDatasetBindingError,
+        PreprocessingDatasetContext,
+    )
+
+    dataset_context: PreprocessingDatasetContext | None = None
+    if scope == "preprocessing":
+        try:
+            provenance = read_run_provenance(run_root / integrity.provenance_path)
+        except RunProvenanceReadError:
+            # The integrity report already diagnoses unreadable provenance.
+            pass
+        else:
+            configuration = provenance.to_dict()["resolved_configuration"]
+            assert isinstance(configuration, dict)
+            if "dataset_context" in configuration:
+                try:
+                    dataset_context = PreprocessingDatasetContext.from_dict(
+                        configuration["dataset_context"]
+                    )
+                    names = tuple(
+                        b.execution_condition for b in dataset_context.bindings
+                    )
+                    if names != tuple(c for c in provenance.conditions if c in names):
+                        raise PreprocessingDatasetBindingError(
+                            "Invalid execution conditions."
+                        )
+                except PreprocessingDatasetBindingError:
+                    issues.append(UnifiedArtifactValidationIssue(
+                        "error", "dataset_context_invalid",
+                        "Preprocessing Dataset context is invalid.",
+                        path=integrity.provenance_path,
+                    ))
+        table_entries = tuple(e for e in entries if e.role == "dataset_parameter_table")
+        uses_table = dataset_context is not None and any(
+            b.source != "inline_manifest" for b in dataset_context.bindings
+        )
+        if (uses_table and (
+            len(table_entries) != 1
+            or table_entries[0].direction != "input"
+            or table_entries[0].format != "csv"
+            or table_entries[0].condition is not None
+        )) or (not uses_table and table_entries):
+            issues.append(UnifiedArtifactValidationIssue(
+                "error", "dataset_parameter_table_lineage_mismatch",
+                "Dataset table context requires exactly one parameter-table input, "
+                "and vice versa.",
+                path=integrity.inventory_path,
+            ))
+
+    def validate_dataset_table(path: Path) -> object:
+        table = read_dataset_parameter_table_csv(path)
+        if dataset_context is not None:
+            specs = {spec.identity.replica_key: spec for spec in table.specs}
+            for binding in dataset_context.bindings:
+                if binding.source == "inline_manifest":
+                    continue
+                recorded = binding.dataset_spec
+                actual = specs.get(recorded.identity.replica_key)
+                if actual is None or actual.to_dict() != recorded.to_dict():
+                    raise PreprocessingDatasetBindingError(
+                        "Dataset context does not match the parameter table."
+                    )
+        return table
 
     def record(
         entry: ArtifactInventoryEntry,
@@ -642,7 +716,9 @@ def validate_run_artifacts(
             valid = check(
                 (entry,),
                 validator,
-                partial(_invoke, contract, local(entry), entry.condition),
+                partial(validate_dataset_table, local(entry))
+                if contract == "dataset_parameter_table"
+                else partial(_invoke, contract, local(entry), entry.condition),
             )
             # Only these accepted generic CSV contracts use condition. Cross-run
             # comparison/stats and legacy condition_name tables keep their semantics.

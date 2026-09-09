@@ -6,6 +6,7 @@ from datetime import datetime
 from math import fsum, isclose, isfinite
 from typing import Literal
 
+from mania.preprocessing.dataset_binding import PreprocessingDatasetContext
 from mania.preprocessing.trajectory_contacts import (
     PreprocessingConditionContactsResult,
     PreprocessingContactFrameResult,
@@ -86,6 +87,7 @@ def build_completed_preprocessing_run_provenance(
     command: tuple[str, ...],
     resolved_configuration: Mapping[str, object],
     artifact_references: tuple[PortableArtifactReference, ...],
+    dataset_context: PreprocessingDatasetContext | None = None,
 ) -> RunProvenance:
     """Combine caller snapshots and retained sampling, without time or file I/O."""
     if type(computation) is not PreprocessingGraphWorkflowComputationResult:
@@ -108,7 +110,9 @@ def build_completed_preprocessing_run_provenance(
             ended_at_utc=ended_at_utc,
             software_identity=software_identity,
             command=command,
-            resolved_configuration=resolved_configuration,
+            resolved_configuration=_dataset_configuration(
+                resolved_configuration, dataset_context
+            ),
             conditions=computation.condition_names,
             sampling_by_condition=sampling.sampling_by_condition,
             artifact_references=artifact_references,
@@ -133,6 +137,7 @@ def build_failed_preprocessing_run_provenance(
     frame_sampling: PreprocessingFrameSamplingOptions,
     artifact_references: tuple[PortableArtifactReference, ...] = (),
     computation: PreprocessingGraphWorkflowComputationResult | None = None,
+    dataset_context: PreprocessingDatasetContext | None = None,
 ) -> RunProvenance:
     """Record a workflow failure and any retained observations without I/O."""
     if failure_stage not in PREPROCESSING_RUN_FAILURE_STAGES:
@@ -187,7 +192,9 @@ def build_failed_preprocessing_run_provenance(
             ended_at_utc=ended_at_utc,
             software_identity=software_identity,
             command=command,
-            resolved_configuration=resolved_configuration,
+            resolved_configuration=_dataset_configuration(
+                resolved_configuration, dataset_context
+            ),
             conditions=conditions,
             sampling_by_condition=sampling.sampling_by_condition,
             artifact_references=artifact_references,
@@ -197,6 +204,17 @@ def build_failed_preprocessing_run_provenance(
         raise PreprocessingRunProvenanceBuildError(
             "Failed run metadata is invalid."
         ) from None
+
+
+def _dataset_configuration(
+    configuration: Mapping[str, object], context: PreprocessingDatasetContext | None,
+) -> Mapping[str, object]:
+    """Add only portable resolved context; preserve the legacy snapshot otherwise."""
+    if context is None:
+        return configuration
+    if type(context) is not PreprocessingDatasetContext:
+        raise ValueError("dataset_context must be PreprocessingDatasetContext")
+    return {**configuration, "dataset_context": context.to_dict()}
 
 
 @dataclass(frozen=True)

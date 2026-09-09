@@ -46,6 +46,26 @@ from mania.runtime_metadata_io import write_runtime_metadata
 INVENTORY_REF = {"role": "artifact_inventory", "path": "artifact_inventory.json"}
 
 
+def stub_legacy_manifest_load(monkeypatch, runtime):
+    """Keep checksum guards scoped to inventory, as with the stubbed runtime load."""
+    from mania.preprocessing.input_manifest import PreprocessingInputManifest
+
+    manifest = PreprocessingInputManifest.model_validate({
+        "output_root": "out",
+        "conditions": [
+            {
+                "condition": result.condition_name,
+                "topology_path": result.runtime_input.topology_path,
+                "trajectory_paths": result.runtime_input.trajectory_paths,
+            }
+            for result in runtime.runtime_load_result.condition_results
+        ],
+    })
+    monkeypatch.setattr(
+        cli, "load_preprocessing_input_manifest", Mock(return_value=manifest)
+    )
+
+
 def command(root, *extra, all_stages=False):
     args = [
         "preprocessing",
@@ -226,6 +246,7 @@ def test_default_run_preserves_stdout_order_verbose_and_timing(
     monkeypatch, capsys, tmp_path, overwrite
 ):
     calls, received = install_inventory_workflow(monkeypatch, tmp_path)
+    stub_legacy_manifest_load(monkeypatch, received["runtime"])
     original_options = cli._build_preprocessing_graph_workflow_options
     monkeypatch.setattr(
         cli,
@@ -307,6 +328,7 @@ def test_default_run_preserves_stdout_order_verbose_and_timing(
 @pytest.mark.parametrize("mode", ["none", "sha256"])
 def test_real_inventory_and_provenance_smoke(monkeypatch, capsys, tmp_path, mode):
     calls, received = install_inventory_workflow(monkeypatch, tmp_path)
+    stub_legacy_manifest_load(monkeypatch, received["runtime"])
     root = tmp_path / "out"
     write_small(root / "unrelated.csv", b"unrelated")
     write_small(root / "analysis/old.json", b"old analysis")

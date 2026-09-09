@@ -56,6 +56,7 @@ def collect_preprocessing_input_file_specs(
     reference_edges_path: Path | None = None,
     reference_graph_path: Path | None = None,
     include_reference_inputs: bool = False,
+    parameter_table_local_path: Path | None = None,
 ) -> tuple[ArtifactInventoryFileSpec, ...]:
     """Describe all intended conditions, even when their runtime load failed."""
     if not isinstance(runtime_loading, PreprocessingGraphWorkflowRuntimeLoadingResult):
@@ -114,6 +115,16 @@ def collect_preprocessing_input_file_specs(
         runtime_loading.manifest_path,
         "inputs/manifest",
     )
+    if parameter_table_local_path is not None:
+        specs.append(ArtifactInventoryFileSpec(
+            "input:dataset_parameter_table",
+            "input",
+            "dataset_parameter_table",
+            parameter_table_local_path,
+            "inputs/dataset/parameter_table.csv",
+            "csv",
+            None,
+        ))
     for ordinal, result in enumerate(loaded.condition_results, 1):
         source = result.runtime_input
         identity = f"input:condition:{ordinal:04d}"
@@ -309,6 +320,7 @@ def build_preprocessing_artifact_inventory(
     reference_edges_path: Path | None = None,
     reference_graph_path: Path | None = None,
     include_reference_inputs: bool = False,
+    parameter_table_local_path: Path | None = None,
     graph_export: PreprocessingGraphWorkflowGraphExportResult | None = None,
     analysis_input_export: PreprocessingGraphWorkflowAnalysisInputExportResult
     | None = None,
@@ -327,6 +339,7 @@ def build_preprocessing_artifact_inventory(
         reference_edges_path=reference_edges_path,
         reference_graph_path=reference_graph_path,
         include_reference_inputs=include_reference_inputs,
+        parameter_table_local_path=parameter_table_local_path,
     )
     outputs = collect_preprocessing_output_file_specs(
         output_root=output_root,

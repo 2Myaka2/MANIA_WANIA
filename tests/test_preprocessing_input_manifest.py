@@ -348,3 +348,94 @@ def test_custom_residue_library_naming_is_canonical() -> None:
     assert "custom_residues_path" in residue_library
     assert "user_overlay_path" not in residue_library
     assert "user_residue_library_path" not in residue_library
+@pytest.mark.parametrize("value", ["", "  ", 1, True, None, b"replica"])
+def test_dataset_reference_requires_actual_nonempty_strings(value):
+    from mania.preprocessing.input_manifest import DatasetTrajectoryReference
+
+    with pytest.raises(ValueError):
+        DatasetTrajectoryReference(
+            dataset_id=value, system_id="S", trajectory_id="T", replica_id="R"
+        )
+
+
+def test_dataset_reference_normalization_and_frozen_extra_boundary():
+    from mania.preprocessing.input_manifest import DatasetTrajectoryReference
+
+    ref = DatasetTrajectoryReference(
+        dataset_id=" D ", system_id=" S ", trajectory_id=" T ", replica_id=" R "
+    )
+    assert ref.replica_key == ("D", "S", "T", "R")
+    with pytest.raises(ValueError):
+        ref.dataset_id = "changed"
+    with pytest.raises(ValueError):
+        DatasetTrajectoryReference(**ref.model_dump(), condition="NORM")
+
+
+def test_dataset_manifest_mixed_migration_and_legacy_serialization():
+    from test_preprocessing_dataset_binding import manifest, reference, spec
+    from test_preprocessing_dataset_spec_manifest import LEGACY_ENTRY
+
+    value = spec(condition=None)
+    legacy = manifest(LEGACY_ENTRY)
+    assert "dataset_parameter_table_path" not in legacy.to_dict()
+    assert "dataset_ref" not in legacy.to_dict()["conditions"][0]
+    explicit_null = manifest(LEGACY_ENTRY | {"dataset_ref": None, "dataset_spec": None})
+    assert explicit_null.to_dict() == legacy.to_dict()
+    mixed = manifest(
+        LEGACY_ENTRY,
+        LEGACY_ENTRY | {"condition": "table", "dataset_ref": reference(value)},
+        LEGACY_ENTRY
+        | {"condition": "inline", "dataset_spec": spec(condition=None, replica_id="B")},
+        table="does-not-need-to-exist.csv",
+    )
+    data = mixed.to_dict()
+    assert data["dataset_parameter_table_path"] == "does-not-need-to-exist.csv"
+    assert data["conditions"][0] == legacy.to_dict()["conditions"][0]
+    assert data["conditions"][1]["dataset_ref"] == reference(value)
+    assert "dataset_spec" not in data["conditions"][1]
+    assert "dataset_ref" not in data["conditions"][2]
+
+
+@pytest.mark.parametrize("inline", [False, True])
+def test_dataset_reference_requires_table_even_with_inline(inline):
+    from test_preprocessing_dataset_binding import manifest, reference, spec
+    from test_preprocessing_dataset_spec_manifest import LEGACY_ENTRY
+
+    entry = LEGACY_ENTRY | {"dataset_ref": reference(spec())}
+    if inline:
+        entry["dataset_spec"] = spec()
+    with pytest.raises(ValueError, match="dataset_ref requires"):
+        manifest(entry)
+
+
+@pytest.mark.parametrize("table", ["", "  ", "parameters.csv"])
+def test_dataset_table_rejects_empty_path_or_legacy_only(table):
+    from test_preprocessing_dataset_binding import manifest
+    from test_preprocessing_dataset_spec_manifest import LEGACY_ENTRY
+
+    with pytest.raises(ValueError):
+        manifest(LEGACY_ENTRY, table=table)
+
+
+def test_dataset_reference_mismatch_and_duplicate_effective_keys():
+    from test_preprocessing_dataset_binding import manifest, reference, spec
+    from test_preprocessing_dataset_spec_manifest import LEGACY_ENTRY
+
+    value = spec(condition=None)
+    with pytest.raises(ValueError, match="replica_key must match"):
+        manifest(
+            LEGACY_ENTRY
+            | {
+                "dataset_spec": value,
+                "dataset_ref": reference(spec(replica_id="B")),
+            },
+            table="parameters.csv",
+        )
+    for first in ({"dataset_spec": value}, {"dataset_ref": reference(value)}):
+        with pytest.raises(ValueError, match="Duplicate Dataset replica_key"):
+            manifest(
+                LEGACY_ENTRY | first,
+                LEGACY_ENTRY
+                | {"condition": "different", "dataset_ref": reference(value)},
+                table="parameters.csv",
+            )

@@ -15,6 +15,29 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from mania.dataset_identity import DatasetTrajectorySpec
 
 
+class DatasetTrajectoryReference(BaseModel):
+    """Exact table lookup identity; never a statistical grouping key."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    dataset_id: str
+    system_id: str
+    trajectory_id: str
+    replica_id: str
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def validate_identifier(cls, value: object) -> str:
+        """Require actual stripped, non-empty strings while preserving case."""
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("Dataset reference identifiers must be non-empty strings")
+        return value.strip()
+
+    @property
+    def replica_key(self) -> tuple[str, str, str, str]:
+        return (self.dataset_id, self.system_id, self.trajectory_id, self.replica_id)
+
+
 class TrajectoryInputConfig(BaseModel):
     """Raw simulation inputs declared for one analysis condition."""
 
@@ -26,6 +49,7 @@ class TrajectoryInputConfig(BaseModel):
     reference_structure_path: Path | None = None
     metadata: dict[str, str] = Field(default_factory=dict)
     dataset_spec: DatasetTrajectorySpec | None = None
+    dataset_ref: DatasetTrajectoryReference | None = None
 
     @model_validator(mode="after")
     def validate_dataset_condition(self) -> Self:
@@ -38,6 +62,14 @@ class TrajectoryInputConfig(BaseModel):
             ):
                 raise ValueError(
                     "Dataset identity condition must equal the manifest condition"
+                )
+            if (
+                self.dataset_ref is not None
+                and self.dataset_ref.replica_key
+                != self.dataset_spec.identity.replica_key
+            ):
+                raise ValueError(
+                    "Dataset reference and inline spec replica_key must match"
                 )
         return self
 
@@ -123,8 +155,9 @@ class PreprocessingInputManifest(BaseModel):
         default_factory=ResidueLibraryInputConfig
     )
     frame_time_ps: float | None = None
+    dataset_parameter_table_path: Path | None = None
 
-    @field_validator("output_root", mode="before")
+    @field_validator("output_root", "dataset_parameter_table_path", mode="before")
     @classmethod
     def validate_output_root(cls, value: object) -> object:
         """Reject an empty output root before Path conversion."""
@@ -171,16 +204,34 @@ class PreprocessingInputManifest(BaseModel):
         cls,
         value: tuple[TrajectoryInputConfig, ...],
     ) -> tuple[TrajectoryInputConfig, ...]:
-        """Reject duplicate Dataset identity keys among supplied specs only."""
+        """Reject duplicate effective identities among Dataset-aware entries."""
         seen_keys: set[tuple[str, str, str, str]] = set()
         for condition_config in value:
-            if condition_config.dataset_spec is None:
+            if condition_config.dataset_spec is not None:
+                key = condition_config.dataset_spec.identity.replica_key
+            elif condition_config.dataset_ref is not None:
+                key = condition_config.dataset_ref.replica_key
+            else:
                 continue
-            key = condition_config.dataset_spec.identity.replica_key
             if key in seen_keys:
                 raise ValueError(f"Duplicate Dataset replica_key: {key!r}")
             seen_keys.add(key)
         return value
+
+    @model_validator(mode="after")
+    def validate_dataset_table_usage(self) -> Self:
+        """References require a table; declared tables require Dataset-aware entries."""
+        if self.dataset_parameter_table_path is None:
+            if any(config.dataset_ref is not None for config in self.conditions):
+                raise ValueError("dataset_ref requires dataset_parameter_table_path")
+        elif not any(
+            config.dataset_spec is not None or config.dataset_ref is not None
+            for config in self.conditions
+        ):
+            raise ValueError(
+                "Dataset parameter table requires a Dataset-aware condition"
+            )
+        return self
 
     def condition_names(self) -> tuple[str, ...]:
         """Return condition names in manifest order."""
@@ -213,13 +264,23 @@ class PreprocessingInputManifest(BaseModel):
     def to_dict(self) -> dict[str, object]:
         """Preserve legacy fields and serialize supplied specs with their contract."""
         payload = self.model_dump(
-            mode="json", exclude={"conditions": {"__all__": {"dataset_spec"}}}
+            mode="json",
+            exclude={
+                "conditions": {"__all__": {"dataset_spec", "dataset_ref"}},
+                "dataset_parameter_table_path": True,
+            },
         )
         for config, serialized in zip(
             self.conditions, payload["conditions"], strict=True
         ):
             if config.dataset_spec is not None:
                 serialized["dataset_spec"] = config.dataset_spec.to_dict()
+            if config.dataset_ref is not None:
+                serialized["dataset_ref"] = config.dataset_ref.model_dump(mode="json")
+        if self.dataset_parameter_table_path is not None:
+            payload["dataset_parameter_table_path"] = str(
+                self.dataset_parameter_table_path
+            )
         return payload
 
 
@@ -265,6 +326,7 @@ def _reject_empty_path(value: object) -> object:
 
 
 __all__ = [
+    "DatasetTrajectoryReference",
     "PreprocessingInputManifest",
     "ResidueLibraryInputConfig",
     "TrajectoryInputConfig",

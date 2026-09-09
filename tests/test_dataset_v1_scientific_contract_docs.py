@@ -300,15 +300,25 @@ def test_future_owners_are_explicitly_not_implemented(stage: int) -> None:
 
 
 @pytest.mark.parametrize("path", [SCIENTIFIC, IDENTITY])
-def test_docs_do_not_claim_future_implementation_or_stage26_completion(
+def test_docs_preserve_stage_status_and_future_implementation_boundary(
     path: Path,
 ) -> None:
     text = normalized(path.read_text(encoding="utf-8"))
     assert re.search(r"stage 25 is complete", text)
     assert re.search(r"stage 26\.a is implemented", text)
-    assert re.search(r"stage 26 remains incomplete", text)
-    assert re.search(r"stage 26\.b[^;]*integration[^;]*next", text)
-    assert not re.search(r"stage 26 (?:is |— )complete\b", text)
+    if path == SCIENTIFIC:
+        # Preserve the frozen record's historical Stage 26.A status assertions.
+        assert re.search(r"stage 26 remains incomplete", text)
+        assert re.search(r"stage 26\.b[^;]*integration[^;]*next", text)
+        assert not re.search(r"stage 26 (?:is |— )complete\b", text)
+    else:
+        status = section(path, "status and scope")
+        assert re.search(r"stage 26\.a[^.]*accepted", status)
+        assert re.search(r"stage 26\.b[^.]*accepted", status)
+        assert re.search(r"stage 26\.c[^.]*implemented", status)
+        assert re.search(r"stage 26 is complete\b", status)
+        assert "stage 27 physical-time sampling/window engine is next" in status
+        assert "no such engine is implemented yet" in status
     feature = (
         r"(?:physical-time frame selection|physical-time windows|contact episodes|"
         r"lifetime|protein-lipid contacts|protein-glycan contacts|canonical mapping|"

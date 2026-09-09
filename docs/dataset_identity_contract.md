@@ -1,12 +1,14 @@
-# Dataset v1.0 trajectory identity — Stages 26.A–B
+# Dataset v1.0 trajectory identity — Stage 26
 
 ## Status and scope
 
 Stage 25 is complete. Stage 26.A is implemented and accepted as an additive, independent
 in-memory contract in [`dataset_identity.py`](../src/mania/dataset_identity.py).
 Stage 26.B optional manifest integration and standalone parameter-table input
-are implemented. Stage 26 remains incomplete. Stage 26.C execution
-binding/propagation and acceptance are next.
+are accepted. Stage 26.C authoritative execution binding, technical propagation,
+validation, and acceptance are implemented. Stage 26 is complete.
+Stage 27 physical-time sampling/window engine is next; no such engine is
+implemented yet.
 
 The [Dataset v1.0 scientific contract](dataset_v1_scientific_contract.md) records
 the frozen scientific decisions for Stages 27–35. Scientific decisions being
@@ -154,15 +156,74 @@ kind. These tags remain output-only properties, not spec constructor fields.
 specs in manifest order. Both helpers are pure and infer nothing.
 
 The [external parameter-table contract](dataset_parameter_table_contract.md)
-defines the separate CSV input path. Stage 26.B does not automatically bind or
-merge that table with a manifest. Stage 26.C owns execution binding/propagation.
-There is no CLI change, trajectory runtime-input change, analysis-request change,
-runtime change, sampling change, or scientific artifact change. No runtime or
-scientific consumer uses `dataset_spec` yet. Stage 20–24 scientific schemas,
-rows, and calculation semantics MUST remain intact.
+defines the separate CSV input path. Stage 26.B did not automatically bind or
+merge that table with a manifest. Stage 26.C adds the explicit execution binding
+below. There is no new CLI option or trajectory runtime-input change,
+analysis-request change, runtime change, sampling change, or scientific artifact change.
+Stage 26.A had no CLI change; Stage 26.C changes only input orchestration and
+technical metadata. Stage 20–24 scientific schemas, rows, and calculation
+semantics MUST remain intact.
 
-Stage 25 software identity, run provenance, inventory/checksum modes, unified
-validation, runtime metadata, and observation-only PBC audit remain unchanged.
+Stage 25 software identity, generic provenance/inventory schemas, checksum modes,
+unified validation status semantics, runtime metadata, and observation-only PBC
+audit remain compatible. Stage 26.C adds optional preprocessing metadata and validation.
 No dependency, optional scientific dependency boundary, WANIA component, FAIR²
 dataset repository, service, database, or worker is changed. Stages 26.A–B add no
 scientific calculation, biological annotation, QC engine, or publication export.
+
+## Stage 26.C authoritative execution binding
+
+`DatasetTrajectoryReference` is a frozen model with `extra="forbid"`. Its four
+actual-string fields are stripped, non-empty, and case-preserving:
+`dataset_id`, `system_id`, `trajectory_id`, `replica_id`. Its `replica_key` is an
+identity/reference key only, never a statistical grouping key.
+
+A manifest condition can declare inline `dataset_spec`, explicit `dataset_ref`,
+both, or neither. Every reference requires top-level `dataset_parameter_table_path`,
+even alongside an inline spec. Both declarations must have identical replica keys.
+A declared table requires at least one Dataset-aware condition; mixed migration is
+valid. Effective replica keys must be unique across Dataset-aware conditions.
+Legacy condition uniqueness remains unchanged. Absent `dataset_spec`, `dataset_ref`,
+and `dataset_parameter_table_path` keys are omitted by `to_dict()`; existing legacy
+null fields retain their serialization.
+
+`resolve_preprocessing_dataset_context(manifest, base_dir=...)` reads only the
+explicit table through the accepted CSV reader. Relative table paths require an
+explicit base directory; the CLI supplies the manifest parent. Absolute explicit
+paths are valid execution inputs. There is no implicit cwd or directory discovery.
+
+| Declaration | Binding source | Rule |
+| --- | --- | --- |
+| Inline only, no table | `inline_manifest` | Retain the exact inline spec |
+| Reference plus table | `parameter_table` | Lookup exact four-part replica key |
+| Inline plus table, with or without reference | `inline_and_parameter_table` | Exact key lookup and full spec serialization equality |
+| Neither | No binding | Preserve the legacy execution path |
+
+There is no lookup by condition, topology basename, filename, variant, row order,
+or directory. Unused table rows are valid. Full equality covers all identity and
+requested temporal fields; conflicts and missing rows fail before trajectory
+loading or science with exit 1 and `Dataset specification binding failed:` stderr.
+A resolved non-null scientific condition must equal the normalized execution
+condition. Scientific condition `None` is never filled from an execution label.
+
+`PreprocessingDatasetBinding` contains only `execution_condition`, `source`, and
+`dataset_spec`, in that serialization order. `PreprocessingDatasetContext` has
+read-only schema `mania.preprocessing_dataset_context.v0.1` and kind
+`mania_preprocessing_dataset_context`. Its portable `to_dict()` order is
+`schema_version`, `kind`, `bindings`. Bindings are non-empty, retain manifest order,
+and have unique execution conditions and replica keys. `from_dict()` strictly
+reconstructs this versioned serialization, including nested spec tags.
+
+The frozen `PreprocessingDatasetResolution` separates portable `context` from
+execution-only `parameter_table_local_path`. Context is absent for legacy runs.
+A local path is present exactly when context uses a table; the resolution has no
+portable serializer. No path or runtime object enters Dataset context.
+
+Completed and covered failed preprocessing provenance records optional Dataset
+context. Used tables become input inventory lineage, with strict table/context
+cross-checking during unified validation. Generic schemas and scientific
+`mania_manifest.json`, graph, and CSV artifacts are unchanged. Requested physical
+values remain exactly as supplied model values; no frames, windows, conversions,
+overlap, coverage, or time QC are calculated. Analysis propagation is not part of
+Stage 26; future export layers may consume this preprocessing identity boundary
+without inferring condition or altering current analysis semantics.

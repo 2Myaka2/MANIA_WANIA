@@ -48,6 +48,12 @@ from mania.preprocessing.artifact_inventory import (
     PREPROCESSING_ARTIFACT_INVENTORY_ROLE,
     build_preprocessing_artifact_inventory,
 )
+from mania.preprocessing.dataset_binding import (
+    PreprocessingDatasetBindingError,
+    PreprocessingDatasetResolution,
+    resolve_preprocessing_dataset_context,
+)
+from mania.preprocessing.input_manifest import load_preprocessing_input_manifest
 from mania.preprocessing.pbc_audit import PBC_AUDIT_FILENAME, build_pbc_audit
 from mania.preprocessing.pbc_audit_io import write_pbc_audit
 from mania.preprocessing.run_provenance import (
@@ -1090,6 +1096,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         PreprocessingGraphWorkflowRuntimeLoadingResult | None
     ) = None
     inventory_outputs: dict[str, Any] = {}
+    dataset_resolution = PreprocessingDatasetResolution(None, None)
     analysis_input_export: object | None = (
         None
         if _analysis_input_export_requested(args)
@@ -1123,6 +1130,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 reference_edges_path=options.reference_edges_csv_path,
                 reference_graph_path=options.reference_graph_json_path,
                 include_reference_inputs=options.enable_reference_comparison,
+                parameter_table_local_path=dataset_resolution.parameter_table_local_path,
                 **inventory_outputs,
             )
         except (ValueError, TypeError, OSError, RuntimeError, AttributeError):
@@ -1184,6 +1192,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                     args, options, plan.output_layout, failure_stage=stage
                 ) + inventory_references,
                 computation=computation,
+                dataset_context=dataset_resolution.context,
             )
         except (ValueError, TypeError, OSError, RuntimeError, AttributeError):
             print(
@@ -1223,6 +1232,21 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         )
         emit_failure("plan")
         return 1
+
+    # Keep legacy manifest-load failures on the existing readiness/error path.
+    # Successful loads bind Dataset metadata before any trajectory access.
+    try:
+        manifest = load_preprocessing_input_manifest(options.manifest_path)
+    except (ValueError, OSError):
+        pass
+    else:
+        try:
+            dataset_resolution = resolve_preprocessing_dataset_context(
+                manifest, base_dir=options.manifest_path.parent,
+            )
+        except PreprocessingDatasetBindingError as exc:
+            print(f"Dataset specification binding failed: {exc}", file=sys.stderr)
+            return 1
 
     _print_preprocessing_graph_export_progress(args, 2)
     runtime_loading = load_preprocessing_graph_workflow_condition_runtimes(
@@ -1538,6 +1562,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             software_identity=software_identity,
             command=_portable_preprocessing_command(command),
             resolved_configuration=_preprocessing_resolved_configuration(args, options),
+            dataset_context=dataset_resolution.context,
             artifact_references=_completed_preprocessing_artifact_references(
                 args, options, plan.output_layout
             ) + tuple(technical_references) + inventory_references,

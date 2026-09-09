@@ -1,4 +1,4 @@
-# Dataset trajectory parameter-table input — Stage 26.B
+# Dataset trajectory parameter-table input — Stage 26
 
 ## Purpose and status
 
@@ -8,8 +8,9 @@ scientific-output table, aggregation table, final Dataset v1.0 publication
 table, or FAIR² publication schema.
 
 Stage 26.A identity models are accepted; Stage 26.B manifest and table input
-integration is implemented. Stage 26 remains incomplete. Stage 26.C execution
-binding/propagation and acceptance are next. The
+integration is accepted. Stage 26.C authoritative execution binding, propagation,
+and validation are implemented. Stage 26 is complete; Stage 27 physical-time
+sampling/window engine is next. The
 [identity contract](dataset_identity_contract.md) and unchanged
 [frozen scientific contract](dataset_v1_scientific_contract.md) remain authoritative.
 
@@ -106,15 +107,50 @@ The public constants are `DATASET_PARAMETER_TABLE_SCHEMA_VERSION`,
 
 ## Execution and scientific stage boundary
 
-Stage 26.B reads and validates requested parameters. An embedded manifest
-`dataset_spec` and a standalone external parameter table are separate input
-paths. There is no automatic binding, merging, filename/topology matching, or
-matching by condition. No `parameter_table_path` manifest field or CLI argument
-is added, including to `mania preprocessing run-graph-export`.
+Stage 26.B reads and validates requested parameters. Stage 26.C binds a table
+explicitly through the manifest without adding CLI arguments:
 
-Stage 26.C owns authoritative execution binding and identity propagation into
-runtime/provenance/inventory. Stage 27 owns physical-time frame selection,
-effective windows, and overlap mechanics. Stage 26.B does not convert ps/ns,
-select or calculate frames, construct or count windows, calculate lifetime or
-occupancy, aggregate replicas, or invoke topology/trajectory loading or
-MDAnalysis. Existing runtime, CLI, and scientific calculations remain unchanged.
+```yaml
+output_root: out
+dataset_parameter_table_path: parameters.csv
+conditions:
+  - condition: execution-replica-A
+    topology_path: topology.psf
+    trajectory_paths: [trajectory.dcd]
+    dataset_ref:
+      dataset_id: development-subset
+      system_id: supplied-system
+      trajectory_id: supplied-trajectory
+      replica_id: A
+```
+
+The example requires a matching table row. Its scientific condition can be blank
+(`None`), or must match the execution label if supplied. MANIA never invents the
+unresolved concrete NAMD condition labels. Relative table paths resolve against
+the manifest parent in the CLI; the Python resolver requires explicit `base_dir`.
+Pure manifest construction checks declarations without requiring table existence.
+
+Lookup uses exactly `(dataset_id, system_id, trajectory_id, replica_id)`. It never
+uses condition, filenames, topology, variant, directories, or row order. Repeated
+conditions and unused rows are valid. Full Dataset size is not required.
+
+Inline `dataset_spec` alone is supported. If a table is declared alongside any
+inline spec, that exact replica row must exist and full `DatasetTrajectorySpec`
+serialization must match, including engine, scientific condition, disulfide state,
+and all six requested temporal values. An optional reference must match the inline
+key and always requires a table. Missing keys and conflicts block science.
+
+Resolved portable context enters preprocessing provenance. A used external table
+becomes the `input:dataset_parameter_table` inventory entry with role
+`dataset_parameter_table`, virtual path `inputs/dataset/parameter_table.csv`, CSV
+format, and null condition. Local paths are execution-only. Normal `none`/`sha256`
+checksum semantics apply. Input lineage does not imply publication membership.
+Unified validation delegates parsing to the accepted reader, then matches each
+table-backed context binding by exact replica key and full spec equality.
+
+Stage 27 owns physical-time frame selection, effective windows, and overlap
+mechanics. Stage 26 preserves requested parameters unchanged and inert: no ps/ns
+conversion, frame selection, window construction, overlap calculation, coverage,
+time QC, lifetime, occupancy, or replica aggregation. Runtime scientific inputs
+and calculations remain unchanged. Analysis Dataset-context propagation is outside
+Stage 26.

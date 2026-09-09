@@ -526,3 +526,49 @@ def test_technical_outputs_reject_noncanonical_paths(tmp_path, field):
         adapter.collect_preprocessing_output_file_specs(
             output_root=tmp_path, **{field: tmp_path / "nested" / f"{role}.json"},
         )
+
+
+@pytest.mark.parametrize("mode", ["none", "sha256"])
+@pytest.mark.parametrize("failed", [False, True])
+def test_dataset_table_explicit_portable_input_and_checksum(
+    tmp_path, monkeypatch, mode, failed
+):
+    from test_preprocessing_dataset_binding import spec, write_table
+
+    runtime = make_runtime(tmp_path, failed=failed)
+    table = write_table(tmp_path / "private-source-name.csv", spec())
+    content = table.read_bytes()
+    original_open = Path.open
+
+    def guarded_open(path, *args, **kwargs):
+        if mode == "none" and path == table:
+            raise AssertionError("Size-only inventory must not reread table content")
+        return original_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", guarded_open)
+    inventory = adapter.build_preprocessing_artifact_inventory(
+        run_id="dataset",
+        runtime_loading=runtime,
+        output_root=tmp_path / "out",
+        checksum_mode=mode,
+        parameter_table_local_path=table,
+    )
+    matches = [
+        entry
+        for entry in inventory.artifacts
+        if entry.role == "dataset_parameter_table"
+    ]
+    assert len(matches) == 1
+    item = matches[0]
+    assert item.artifact_id == "input:dataset_parameter_table"
+    assert item.path == "inputs/dataset/parameter_table.csv"
+    assert item.direction == "input" and item.format == "csv" and item.condition is None
+    assert item.byte_size == len(content)
+    assert item.sha256 == (
+        hashlib.sha256(content).hexdigest() if mode == "sha256" else None
+    )
+    assert str(table) not in str(inventory.to_dict())
+    assert table.name not in str(inventory.to_dict())
+    assert all(entry.direction == "input" for entry in inventory.artifacts)
+    plain = adapter.collect_preprocessing_input_file_specs(runtime)
+    assert "dataset_parameter_table" not in [entry.role for entry in plain]

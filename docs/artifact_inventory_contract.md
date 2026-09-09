@@ -408,3 +408,25 @@ self-hash. Technical failures retain scientific outputs and attempt inventory wi
 only successful technical artifacts, followed by completed provenance; the final
 exit is 1 and the successful summary is suppressed. Failed scientific workflows
 retain their Stage 25.B/C matrix above and gain no automatic E.2 artifacts.
+
+## Stage 26.C — Dataset parameter-table input lineage
+
+When an external parameter table actually participates in preprocessing binding,
+the execution resolution supplies its exact local path to the existing input
+adapter. No directory discovery occurs. Exactly one entry is added:
+
+| Artifact ID | Direction | Role | Portable path | Format | Condition |
+| --- | --- | --- | --- | --- | --- |
+| `input:dataset_parameter_table` | `input` | `dataset_parameter_table` | `inputs/dataset/parameter_table.csv` | `csv` | `null` |
+
+The path is a fixed virtual input identity; neither the local directory nor the
+source basename is serialized. Inline-only and legacy runs add no table entry.
+The generic inventory schema is unchanged. In `none` mode the adapter records
+exact byte size and null SHA256 without rereading content for hashing. In
+`sha256` mode the accepted bounded streaming helper hashes the table.
+
+After successful binding, covered failed scientific runs retain the table among
+actual inputs whenever authoritative runtime inputs are available under the
+Stage 25 failure contract. Only successful stages contribute outputs. Binding
+failure does not fabricate inventory. Input lineage is not publication membership.
+No Dataset role is added to analysis inventory in Stage 26.

@@ -22,10 +22,23 @@ Stage 25.G final technical-hardening acceptance is complete.
 The scientific PBC protocol remains unresolved; MANIA applies no internal
 minimum-image correction. Stage 25 is complete. FastAPI remains postponed.
 
-MANIA technical publication hardening is complete. Review scientific decisions
-with Ramila Akhmetovna, then freeze the Dataset v1.0 scientific contract,
-and only then design scientific extensions. Dataset v1.0 remains unreleased
-and not scientifically frozen.
+**Stage 26 — COMPLETE.** Stage 26 is complete: Stage 26.A and 26.B are accepted; Stage 26.C implements
+authoritative Dataset execution binding, technical propagation, and validation.
+The Dataset v1.0 scientific contract is frozen except for concrete NAMD condition
+labels, which remain unresolved. Dataset v1.0 remains unreleased.
+Stage 27 physical-time sampling/window engine is next; no Stage 27 sampling or
+window behavior is implemented yet. Requested physical parameters remain inert.
+WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26.
+
+See the [Dataset identity contract](docs/dataset_identity_contract.md) and
+[parameter-table contract](docs/dataset_parameter_table_contract.md). A manifest
+can supply inline `dataset_spec`, or top-level `dataset_parameter_table_path`
+with per-condition `dataset_ref`. Table binding uses only the exact
+`(dataset_id, system_id, trajectory_id, replica_id)` key. Inline plus table must
+agree in every spec field. Scientific condition `None` stays `None`.
+Resolved context enters preprocessing provenance; a used table enters inventory
+and unified technical validation. Existing frame-based CLI options still control
+science, with no Dataset CLI option or scientific artifact change.
 
 **Stage 25 — COMPLETE.** See the
 [final acceptance record](docs/stage25_final_acceptance.md),
@@ -1341,6 +1354,9 @@ The planning-level scientific roadmap is:
   Stage 25.F reproducibility documentation and FAIR² bridge is complete.
   Stage 25.G final technical-hardening acceptance is complete;
   Stage 25 is complete.
+- **Stage 26 — Dataset identity and authoritative execution binding:** complete;
+  technical context, input lineage, validation, and scientific byte regression.
+- **Stage 27 — Physical-time sampling/window engine:** next, not implemented yet.
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
 Stages 20–23 are now complete within their accepted boundaries. Stage 24.A

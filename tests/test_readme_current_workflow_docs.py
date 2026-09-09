@@ -227,7 +227,7 @@ def test_readme_stage25c_inventory_and_scientific_boundary() -> None:
     assert "FastAPI remains postponed" in text
 
 
-def test_current_status_documents_completed_stage25g_and_scientific_pause() -> None:
+def test_current_status_documents_completed_stage25g_and_stage26_boundary() -> None:
     root = Path(__file__).resolve().parents[1]
     for name in (
         "README.md", "AGENTS.md", "docs/architecture.md", "docs/code_review.md",
@@ -246,11 +246,18 @@ def test_current_status_documents_completed_stage25g_and_scientific_pause() -> N
         assert "Stage 25 is complete" in text
         assert "FastAPI remains postponed" in text
         assert "Stage 25 as a whole remains incomplete" not in text
-        assert "Review scientific decisions with Ramila Akhmetovna" in text
-        assert "then freeze the Dataset v1.0 scientific contract" in text
-        assert "only then design scientific extensions" in text
-        assert "Dataset v1.0 remains unreleased and not scientifically frozen" in text
-        assert not re.search(r"Stage 26", text)
+        assert "Stage 26 is complete" in text
+        assert re.search(r"Stage 26\.A and 26\.B are accepted", text)
+        assert "Stage 27 physical-time sampling/window engine is next" in text
+        assert "no Stage 27 sampling or window behavior is implemented yet" in text
+        assert (
+            "scientific contract is frozen except for concrete NAMD condition" in text
+        )
+        assert "labels, which remain unresolved" in text
+        assert "Dataset v1.0 remains unreleased" in text
+        assert "Requested physical parameters remain inert" in text
+        assert "WANIA is unchanged" in text
+        assert "Analysis Dataset-context propagation is outside Stage 26" in text
     assert "mania artifacts validate out --scope preprocessing" in readme_text()
     assert "docs/stage25_final_acceptance.md" in readme_text()
 
