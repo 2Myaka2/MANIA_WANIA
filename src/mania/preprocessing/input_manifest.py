@@ -7,9 +7,12 @@ import math
 from collections.abc import Mapping
 from json import JSONDecodeError
 from pathlib import Path
+from typing import Self
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from mania.dataset_identity import DatasetTrajectorySpec
 
 
 class TrajectoryInputConfig(BaseModel):
@@ -22,6 +25,21 @@ class TrajectoryInputConfig(BaseModel):
     trajectory_paths: tuple[Path, ...]
     reference_structure_path: Path | None = None
     metadata: dict[str, str] = Field(default_factory=dict)
+    dataset_spec: DatasetTrajectorySpec | None = None
+
+    @model_validator(mode="after")
+    def validate_dataset_condition(self) -> Self:
+        """Match supplied scientific labels without inferring unresolved labels."""
+        if self.dataset_spec is not None:
+            scientific_condition = self.dataset_spec.identity.condition
+            if (
+                scientific_condition is not None
+                and scientific_condition != self.condition
+            ):
+                raise ValueError(
+                    "Dataset identity condition must equal the manifest condition"
+                )
+        return self
 
     @field_validator("condition")
     @classmethod
@@ -147,6 +165,23 @@ class PreprocessingInputManifest(BaseModel):
             raise ValueError("frame_time_ps must be finite and positive")
         return value
 
+    @field_validator("conditions")
+    @classmethod
+    def validate_unique_replica_keys(
+        cls,
+        value: tuple[TrajectoryInputConfig, ...],
+    ) -> tuple[TrajectoryInputConfig, ...]:
+        """Reject duplicate Dataset identity keys among supplied specs only."""
+        seen_keys: set[tuple[str, str, str, str]] = set()
+        for condition_config in value:
+            if condition_config.dataset_spec is None:
+                continue
+            key = condition_config.dataset_spec.identity.replica_key
+            if key in seen_keys:
+                raise ValueError(f"Duplicate Dataset replica_key: {key!r}")
+            seen_keys.add(key)
+        return value
+
     def condition_names(self) -> tuple[str, ...]:
         """Return condition names in manifest order."""
         return tuple(config.condition for config in self.conditions)
@@ -161,9 +196,31 @@ class PreprocessingInputManifest(BaseModel):
                 return condition_config
         raise KeyError(condition)
 
+    def dataset_spec_for_condition(
+        self, condition: str
+    ) -> DatasetTrajectorySpec | None:
+        """Return an optional spec using the existing condition lookup semantics."""
+        return self.get_condition(condition).dataset_spec
+
+    def dataset_specs(self) -> tuple[DatasetTrajectorySpec, ...]:
+        """Return only supplied Dataset specs in manifest condition order."""
+        return tuple(
+            config.dataset_spec
+            for config in self.conditions
+            if config.dataset_spec is not None
+        )
+
     def to_dict(self) -> dict[str, object]:
-        """Return a JSON-serializable manifest dictionary."""
-        return self.model_dump(mode="json")
+        """Preserve legacy fields and serialize supplied specs with their contract."""
+        payload = self.model_dump(
+            mode="json", exclude={"conditions": {"__all__": {"dataset_spec"}}}
+        )
+        for config, serialized in zip(
+            self.conditions, payload["conditions"], strict=True
+        ):
+            if config.dataset_spec is not None:
+                serialized["dataset_spec"] = config.dataset_spec.to_dict()
+        return payload
 
 
 def load_preprocessing_input_manifest(

@@ -38,6 +38,8 @@ def test_minimal_valid_manifest_works() -> None:
     assert manifest.condition_names() == ("normal",)
     assert manifest.residue_library == ResidueLibraryInputConfig()
     assert manifest.frame_time_ps is None
+    assert manifest.conditions[0].dataset_spec is None
+    assert manifest.dataset_specs() == ()
 
 
 def test_full_valid_manifest_works() -> None:
@@ -241,6 +243,10 @@ def test_to_dict_is_json_serializable() -> None:
     assert isinstance(conditions, list)
     assert conditions[0]["topology_path"] == "data/normal/topology.tpr"
     assert conditions[0]["trajectory_paths"] == ["data/normal/traj.xtc"]
+    assert "dataset_spec" not in conditions[0]
+    assert conditions[0]["reference_structure_path"] is None
+    assert conditions[0]["metadata"] == {}
+    assert serialized["frame_time_ps"] is None
     residue_library = serialized["residue_library"]
     assert isinstance(residue_library, dict)
     assert residue_library["library_path"] == "library.json"

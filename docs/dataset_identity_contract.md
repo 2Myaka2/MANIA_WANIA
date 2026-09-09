@@ -1,12 +1,12 @@
-# Dataset v1.0 trajectory identity — Stage 26.A
+# Dataset v1.0 trajectory identity — Stages 26.A–B
 
 ## Status and scope
 
-Stage 25 is complete. Stage 26.A is implemented as an additive, independent
+Stage 25 is complete. Stage 26.A is implemented and accepted as an additive, independent
 in-memory contract in [`dataset_identity.py`](../src/mania/dataset_identity.py).
-Stage 26 remains incomplete. Stage 26.B manifest/parameter-table integration
-is next; workflow/provenance propagation and final acceptance belong to later
-Stage 26 checkpoints.
+Stage 26.B optional manifest integration and standalone parameter-table input
+are implemented. Stage 26 remains incomplete. Stage 26.C execution
+binding/propagation and acceptance are next.
 
 The [Dataset v1.0 scientific contract](dataset_v1_scientific_contract.md) records
 the frozen scientific decisions for Stages 27–35. Scientific decisions being
@@ -16,8 +16,9 @@ v1.0 is released. Historical Stage 25 records retain their acceptance context.
 ## Identity boundary
 
 The existing preprocessing workflow is condition-centric. Its legacy
-`condition` remains a scientific condition label. A condition label alone MUST
-NOT stand in for the new dataset/system/trajectory/replica identity.
+`condition` remains the execution condition name. Dataset identity carries a
+separate scientific `condition`, which may be unresolved. A condition label
+alone MUST NOT stand in for the new dataset/system/trajectory/replica identity.
 
 `DatasetTrajectoryIdentity` declares these fields in serialization order:
 
@@ -124,14 +125,44 @@ re-exports from `mania.__init__` or preprocessing in Stage 26.A.
 
 ## Backwards compatibility
 
-Stage 26.A makes no legacy manifest change: `TrajectoryInputConfig` and
-`PreprocessingInputManifest` remain unchanged. There is no manifest integration,
-CLI change, trajectory runtime-input change, analysis-request change, runtime
-change, sampling change, or scientific artifact change. Stage 20–24 scientific
-schemas, rows, and calculation semantics MUST remain intact.
+Stage 26.A made no legacy manifest change and had no manifest integration.
+Stage 26.B adds only the optional
+`dataset_spec: DatasetTrajectorySpec | None = None` field to
+`TrajectoryInputConfig`. Old manifests need no change: missing or explicit
+`None` means legacy mode. Mixed legacy-only and Dataset-aware entries are valid.
+Paths, `frame_time_ps`, and stripped, case-sensitive execution condition lookup
+retain their existing behavior.
+
+Nested input dictionaries contain the accepted spec constructor fields,
+`identity` and `temporal`. A non-`None` Dataset scientific condition MUST exactly
+equal the normalized legacy execution condition. Scientific condition `None`
+is allowed, including NAMD entries with synthetic execution labels; no label
+is inferred or copied from the legacy condition.
+
+Legacy execution conditions remain unique within a manifest. Among supplied
+Dataset specs, exact `replica_key` values must also be unique. Neither system,
+variant, nor scientific condition alone becomes a Dataset uniqueness key.
+Replicas sharing a known scientific condition may still need separate legacy
+execution manifests; the standalone table permits repeated conditions.
+
+`PreprocessingInputManifest.to_dict()` omits `dataset_spec` when absent while
+preserving existing null-valued legacy fields. When present, it includes the
+nested `DatasetTrajectorySpec.to_dict()` contract, including its version and
+kind. These tags remain output-only properties, not spec constructor fields.
+`dataset_spec_for_condition(condition)` uses `get_condition()` lookup semantics
+(including `KeyError` for unknown names); `dataset_specs()` returns only supplied
+specs in manifest order. Both helpers are pure and infer nothing.
+
+The [external parameter-table contract](dataset_parameter_table_contract.md)
+defines the separate CSV input path. Stage 26.B does not automatically bind or
+merge that table with a manifest. Stage 26.C owns execution binding/propagation.
+There is no CLI change, trajectory runtime-input change, analysis-request change,
+runtime change, sampling change, or scientific artifact change. No runtime or
+scientific consumer uses `dataset_spec` yet. Stage 20–24 scientific schemas,
+rows, and calculation semantics MUST remain intact.
 
 Stage 25 software identity, run provenance, inventory/checksum modes, unified
 validation, runtime metadata, and observation-only PBC audit remain unchanged.
 No dependency, optional scientific dependency boundary, WANIA component, FAIR²
-dataset repository, service, database, or worker is changed. Stage 26.A adds no
+dataset repository, service, database, or worker is changed. Stages 26.A–B add no
 scientific calculation, biological annotation, QC engine, or publication export.
