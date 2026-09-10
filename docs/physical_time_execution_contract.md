@@ -6,7 +6,8 @@ Stage 25 and Stage 26 are complete. Stage 27.A and Stage 27.B are accepted;
 their sampling/window implementations and numerical semantics are unchanged.
 Stage 27.C integrates those plans into preprocessing and passes all 40 acceptance
 criteria with the authorized local-PoC correction. Stage 27 is complete.
-Stage 28 contact episodes, lifetime, and publication protein-edge tables are
+Stage 28 is complete and consumes temporal execution as authoritative sampling
+and window evidence. Stage 29 protein-lipid / protein-glycan dynamic layers are
 next and have not started. Dataset v1.0 remains unreleased; its frozen scientific
 contract is unchanged. Concrete NAMD condition labels remain unresolved.
 The 95% exclusion policy remains Stage 32. WANIA is unchanged and FastAPI remains
@@ -91,8 +92,11 @@ trajectory exclusion or 95% threshold in Stage 27.
 Windows are execution metadata in Stage 27. They do not partition scientific
 contact aggregation. Existing contacts aggregate all physically selected frames
 with unchanged cutoffs, distances, contact types, and edge weights. Changing
-only window length/step/overlap must leave current scientific artifacts identical.
-There are no per-window contact tables, occupancy, episodes, or lifetime metrics.
+only window length/step/overlap leaves all pre-28 scientific artifacts identical.
+Stage 28.D separately consumes authoritative temporal execution and already computed
+protein contacts for `protein_edges_by_window_source.csv`, using accepted 28.B/28.C
+APIs. This adds zero trajectory passes and changes no Stage 27 semantics. The
+source table is pre-canonical; Stage 30 mapping remains required before release.
 
 PBC observations attach to the selected Rg pass when enabled, otherwise contacts,
 and never both. Planning reads no box dimensions and emits no PBC observations.
@@ -182,5 +186,6 @@ The focused suite passes with 1061 passed and 2 skipped. Full pytest passes with
 `mania-wania 0.1.0`. The prior wheel build/install/outside-checkout smoke is reused
 after verifying all production files unchanged during the acceptance correction.
 No occupancy, contact episodes, lifetime, per-window contacts, scientific schema,
-analysis science, dependency, or WANIA change is included. Stage 28 is next and
-has not started.
+analysis science, dependency, or WANIA change was included in Stage 27.C.
+At that historical checkpoint Stage 28 was next; the current Stage 28 completion
+and source-table integration are documented above.

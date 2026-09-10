@@ -445,3 +445,30 @@ Checksum mode `none` records exact byte size and null SHA256 without content
 hashing. Mode `sha256` uses the accepted bounded streaming helper on the supplied
 artifact. Large PoC acceptance uses `none`; controlled small-file regressions cover
 SHA256. See the [execution contract](physical_time_execution_contract.md).
+
+## Stage 28.D — derived protein-edge source output
+
+The optional `protein_edges_by_window_source_path` supplies one successful combined
+output: ID `output:protein_edges_by_window_source`, role
+`protein_edges_by_window_source`, path `protein_edges_by_window_source.csv`, format
+`csv`, condition `null`. Its exact path must be inside the preprocessing output
+root with that filename. No scan or per-condition entries are introduced.
+
+The entry follows existing primary scientific, diagnostic, and reference outputs,
+immediately before temporal execution, runtime metadata, and PBC audit. Omitting
+the path preserves every previous entry and its ordering. Exact size is recorded;
+`none` leaves SHA256 null without hashing, while `sha256` uses the existing bounded
+streaming helper. Real large-input acceptance remains checksum-none.
+
+Automatic generation requires Dataset temporal execution, enabled contacts, and
+protein-only selection. Successful zero-edge computation still supplies the
+header-only CSV. Disabled/non-protein/legacy paths supply no specialized output.
+Failed construction/writing claims no unsuccessful source path; completed science
+and successfully written temporal execution remain inventoried under the existing
+best-effort failure architecture. Failed provenance permits source-table absence.
+No generic schema or analysis role changes.
+
+Requested Dataset context remains in provenance, resolved sampling/windows in
+`temporal_execution.json`, and derived science in the source CSV. Unified validation
+uses the strict source reader and replica-key Dataset and temporal-window checks;
+see the [validation contract](unified_artifact_validation.md).

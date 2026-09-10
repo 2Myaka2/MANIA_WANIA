@@ -24,6 +24,7 @@ from mania.validation import validate_run_artifacts
 
 TECHNICAL_ROLES = {
     "temporal_execution",
+    "protein_edges_by_window_source",
     "runtime_metadata",
     "pbc_audit",
     "artifact_inventory",
@@ -161,10 +162,12 @@ def test_complete_physical_run_and_mapped_validation(
     assert [b["dataset_spec"] for b in requested["bindings"]] == [
         b.dataset_spec.to_dict() for b in execution.bindings
     ]
-    assert provenance["artifact_references"][-4:] == [
-        {"role": role, "path": f"{role}.json"}
+    assert provenance["artifact_references"][-5:] == [
+        {"role": role, "path": f"{role}.csv" if role == "protein_edges_by_window_source"
+         else f"{role}.json"}
         for role in (
             "temporal_execution",
+            "protein_edges_by_window_source",
             "runtime_metadata",
             "pbc_audit",
             "artifact_inventory",

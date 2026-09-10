@@ -371,3 +371,15 @@ def test_document_links_resolve(path: Path) -> None:
     assert links
     for link in links:
         assert (path.parent / link).is_file(), link
+
+
+
+def test_current_stage28_status_is_separate_from_frozen_historical_contract():
+    root = SCIENTIFIC.parents[1]
+    for name in ("README.md", "AGENTS.md", "docs/architecture.md"):
+        text = normalized((root / name).read_text(encoding="utf-8"))
+        assert "stage 28 is complete" in text
+        assert "stage 29 protein-lipid / protein-glycan dynamic layers are next" in text
+        assert "pre-canonical" in text
+        assert "stage 30 canonical mapping remains future" in text
+        assert "95% exclusion policy remains stage 32" in text

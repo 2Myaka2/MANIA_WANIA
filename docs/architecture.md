@@ -37,8 +37,15 @@ Stage 28.C source-indexed table/export is implemented in the
 [table contract and strict CSV layer](protein_edge_window_table_contract.md).
 It copies accepted metrics into `protein_edges_by_window_source.csv`, a candidate
 requiring Stage 30 canonical mapping before Dataset v1.0 release publication.
-Stage 28 remains incomplete; Stage 28.D workflow integration and acceptance is next.
-Workflow integration is not implemented by 28.B or 28.C.
+Stage 28.C is accepted. Stage 28.D workflow integration and acceptance is complete;
+Stage 28 is complete. The pure integration module joins retained contacts to
+Dataset temporal bindings, delegates 28.B once per binding and 28.C once per table,
+and adds zero trajectory passes. Automatic export requires Dataset temporal
+execution, contacts enabled, and protein-only selection; empty science writes a
+header-only CSV. The artifact is pre-canonical and preprocessing-only, with
+inventory/provenance lineage and strict Dataset/window validation.
+Stage 29 protein-lipid / protein-glycan dynamic layers are next and have not started.
+Stage 30 canonical mapping remains future and mandatory before release.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.
@@ -52,8 +59,9 @@ Stage 27.C [preprocessing execution](physical_time_execution_contract.md) collec
 actual source times once per Dataset condition and routes exact resolved source
 indexes to existing Rg and contact passes. Window planning adds no trajectory
 pass. The separate temporal artifact records effective execution, while requested
-Dataset context remains in provenance. The preprocessing workflow does not yet
-aggregate contacts by window; 28.B is a separate pure API.
+Dataset context remains in provenance. Stage 28.D consumes these retained plans
+and already computed contacts through `protein_edge_window_execution.py`; the
+accepted 28.B aggregation and 28.C source-table APIs remain pure and unchanged.
 
 ## Purpose
 

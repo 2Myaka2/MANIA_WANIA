@@ -180,6 +180,7 @@ def collect_preprocessing_output_file_specs(
     diagnostics: PreprocessingGraphWorkflowDiagnosticsResult | None = None,
     reference_comparison: PreprocessingGraphWorkflowReferenceComparisonResult
     | None = None,
+    protein_edges_by_window_source_path: Path | None = None,
     temporal_execution_path: Path | None = None,
     runtime_metadata_path: Path | None = None,
     pbc_audit_path: Path | None = None,
@@ -298,6 +299,14 @@ def collect_preprocessing_output_file_specs(
             "reference_comparison_report",
             reference_comparison.reference_comparison_json_path,
         )
+    if protein_edges_by_window_source_path is not None:
+        if protein_edges_by_window_source_path != (
+            output_root / "protein_edges_by_window_source.csv"
+        ):
+            raise PreprocessingArtifactInventoryError(
+                "Protein edge source output must use its exact preprocessing path."
+            )
+        add("protein_edges_by_window_source", protein_edges_by_window_source_path)
     for role, technical_path in (
         ("temporal_execution", temporal_execution_path),
         ("runtime_metadata", runtime_metadata_path),
@@ -331,6 +340,7 @@ def build_preprocessing_artifact_inventory(
     diagnostics: PreprocessingGraphWorkflowDiagnosticsResult | None = None,
     reference_comparison: PreprocessingGraphWorkflowReferenceComparisonResult
     | None = None,
+    protein_edges_by_window_source_path: Path | None = None,
     temporal_execution_path: Path | None = None,
     runtime_metadata_path: Path | None = None,
     pbc_audit_path: Path | None = None,
@@ -351,6 +361,7 @@ def build_preprocessing_artifact_inventory(
         scientific_csv_export=scientific_csv_export,
         diagnostics=diagnostics,
         reference_comparison=reference_comparison,
+        protein_edges_by_window_source_path=protein_edges_by_window_source_path,
         temporal_execution_path=temporal_execution_path,
         runtime_metadata_path=runtime_metadata_path,
         pbc_audit_path=pbc_audit_path,

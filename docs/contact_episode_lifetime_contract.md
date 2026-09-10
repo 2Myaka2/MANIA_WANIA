@@ -9,10 +9,12 @@ pure
 Stage 28.B [pure per-window protein-edge aggregation](protein_edge_window_aggregation_contract.md)
 is implemented and consumes this engine, including occupancy and
 `edge_weight = occupancy`. Episode semantics are unchanged.
-Stage 28 remains incomplete. Stage 28.C additive publication protein-edge
-table/export is next; 28.D owns workflow integration, real-data regression,
-and final acceptance. Dataset v1.0 remains
-unreleased.
+Stage 28.C source-indexed table/export is accepted. Stage 28.D integrates the
+accepted APIs into Dataset-aware protein-contact preprocessing with lineage,
+unified validation, and real-data regression. Stage 28 is complete; Stage 29
+protein-lipid / protein-glycan dynamic layers are next and have not started.
+The source table remains pre-canonical and requires Stage 30 mapping before
+publication. Dataset v1.0 remains unreleased. Episode science is unchanged.
 
 The engine consumes already detected presence for one generic contact in exactly
 one resolved window from exactly one trajectory/replica. Existing MANIA protein

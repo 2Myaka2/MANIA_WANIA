@@ -58,6 +58,7 @@ PreprocessingRunFailureStage = Literal[
     "scientific_csv_export",
     "diagnostics",
     "reference_comparison",
+    "protein_edge_window_export",
 ]
 PREPROCESSING_RUN_FAILURE_STAGES: tuple[PreprocessingRunFailureStage, ...] = (
     "plan",
@@ -68,6 +69,7 @@ PREPROCESSING_RUN_FAILURE_STAGES: tuple[PreprocessingRunFailureStage, ...] = (
     "scientific_csv_export",
     "diagnostics",
     "reference_comparison",
+    "protein_edge_window_export",
 )
 
 _Observations = tuple[tuple[int, float | None], ...]

@@ -9,9 +9,11 @@ accepted at `869afbf9ea7bd31591026295861db0d0f1dc05d7` and implemented in
 Stage 28.C [source-indexed table/export](protein_edge_window_table_contract.md) is
 implemented and exports accepted 28.B metrics without recalculation. This export
 remains pre-canonical; Stage 30 provides canonical mapping before publication.
-Stage 28 remains incomplete. Stage 28.D workflow integration and real-data
-acceptance is next after 28.C. Dataset v1.0 remains
-unreleased. MANIA remains `mania-wania 0.1.0`.
+Stage 28.C is accepted. Stage 28.D now consumes the accepted pure APIs in
+Dataset-aware protein-contact preprocessing, with inventory/provenance lineage,
+unified validation, and real-data acceptance. Stage 28 is complete; Stage 29
+protein-lipid / protein-glycan dynamic layers are next and have not started.
+Dataset v1.0 remains unreleased. MANIA remains `mania-wania 0.1.0`.
 
 ## Input and public API
 
@@ -184,8 +186,8 @@ messages; upstream issue details and local paths are not included.
 
 This API has no filesystem, trajectory access, optional MDAnalysis requirement,
 Git/subprocess, clock, PBC operations, or distance calculations. It is not
-re-exported through `preprocessing/__init__.py` and has no workflow or CLI
-integration. The 28.B API itself has no CSV export; the separate 28.C layer owns
+re-exported through `preprocessing/__init__.py`. Stage 28.D is its separate
+workflow consumer. The 28.B API itself has no CSV export; the separate 28.C layer owns
 explicit source CSV persistence. There is no canonical mapping, replica aggregation,
 specialized lipid/glycan layer, or QC exclusion. Existing scientific artifacts,
 Stage 20–24 schemas, Stage 27 code, 28.A semantics, provenance/inventory,

@@ -227,7 +227,7 @@ def test_readme_stage25c_inventory_and_scientific_boundary() -> None:
     assert "FastAPI remains postponed" in text
 
 
-def test_current_status_documents_completed_stage27_and_stage28_boundary() -> None:
+def test_current_status_documents_completed_stage28_and_stage29_boundary() -> None:
     root = Path(__file__).resolve().parents[1]
     for name in (
         "README.md", "AGENTS.md", "docs/architecture.md", "docs/code_review.md",
@@ -250,17 +250,22 @@ def test_current_status_documents_completed_stage27_and_stage28_boundary() -> No
         assert re.search(r"Stage 26\.A and 26\.B are accepted", text)
         assert "Stage 27 physical-time sampling/window engine is complete" in text
         assert "Stage 27 is complete" in text
-        # Architecture records 28.C; global status documents await a later update.
+        assert "Stage 28 is complete" in text
+        assert "Stage 29 protein-lipid / protein-glycan dynamic layers are next" in text
+        assert "have not started" in text
+        assert "pre-canonical" in text
+        assert "Stage 30 canonical mapping remains future" in text
+        # Preserve accepted A/B/C history alongside completed D integration.
         if name == "docs/architecture.md":
             assert re.search(r"Stage 28\.A is accepted\b", text)
             assert "contact episode/lifetime engine" in text
             assert re.search(r"Stage 28\.B[^.;]*is accepted\b", text)
             assert re.search(r"Stage 28\.C[^.;]*is implemented\b", text)
-            assert "Stage 28 remains incomplete" in text
-            assert re.search(r"Stage 28\.D[^.;]*is next\b", text)
+            assert "Stage 28.C is accepted" in text
+            assert "Stage 28.D workflow integration and acceptance is complete" in text
             assert "protein_edges_by_window_source.csv" in text
             assert "requiring Stage 30 canonical mapping" in text
-            assert "Workflow integration is not implemented by 28.B or 28.C" in text
+            assert "adds zero trajectory passes" in text
         assert "95% exclusion policy remains Stage 32" in text
         assert (
             "scientific contract is frozen except for concrete NAMD condition" in text
@@ -280,8 +285,8 @@ def test_stage28c_source_table_docs_preserve_canonical_publication_boundary():
     for phrase in (
         "Stage 27 is complete", "Stage 28.A is accepted", "Stage 28.B is accepted",
         "Stage 28.C source-indexed table/export is implemented",
-        "Stage 28 remains incomplete",
-        "Stage 28.D integration and real-data acceptance is next",
+        "Stage 28 is complete",
+        "Stage 28.D integration and real-data acceptance is complete",
         "protein_edges_by_window_source.csv", "source-indexed, canonical-ready",
         "This file is not yet Dataset v1.0 release-ready",
         "Stage 30 canonical mapping is required before release publication",
@@ -289,8 +294,9 @@ def test_stage28c_source_table_docs_preserve_canonical_publication_boundary():
         "SEGID is not universally equivalent to a canonical biological chain "
         "identifier",
         "Window completeness remains in `temporal_execution.json`",
-        "automatic preprocessing emission, inventory/provenance role, or "
-        "unified-validation role",
+        "Unified validation delegates to `read_dataset_protein_edge_window_csv` once",
+        "header-only table",
+        "There is no analysis source-table role or input",
     ):
         assert phrase in text
 

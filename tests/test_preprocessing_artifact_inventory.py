@@ -572,3 +572,62 @@ def test_dataset_table_explicit_portable_input_and_checksum(
     assert all(entry.direction == "input" for entry in inventory.artifacts)
     plain = adapter.collect_preprocessing_input_file_specs(runtime)
     assert "dataset_parameter_table" not in [entry.role for entry in plain]
+
+
+@pytest.mark.parametrize("mode", ["none", "sha256"])
+def test_source_table_exact_supplied_path_order_checksum_and_no_scan(
+    tmp_path, monkeypatch, mode
+):
+    runtime = make_runtime(tmp_path)
+    root = tmp_path / "out"
+    path = write_small(
+        root / "protein_edges_by_window_source.csv", b"controlled source table\n"
+    )
+    temporal = write_small(root / "temporal_execution.json")
+    before = adapter.build_preprocessing_artifact_inventory(
+        run_id="test",
+        runtime_loading=runtime,
+        output_root=root,
+        checksum_mode=mode,
+    ).to_dict()
+    if mode == "none":
+        monkeypatch.setattr(
+            inventory_io, "stream_file_sha256", Mock(side_effect=AssertionError)
+        )
+    with monkeypatch.context() as patch:
+        guard_discovery(patch)
+        value = adapter.build_preprocessing_artifact_inventory(
+            run_id="test",
+            runtime_loading=runtime,
+            output_root=root,
+            checksum_mode=mode,
+            protein_edges_by_window_source_path=path,
+            temporal_execution_path=temporal,
+        )
+        without = adapter.build_preprocessing_artifact_inventory(
+            run_id="test",
+            runtime_loading=runtime,
+            output_root=root,
+            checksum_mode=mode,
+        )
+    assert (
+        without.to_dict() == before
+    )  # An existing unrequested table is never scanned in.
+    entry = value.artifacts[-2]
+    assert entry.artifact_id == "output:protein_edges_by_window_source"
+    assert entry.role == "protein_edges_by_window_source" and entry.format == "csv"
+    assert (
+        entry.path == path.name
+        and entry.condition is None
+        and entry.direction == "output"
+    )
+    assert entry.byte_size == path.stat().st_size
+    assert entry.sha256 == (
+        hashlib.sha256(path.read_bytes()).hexdigest() if mode == "sha256" else None
+    )
+    assert value.artifacts[-1].role == "temporal_execution"
+    with pytest.raises(adapter.PreprocessingArtifactInventoryError):
+        adapter.collect_preprocessing_output_file_specs(
+            output_root=root,
+            protein_edges_by_window_source_path=root / "other.csv",
+        )

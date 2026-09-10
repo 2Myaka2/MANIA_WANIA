@@ -28,8 +28,12 @@ The Dataset v1.0 scientific contract is frozen except for concrete NAMD conditio
 labels, which remain unresolved. Dataset v1.0 remains unreleased.
 Stage 27 physical-time sampling/window engine is complete. Stage 27.A and 27.B
 are accepted; Stage 27.C integrates their plans into preprocessing. Stage 27 is complete.
-Stage 28 contact episodes/lifetime/publication protein-edge tables are next;
-Stage 28 has not started. The 95% exclusion policy remains Stage 32.
+Stage 28 is complete: accepted 28.A episodes, 28.B aggregation, and 28.C source
+CSV contracts are integrated by 28.D with artifact lineage and unified validation.
+Stage 29 protein-lipid / protein-glycan dynamic layers are next and have not started.
+`protein_edges_by_window_source.csv` is pre-canonical; Stage 30 canonical mapping
+remains future and is mandatory before Dataset release publication.
+The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.
 
@@ -46,9 +50,14 @@ frame options at their defaults. Legacy-only manifests retain the existing frame
 sampler. See the [physical-time execution contract](docs/physical_time_execution_contract.md).
 `temporal_execution.json` separately records actual selected source frames,
 coverage, and full-window membership; it enters inventory and provenance without
-changing scientific artifact schemas. Partial coverage may proceed. Windows are
-metadata only: contacts still aggregate all selected frames, with no occupancy,
-episodes, or lifetime calculations.
+changing existing scientific artifact schemas. Partial coverage may proceed.
+Dataset-aware runs with successful protein-only contacts automatically write
+`protein_edges_by_window_source.csv`, using the accepted per-window occupancy,
+episodes, and lifetime APIs. This sparse source-indexed artifact enters preprocessing
+inventory, provenance, and unified validation. Contacts disabled, non-protein
+selection, and legacy execution do not invoke the specialized export. Existing
+scientific outputs and downstream analysis remain unchanged. See the
+[source-table contract](docs/protein_edge_window_table_contract.md).
 
 **Stage 25 — COMPLETE.** See the
 [final acceptance record](docs/stage25_final_acceptance.md),
@@ -1368,8 +1377,10 @@ The planning-level scientific roadmap is:
   technical context, input lineage, validation, and scientific byte regression.
 - **Stage 27 — Physical-time sampling/window engine:** complete; accepted sampling
   and window plans drive exact preprocessing frame execution and temporal evidence.
-- **Stage 28 — Contact episodes/lifetime/publication protein-edge tables:** next;
-  not started.
+- **Stage 28 — Contact episodes/lifetime/publication protein-edge tables:** complete;
+  accepted pure science, automatic source export, lineage, and unified validation.
+  The source CSV is pre-canonical; Stage 30 mapping remains required before release.
+- **Stage 29 — Protein-lipid / protein-glycan dynamic layers:** next; not started.
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
 Stages 20–23 are now complete within their accepted boundaries. Stage 24.A

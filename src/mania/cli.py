@@ -65,6 +65,15 @@ from mania.preprocessing.physical_time_execution import (
 from mania.preprocessing.physical_time_execution_io import (
     write_preprocessing_temporal_execution,
 )
+from mania.preprocessing.protein_edge_window_execution import (
+    build_preprocessing_protein_edge_window_source_table,
+)
+from mania.preprocessing.protein_edge_window_table import (
+    DATASET_PROTEIN_EDGE_WINDOW_CSV_FILENAME,
+)
+from mania.preprocessing.protein_edge_window_table_io import (
+    write_dataset_protein_edge_window_csv,
+)
 from mania.preprocessing.run_provenance import (
     PREPROCESSING_RUN_FAILURE_STAGES,
     PREPROCESSING_RUN_PROVENANCE_WORKFLOW,
@@ -83,6 +92,7 @@ from mania.preprocessing.trajectory_contacts import (
     PreprocessingContactComputationLimits,
     PreprocessingContactDetectionOptions,
     PreprocessingContactProgressEvent,
+    PreprocessingManifestContactsResult,
 )
 from mania.preprocessing.trajectory_frame_sampling import (
     PreprocessingFrameSamplingOptions,
@@ -1546,6 +1556,52 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             print("Temporal execution write failed: Write operation failed.",
                   file=sys.stderr)
             metadata_passed = False
+    protein_edge_export_failed = False
+    if (
+        temporal_execution is not None
+        and metadata_passed
+        and options.include_contacts
+        and options.contact_detection_options.contact_selection == "protein"
+    ):
+        try:
+            source_table = build_preprocessing_protein_edge_window_source_table(
+                temporal_execution,
+                cast(PreprocessingManifestContactsResult, computation.contacts_result),
+            )
+        except Exception:
+            print(
+                "Protein edge window export failed: "
+                "Retained contact evidence is invalid.",
+                file=sys.stderr,
+            )
+            protein_edge_export_failed = True
+        else:
+            try:
+                source_written = write_dataset_protein_edge_window_csv(
+                    source_table, plan.output_layout.output_dir,
+                    overwrite=options.overwrite,
+                )
+                if not source_written.passed:
+                    print(
+                        "Protein edge window export write failed: "
+                        f"{source_written.error}",
+                        file=sys.stderr,
+                    )
+                    protein_edge_export_failed = True
+                else:
+                    inventory_outputs["protein_edges_by_window_source_path"] = (
+                        source_written.output_path
+                    )
+                    technical_references.append(PortableArtifactReference(
+                        "protein_edges_by_window_source",
+                        DATASET_PROTEIN_EDGE_WINDOW_CSV_FILENAME,
+                    ))
+            except Exception:
+                print(
+                    "Protein edge window export write failed: Write operation failed.",
+                    file=sys.stderr,
+                )
+                protein_edge_export_failed = True
     try:
         runtime_metadata = build_preprocessing_runtime_metadata(
             run_id=options.run_name,
@@ -1608,19 +1664,41 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             metadata_passed = False
     inventory_references, inventory_passed = emit_inventory()
     try:
-        provenance = build_completed_preprocessing_run_provenance(
-            computation,
-            run_id=options.run_name,
-            started_at_utc=started_at_utc,
-            ended_at_utc=ended_at_utc,
-            software_identity=software_identity,
-            command=_portable_preprocessing_command(command),
-            resolved_configuration=_preprocessing_resolved_configuration(args, options),
-            dataset_context=dataset_resolution.context,
-            artifact_references=_completed_preprocessing_artifact_references(
-                args, options, plan.output_layout
-            ) + tuple(technical_references) + inventory_references,
-        )
+        if protein_edge_export_failed:
+            provenance = build_failed_preprocessing_run_provenance(
+                run_id=options.run_name,
+                failure_stage="protein_edge_window_export",
+                started_at_utc=started_at_utc,
+                ended_at_utc=ended_at_utc,
+                software_identity=software_identity,
+                command=_portable_preprocessing_command(command),
+                resolved_configuration=_preprocessing_resolved_configuration(
+                    args, options
+                ),
+                conditions=computation.condition_names,
+                frame_sampling=options.frame_sampling,
+                computation=computation,
+                dataset_context=dataset_resolution.context,
+                artifact_references=_completed_preprocessing_artifact_references(
+                    args, options, plan.output_layout
+                ) + tuple(technical_references) + inventory_references,
+            )
+        else:
+            provenance = build_completed_preprocessing_run_provenance(
+                computation,
+                run_id=options.run_name,
+                started_at_utc=started_at_utc,
+                ended_at_utc=ended_at_utc,
+                software_identity=software_identity,
+                command=_portable_preprocessing_command(command),
+                resolved_configuration=_preprocessing_resolved_configuration(
+                    args, options
+                ),
+                dataset_context=dataset_resolution.context,
+                artifact_references=_completed_preprocessing_artifact_references(
+                    args, options, plan.output_layout
+                ) + tuple(technical_references) + inventory_references,
+            )
     except PreprocessingRunProvenanceBuildError as exc:
         print(f"Run provenance build failed: {exc}", file=sys.stderr)
         return 1
@@ -1640,7 +1718,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     if not write_result.passed:
         print(f"Run provenance write failed: {write_result.error}", file=sys.stderr)
         return 1
-    if not metadata_passed or not inventory_passed:
+    if protein_edge_export_failed or not metadata_passed or not inventory_passed:
         return 1
 
     _print_preprocessing_graph_export_progress(

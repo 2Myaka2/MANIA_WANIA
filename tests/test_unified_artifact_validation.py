@@ -306,6 +306,7 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
     ) + preprocessing_adapter.collect_preprocessing_output_file_specs(
         output_root=root, runtime_metadata_path=root / "runtime_metadata.json",
         temporal_execution_path=root / "temporal_execution.json",
+        protein_edges_by_window_source_path=root / "protein_edges_by_window_source.csv",
         pbc_audit_path=root / "pbc_audit.json", **stages
     )
     request = AnalyzeRequest(tmp_path / "in", root, ("normal", "tumor"))
@@ -318,7 +319,7 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
     )
     assert {e.role for e in prep} == unified._PREPROCESSING_POLICY.keys()
     assert {e.role for e in analysis} == unified._ANALYSIS_POLICY.keys()
-    assert len({e.role for e in prep}) == 25
+    assert len({e.role for e in prep}) == 26
     assert len({e.role for e in analysis}) == 17
 
 
@@ -1080,3 +1081,289 @@ def test_temporal_pbc_count_cross_check_preserves_unresolved_status(tmp_path, co
     assert (
         "temporal_execution_pbc_count_mismatch" in [i.code for i in report.issues]
     ) == (count != 1)
+
+
+def protein_window_bundle(root, *, empty=False, condition=None):
+    from test_preprocessing_protein_edge_window_execution import (
+        build,
+        manifest,
+        retained,
+    )
+
+    from mania.preprocessing.dataset_binding import (
+        PreprocessingDatasetBinding,
+        PreprocessingDatasetContext,
+    )
+    from mania.preprocessing.physical_time_execution import (
+        PreprocessingTemporalExecution,
+    )
+    from mania.preprocessing.physical_time_execution_io import (
+        write_preprocessing_temporal_execution,
+    )
+    from mania.preprocessing.protein_edge_window_table_io import (
+        write_dataset_protein_edge_window_csv,
+    )
+
+    binding, contacts = retained(
+        condition=condition,
+        engine="namd",
+        route="normal",
+        positive=() if empty else (0, 1, 3, 4),
+    )
+    temporal = PreprocessingTemporalExecution((binding,))
+    bundle = make_bundle(
+        root, outputs=(), inputs=(("condition_topology", b"small", "normal"),)
+    )
+    context = PreprocessingDatasetContext(
+        bindings=(
+            PreprocessingDatasetBinding(
+                execution_condition="normal",
+                source="inline_manifest",
+                dataset_spec=binding.dataset_spec,
+            ),
+        )
+    )
+    bundle.provenance = replace(
+        bundle.provenance,
+        resolved_configuration={
+            "dataset_context": context.to_dict(),
+            "include_contacts": True,
+            "contact_detection_options": {"contact_selection": "protein"},
+        },
+    )
+    source = write_dataset_protein_edge_window_csv(
+        build(temporal, manifest(contacts)), root
+    )
+    resolved = write_preprocessing_temporal_execution(temporal, root)
+    for role, result, fmt in (
+        ("protein_edges_by_window_source", source, "csv"),
+        ("temporal_execution", resolved, "json"),
+    ):
+        assert result.passed
+        path = result.output_path
+        entry = ArtifactInventoryEntry(
+            f"output:{role}",
+            "output",
+            role,
+            path.name,
+            fmt,
+            path.stat().st_size,
+            None,
+            None,
+        )
+        bundle.inventory = replace(
+            bundle.inventory, artifacts=(*bundle.inventory.artifacts, entry)
+        )
+        bundle.provenance = replace(
+            bundle.provenance,
+            artifact_references=(
+                *bundle.provenance.artifact_references,
+                PortableArtifactReference(role, path.name),
+            ),
+        )
+    write_metadata(bundle)
+    return bundle
+
+
+def remove_window_role(bundle, role, *, inventory=True, provenance=True, file=True):
+    if inventory:
+        bundle.inventory = replace(
+            bundle.inventory,
+            artifacts=tuple(e for e in bundle.inventory.artifacts if e.role != role),
+        )
+    if provenance:
+        bundle.provenance = replace(
+            bundle.provenance,
+            artifact_references=tuple(
+                r for r in bundle.provenance.artifact_references if r.role != role
+            ),
+        )
+    if file:
+        suffix = "csv" if role == "protein_edges_by_window_source" else "json"
+        (bundle.root / f"{role}.{suffix}").unlink()
+    write_metadata(bundle)
+
+
+@pytest.mark.parametrize("empty", [False, True])
+@pytest.mark.parametrize("condition", [None, "normal"])
+def test_source_table_complete_sparse_and_nullable_context(tmp_path, empty, condition):
+    bundle = protein_window_bundle(tmp_path, empty=empty, condition=condition)
+    report = validate(bundle, mapped=True)
+    assert report.status == "passed" and report.complete, report.to_dict()
+    assert report.unsupported_count == 0
+    record = next(
+        r
+        for r in report.specialized_records
+        if r.role == "protein_edges_by_window_source"
+    )
+    assert record.validator == "read_dataset_protein_edge_window_csv"
+    assert record.status == "passed"
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "missing",
+        "reference",
+        "inventory",
+        "file",
+        "context",
+        "temporal",
+        "duplicate_reference",
+        "duplicate_inventory",
+        "legacy_unlisted",
+    ],
+)
+def test_source_table_lineage_both_directions(tmp_path, damage):
+    role = "protein_edges_by_window_source"
+    bundle = protein_window_bundle(tmp_path)
+    if damage in ("missing", "reference", "inventory", "file", "legacy_unlisted"):
+        remove_window_role(
+            bundle,
+            role,
+            inventory=damage in ("missing", "inventory", "legacy_unlisted"),
+            provenance=damage in ("missing", "reference", "legacy_unlisted"),
+            file=damage in ("missing", "file"),
+        )
+    if damage in ("context", "legacy_unlisted"):
+        config = bundle.provenance.to_dict()["resolved_configuration"]
+        config.pop("dataset_context")
+        bundle.provenance = replace(bundle.provenance, resolved_configuration=config)
+    if damage == "temporal":
+        remove_window_role(bundle, "temporal_execution")
+    if damage == "duplicate_reference":
+        # Generic schema already rejects exact duplicates; a second portable path
+        # still represents an ambiguous specialized reference.
+        bundle.provenance = replace(
+            bundle.provenance,
+            artifact_references=(
+                *bundle.provenance.artifact_references,
+                PortableArtifactReference(role, "other.csv"),
+            ),
+        )
+    if damage == "duplicate_inventory":
+        entry = next(e for e in bundle.inventory.artifacts if e.role == role)
+        bundle.inventory = replace(
+            bundle.inventory,
+            artifacts=(
+                *bundle.inventory.artifacts,
+                replace(entry, artifact_id="output:other", path="other.csv"),
+            ),
+        )
+    write_metadata(bundle)
+    report = validate(bundle, mapped=True)
+    assert report.status == "failed" and not report.complete
+
+
+@pytest.mark.parametrize(
+    "status,contacts,selection",
+    [
+        ("completed", False, "protein"),
+        ("completed", True, "all"),
+        ("failed", True, "protein"),
+    ],
+)
+def test_source_table_conditional_absence_and_failed_run_exception(
+    tmp_path, status, contacts, selection
+):
+    bundle = protein_window_bundle(tmp_path)
+    remove_window_role(bundle, "protein_edges_by_window_source")
+    config = bundle.provenance.to_dict()["resolved_configuration"]
+    config["include_contacts"] = contacts
+    config["contact_detection_options"]["contact_selection"] = selection
+    bundle.provenance = replace(
+        bundle.provenance, status=status, resolved_configuration=config
+    )
+    write_metadata(bundle)
+    report = validate(bundle, mapped=True)
+    assert report.status == "passed" and report.complete, report.to_dict()
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"dataset_id": "other"},
+        {"system_id": "other"},
+        {"trajectory_id": "other"},
+        {"replica_id": "other"},
+        {"variant_id": "other"},
+        {"engine": "gromacs"},
+        {"condition": "normal"},
+        {"disulfide_state": "other"},
+        {"window_id": "window_9999"},
+        {"window_index": "9"},
+        {"requested_window_start_ns": "4.0"},
+        {"requested_window_end_ns": "6.0"},
+        {"right_endpoint_inclusive": "true"},
+        {"effective_window_start_ns": "4.9"},
+        {"effective_window_end_ns": "5.21"},
+        {
+            "requested_sample_count": "6",
+            "missing_sample_count": "1",
+            "coverage_fraction": str(5 / 6),
+        },
+        {
+            "resolved_frame_count": "4",
+            "missing_sample_count": "1",
+            "coverage_fraction": "0.8",
+            "occupancy": "1.0",
+            "edge_weight": "1.0",
+        },
+        {"coverage_fraction": "0.9"},
+        {"occupancy": "0.7"},
+        {"edge_weight": "0.7"},
+        {"n_contact_frames": "0"},
+        {"n_contact_episodes": "0"},
+    ],
+)
+def test_source_table_strict_rows_and_temporal_cross_checks(tmp_path, changes):
+    import csv
+
+    bundle = protein_window_bundle(tmp_path)
+    path = tmp_path / "protein_edges_by_window_source.csv"
+    with path.open(newline="") as stream:
+        reader = csv.DictReader(stream)
+        columns = reader.fieldnames
+        rows = list(reader)
+    rows[0].update(changes)
+    with path.open("w", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=columns, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    bundle.inventory = replace(
+        bundle.inventory,
+        artifacts=tuple(
+            replace(e, byte_size=path.stat().st_size)
+            if e.role == "protein_edges_by_window_source"
+            else e
+            for e in bundle.inventory.artifacts
+        ),
+    )
+    write_metadata(bundle)
+    report = validate(bundle, mapped=True)
+    assert report.status == "failed", report.to_dict()
+    assert (
+        next(
+            r
+            for r in report.specialized_records
+            if r.role == "protein_edges_by_window_source"
+        ).status
+        == "failed"
+    )
+
+
+def test_malformed_source_header_is_strict_failure(tmp_path):
+    bundle = protein_window_bundle(tmp_path)
+    path = tmp_path / "protein_edges_by_window_source.csv"
+    content = path.read_bytes().replace(b"dataset_id", b"unknown_id", 1)
+    path.write_bytes(content)
+    report = validate(bundle, mapped=True)
+    assert report.status == "failed"
+    assert (
+        next(
+            r
+            for r in report.specialized_records
+            if r.role == "protein_edges_by_window_source"
+        ).status
+        == "failed"
+    )

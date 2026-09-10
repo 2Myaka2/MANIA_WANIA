@@ -4,8 +4,10 @@
 
 Stage 27 is complete. Stage 28.A is accepted. Stage 28.B is accepted at checkpoint
 `869afbf9ea7bd31591026295861db0d0f1dc05d7`. Stage 28.C source-indexed table/export
-is implemented. Stage 28 remains incomplete; Stage 28.D integration and real-data
-acceptance is next. MANIA remains `mania-wania 0.1.0`.
+is implemented and accepted at `c703980dafbae44a2d119400a6707736315ef815`.
+Stage 28.D integration and real-data acceptance is complete; Stage 28 is complete.
+Stage 29 protein-lipid / protein-glycan dynamic layers are next and have not started.
+MANIA remains `mania-wania 0.1.0`.
 
 **This file is not yet Dataset v1.0 release-ready.**
 The artifact is a **source-indexed, canonical-ready Dataset export candidate**:
@@ -207,19 +209,84 @@ their explicit local path field; error/issue text never exposes paths or content
 The table's root dictionary order is `schema_version`, `kind`, `row_count`, `rows`.
 It is deterministic under `json.dumps(..., allow_nan=False, separators=(",", ":"))`.
 
-## Stage 28.D boundary and verification
+## Stage 28.D workflow integration and verification
 
-This pure transformation and explicit file API has no workflow/CLI integration,
-automatic preprocessing emission, inventory/provenance role, or unified-validation
-role. Stage 28.D owns those integrations and real PoC acceptance. No canonical
-mapping, replica aggregation, QC release decision, exclusion policy, or biological
-interpretation is implemented. There is no trajectory read, directory scan, Git,
-clock, environment metadata, PBC operation, or new dependency. These APIs are not
-re-exported through `preprocessing/__init__.py`.
+`build_preprocessing_protein_edge_window_source_table(temporal_execution,
+contacts_result)` accepts exact retained Stage 27 execution and manifest contact
+models. Each Dataset binding requires exactly one contact condition, routed only
+by `execution_condition` after Dataset binding. Legacy-only results are ignored.
+Dataset identity remains the exact replica key from `dataset_spec`, never a
+condition lookup. The integration calls accepted 28.B once per binding and the
+accepted 28.C combined builder once. It performs no filesystem, trajectory, PBC,
+contact detection, physical-time matching, Git, or clock operation.
 
-28.A, 28.B, Stage 27, existing contacts/graph/residue/temporal schemas,
-provenance/inventory, unified validation, CLI, analysis, dependencies, and WANIA
-remain unchanged. [Table tests](../tests/test_preprocessing_protein_edge_window_table.py)
-and [CSV tests](../tests/test_preprocessing_protein_edge_window_table_io.py) cover
-the scientific examples, mapping evidence, nullable identity, deterministic sparse
-rows, strict failures, atomic cleanup, and pure operation without MDAnalysis.
+`mania preprocessing run-graph-export` automatically invokes this integration only
+when temporal execution exists, contacts are enabled, and `contact_selection` is
+`protein`. The accepted atomic writer receives the existing overwrite policy.
+A successful zero-edge run writes a valid header-only table. Legacy, disabled,
+and non-protein execution adds no source artifact or reference and retains its
+previous behavior, including the existing plan rejection for `--skip-contacts`.
+No contact calculation is forced. No new flags or trajectory passes are added.
+
+After existing science, temporal execution is written, then the source CSV, then
+runtime/PBC metadata, inventory, and provenance. Inventory places the one combined
+source entry after primary science/diagnostic/reference outputs, immediately before
+temporal execution, runtime metadata, and PBC audit. Provenance references follow
+successful write order: temporal execution, source CSV, runtime metadata, PBC audit,
+and inventory. Requested Dataset context, resolved execution, and derived science
+remain distinct artifacts. There is no analysis source-table role or input.
+
+Construction failure exits 1 with `Protein edge window export failed:`; CSV write
+failure uses `Protein edge window export write failed:`. Both preserve scientific
+outputs and successfully written temporal execution, suppress the success summary,
+and attempt runtime/PBC metadata, inventory, and failed provenance. The failure
+stage is `protein_edge_window_export`. Only a successfully written source CSV is
+declared, including when an older target survives a failed no-clobber write.
+The failed-run exception does not require an absent source table.
+
+Unified validation delegates to `read_dataset_protein_edge_window_csv` once after
+the integrity gate. It requires completed Dataset protein-contact output/reference
+presence, checks reverse lineage, maps rows by the exact replica key, and compares
+identity metadata and retained temporal windows, including Decimal-derived effective
+bounds. Sparse windows require no row; header-only output remains valid. These
+checks do not rerun episodes or contacts and do not certify publication readiness.
+
+Synthetic acceptance proves direct 28.B/28.C dictionary and CSV byte equality,
+missing versus resolved-negative final CSV behavior, nullable condition preservation,
+header-only output, checksum modes, failure paths, determinism, and zero additional
+trajectory passes. All 20 controlled legacy files and stdout/stderr match the
+accepted 28.C checkpoint exactly. Window-only changes preserve all 15 pre-28
+synthetic scientific artifacts while changing temporal evidence and the new CSV.
+
+Real NaPi2b acceptance retains actual 5–10 ns, 50 ps stride, source indexes
+500,505,...,1000, 101 resolved samples per condition, and one inclusive full [5,10]
+window per condition. The full Stage 27.C real execution evidence is reused after
+verifying unchanged pre-28 scientific source and intact baseline evidence. A local
+artifact replay uses the accepted per-frame contact reader and temporal artifact;
+frame/edge/type presence, endpoint indexes, residue metadata text, and distances
+are retained without inference. All 101 selected frames have durable contact rows
+for each condition. Stored resids remain strings, as accepted by 28.B and emitted
+by 28.C; the replay does not claim to recover the original runtime scalar types.
+
+Direct 28.B/28.C construction and 28.D integration produce identical real table
+dictionaries and CSV bytes. The source reader/validator and completely mapped
+preprocessing validation pass on a task-owned replay bundle. No trajectory,
+contact-detection, or physical-time matching pass is performed. No bounded MD
+smoke is needed because this replay preserves all information consumed by Stage 28.
+The expensive full rerun was cancelled under the revised acceptance strategy;
+its logs and partial output were preserved, and cancellation is not a scientific
+failure. The 202 total mentioned in progress updates was the combined 101 + 101
+selected contact frames, not 202 frames for one condition; CLI events themselves
+have no total-frame denominator.
+
+The accepted 12/12 preprocessing and 17/17 downstream analysis baseline comparisons
+are reused and reconfirmed byte-for-byte between the intact Stage 27.C/Stage 25.G
+outputs. Existing full-run preprocessing/analysis validation reports remain passed
+and complete. Accepted PBC evidence retains 101 frames per condition, no internal
+minimum-image correction, unresolved scientific status, and undeclared external
+preprocessing. Large inputs are not hashed in checksum-none acceptance. Stage 30
+canonical mapping is still mandatory before release.
+
+28.A, 28.B, 28.C, Stage 27 science, existing scientific schemas, frozen Dataset
+contract, contact detection, PBC semantics, analysis, dependencies, and WANIA are
+unchanged. The integration is not re-exported through `preprocessing/__init__.py`.

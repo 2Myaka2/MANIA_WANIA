@@ -587,3 +587,27 @@ sampling and no successful temporal output. Planning still precedes science. A t
 the existing best-effort completed-science metadata boundary and exits 1 without
 a successful summary. The generic schema is unchanged. Analysis does not propagate
 temporal execution. See the [execution contract](physical_time_execution_contract.md).
+
+## Stage 28.D — preprocessing protein-edge source lineage
+
+After successful CSV publication, preprocessing appends the portable reference
+`{"role": "protein_edges_by_window_source", "path": "protein_edges_by_window_source.csv"}`.
+It follows the temporal reference and precedes runtime metadata, PBC audit, and
+inventory references. It contains no absolute path, checksum, or embedded rows.
+Generic `RunProvenance` and analysis provenance are unchanged.
+
+The CLI generates the artifact only with Dataset temporal execution, enabled
+contacts, and `contact_detection_options.contact_selection == "protein"`.
+`include_contacts` and those accepted configuration fields remain authoritative.
+A header-only source CSV is a successful output; disabled/non-protein/legacy paths
+have no new reference. Requested `resolved_configuration.dataset_context`, resolved
+`temporal_execution.json`, and derived source CSV remain separate layers.
+
+A Stage 28 construction/write failure records failed provenance with failure stage
+`protein_edge_window_export`, preserving earlier successful scientific references
+and temporal execution. Runtime/PBC and inventory are attempted best-effort. No
+unsuccessful source CSV is referenced. The successful summary is suppressed and
+the exit code is 1. Unified validation exempts failed runs from required source
+presence, while still checking any declared source lineage. Completed Dataset
+protein-contact runs require exactly one output/reference, the strict CSV reader,
+replica-key identity consistency, and matching temporal-window evidence.

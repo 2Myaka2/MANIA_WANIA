@@ -4,7 +4,7 @@
 
 Stage 25 and Stage 26 are complete. Stage 27.C integrates physical-time
 preprocessing and temporal artifact validation; Stage 27 is complete.
-Stage 28 has not started. FastAPI remains postponed.
+Stage 28 is complete; Stage 29 protein-lipid / protein-glycan dynamic layers are next. FastAPI remains postponed.
 
 ## Historical Stage 25.F milestone status
 
@@ -452,3 +452,44 @@ temporal output; missing temporal evidence after completed science fails the gat
 Complete validation still requires explicit mappings for every external input,
 including a used Dataset table, and both status `passed` and `complete: true`.
 See the [execution contract](physical_time_execution_contract.md).
+
+## Stage 28.D — protein-edge source validation
+
+Preprocessing role `protein_edges_by_window_source` delegates once to
+`read_dataset_protein_edge_window_csv` after the existing size/SHA256 integrity
+gate. The fixed ID/path are `output:protein_edges_by_window_source` and
+`protein_edges_by_window_source.csv`, with CSV format and null condition. There
+are now 17 specialized and nine integrity-only preprocessing roles; unsupported
+current roles remain zero. No analysis role is added.
+
+A completed run requires exactly one source output and one matching provenance
+reference only when recorded `resolved_configuration.dataset_context` exists,
+`include_contacts` is true, and `contact_detection_options.contact_selection` is
+`protein`. Disabled and non-protein configurations permit absence. Failed runs
+permit absence even after successful temporal writing. Declared source output
+requires Dataset context, temporal output/reference, and one matching source
+reference. Reverse reference/inventory mismatches, duplicates, wrong role metadata,
+and a known source table in legacy execution fail technical validation with
+`protein_edge_window_lineage_mismatch`. No required-artifact rule is inferred
+from filenames alone.
+
+The strict source reader owns all CSV structure, sparse positive-row, occupancy,
+edge-weight, lifetime, uniqueness, and ordering checks. Cross-checks use retained
+models after all specialized reads, independent of inventory order. Every row maps
+by `(dataset_id, system_id, trajectory_id, replica_id)` to exactly one temporal
+binding already checked against requested Dataset context. `variant_id`, `engine`,
+`condition` including null, and `disulfide_state` must agree exactly. Condition is
+never an identity lookup key.
+
+The matched `(window_id, window_index)` must have identical requested start/end,
+right-endpoint inclusion, requested/resolved/missing counts, and coverage. Effective
+start/end use the accepted `float(Decimal(str(actual_ps)) / Decimal("1000"))` in an
+independent Decimal context. Mismatches yield `protein_edge_window_context_mismatch`.
+No trajectory or contact/episode recalculation occurs. A zero-edge window needs no
+row, and a fully header-only source CSV passes when otherwise valid.
+
+Requested configuration, resolved temporal execution, and derived science remain
+separate. Complete acceptance requires all external input mappings, including a
+used Dataset parameter table, `status == "passed"`, and `complete is True`.
+Technical validation makes no canonical mapping or release claim; the source
+artifact remains pre-canonical until Stage 30 mapping is applied and validated.

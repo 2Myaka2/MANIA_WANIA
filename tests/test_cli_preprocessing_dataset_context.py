@@ -137,6 +137,7 @@ def test_legacy_inline_table_scientific_byte_acceptance(
                     p.relative_to(root).as_posix(): p.read_bytes()
                     for p in root.rglob("*")
                     if p.is_file() and p.name not in TECHNICAL_FILES
+                    and p.name != "protein_edges_by_window_source.csv"
                 }
             )
             provenance = json.loads((root / "run_provenance.json").read_text())

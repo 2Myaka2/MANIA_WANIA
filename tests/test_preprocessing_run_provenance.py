@@ -976,6 +976,7 @@ def test_failed_builder_public_stages():
         "scientific_csv_export",
         "diagnostics",
         "reference_comparison",
+        "protein_edge_window_export",
     )
     assert adapter.PREPROCESSING_RUN_FAILURE_STAGES == expected
     assert get_args(adapter.PreprocessingRunFailureStage) == expected

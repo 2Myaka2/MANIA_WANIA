@@ -449,7 +449,8 @@ def test_inventory_failure_after_scientific_success_attempts_completed_provenanc
     assert not list(root.glob(".artifact_inventory.json.*.tmp"))
 
 
-@pytest.mark.parametrize("stage", PREPROCESSING_RUN_FAILURE_STAGES)
+# Stage 28 failures use real Dataset execution in the dedicated export suite.
+@pytest.mark.parametrize("stage", PREPROCESSING_RUN_FAILURE_STAGES[:-1])
 @pytest.mark.parametrize("inventory_failure", [None, "build", "write"])
 def test_failed_workflow_inventory_preserves_primary_failure(
     monkeypatch,

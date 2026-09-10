@@ -2,7 +2,8 @@
 
 import csv
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+from decimal import Context, Decimal, localcontext
 from functools import partial
 from pathlib import Path
 from typing import Literal
@@ -265,6 +266,7 @@ _PREPROCESSING_POLICY: dict[str, str | None] = {
     "runtime_metadata": "preprocessing_runtime_metadata",
     "pbc_audit": "pbc_audit",
     "temporal_execution": "temporal_execution",
+    "protein_edges_by_window_source": "protein_edges_by_window_source",
 }
 _ANALYSIS_POLICY: dict[str, str | None] = {
     "preprocessing_manifest": None,
@@ -302,6 +304,7 @@ _VALIDATORS = {
     "analysis_runtime_metadata": "read_runtime_metadata",
     "pbc_audit": "read_pbc_audit",
     "temporal_execution": "read_preprocessing_temporal_execution",
+    "protein_edges_by_window_source": "read_dataset_protein_edge_window_csv",
 }
 
 
@@ -359,6 +362,12 @@ def _invoke(
         if metadata.scope != scope or metadata.metadata_path != expected_path:
             raise RuntimeMetadataReadError("Runtime metadata scope/path mismatch.")
         return metadata
+    if contract == "protein_edges_by_window_source":
+        from mania.preprocessing.protein_edge_window_table_io import (
+            read_dataset_protein_edge_window_csv,
+        )
+
+        return read_dataset_protein_edge_window_csv(path)
     if contract == "temporal_execution":
         from mania.preprocessing.physical_time_execution_io import (
             read_preprocessing_temporal_execution,
@@ -409,6 +418,9 @@ def _failure_count(call: Callable[[], object]) -> int:
     from mania.preprocessing.physical_time_execution_io import (
         PreprocessingTemporalExecutionReadError,
     )
+    from mania.preprocessing.protein_edge_window_table_io import (
+        DatasetProteinEdgeWindowCsvReadError,
+    )
 
     try:
         result = call()
@@ -416,7 +428,7 @@ def _failure_count(call: Callable[[], object]) -> int:
         artifacts.ArtifactValidationError, OSError, UnicodeError, csv.Error,
         RuntimeMetadataReadError, PbcAuditReadError,
         DatasetParameterTableReadError, PreprocessingDatasetBindingError,
-        PreprocessingTemporalExecutionReadError,
+        PreprocessingTemporalExecutionReadError, DatasetProteinEdgeWindowCsvReadError,
     ):
         # Public validator exceptions and ordinary file/read failures only.
         return 1
@@ -520,7 +532,17 @@ def validate_run_artifacts(
     from mania.preprocessing.physical_time_execution_io import (
         PreprocessingTemporalExecutionReadError,
     )
+    from mania.preprocessing.protein_edge_window_table import (
+        DatasetProteinEdgeWindowTable,
+    )
+    from mania.preprocessing.protein_edge_window_table_io import (
+        DatasetProteinEdgeWindowCsvReadError,
+    )
 
+    source_table: DatasetProteinEdgeWindowTable | None = None
+    source_role = "protein_edges_by_window_source"
+    source_path = f"{source_role}.csv"
+    configuration: dict[str, object] = {}
     temporal_execution: PreprocessingTemporalExecution | None = None
     pbc_audit: PbcAudit | None = None
     provenance = None
@@ -531,8 +553,9 @@ def validate_run_artifacts(
             # The integrity report already diagnoses unreadable provenance.
             pass
         else:
-            configuration = provenance.to_dict()["resolved_configuration"]
-            assert isinstance(configuration, dict)
+            recorded_configuration = provenance.to_dict()["resolved_configuration"]
+            assert isinstance(recorded_configuration, dict)
+            configuration = recorded_configuration
             if "dataset_context" in configuration:
                 try:
                     dataset_context = PreprocessingDatasetContext.from_dict(
@@ -584,6 +607,40 @@ def validate_run_artifacts(
                 "legacy execution requires neither.",
                 path=integrity.inventory_path,
             ))
+        source_entries = tuple(e for e in entries if e.role == source_role)
+        source_references = (
+            tuple(r for r in provenance.artifact_references if r.role == source_role)
+            if provenance is not None else ()
+        )
+        contact_options = configuration.get("contact_detection_options")
+        needs_source = (
+            needs_temporal and configuration.get("include_contacts") is True
+            and isinstance(contact_options, dict)
+            and contact_options.get("contact_selection") == "protein"
+        )
+        if (
+            (needs_source and (len(source_entries) != 1 or len(source_references) != 1))
+            or (bool(source_entries) != bool(source_references))
+            or len(source_entries) > 1 or len(source_references) > 1
+            or (bool(source_entries or source_references) and (
+                dataset_context is None or len(temporal_entries) != 1
+                or len(temporal_references) != 1
+            ))
+            or (dataset_context is None and (run_root / source_path).exists())
+            or any(
+                e.direction != "output" or e.path != source_path
+                or e.artifact_id != f"output:{source_role}"
+                or e.format != "csv" or e.condition is not None
+                for e in source_entries
+            )
+            or any(r.path != source_path for r in source_references)
+        ):
+            issues.append(UnifiedArtifactValidationIssue(
+                "error", "protein_edge_window_lineage_mismatch",
+                "Dataset protein contacts require one source output/reference; "
+                "declared source tables require Dataset and temporal evidence.",
+                path=integrity.inventory_path,
+            ))
         table_entries = tuple(e for e in entries if e.role == "dataset_parameter_table")
         uses_table = dataset_context is not None and any(
             b.source != "inline_manifest" for b in dataset_context.bindings
@@ -630,6 +687,64 @@ def validate_run_artifacts(
             )
         temporal_execution = execution
         return execution
+
+    def validate_source(path: Path) -> object:
+        nonlocal source_table
+        table = _invoke(source_role, path, None)
+        assert isinstance(table, DatasetProteinEdgeWindowTable)
+        source_table = table
+        return table
+
+    def cross_check_source() -> object:
+        # All specialized reads have completed, independent of inventory order.
+        if dataset_context is None or temporal_execution is None:
+            raise DatasetProteinEdgeWindowCsvReadError(
+                "Missing Dataset temporal evidence."
+            )
+        assert source_table is not None
+        bindings = {
+            b.dataset_spec.identity.replica_key: b for b in temporal_execution.bindings
+        }
+        windows = {
+            key: {(w.window_id, w.window_index): w for w in b.window_plan.windows}
+            for key, b in bindings.items()
+        }
+        for row in source_table.rows:
+            key = (row.dataset_id, row.system_id, row.trajectory_id, row.replica_id)
+            binding = bindings.get(key)
+            if binding is None or any(
+                getattr(row, name) != getattr(binding.dataset_spec.identity, name)
+                for name in ("variant_id", "engine", "condition", "disulfide_state")
+            ):
+                raise DatasetProteinEdgeWindowCsvReadError(
+                    "Dataset row identity mismatch."
+                )
+            window = windows[key].get((row.window_id, row.window_index))
+            if window is None or any(
+                getattr(row, name) != getattr(window, temporal_name)
+                for name, temporal_name in (
+                    ("requested_window_start_ns", "requested_start_ns"),
+                    ("requested_window_end_ns", "requested_end_ns"),
+                    ("right_endpoint_inclusive", "right_endpoint_inclusive"),
+                    ("requested_sample_count", "requested_sample_count"),
+                    ("resolved_frame_count", "sampled_frame_count"),
+                    ("missing_sample_count", "missing_sample_count"),
+                    ("coverage_fraction", "coverage_fraction"),
+                )
+            ):
+                raise DatasetProteinEdgeWindowCsvReadError("Temporal window mismatch.")
+            with localcontext(Context(prec=28)):
+                for name, actual in (
+                    ("effective_window_start_ns", window.effective_start_time_ps),
+                    ("effective_window_end_ns", window.effective_end_time_ps),
+                ):
+                    if actual is None or getattr(row, name) != float(
+                        Decimal(str(actual)) / Decimal("1000")
+                    ):
+                        raise DatasetProteinEdgeWindowCsvReadError(
+                            "Effective temporal window mismatch."
+                        )
+        return source_table
 
     def validate_pbc(path: Path) -> object:
         nonlocal pbc_audit
@@ -798,6 +913,8 @@ def validate_run_artifacts(
                 if contract == "dataset_parameter_table"
                 else partial(validate_temporal, local(entry))
                 if contract == "temporal_execution"
+                else partial(validate_source, local(entry))
+                if contract == source_role
                 else partial(validate_pbc, local(entry))
                 if contract == "pbc_audit"
                 else partial(_invoke, contract, local(entry), entry.condition),
@@ -815,6 +932,17 @@ def validate_run_artifacts(
                             entry.condition,
                         ),
                     )
+    if source_table is not None and _failure_count(cross_check_source):
+        records[:] = [
+            replace(r, status="failed", issue_count=r.issue_count + 1)
+            if r.role == source_role and r.status == "passed" else r
+            for r in records
+        ]
+        issues.append(UnifiedArtifactValidationIssue(
+            "error", "protein_edge_window_context_mismatch",
+            "Source rows must match Dataset replica identity and temporal windows.",
+            path=source_path,
+        ))
     if temporal_execution is not None and pbc_audit is not None:
         counts = {c.condition: c.sampled_frame_count for c in pbc_audit.conditions}
         if any(
