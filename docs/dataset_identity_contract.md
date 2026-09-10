@@ -7,6 +7,7 @@ in-memory contract in [`dataset_identity.py`](../src/mania/dataset_identity.py).
 Stage 26.B optional manifest integration and standalone parameter-table input
 are accepted. Stage 26.C authoritative execution binding, technical propagation,
 validation, and acceptance are implemented. Stage 26 is complete.
+At the accepted Stage 26 checkpoint, the recorded boundary was:
 Stage 27 physical-time sampling/window engine is next; no such engine is
 implemented yet.
 
@@ -14,6 +15,16 @@ The [Dataset v1.0 scientific contract](dataset_v1_scientific_contract.md) record
 the frozen scientific decisions for Stages 27–35. Scientific decisions being
 frozen does not mean their future functionality is implemented or that Dataset
 v1.0 is released. Historical Stage 25 records retain their acceptance context.
+
+## Stage 27.A status
+
+Stage 26 is complete. The standalone Stage 27.A resolver now consumes requested
+`production_start_ns`, `production_end_ns`, and `frame_stride_ps` for production
+interval and stride resolution only. `window_length_ns`, `window_step_ns`, and
+`overlap_percent` remain requested and operationally inert. See the
+[physical-time sampling contract](physical_time_sampling_contract.md).
+There is no workflow integration. Stage 27 remains incomplete; Stage 27.B
+physical-time window planning is next. Stage 26 history below is unchanged.
 
 ## Identity boundary
 

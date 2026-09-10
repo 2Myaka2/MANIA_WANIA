@@ -26,9 +26,16 @@ Stage 26 is complete: Stage 26.A and 26.B are accepted; Stage 26.C implements
 authoritative Dataset execution binding, technical propagation, and validation.
 The Dataset v1.0 scientific contract is frozen except for concrete NAMD condition
 labels, which remain unresolved. Dataset v1.0 remains unreleased.
+At the accepted Stage 26 checkpoint, the recorded boundary was:
 Stage 27 physical-time sampling/window engine is next; no Stage 27 sampling or
 window behavior is implemented yet. Requested physical parameters remain inert.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26.
+
+Current Stage 27.A implements the standalone
+[physical-time sampling resolver](physical_time_sampling_contract.md), consuming
+only production bounds and stride. Window parameters remain operationally
+inert, and no preprocessing workflow integration exists. Stage 27 remains
+incomplete; Stage 27.B physical-time window planning is next.
 
 ## Purpose
 
