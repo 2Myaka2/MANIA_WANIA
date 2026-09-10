@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, TypeAlias, cast
 
 from mania.preprocessing import (
     trajectory_frame_sampling,
+    trajectory_frame_selection,
     trajectory_manifest_loader,
     trajectory_runtime,
 )
@@ -319,9 +320,14 @@ def compute_condition_rg(
     *,
     rg_unit: str = "angstrom",
     frame_sampling: PreprocessingFrameSamplingOptions | None = None,
+    source_frame_indexes: tuple[int, ...] | None = None,
     pbc_observation_callback: PbcObservationCallback | None = None,
 ) -> PreprocessingConditionRgResult:
     """Compute per-frame Rg from one already loaded condition runtime."""
+    if source_frame_indexes is not None and frame_sampling is not None:
+        raise ValueError(
+            "source_frame_indexes and frame_sampling are mutually exclusive"
+        )
     selected_frame_sampling = _frame_sampling_options(frame_sampling)
     runtime = condition_result.runtime
     runtime_type = runtime.runtime_type if runtime is not None else None
@@ -434,7 +440,11 @@ def compute_condition_rg(
     condition_issues: list[PreprocessingRgComputationIssue] = []
     try:
         trajectory_iterator = iter(
-            trajectory_frame_sampling.iter_sampled_trajectory_frames(
+            trajectory_frame_selection.iter_selected_trajectory_frames(
+                cast(Iterable[object], trajectory), source_frame_indexes,
+            )
+            if source_frame_indexes is not None
+            else trajectory_frame_sampling.iter_sampled_trajectory_frames(
                 cast(Iterable[object], trajectory),
                 selected_frame_sampling,
             )
@@ -513,15 +523,27 @@ def _aggregate_manifest_rg(
     *,
     rg_unit: str = "angstrom",
     frame_sampling: PreprocessingFrameSamplingOptions | None = None,
+    source_frame_indexes_by_condition: Mapping[str, tuple[int, ...]] | None = None,
     pbc_observation_callback: PbcObservationCallback | None = None,
 ) -> PreprocessingManifestRgResult:
     """Compose condition Rg results across one manifest load result."""
+    if source_frame_indexes_by_condition is not None:
+        names = {result.condition_name for result in manifest_result.condition_results}
+        if not set(source_frame_indexes_by_condition).issubset(names):
+            raise ValueError("Explicit source selection contains unknown conditions")
     selected_frame_sampling = _frame_sampling_options(frame_sampling)
     condition_results: list[PreprocessingConditionRgResult] = []
     for condition_result in manifest_result.condition_results:
         try:
             rg_kwargs: dict[str, Any] = {"rg_unit": rg_unit}
-            if frame_sampling is not None:
+            if (
+                source_frame_indexes_by_condition is not None
+                and condition_result.condition_name in source_frame_indexes_by_condition
+            ):
+                rg_kwargs["source_frame_indexes"] = (
+                    source_frame_indexes_by_condition[condition_result.condition_name]
+                )
+            elif frame_sampling is not None:
                 rg_kwargs["frame_sampling"] = selected_frame_sampling
             if pbc_observation_callback is not None:
                 rg_kwargs["pbc_observation_callback"] = pbc_observation_callback

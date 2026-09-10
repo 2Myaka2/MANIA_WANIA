@@ -26,9 +26,12 @@ minimum-image correction. Stage 25 is complete. FastAPI remains postponed.
 authoritative Dataset execution binding, technical propagation, and validation.
 The Dataset v1.0 scientific contract is frozen except for concrete NAMD condition
 labels, which remain unresolved. Dataset v1.0 remains unreleased.
-Stage 27 physical-time sampling/window engine is next; no Stage 27 sampling or
-window behavior is implemented yet. Requested physical parameters remain inert.
-WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26.
+Stage 27 physical-time sampling/window engine is complete. Stage 27.A and 27.B
+are accepted; Stage 27.C integrates their plans into preprocessing. Stage 27 is complete.
+Stage 28 contact episodes/lifetime/publication protein-edge tables are next;
+Stage 28 has not started. The 95% exclusion policy remains Stage 32.
+WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
+analysis temporal propagation is outside Stage 27.
 
 See the [Dataset identity contract](docs/dataset_identity_contract.md) and
 [parameter-table contract](docs/dataset_parameter_table_contract.md). A manifest
@@ -37,8 +40,15 @@ with per-condition `dataset_ref`. Table binding uses only the exact
 `(dataset_id, system_id, trajectory_id, replica_id)` key. Inline plus table must
 agree in every spec field. Scientific condition `None` stays `None`.
 Resolved context enters preprocessing provenance; a used table enters inventory
-and unified technical validation. Existing frame-based CLI options still control
-science, with no Dataset CLI option or scientific artifact change.
+and unified technical validation. Dataset-aware runs now execute the requested
+physical production interval and stride through Stage 27 and require all legacy
+frame options at their defaults. Legacy-only manifests retain the existing frame
+sampler. See the [physical-time execution contract](docs/physical_time_execution_contract.md).
+`temporal_execution.json` separately records actual selected source frames,
+coverage, and full-window membership; it enters inventory and provenance without
+changing scientific artifact schemas. Partial coverage may proceed. Windows are
+metadata only: contacts still aggregate all selected frames, with no occupancy,
+episodes, or lifetime calculations.
 
 **Stage 25 — COMPLETE.** See the
 [final acceptance record](docs/stage25_final_acceptance.md),
@@ -1356,7 +1366,10 @@ The planning-level scientific roadmap is:
   Stage 25 is complete.
 - **Stage 26 — Dataset identity and authoritative execution binding:** complete;
   technical context, input lineage, validation, and scientific byte regression.
-- **Stage 27 — Physical-time sampling/window engine:** next, not implemented yet.
+- **Stage 27 — Physical-time sampling/window engine:** complete; accepted sampling
+  and window plans drive exact preprocessing frame execution and temporal evidence.
+- **Stage 28 — Contact episodes/lifetime/publication protein-edge tables:** next;
+  not started.
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
 Stages 20–23 are now complete within their accepted boundaries. Stage 24.A

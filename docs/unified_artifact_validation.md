@@ -2,8 +2,9 @@
 
 ## Current status
 
-Stage 25 is complete. Stage 26 is complete; Stage 27 physical-time sampling/window
-engine is next and is not implemented yet. FastAPI remains postponed.
+Stage 25 and Stage 26 are complete. Stage 27.C integrates physical-time
+preprocessing and temporal artifact validation; Stage 27 is complete.
+Stage 28 has not started. FastAPI remains postponed.
 
 ## Historical Stage 25.F milestone status
 
@@ -152,7 +153,7 @@ called. Source MD files remain integrity-only even when mapped. Unmapped known
 raw inputs are `not_applicable` here and partial in D.1. Unmapped recognized
 analysis tables are `not_resolved` here. Unknown future roles are `unsupported`,
 with a warning and partial status if no other error exists. Current coverage is
-15 specialized + 9 integrity-only preprocessing roles, and 13 specialized + 4
+16 specialized + 9 integrity-only preprocessing roles, and 13 specialized + 4
 integrity-only analysis roles; zero unsupported current roles.
 
 Runtime metadata reconstructs the recorded environment and performance through
@@ -381,8 +382,8 @@ validators, calculations, and scientific artifacts remain unchanged.
 
 Stage 25.D and Stage 25.E are complete. Stage 25.F reproducibility documentation
 and FAIR² bridge is complete. Stage 25.G final technical-hardening acceptance is
-complete; Stage 25 is complete. Stage 26 is complete; Stage 27 physical-time
-sampling/window engine is next and is not implemented yet. The scientific
+complete; Stage 25 is complete. Stage 26 is complete; Stage 27.C physical-time
+integration is accepted and Stage 27 is complete. The scientific
 PBC protocol remains unresolved, no internal minimum-image correction is applied,
 and FastAPI remains postponed.
 
@@ -424,3 +425,30 @@ input. Require both `report.status == "passed"` and `report.complete is True` fo
 complete technical acceptance. Ordinary CLI exit behavior is unchanged. This
 performs no trajectory access, frame/window calculation, condition inference,
 scientific validation extension, or analysis Dataset-context propagation.
+
+## Stage 27.C — temporal execution consistency
+
+Preprocessing role `temporal_execution` delegates to
+`read_preprocessing_temporal_execution`. Its strict nested reconstruction rejects
+failed plans, malformed sampling/windows, or Dataset request mismatches. No
+trajectory is opened and neither accepted planner is rerun. The existing integrity
+gate precedes this specialized validation. There are 16 specialized and nine
+integrity-only preprocessing roles, with no unsupported current role. Analysis
+has no temporal role in Stage 27.
+
+A completed Dataset-aware provenance requires exactly one output/reference for
+`temporal_execution.json`; a legacy run requires neither. The output ID is
+`output:temporal_execution`, format `json`, and condition `null`. Missing/reverse
+lineage fails with `temporal_execution_lineage_mismatch`. Strictly read bindings
+must match context in order by execution condition and full Dataset specification.
+This uses the Stage 26 requested context unchanged. Scientific condition alone
+is never a Dataset identity lookup.
+
+When valid temporal and PBC artifacts coexist, shared execution conditions must
+have equal PBC sampled counts and temporal selected sample counts. A mismatch
+yields `temporal_execution_pbc_count_mismatch`. Scientific PBC status `unresolved`
+remains technically valid. Covered failed scientific runs need no successful
+temporal output; missing temporal evidence after completed science fails the gate.
+Complete validation still requires explicit mappings for every external input,
+including a used Dataset table, and both status `passed` and `complete: true`.
+See the [execution contract](physical_time_execution_contract.md).

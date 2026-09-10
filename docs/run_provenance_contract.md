@@ -570,3 +570,20 @@ or inventory. Failed-run inventory still follows the Stage 25 authoritative-inpu
 boundary. A used table is portable input lineage in the inventory, not a path in
 Dataset context. No Dataset fields enter scientific `mania_manifest.json`, graph,
 or CSV artifacts. `mania analyze` does not propagate Dataset context in Stage 26.
+
+## Stage 27.C — requested context and temporal execution
+
+Dataset-aware preprocessing now records a portable `temporal_execution` reference
+at `temporal_execution.json` after scientific references and before runtime
+metadata, PBC audit, and artifact inventory. The reference is added only after
+successful atomic publication. No local path or checksum enters the reference.
+`resolved_configuration.dataset_context` remains the requested Dataset contract;
+the dedicated temporal artifact carries resolved sampling and window evidence.
+Legacy runs add neither a temporal reference nor a planning pass.
+
+Planning/configuration failures retain requested context in failed provenance
+at the existing `computation` failure boundary, with unavailable effective
+sampling and no successful temporal output. Planning still precedes science. A technical write failure after science follows
+the existing best-effort completed-science metadata boundary and exits 1 without
+a successful summary. The generic schema is unchanged. Analysis does not propagate
+temporal execution. See the [execution contract](physical_time_execution_contract.md).

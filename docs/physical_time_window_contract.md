@@ -6,9 +6,11 @@ Stage 26 is complete. Stage 27.A is accepted at checkpoint
 `0ccb5f67430b26d4145caee5073bac72299bda6a`. Stage 27.B implements the pure
 planner in
 [`physical_time_windows.py`](../src/mania/preprocessing/physical_time_windows.py).
-**Stage 27 remains incomplete; Stage 27.C workflow integration is next.**
-There is no preprocessing workflow or CLI integration. Dataset v1.0 remains
-unreleased, and its frozen scientific contract is unchanged.
+Stage 27.B is accepted. Stage 27.C now integrates the unchanged sampling/window
+plans into preprocessing; see the [execution contract](physical_time_execution_contract.md).
+Stage 27.C acceptance passed; Stage 27 is complete. Stage 28 has not started.
+Windows remain metadata and do not partition contact aggregation until Stage 28.
+Dataset v1.0 remains unreleased, and its frozen scientific contract is unchanged.
 
 ## Input and authoritative sampling handoff
 

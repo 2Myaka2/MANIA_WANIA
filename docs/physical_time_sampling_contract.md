@@ -6,10 +6,11 @@ Stage 26 is complete at checkpoint
 `027c1125f34a8cd5809d32779ad51de28b8fcca5`. Stage 27.A implements the pure
 physical-time sampling resolver in
 [`physical_time_sampling.py`](../src/mania/preprocessing/physical_time_sampling.py).
-Stage 27.A is accepted; Stage 27.B pure physical-time window planning is implemented.
-**Stage 27 remains incomplete. Stage 27.C workflow integration is next.**
-Stage 27.C will own preprocessing workflow integration, provenance, regression,
-and final acceptance. This resolver has no workflow or CLI integration.
+Stage 27.A and Stage 27.B are accepted. Stage 27.C now integrates these
+unchanged plans into preprocessing through the
+[physical-time execution contract](physical_time_execution_contract.md).
+Stage 27.C acceptance passed; Stage 27 is complete. Stage 28 has not started.
+The resolver itself remains independent of workflow and CLI execution.
 
 The accepted [Dataset identity contract](dataset_identity_contract.md) supplies
 `DatasetTemporalParameters`. The
@@ -243,9 +244,10 @@ json.dumps(plan.to_dict(), allow_nan=False, separators=(",", ":"))
 The module's `__all__` contains only the two tolerance constants, the four leaf
 record classes, `PhysicalTimeSamplingStatus`, `ResolvedPhysicalTimeSamplingPlan`,
 and `resolve_physical_time_sampling`. There is no preprocessing `__init__.py`
-re-export; Stage 27.C may decide the workflow-facing export boundary.
+re-export; Stage 27.C imports the dedicated module directly.
 
-Existing Dataset models/table/binding, manifests, CLI, trajectory loading/frame
+At the accepted standalone Stage 27.A checkpoint, the compatibility boundary was:
+existing Dataset models/table/binding, manifests, CLI, trajectory loading/frame
 sampling, Rg, contacts, graph, provenance/inventory, runtime metadata/PBC,
 validation, analysis, dependencies, and WANIA are unchanged. Existing Stage
 20–24 artifact schemas, scientific rows, and calculations remain intact. No

@@ -560,3 +560,33 @@ def test_source_has_no_forbidden_scientific_imports() -> None:
         encoding="utf-8"
     ).splitlines():
         assert forbidden_import_pattern.match(line) is None
+
+
+def test_explicit_mapping_routes_only_known_conditions_without_mutation():
+    from test_preprocessing_pbc_observation_integration import SAMPLING, loading
+
+    source, _ = loading()
+    mapping = {"normal": (0, 4, 7)}
+    result = compute_manifest_contacts(
+        source.runtime_load_result,
+        frame_sampling=SAMPLING,
+        source_frame_indexes_by_condition=mapping,
+    )
+    assert result.passed
+    assert [r.condition_name for r in result.condition_results] == ["normal", "tumor"]
+    assert [f.frame_index for f in result.condition_results[0].frame_results] == [
+        0,
+        4,
+        7,
+    ]
+    assert [f.frame_index for f in result.condition_results[1].frame_results] == [
+        1,
+        3,
+        5,
+    ]
+    assert mapping == {"normal": (0, 4, 7)}
+    with pytest.raises(ValueError, match="unknown conditions"):
+        compute_manifest_contacts(
+            source.runtime_load_result,
+            source_frame_indexes_by_condition={"missing": (0,)},
+        )

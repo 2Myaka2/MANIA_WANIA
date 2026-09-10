@@ -4,8 +4,10 @@
 
 Stage 25.E.1 contracts and Stage 25.E.2 workflow integration are implemented.
 Stage 25.E is complete. Stage 25.F reproducibility documentation and FAIR² bridge
-is complete. Stage 25.G final technical-hardening acceptance is next;
-Stage 25 overall remains incomplete. FastAPI remains postponed.
+is complete. Stage 25.G final technical-hardening acceptance is complete;
+Stage 25 is complete. Stage 26 is complete. Stage 27.C observes physically
+selected scientific frames; Stage 27 is complete.
+FastAPI remains postponed.
 
 **Observation only:** MANIA reads sampled timestep dimensions without changing
 coordinates, frame selection, Rg, distances, contacts, graphs, or scientific
@@ -310,3 +312,18 @@ and `report.complete is True`. This gate and any `--require-complete` option
 are not implemented in Stage 25.F. Technical completeness does not resolve
 scientific acceptance. Stage 25.F is complete; Stage 25.G is next and remains
 planned. Stage 25 overall remains incomplete.
+
+## Stage 27.C — physical selection observations
+
+Dataset-aware preprocessing now plans physical sampling once before scientific
+passes. Only exact resolved source frames enter Rg and contacts. PBC observations
+remain on Rg when enabled, otherwise contacts, with no double collection. The
+time-axis planning pass reads no dimensions and creates no PBC observations;
+window planning creates no trajectory pass.
+
+Each Dataset condition's PBC `sampled_frame_count` equals its temporal sampling
+plan count, including accepted partial coverage. Existing runtime performance
+counters derive from these observations and require no adapter/schema change.
+Unified validation cross-checks those counts. No minimum-image correction is
+applied and scientific PBC status remains `unresolved`. See the
+[execution contract](physical_time_execution_contract.md).

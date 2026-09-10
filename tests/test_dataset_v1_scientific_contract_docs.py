@@ -317,8 +317,13 @@ def test_docs_preserve_stage_status_and_future_implementation_boundary(
         assert re.search(r"stage 26\.b[^.]*accepted", status)
         assert re.search(r"stage 26\.c[^.]*implemented", status)
         assert re.search(r"stage 26 is complete\b", status)
-        assert "stage 27 physical-time sampling/window engine is next" in status
-        assert "no such engine is implemented yet" in status
+        assert "stage 27 physical-time sampling/window engine is complete" in status
+        assert (
+            "stage 28 contact episodes/lifetime/publication protein-edge tables"
+            in status
+        )
+        assert "have not started" in status
+        assert "requested context stays separate from effective execution" in status
     feature = (
         r"(?:physical-time frame selection|physical-time windows|contact episodes|"
         r"lifetime|protein-lipid contacts|protein-glycan contacts|canonical mapping|"

@@ -464,3 +464,32 @@ def test_source_has_no_forbidden_scientific_imports() -> None:
 
     for line in RG_MODULE_PATH.read_text(encoding="utf-8").splitlines():
         assert forbidden_import_pattern.match(line) is None
+
+
+def test_explicit_selection_matches_legacy_science_and_pbc():
+    from test_preprocessing_pbc_observation_integration import SAMPLING, loading
+
+    from mania.preprocessing.trajectory_frame_sampling import (
+        PreprocessingFrameSamplingOptions,
+    )
+
+    source, runtimes = loading(names=("normal",))
+    condition = source.runtime_load_result.condition_results[0]
+    before = compute_condition_rg(condition, frame_sampling=SAMPLING)
+    observations = []
+    after = compute_condition_rg(
+        condition,
+        source_frame_indexes=(1, 3, 5),
+        pbc_observation_callback=observations.append,
+    )
+    assert before.passed and after.passed
+    assert before.to_dict() == after.to_dict()
+    assert [f.frame_index for f in after.frame_results] == [1, 3, 5]
+    assert [o.frame_index for o in observations] == [1, 3, 5]
+    assert runtimes[0].trajectory.passes == 2
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        compute_condition_rg(
+            condition,
+            frame_sampling=PreprocessingFrameSamplingOptions(),
+            source_frame_indexes=(1, 3, 5),
+        )

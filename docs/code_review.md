@@ -36,9 +36,12 @@ Stage 26 is complete: Stage 26.A and 26.B are accepted; Stage 26.C implements
 authoritative Dataset execution binding, technical propagation, and validation.
 The Dataset v1.0 scientific contract is frozen except for concrete NAMD condition
 labels, which remain unresolved. Dataset v1.0 remains unreleased.
-Stage 27 physical-time sampling/window engine is next; no Stage 27 sampling or
-window behavior is implemented yet. Requested physical parameters remain inert.
-WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26.
+Stage 27 physical-time sampling/window engine is complete. Stage 27.A and 27.B
+are accepted; Stage 27.C integrates their plans into preprocessing. Stage 27 is complete.
+Stage 28 contact episodes/lifetime/publication protein-edge tables are next;
+Stage 28 has not started. The 95% exclusion policy remains Stage 32.
+WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
+analysis temporal propagation is outside Stage 27.
 
 Review small, focused hardening steps against their approved scope. Preserve
 accepted scientific semantics, existing CLI behavior, and Stage 20–24 artifact

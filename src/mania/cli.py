@@ -56,6 +56,15 @@ from mania.preprocessing.dataset_binding import (
 from mania.preprocessing.input_manifest import load_preprocessing_input_manifest
 from mania.preprocessing.pbc_audit import PBC_AUDIT_FILENAME, build_pbc_audit
 from mania.preprocessing.pbc_audit_io import write_pbc_audit
+from mania.preprocessing.physical_time_execution import (
+    PREPROCESSING_TEMPORAL_EXECUTION_FILENAME,
+    PREPROCESSING_TEMPORAL_EXECUTION_ROLE,
+    PreprocessingPhysicalTimeExecutionError,
+    build_preprocessing_temporal_execution,
+)
+from mania.preprocessing.physical_time_execution_io import (
+    write_preprocessing_temporal_execution,
+)
 from mania.preprocessing.run_provenance import (
     PREPROCESSING_RUN_FAILURE_STAGES,
     PREPROCESSING_RUN_PROVENANCE_WORKFLOW,
@@ -1273,6 +1282,25 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         emit_failure("runtime_loading", runtime_loading=runtime_loading)
         return 1
 
+    temporal_execution = None
+    if dataset_resolution.context is not None:
+        if options.frame_sampling != PreprocessingFrameSamplingOptions():
+            print(
+                "Physical-time sampling configuration failed: "
+                "Dataset-aware runs require default legacy frame controls.",
+                file=sys.stderr,
+            )
+            emit_failure("computation", runtime_loading=runtime_loading)
+            return 1
+        try:
+            temporal_execution = build_preprocessing_temporal_execution(
+                runtime_loading, dataset_resolution.context,
+            )
+        except PreprocessingPhysicalTimeExecutionError as exc:
+            print(f"Physical-time execution planning failed: {exc}", file=sys.stderr)
+            emit_failure("computation", runtime_loading=runtime_loading)
+            return 1
+
     _print_preprocessing_graph_export_progress(args, 3)
     computation_kwargs: dict[str, Any] = {
         "include_rg": options.include_rg,
@@ -1280,6 +1308,10 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         "frame_sampling": options.frame_sampling,
         "contact_options": options.contact_detection_options,
     }
+    if temporal_execution is not None:
+        computation_kwargs["source_frame_indexes_by_condition"] = (
+            temporal_execution.selected_source_frame_indexes_by_condition()
+        )
     if _contact_limit_flags_enabled(args):
         computation_kwargs["contact_computation_limits"] = (
             options.contact_computation_limits
@@ -1492,6 +1524,28 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     ended_at_utc = _utc_now()
     metadata_passed = True
     technical_references: list[PortableArtifactReference] = []
+    if temporal_execution is not None:
+        try:
+            temporal_written = write_preprocessing_temporal_execution(
+                temporal_execution, plan.output_layout.output_dir,
+                overwrite=options.overwrite,
+            )
+            if not temporal_written.passed:
+                print(f"Temporal execution write failed: {temporal_written.error}",
+                      file=sys.stderr)
+                metadata_passed = False
+            else:
+                inventory_outputs["temporal_execution_path"] = (
+                    temporal_written.output_path
+                )
+                technical_references.append(PortableArtifactReference(
+                    PREPROCESSING_TEMPORAL_EXECUTION_ROLE,
+                    PREPROCESSING_TEMPORAL_EXECUTION_FILENAME,
+                ))
+        except Exception:
+            print("Temporal execution write failed: Write operation failed.",
+                  file=sys.stderr)
+            metadata_passed = False
     try:
         runtime_metadata = build_preprocessing_runtime_metadata(
             run_id=options.run_name,

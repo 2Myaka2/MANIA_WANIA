@@ -264,6 +264,7 @@ _PREPROCESSING_POLICY: dict[str, str | None] = {
     "reference_comparison_report": None,
     "runtime_metadata": "preprocessing_runtime_metadata",
     "pbc_audit": "pbc_audit",
+    "temporal_execution": "temporal_execution",
 }
 _ANALYSIS_POLICY: dict[str, str | None] = {
     "preprocessing_manifest": None,
@@ -300,6 +301,7 @@ _VALIDATORS = {
     "preprocessing_runtime_metadata": "read_runtime_metadata",
     "analysis_runtime_metadata": "read_runtime_metadata",
     "pbc_audit": "read_pbc_audit",
+    "temporal_execution": "read_preprocessing_temporal_execution",
 }
 
 
@@ -357,6 +359,12 @@ def _invoke(
         if metadata.scope != scope or metadata.metadata_path != expected_path:
             raise RuntimeMetadataReadError("Runtime metadata scope/path mismatch.")
         return metadata
+    if contract == "temporal_execution":
+        from mania.preprocessing.physical_time_execution_io import (
+            read_preprocessing_temporal_execution,
+        )
+
+        return read_preprocessing_temporal_execution(path)
     if contract == "pbc_audit":
         from mania.preprocessing.pbc_audit_io import PbcAuditReadError, read_pbc_audit
 
@@ -398,6 +406,9 @@ def _invoke(
 def _failure_count(call: Callable[[], object]) -> int:
     from mania.preprocessing.dataset_binding import PreprocessingDatasetBindingError
     from mania.preprocessing.pbc_audit_io import PbcAuditReadError
+    from mania.preprocessing.physical_time_execution_io import (
+        PreprocessingTemporalExecutionReadError,
+    )
 
     try:
         result = call()
@@ -405,6 +416,7 @@ def _failure_count(call: Callable[[], object]) -> int:
         artifacts.ArtifactValidationError, OSError, UnicodeError, csv.Error,
         RuntimeMetadataReadError, PbcAuditReadError,
         DatasetParameterTableReadError, PreprocessingDatasetBindingError,
+        PreprocessingTemporalExecutionReadError,
     ):
         # Public validator exceptions and ordinary file/read failures only.
         return 1
@@ -501,6 +513,17 @@ def validate_run_artifacts(
     )
 
     dataset_context: PreprocessingDatasetContext | None = None
+    from mania.preprocessing.pbc_audit import PbcAudit
+    from mania.preprocessing.physical_time_execution import (
+        PreprocessingTemporalExecution,
+    )
+    from mania.preprocessing.physical_time_execution_io import (
+        PreprocessingTemporalExecutionReadError,
+    )
+
+    temporal_execution: PreprocessingTemporalExecution | None = None
+    pbc_audit: PbcAudit | None = None
+    provenance = None
     if scope == "preprocessing":
         try:
             provenance = read_run_provenance(run_root / integrity.provenance_path)
@@ -528,6 +551,39 @@ def validate_run_artifacts(
                         "Preprocessing Dataset context is invalid.",
                         path=integrity.provenance_path,
                     ))
+        temporal_entries = tuple(e for e in entries if e.role == "temporal_execution")
+        temporal_references = (
+            tuple(
+                r for r in provenance.artifact_references
+                if r.role == "temporal_execution"
+            )
+            if provenance is not None else ()
+        )
+        needs_temporal = (
+            dataset_context is not None and provenance is not None
+            and provenance.status == "completed"
+        )
+        temporal_lineage_invalid = (
+            (dataset_context is None and bool(temporal_entries or temporal_references))
+            or (needs_temporal and (
+                len(temporal_entries) != 1 or len(temporal_references) != 1
+            ))
+            or (bool(temporal_entries) != bool(temporal_references))
+            or any(
+                e.direction != "output" or e.path != "temporal_execution.json"
+                or e.artifact_id != "output:temporal_execution"
+                or e.format != "json" or e.condition is not None
+                for e in temporal_entries
+            )
+            or any(r.path != "temporal_execution.json" for r in temporal_references)
+        )
+        if temporal_lineage_invalid:
+            issues.append(UnifiedArtifactValidationIssue(
+                "error", "temporal_execution_lineage_mismatch",
+                "Completed Dataset execution requires one temporal output/reference; "
+                "legacy execution requires neither.",
+                path=integrity.inventory_path,
+            ))
         table_entries = tuple(e for e in entries if e.role == "dataset_parameter_table")
         uses_table = dataset_context is not None and any(
             b.source != "inline_manifest" for b in dataset_context.bindings
@@ -559,6 +615,28 @@ def validate_run_artifacts(
                         "Dataset context does not match the parameter table."
                     )
         return table
+
+    def validate_temporal(path: Path) -> object:
+        nonlocal temporal_execution
+        execution = _invoke("temporal_execution", path, None)
+        assert isinstance(execution, PreprocessingTemporalExecution)
+        if dataset_context is None or tuple(
+            (b.execution_condition, b.dataset_spec) for b in execution.bindings
+        ) != tuple(
+            (b.execution_condition, b.dataset_spec) for b in dataset_context.bindings
+        ):
+            raise PreprocessingTemporalExecutionReadError(
+                "Temporal execution must match requested Dataset bindings."
+            )
+        temporal_execution = execution
+        return execution
+
+    def validate_pbc(path: Path) -> object:
+        nonlocal pbc_audit
+        audit = _invoke("pbc_audit", path, None)
+        assert isinstance(audit, PbcAudit)
+        pbc_audit = audit
+        return audit
 
     def record(
         entry: ArtifactInventoryEntry,
@@ -718,6 +796,10 @@ def validate_run_artifacts(
                 validator,
                 partial(validate_dataset_table, local(entry))
                 if contract == "dataset_parameter_table"
+                else partial(validate_temporal, local(entry))
+                if contract == "temporal_execution"
+                else partial(validate_pbc, local(entry))
+                if contract == "pbc_audit"
                 else partial(_invoke, contract, local(entry), entry.condition),
             )
             # Only these accepted generic CSV contracts use condition. Cross-run
@@ -733,6 +815,18 @@ def validate_run_artifacts(
                             entry.condition,
                         ),
                     )
+    if temporal_execution is not None and pbc_audit is not None:
+        counts = {c.condition: c.sampled_frame_count for c in pbc_audit.conditions}
+        if any(
+            b.execution_condition in counts
+            and counts[b.execution_condition] != b.sampling_plan.sampled_frame_count
+            for b in temporal_execution.bindings
+        ):
+            issues.append(UnifiedArtifactValidationIssue(
+                "error", "temporal_execution_pbc_count_mismatch",
+                "PBC sampled counts must equal physical selected sample counts.",
+                path="pbc_audit.json",
+            ))
     # Group invocation order follows its first inventory member; report records
     # remain in inventory order, with schema preceding condition checks.
     order = {e.artifact_id: index for index, e in enumerate(entries)}

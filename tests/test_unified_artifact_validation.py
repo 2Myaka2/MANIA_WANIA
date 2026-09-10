@@ -305,6 +305,7 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
         reference_graph_path=options.reference_graph_json_path,
     ) + preprocessing_adapter.collect_preprocessing_output_file_specs(
         output_root=root, runtime_metadata_path=root / "runtime_metadata.json",
+        temporal_execution_path=root / "temporal_execution.json",
         pbc_audit_path=root / "pbc_audit.json", **stages
     )
     request = AnalyzeRequest(tmp_path / "in", root, ("normal", "tumor"))
@@ -317,7 +318,7 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
     )
     assert {e.role for e in prep} == unified._PREPROCESSING_POLICY.keys()
     assert {e.role for e in analysis} == unified._ANALYSIS_POLICY.keys()
-    assert len({e.role for e in prep}) == 24
+    assert len({e.role for e in prep}) == 25
     assert len({e.role for e in analysis}) == 17
 
 
@@ -792,6 +793,16 @@ def dataset_bundle(root, *, source="parameter_table", table=True, context=True):
     )
 
     value = spec(condition="normal")
+    value = value.model_copy(
+        update={
+            "temporal": value.temporal.model_copy(
+                update={
+                    "window_length_ns": 7.4,
+                    "overlap_percent": 50.0,
+                }
+            )
+        }
+    )
     bundle = make_bundle(
         root,
         inputs=(
@@ -824,6 +835,43 @@ def dataset_bundle(root, *, source="parameter_table", table=True, context=True):
             resolved_configuration={
                 "dataset_context": dataset_context.to_dict(),
             },
+        )
+        from test_preprocessing_physical_time_execution import loading
+
+        from mania.preprocessing.physical_time_execution import (
+            build_preprocessing_temporal_execution,
+        )
+        from mania.preprocessing.physical_time_execution_io import (
+            write_preprocessing_temporal_execution,
+        )
+
+        runtime, _ = loading((125,))
+        execution = build_preprocessing_temporal_execution(runtime, dataset_context)
+        written = write_preprocessing_temporal_execution(execution, root)
+        content = written.output_path.read_bytes()
+        entry = ArtifactInventoryEntry(
+            "output:temporal_execution",
+            "output",
+            "temporal_execution",
+            "temporal_execution.json",
+            "json",
+            len(content),
+            None,
+            None,
+        )
+        bundle.inventory = replace(
+            bundle.inventory,
+            artifacts=(*bundle.inventory.artifacts, entry),
+        )
+        bundle.paths[entry.artifact_id] = written.output_path
+        bundle.provenance = replace(
+            bundle.provenance,
+            artifact_references=(
+                *bundle.provenance.artifact_references,
+                PortableArtifactReference(
+                    "temporal_execution", "temporal_execution.json"
+                ),
+            ),
         )
         write_metadata(bundle)
     return bundle
@@ -923,3 +971,112 @@ def test_mapped_table_tampering_fails_without_checksums(tmp_path, change):
         for r in report.specialized_records
     )
     assert str(path) not in str(report.to_dict())
+
+
+@pytest.mark.parametrize(
+    "damage", ["no_context", "no_reference", "no_entry", "no_file"]
+)
+def test_temporal_execution_bidirectional_lineage(tmp_path, damage):
+    bundle = dataset_bundle(tmp_path / "run", source="inline_manifest", table=False)
+    if damage == "no_context":
+        bundle.provenance = replace(bundle.provenance, resolved_configuration={})
+    elif damage == "no_reference":
+        bundle.provenance = replace(
+            bundle.provenance,
+            artifact_references=tuple(
+                r
+                for r in bundle.provenance.artifact_references
+                if r.role != "temporal_execution"
+            ),
+        )
+    elif damage == "no_entry":
+        bundle.inventory = replace(
+            bundle.inventory,
+            artifacts=tuple(
+                e for e in bundle.inventory.artifacts if e.role != "temporal_execution"
+            ),
+        )
+    else:
+        (bundle.root / "temporal_execution.json").unlink()
+    write_metadata(bundle)
+    report = validate(bundle)
+    assert report.status == "failed"
+    assert report.unsupported_count == 0
+
+
+@pytest.mark.parametrize("damage", ["spec", "sampling", "windows", "nested"])
+def test_temporal_execution_strict_semantic_validation_without_checksums(
+    tmp_path, damage
+):
+    bundle = dataset_bundle(tmp_path / "run", source="inline_manifest", table=False)
+    path = bundle.root / "temporal_execution.json"
+    payload = json.loads(path.read_text())
+    binding = payload["bindings"][0]
+    if damage == "spec":
+        binding["dataset_spec"]["identity"]["variant_id"] = "tampered"
+    elif damage == "sampling":
+        binding["sampling_plan"]["requested_frame_stride_ps"] = 19.3
+    elif damage == "windows":
+        binding["window_plan"]["requested_window_step_ns"] = 3.8
+    else:
+        binding["sampling_plan"]["selected_samples"][0]["time_delta_ps"] = 1.0
+    content = json.dumps(payload).encode()
+    path.write_bytes(content)
+    bundle.inventory = replace(
+        bundle.inventory,
+        artifacts=tuple(
+            replace(e, byte_size=len(content)) if e.role == "temporal_execution" else e
+            for e in bundle.inventory.artifacts
+        ),
+    )
+    write_metadata(bundle)
+    report = validate(bundle)
+    assert report.integrity_report.status == "passed"
+    assert report.status == "failed" and report.unsupported_count == 0
+    assert any(
+        r.role == "temporal_execution" and r.status == "failed"
+        for r in report.specialized_records
+    )
+
+
+@pytest.mark.parametrize("count", [1, 2])
+def test_temporal_pbc_count_cross_check_preserves_unresolved_status(tmp_path, count):
+    from test_preprocessing_pbc_audit import audit, observe
+
+    bundle = dataset_bundle(tmp_path / "run", source="inline_manifest", table=False)
+    payload = audit(
+        observations=tuple(observe(None, index=i) for i in range(count))
+    ).to_dict()
+    assert payload["scientific_pbc_status"] == "unresolved"
+    content = json.dumps(payload).encode()
+    path = bundle.root / "pbc_audit.json"
+    path.write_bytes(content)
+    bundle.inventory = replace(
+        bundle.inventory,
+        artifacts=(
+            *bundle.inventory.artifacts,
+            ArtifactInventoryEntry(
+                "output:pbc_audit",
+                "output",
+                "pbc_audit",
+                "pbc_audit.json",
+                "json",
+                len(content),
+                None,
+                None,
+            ),
+        ),
+    )
+    bundle.provenance = replace(
+        bundle.provenance,
+        artifact_references=(
+            *bundle.provenance.artifact_references,
+            PortableArtifactReference("pbc_audit", "pbc_audit.json"),
+        ),
+    )
+    write_metadata(bundle)
+    report = validate(bundle)
+    assert report.status == ("passed" if count == 1 else "failed"), report.to_dict()
+    assert (
+        "temporal_execution_pbc_count_mismatch" in [i.code for i in report.issues]
+    ) == (count != 1)

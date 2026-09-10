@@ -26,18 +26,23 @@ Stage 26 is complete: Stage 26.A and 26.B are accepted; Stage 26.C implements
 authoritative Dataset execution binding, technical propagation, and validation.
 The Dataset v1.0 scientific contract is frozen except for concrete NAMD condition
 labels, which remain unresolved. Dataset v1.0 remains unreleased.
-At the accepted Stage 26 checkpoint, the recorded boundary was:
-Stage 27 physical-time sampling/window engine is next; no Stage 27 sampling or
-window behavior is implemented yet. Requested physical parameters remain inert.
-WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26.
+Stage 27 physical-time sampling/window engine is complete. Stage 27.A and 27.B
+are accepted; Stage 27.C integrates their plans into preprocessing. Stage 27 is complete.
+Stage 28 contact episodes/lifetime/publication protein-edge tables are next;
+Stage 28 has not started. The 95% exclusion policy remains Stage 32.
+WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
+analysis temporal propagation is outside Stage 27.
 
 Accepted Stage 27.A implements the standalone
 [physical-time sampling resolver](physical_time_sampling_contract.md), consuming
 only production bounds and stride. Stage 27.B implements the standalone
 [physical-time window planner](physical_time_window_contract.md), interpreting
 window length, step, and overlap over the authoritative sampling records.
-No preprocessing workflow integration exists. Stage 27 remains incomplete;
-Stage 27.C workflow integration is next.
+Stage 27.C [preprocessing execution](physical_time_execution_contract.md) collects
+actual source times once per Dataset condition and routes exact resolved source
+indexes to existing Rg and contact passes. Window planning adds no trajectory
+pass. The separate temporal artifact records effective execution, while requested
+Dataset context remains in provenance. Windows do not yet partition contacts.
 
 ## Purpose
 

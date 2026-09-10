@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib
 import json
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType
@@ -2167,6 +2167,7 @@ def compute_preprocessing_graph_workflow_rg_contacts(
     contact_options: PreprocessingContactDetectionOptions | None = None,
     contact_computation_limits: PreprocessingContactComputationLimits | None = None,
     frame_sampling: PreprocessingFrameSamplingOptions | None = None,
+    source_frame_indexes_by_condition: Mapping[str, tuple[int, ...]] | None = None,
     progress_callback: ContactProgressCallback | None = None,
     collect_pbc_observations: bool = False,
 ) -> PreprocessingGraphWorkflowComputationResult:
@@ -2190,6 +2191,10 @@ def compute_preprocessing_graph_workflow_rg_contacts(
     )
 
     condition_names = runtime_loading.condition_names
+    if source_frame_indexes_by_condition is not None and not set(
+        source_frame_indexes_by_condition
+    ).issubset(condition_names):
+        raise ValueError("Explicit source selection contains unknown conditions")
     issues: list[PreprocessingGraphWorkflowComputationIssue] = []
     rg_result: object | None = None
     contacts_result: object | None = None
@@ -2280,6 +2285,10 @@ def compute_preprocessing_graph_workflow_rg_contacts(
             rg_kwargs: dict[str, Any] = {}
             if frame_sampling is not None:
                 rg_kwargs["frame_sampling"] = selected_frame_sampling
+            if source_frame_indexes_by_condition is not None:
+                rg_kwargs["source_frame_indexes_by_condition"] = (
+                    source_frame_indexes_by_condition
+                )
             if collect_pbc_observations:
                 rg_kwargs["pbc_observation_callback"] = pbc_observations.append
             rg_result = _manifest_rg_computer()(runtime_result, **rg_kwargs)
@@ -2314,6 +2323,10 @@ def compute_preprocessing_graph_workflow_rg_contacts(
                 contact_kwargs["computation_limits"] = selected_contact_limits
             if frame_sampling is not None:
                 contact_kwargs["frame_sampling"] = selected_frame_sampling
+            if source_frame_indexes_by_condition is not None:
+                contact_kwargs["source_frame_indexes_by_condition"] = (
+                    source_frame_indexes_by_condition
+                )
             if progress_callback is not None:
                 contact_kwargs["progress_callback"] = progress_callback
             if collect_pbc_observations and not include_rg:

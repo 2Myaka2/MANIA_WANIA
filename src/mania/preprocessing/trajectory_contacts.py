@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from numbers import Integral
 from typing import Any, TypeAlias, cast
@@ -12,6 +12,7 @@ from mania.preprocessing import (
     trajectory_contact_accumulator,
     trajectory_contact_chemistry,
     trajectory_frame_sampling,
+    trajectory_frame_selection,
     trajectory_manifest_loader,
     trajectory_runtime,
 )
@@ -1132,12 +1133,17 @@ def compute_condition_contacts(
     options: PreprocessingContactDetectionOptions | None = None,
     computation_limits: PreprocessingContactComputationLimits | None = None,
     frame_sampling: PreprocessingFrameSamplingOptions | None = None,
+    source_frame_indexes: tuple[int, ...] | None = None,
     progress_callback: ContactProgressCallback | None = None,
     pbc_observation_callback: PbcObservationCallback | None = None,
 ) -> PreprocessingConditionContactsResult:
     """Compute per-frame contacts from one already loaded condition."""
     selected_options = options or PreprocessingContactDetectionOptions()
     selected_limits = _contact_computation_limits(computation_limits)
+    if source_frame_indexes is not None and frame_sampling is not None:
+        raise ValueError(
+            "source_frame_indexes and frame_sampling are mutually exclusive"
+        )
     selected_frame_sampling = _frame_sampling_options(frame_sampling)
     option_issue = _unsupported_options_issue(selected_options)
     if option_issue is not None:
@@ -1255,7 +1261,11 @@ def compute_condition_contacts(
     )
     try:
         trajectory_iterator = iter(
-            trajectory_frame_sampling.iter_sampled_trajectory_frames(
+            trajectory_frame_selection.iter_selected_trajectory_frames(
+                cast(Iterable[object], trajectory), source_frame_indexes,
+            )
+            if source_frame_indexes is not None
+            else trajectory_frame_sampling.iter_sampled_trajectory_frames(
                 cast(Iterable[object], trajectory),
                 selected_frame_sampling,
             )
@@ -1376,12 +1386,19 @@ def _aggregate_manifest_contacts(
     options: PreprocessingContactDetectionOptions | None = None,
     computation_limits: PreprocessingContactComputationLimits | None = None,
     frame_sampling: PreprocessingFrameSamplingOptions | None = None,
+    source_frame_indexes_by_condition: Mapping[str, tuple[int, ...]] | None = None,
     progress_callback: ContactProgressCallback | None = None,
     pbc_observation_callback: PbcObservationCallback | None = None,
 ) -> PreprocessingManifestContactsResult:
     """Compose condition contact results across one manifest load result."""
     selected_options = options or PreprocessingContactDetectionOptions()
     selected_limits = _contact_computation_limits(computation_limits)
+    if source_frame_indexes_by_condition is not None:
+        names = {
+            result.condition_name for result in manifest_load_result.condition_results
+        }
+        if not set(source_frame_indexes_by_condition).issubset(names):
+            raise ValueError("Explicit source selection contains unknown conditions")
     selected_frame_sampling = _frame_sampling_options(frame_sampling)
     condition_results: list[PreprocessingConditionContactsResult] = []
     for condition_load_result in manifest_load_result.condition_results:
@@ -1389,7 +1406,15 @@ def _aggregate_manifest_contacts(
             contact_kwargs: dict[str, Any] = {"options": selected_options}
             if computation_limits is not None:
                 contact_kwargs["computation_limits"] = selected_limits
-            if frame_sampling is not None:
+            if (
+                source_frame_indexes_by_condition is not None
+                and condition_load_result.condition_name
+                in source_frame_indexes_by_condition
+            ):
+                contact_kwargs["source_frame_indexes"] = (
+                    source_frame_indexes_by_condition[condition_load_result.condition_name]
+                )
+            elif frame_sampling is not None:
                 contact_kwargs["frame_sampling"] = selected_frame_sampling
             if progress_callback is not None:
                 contact_kwargs["progress_callback"] = progress_callback

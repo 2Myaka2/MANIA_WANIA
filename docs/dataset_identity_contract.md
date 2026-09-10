@@ -7,16 +7,17 @@ in-memory contract in [`dataset_identity.py`](../src/mania/dataset_identity.py).
 Stage 26.B optional manifest integration and standalone parameter-table input
 are accepted. Stage 26.C authoritative execution binding, technical propagation,
 validation, and acceptance are implemented. Stage 26 is complete.
-At the accepted Stage 26 checkpoint, the recorded boundary was:
-Stage 27 physical-time sampling/window engine is next; no such engine is
-implemented yet.
+Stage 27 physical-time sampling/window engine is complete. Dataset temporal
+requests now drive preprocessing through the accepted sampling and window plans.
+Stage 28 contact episodes/lifetime/publication protein-edge tables are next and
+have not started. Requested context stays separate from effective execution.
 
 The [Dataset v1.0 scientific contract](dataset_v1_scientific_contract.md) records
 the frozen scientific decisions for Stages 27–35. Scientific decisions being
 frozen does not mean their future functionality is implemented or that Dataset
 v1.0 is released. Historical Stage 25 records retain their acceptance context.
 
-## Stage 27.A–B status
+## Stage 27 integration status
 
 Stage 26 is complete. The accepted standalone Stage 27.A resolver consumes requested
 `production_start_ns`, `production_end_ns`, and `frame_stride_ps` for production
@@ -25,8 +26,12 @@ interval and stride resolution only. See the
 Stage 27.B is implemented: the [pure window planner](physical_time_window_contract.md)
 now interprets `window_length_ns`, `window_step_ns`, and `overlap_percent` over
 the accepted sampling plan. Dataset models remain unchanged.
-There is no workflow integration. Stage 27 remains incomplete; Stage 27.C
-workflow integration is next. Stage 26 history below is unchanged.
+Stage 27.C executes the Dataset temporal request through these accepted plans.
+See the [execution contract](physical_time_execution_contract.md). Requested
+`resolved_configuration.dataset_context` stays distinct from resolved/effective
+`temporal_execution.json`. Dataset-aware runs require default legacy frame controls;
+legacy-only runs retain their existing sampler. Stage 27 is complete.
+Stage 26 history below is unchanged.
 
 ## Identity boundary
 

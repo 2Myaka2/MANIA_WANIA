@@ -430,3 +430,18 @@ actual inputs whenever authoritative runtime inputs are available under the
 Stage 25 failure contract. Only successful stages contribute outputs. Binding
 failure does not fabricate inventory. Input lineage is not publication membership.
 No Dataset role is added to analysis inventory in Stage 26.
+
+## Stage 27.C — temporal execution output
+
+A successful Dataset-aware preprocessing run supplies `temporal_execution_path`
+to the output adapter. The exact path must be `<output>/temporal_execution.json`.
+It adds `output:temporal_execution`, direction `output`, role `temporal_execution`,
+portable path `temporal_execution.json`, format `json`, and condition `null`.
+Ordering places this entry before runtime metadata and PBC audit. There is no
+scan, inferred existence, generic schema change, self-reference, or analysis role.
+Legacy runs and unsuccessful temporal writes contribute no temporal entry.
+
+Checksum mode `none` records exact byte size and null SHA256 without content
+hashing. Mode `sha256` uses the accepted bounded streaming helper on the supplied
+artifact. Large PoC acceptance uses `none`; controlled small-file regressions cover
+SHA256. See the [execution contract](physical_time_execution_contract.md).
