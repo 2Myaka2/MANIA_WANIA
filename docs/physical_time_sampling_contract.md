@@ -6,7 +6,8 @@ Stage 26 is complete at checkpoint
 `027c1125f34a8cd5809d32779ad51de28b8fcca5`. Stage 27.A implements the pure
 physical-time sampling resolver in
 [`physical_time_sampling.py`](../src/mania/preprocessing/physical_time_sampling.py).
-**Stage 27 remains incomplete. Stage 27.B physical-time window planning is next.**
+Stage 27.A is accepted; Stage 27.B pure physical-time window planning is implemented.
+**Stage 27 remains incomplete. Stage 27.C workflow integration is next.**
 Stage 27.C will own preprocessing workflow integration, provenance, regression,
 and final acceptance. This resolver has no workflow or CLI integration.
 
@@ -214,8 +215,17 @@ Dataset exclusion policy belongs to Stage 32.
 
 `window_length_ns`, `window_step_ns`, and `overlap_percent` remain requested and
 operationally inert in 27.A. Changing only these fields produces the identical
-sampling plan. Stage 27.B will interpret them; no windows, memberships, overlap
+sampling plan. Stage 27.B now interprets them; no windows, memberships, overlap
 consistency, or window-based calculations are implemented here.
+
+## Stage 27.B handoff
+
+The 27.A output is the authoritative requested-sample resolution consumed by
+the [pure physical-time window planner](physical_time_window_contract.md).
+27.B combines the selected/missing records by requested sample index and assigns
+membership using requested sample time. It does not regenerate the sampling grid
+or rerun time matching. Actual selected times only describe effective window
+bounds. Accepted 27.A sampling semantics and workflow behavior are unchanged.
 
 ## Purity, compatibility, and API boundary
 

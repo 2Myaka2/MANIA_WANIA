@@ -31,11 +31,13 @@ Stage 27 physical-time sampling/window engine is next; no Stage 27 sampling or
 window behavior is implemented yet. Requested physical parameters remain inert.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26.
 
-Current Stage 27.A implements the standalone
+Accepted Stage 27.A implements the standalone
 [physical-time sampling resolver](physical_time_sampling_contract.md), consuming
-only production bounds and stride. Window parameters remain operationally
-inert, and no preprocessing workflow integration exists. Stage 27 remains
-incomplete; Stage 27.B physical-time window planning is next.
+only production bounds and stride. Stage 27.B implements the standalone
+[physical-time window planner](physical_time_window_contract.md), interpreting
+window length, step, and overlap over the authoritative sampling records.
+No preprocessing workflow integration exists. Stage 27 remains incomplete;
+Stage 27.C workflow integration is next.
 
 ## Purpose
 

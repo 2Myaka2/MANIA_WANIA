@@ -16,15 +16,17 @@ the frozen scientific decisions for Stages 27–35. Scientific decisions being
 frozen does not mean their future functionality is implemented or that Dataset
 v1.0 is released. Historical Stage 25 records retain their acceptance context.
 
-## Stage 27.A status
+## Stage 27.A–B status
 
-Stage 26 is complete. The standalone Stage 27.A resolver now consumes requested
+Stage 26 is complete. The accepted standalone Stage 27.A resolver consumes requested
 `production_start_ns`, `production_end_ns`, and `frame_stride_ps` for production
-interval and stride resolution only. `window_length_ns`, `window_step_ns`, and
-`overlap_percent` remain requested and operationally inert. See the
+interval and stride resolution only. See the
 [physical-time sampling contract](physical_time_sampling_contract.md).
-There is no workflow integration. Stage 27 remains incomplete; Stage 27.B
-physical-time window planning is next. Stage 26 history below is unchanged.
+Stage 27.B is implemented: the [pure window planner](physical_time_window_contract.md)
+now interprets `window_length_ns`, `window_step_ns`, and `overlap_percent` over
+the accepted sampling plan. Dataset models remain unchanged.
+There is no workflow integration. Stage 27 remains incomplete; Stage 27.C
+workflow integration is next. Stage 26 history below is unchanged.
 
 ## Identity boundary
 
