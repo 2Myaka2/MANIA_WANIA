@@ -4,9 +4,13 @@
 
 Stage 27 is complete. Stage 28.A is accepted at checkpoint
 `a8083e82993ea3b858251aaa6d3861308a186bf5`. Stage 28.B pure aggregation is
-implemented in [protein_edge_windows.py](../src/mania/preprocessing/protein_edge_windows.py).
-Stage 28 remains incomplete. Stage 28.C publication table/export is next;
-28.D owns workflow integration and real-data acceptance. Dataset v1.0 remains
+accepted at `869afbf9ea7bd31591026295861db0d0f1dc05d7` and implemented in
+[protein_edge_windows.py](../src/mania/preprocessing/protein_edge_windows.py).
+Stage 28.C [source-indexed table/export](protein_edge_window_table_contract.md) is
+implemented and exports accepted 28.B metrics without recalculation. This export
+remains pre-canonical; Stage 30 provides canonical mapping before publication.
+Stage 28 remains incomplete. Stage 28.D workflow integration and real-data
+acceptance is next after 28.C. Dataset v1.0 remains
 unreleased. MANIA remains `mania-wania 0.1.0`.
 
 ## Input and public API
@@ -181,7 +185,8 @@ messages; upstream issue details and local paths are not included.
 This API has no filesystem, trajectory access, optional MDAnalysis requirement,
 Git/subprocess, clock, PBC operations, or distance calculations. It is not
 re-exported through `preprocessing/__init__.py` and has no workflow or CLI
-integration. There is no CSV export, canonical mapping, replica aggregation,
+integration. The 28.B API itself has no CSV export; the separate 28.C layer owns
+explicit source CSV persistence. There is no canonical mapping, replica aggregation,
 specialized lipid/glycan layer, or QC exclusion. Existing scientific artifacts,
 Stage 20–24 schemas, Stage 27 code, 28.A semantics, provenance/inventory,
 validation, analysis, dependencies, and WANIA remain unchanged. The frozen

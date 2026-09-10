@@ -250,13 +250,17 @@ def test_current_status_documents_completed_stage27_and_stage28_boundary() -> No
         assert re.search(r"Stage 26\.A and 26\.B are accepted", text)
         assert "Stage 27 physical-time sampling/window engine is complete" in text
         assert "Stage 27 is complete" in text
-        # Architecture records 28.B; global status documents await a later update.
+        # Architecture records 28.C; global status documents await a later update.
         if name == "docs/architecture.md":
             assert re.search(r"Stage 28\.A is accepted\b", text)
             assert "contact episode/lifetime engine" in text
-            assert re.search(r"Stage 28\.B[^.;]*is implemented\b", text)
+            assert re.search(r"Stage 28\.B[^.;]*is accepted\b", text)
+            assert re.search(r"Stage 28\.C[^.;]*is implemented\b", text)
             assert "Stage 28 remains incomplete" in text
-            assert re.search(r"Stage 28\.C[^.;]*is next\b", text)
+            assert re.search(r"Stage 28\.D[^.;]*is next\b", text)
+            assert "protein_edges_by_window_source.csv" in text
+            assert "requiring Stage 30 canonical mapping" in text
+            assert "Workflow integration is not implemented by 28.B or 28.C" in text
         assert "95% exclusion policy remains Stage 32" in text
         assert (
             "scientific contract is frozen except for concrete NAMD condition" in text
@@ -268,6 +272,27 @@ def test_current_status_documents_completed_stage27_and_stage28_boundary() -> No
         assert "Analysis Dataset-context propagation is outside Stage 26" in text
     assert "mania artifacts validate out --scope preprocessing" in readme_text()
     assert "docs/stage25_final_acceptance.md" in readme_text()
+
+
+def test_stage28c_source_table_docs_preserve_canonical_publication_boundary():
+    text = " ".join((REPO_ROOT / "docs/protein_edge_window_table_contract.md")
+                    .read_text(encoding="utf-8").split())
+    for phrase in (
+        "Stage 27 is complete", "Stage 28.A is accepted", "Stage 28.B is accepted",
+        "Stage 28.C source-indexed table/export is implemented",
+        "Stage 28 remains incomplete",
+        "Stage 28.D integration and real-data acceptance is next",
+        "protein_edges_by_window_source.csv", "source-indexed, canonical-ready",
+        "This file is not yet Dataset v1.0 release-ready",
+        "Stage 30 canonical mapping is required before release publication",
+        "UniProt O95436 canonical numbering", "condition=None",
+        "SEGID is not universally equivalent to a canonical biological chain "
+        "identifier",
+        "Window completeness remains in `temporal_execution.json`",
+        "automatic preprocessing emission, inventory/provenance role, or "
+        "unified-validation role",
+    ):
+        assert phrase in text
 
 
 def test_readme_links_stage25f_reproducibility_and_software_reference() -> None:

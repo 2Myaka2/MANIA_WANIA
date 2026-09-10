@@ -30,11 +30,15 @@ Stage 27 physical-time sampling/window engine is complete. Stage 27.A and 27.B
 are accepted; Stage 27.C integrates their plans into preprocessing. Stage 27 is complete.
 Stage 28.A is accepted and provides the standalone pure
 [contact episode/lifetime engine](contact_episode_lifetime_contract.md).
-Stage 28.B pure per-window protein-edge aggregation is implemented in the
+Stage 28.B pure per-window protein-edge aggregation is accepted and implemented in the
 [aggregation module](protein_edge_window_aggregation_contract.md), consuming
 28.A episodes with resolved-frame occupancy and `edge_weight = occupancy`.
-Stage 28 remains incomplete; Stage 28.C publication table/export is next.
-Publication tables and workflow integration are not implemented by 28.B.
+Stage 28.C source-indexed table/export is implemented in the
+[table contract and strict CSV layer](protein_edge_window_table_contract.md).
+It copies accepted metrics into `protein_edges_by_window_source.csv`, a candidate
+requiring Stage 30 canonical mapping before Dataset v1.0 release publication.
+Stage 28 remains incomplete; Stage 28.D workflow integration and acceptance is next.
+Workflow integration is not implemented by 28.B or 28.C.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.
