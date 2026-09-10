@@ -143,6 +143,17 @@ edge_weight = occupancy
 gap_tolerance = 0
 ```
 
+The accepted denominator clarification for future Stage 28.B is that
+`n_frames_in_window` means `n_resolved_frames_in_window`:
+
+```text
+occupancy = n_contact_frames / n_resolved_frames_in_window
+```
+
+Missing requested samples are not contact-negative resolved observations and
+MUST NOT enter this denominator. Stage 32 separately evaluates sampling coverage;
+missingness breaks continuity without inventing an observed negative frame.
+
 A contact episode MUST be strictly continuous within one window and one
 replica. Continuity MUST use adjacent SELECTED MANIA frames. Intentional frame
 stride does not itself break an episode. An episode MUST break when:
@@ -151,6 +162,28 @@ stride does not itself break an episode. An episode MUST break when:
 - an expected sampled frame is actually missing;
 - a window boundary is crossed;
 - a replica boundary is crossed.
+
+The accepted reviewer clarification defines adjacency as consecutive requested
+sample indexes in the authoritative resolved window, not source-frame indexes.
+`gap_tolerance = 0` is fixed, with no configurable tolerance. Episodes cannot
+continue across windows or trajectories/replicas; overlapping windows calculate
+their episodes independently.
+
+Lifetime MUST use the actual first/last resolved contact-positive sample times:
+
+```text
+episode_length_ns = last_contact_sample_time - first_contact_sample_time
+                 = (end_actual_time_ps - start_actual_time_ps) / 1000
+```
+
+The first line expresses sample times in ns. The second uses
+`Decimal(str(actual_time_ps))` for subtraction and conversion. Requested indexes
+define continuity; actual resolved times define duration, without snapping back
+to requested targets. A single contact-positive sample has length `0.0 ns`.
+This is conservative: MANIA does not assign unobserved time before the first or
+after the last positive observation. No frame-count/stride or half-frame
+correction is applied. No contact-positive samples means zero episodes and
+`null` mean/max lifetime; a real one-frame episode instead has mean/max `0.0`.
 
 Future protein-edge/window fields MUST include at minimum `n_contact_frames`,
 `occupancy`, `n_contact_episodes`, `mean_episode_length_ns`,
@@ -183,6 +216,17 @@ The covalent carrier-residue <-> first-sugar linkage MUST NOT artificially
 enter ordinary occupancy/lifetime summaries. This exclusion boundary is frozen;
 its implementation belongs to Stage 29. No final glycan or glycolipid residue
 registry is invented.
+
+### Accepted distance and edge-weight clarification for both specialized layers
+
+For future Stage 29 protein-lipid and protein-glycan layers, `distance_mean_A`
+MUST be the mean minimum interatomic distance over contact-positive frames only.
+`distance_min_A` MUST be the minimum over contact-positive frames only.
+
+These specialized layers do not require a duplicate `edge_weight` field in
+Dataset v1.0 at present because `occupancy` is explicit. If future schema
+unification exposes `edge_weight` there, it is derivative of occupancy, not a
+new scientific formula. These clarifications introduce no Stage 29 implementation.
 
 ## Canonical residue reference — Stage 30
 

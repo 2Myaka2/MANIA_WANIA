@@ -28,8 +28,11 @@ The Dataset v1.0 scientific contract is frozen except for concrete NAMD conditio
 labels, which remain unresolved. Dataset v1.0 remains unreleased.
 Stage 27 physical-time sampling/window engine is complete. Stage 27.A and 27.B
 are accepted; Stage 27.C integrates their plans into preprocessing. Stage 27 is complete.
-Stage 28 contact episodes/lifetime/publication protein-edge tables are next;
-Stage 28 has not started. The 95% exclusion policy remains Stage 32.
+Stage 28.A implements the standalone pure
+[contact episode/lifetime engine](contact_episode_lifetime_contract.md).
+Stage 28 remains incomplete; Stage 28.B per-window protein-edge aggregation is
+next. Occupancy, edge weight, publication tables, and workflow integration are
+not implemented by 28.A. The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.
 

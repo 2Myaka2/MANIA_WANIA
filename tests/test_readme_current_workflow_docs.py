@@ -250,10 +250,12 @@ def test_current_status_documents_completed_stage27_and_stage28_boundary() -> No
         assert re.search(r"Stage 26\.A and 26\.B are accepted", text)
         assert "Stage 27 physical-time sampling/window engine is complete" in text
         assert "Stage 27 is complete" in text
-        assert (
-            "Stage 28 contact episodes/lifetime/publication protein-edge tables" in text
-        )
-        assert "Stage 28 has not started" in text
+        # Architecture records 28.A; global status documents await a later update.
+        if name == "docs/architecture.md":
+            assert re.search(r"Stage 28\.A implements\b", text)
+            assert "contact episode/lifetime engine" in text
+            assert "Stage 28 remains incomplete" in text
+            assert re.search(r"Stage 28\.B[^.;]*is next\b", text)
         assert "95% exclusion policy remains Stage 32" in text
         assert (
             "scientific contract is frozen except for concrete NAMD condition" in text

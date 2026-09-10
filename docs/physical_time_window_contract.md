@@ -8,9 +8,11 @@ planner in
 [`physical_time_windows.py`](../src/mania/preprocessing/physical_time_windows.py).
 Stage 27.B is accepted. Stage 27.C now integrates the unchanged sampling/window
 plans into preprocessing; see the [execution contract](physical_time_execution_contract.md).
-Stage 27.C acceptance passed; Stage 27 is complete. Stage 28 has not started.
+Stage 27.C acceptance passed; Stage 27 is complete. Stage 28.A now implements
+the standalone episode/lifetime engine; Stage 28 remains incomplete and 28.B is next.
 Windows remain metadata and do not partition contact aggregation until Stage 28.
-Dataset v1.0 remains unreleased, and its frozen scientific contract is unchanged.
+Dataset v1.0 remains unreleased. Accepted lifetime clarifications are recorded in
+the [frozen scientific contract](dataset_v1_scientific_contract.md).
 
 ## Input and authoritative sampling handoff
 
@@ -239,13 +241,25 @@ observes its first selected actual time at 58 ns, without replacement.
 
 ## QC and scientific boundary
 
+### Stage 28.A handoff
+
+Resolved window requested-sample membership is authoritative for episode
+continuity. Missing requested indexes are explicit continuity breaks, and the
+window boundary prevents continuation into another window. The
+[Stage 28.A engine](contact_episode_lifetime_contract.md) consumes one window
+and its sampling plan, using actual resolved times for duration. It has no
+cross-window state and does not change Stage 27 window semantics, reconstruct
+membership, or rerun physical-time matching.
+
+### Unchanged planner boundary
+
 The future Dataset 95% exclusion rule is not applied. Coverage at 94% and 96%
 with missing targets produces partial windows in both cases. Future exclusion
 and aggregation policies do not enter this planner.
 
-There is no contact calculation, occupancy, lifetime, contact episode semantics,
-edge-weight calculation, Rg, replica aggregation, or publication export. These
-remain future stages. The module uses standard library code plus the accepted
+The window planner has no contact calculation, occupancy, lifetime, contact
+episode computation, edge-weight calculation, Rg, replica aggregation, or
+publication export. The module uses standard library code plus the accepted
 Dataset temporal model and sampling records only; it accesses no filesystem,
 trajectory runtime, scientific stack, Git, clock, or environment.
 
