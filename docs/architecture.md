@@ -28,11 +28,14 @@ The Dataset v1.0 scientific contract is frozen except for concrete NAMD conditio
 labels, which remain unresolved. Dataset v1.0 remains unreleased.
 Stage 27 physical-time sampling/window engine is complete. Stage 27.A and 27.B
 are accepted; Stage 27.C integrates their plans into preprocessing. Stage 27 is complete.
-Stage 28.A implements the standalone pure
+Stage 28.A is accepted and provides the standalone pure
 [contact episode/lifetime engine](contact_episode_lifetime_contract.md).
-Stage 28 remains incomplete; Stage 28.B per-window protein-edge aggregation is
-next. Occupancy, edge weight, publication tables, and workflow integration are
-not implemented by 28.A. The 95% exclusion policy remains Stage 32.
+Stage 28.B pure per-window protein-edge aggregation is implemented in the
+[aggregation module](protein_edge_window_aggregation_contract.md), consuming
+28.A episodes with resolved-frame occupancy and `edge_weight = occupancy`.
+Stage 28 remains incomplete; Stage 28.C publication table/export is next.
+Publication tables and workflow integration are not implemented by 28.B.
+The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.
 
@@ -45,7 +48,8 @@ Stage 27.C [preprocessing execution](physical_time_execution_contract.md) collec
 actual source times once per Dataset condition and routes exact resolved source
 indexes to existing Rg and contact passes. Window planning adds no trajectory
 pass. The separate temporal artifact records effective execution, while requested
-Dataset context remains in provenance. Windows do not yet partition contacts.
+Dataset context remains in provenance. The preprocessing workflow does not yet
+aggregate contacts by window; 28.B is a separate pure API.
 
 ## Purpose
 

@@ -3,18 +3,21 @@
 ## Status and scope
 
 Stage 27 is complete, with accepted Stage 27.C checkpoint
-`9fb784bdceb242d7ba503d682b804cf430c5425b`. Stage 28.A implements the pure
+`9fb784bdceb242d7ba503d682b804cf430c5425b`. Stage 28.A is accepted and provides the
+pure
 [episode engine](../src/mania/preprocessing/contact_episodes.py).
-Stage 28 remains incomplete. Stage 28.B pure per-window protein-edge aggregation,
-including occupancy and `edge_weight = occupancy`, is next. Stage 28.C owns the
-additive publication protein-edge table/export contract; 28.D owns workflow
-integration, real-data regression, and final acceptance. Dataset v1.0 remains
+Stage 28.B [pure per-window protein-edge aggregation](protein_edge_window_aggregation_contract.md)
+is implemented and consumes this engine, including occupancy and
+`edge_weight = occupancy`. Episode semantics are unchanged.
+Stage 28 remains incomplete. Stage 28.C additive publication protein-edge
+table/export is next; 28.D owns workflow integration, real-data regression,
+and final acceptance. Dataset v1.0 remains
 unreleased.
 
 The engine consumes already detected presence for one generic contact in exactly
 one resolved window from exactly one trajectory/replica. Existing MANIA protein
 contact detection remains authoritative. No edge/residue identity is assigned
-here; 28.B will associate summaries with protein edges.
+here; 28.B associates summaries with protein edges.
 
 ## Public API and authoritative inputs
 
@@ -132,7 +135,7 @@ frames. They contribute no positive frames and create no synthetic observations.
 Resolved observations absent from the positive tuple are observed contact
 absences; no separate negative-contact input is needed.
 
-Occupancy is deferred to 28.B, where the accepted denominator is
+Occupancy is calculated by the separate 28.B aggregation API, with denominator
 `n_resolved_frames_in_window`: `occupancy = n_contact_frames /
 n_resolved_frames_in_window`. Missing requests do not enter that denominator.
 Stage 32 separately evaluates sampling coverage; 28.A applies no 95% threshold
@@ -148,8 +151,8 @@ No timestamps, random IDs, filesystem access, trajectory iteration, scientific
 optional-stack import, Git, subprocess, or clock is involved.
 
 Contact detection, distance calculations, cutoffs, interaction definitions, and
-PBC remain unchanged. There is no minimum-image correction, occupancy or edge
-weight calculation, per-edge aggregation, workflow/export integration, or
+PBC remain unchanged. This episode engine has no minimum-image correction,
+occupancy or edge weight calculation, per-edge aggregation, workflow/export integration, or
 publication table. Existing scientific artifacts, Stage 20–24 contracts,
 Dataset identity/binding, provenance/inventory, validation, analysis,
 dependencies, and WANIA are unchanged. MANIA remains version `0.1.0`.
