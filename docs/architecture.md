@@ -74,11 +74,16 @@ current integrated Stage 29 status is recorded here and in the window contract.
 Stage 30.A local canonical reference is implemented in `canonical_reference.py`
 and `canonical_reference_io.py`, backed by one packaged offline O95436-1 JSON.
 The [canonical NaPi2b reference contract](canonical_napi2b_reference_contract.md)
-defines pinned target coordinates only; source mapping and workflow integration
-are not implemented. Stage 30 remains incomplete. Stage 30.B source-to-canonical
-mapping is next. Numeric equality between source and canonical residue numbers
+defines pinned target coordinates only. Stage 30.A is accepted.
+Stage 30.B explicit source mapping is implemented in `canonical_residue_mapping.py`
+and `canonical_residue_mapping_io.py`; the [mapping contract](canonical_residue_mapping_contract.md)
+defines exact source keys and strict offline JSON validation against the local
+pinned reference. No canonical output tables or mapping workflow integration
+are implemented. Stage 30 remains incomplete. Stage 30.C mapping application
+is next. Numeric equality between source and canonical residue numbers
 carries no mapping authority.
-Stage 30 canonical mapping / biological annotations is next, in 30.B–30.D.
+Stage 30 canonical mapping / biological annotations is next for Dataset outputs
+in 30.C–30.D.
 Stage 30 mapping to UniProt O95436 remains mandatory before Dataset publication.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;

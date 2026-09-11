@@ -270,10 +270,16 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
         assert "pre-canonical" in text
         if name == "docs/architecture.md":
             assert "Stage 30.A local canonical reference is implemented" in text
+            assert "Stage 30.A is accepted" in text
             assert "canonical_napi2b_reference_contract.md" in text
+            assert "Stage 30.B explicit source mapping is implemented" in text
+            assert "canonical_residue_mapping_contract.md" in text
             assert "Stage 30 remains incomplete" in text
-            assert "Stage 30.B source-to-canonical mapping is next" in text
-            assert "source mapping and workflow integration are not implemented" in text
+            assert "Stage 30.C mapping application is next" in text
+            assert (
+                "No canonical output tables or mapping workflow integration "
+                "are implemented" in text
+            )
             assert "carries no mapping authority" in text
         else:
             # These files retain their accepted Stage 29 checkpoint context.
@@ -313,7 +319,11 @@ def test_stage30a_contract_documents_offline_reference_and_mapping_boundary():
     )
     for phrase in (
         "Stage 29 is complete", "Stage 30.A canonical reference is implemented",
-        "Stage 30 remains incomplete", "Stage 30.B source-to-canonical mapping is next",
+        "Stage 30.A is accepted", "Stage 30.B explicit source mapping is implemented",
+        "Stage 30 remains incomplete", "Stage 30.C mapping application is next",
+        "uses the local pinned reference as validation authority",
+        "no live UniProt dependency was introduced",
+        "canonical_residue_mapping_contract.md",
         "NaPi2b-only contract", "O95436-1", "NPT2B_HUMAN", "SLC34A2", "Homo sapiens",
         "690 aa", "2010-11-30", "16C21D07D36DC8B416EA72769F0B0280",
         "33ce6c59e28a7373fce51debe32cec8d891ef691c2e77a0655a74040da25eef9",
@@ -327,6 +337,38 @@ def test_stage30a_contract_documents_offline_reference_and_mapping_boundary():
         "CanonicalReferenceReadError", "Stage 30.C applies validated mapping",
         "Stage 30.D adds biological annotations",
         "unified validation, analysis, dependencies, and WANIA remain unchanged",
+    ):
+        assert phrase in text
+
+
+def test_stage30b_contract_documents_explicit_mapping_and_future_application():
+    text = " ".join(
+        (REPO_ROOT / "docs/canonical_residue_mapping_contract.md")
+        .read_text(encoding="utf-8").split()
+    )
+    for phrase in (
+        "Stage 29 is complete", "Stage 30.A is accepted",
+        "Stage 30.B explicit source mapping is implemented",
+        "Stage 30 remains incomplete", "Stage 30.C mapping application is next",
+        "uniprotkb:O95436-1:sequence-v3",
+        "33ce6c59e28a7373fce51debe32cec8d891ef691c2e77a0655a74040da25eef9",
+        "source_resid != canonical_residue_number",
+        "Numeric equality gives no authority",
+        "(source_engine, source_chain_id, source_resid, source_resname)",
+        "source_resname` may differ from `canonical_resname",
+        "T330M", "MET", "THR", "JSON `null`", "Missing explicit mapping",
+        "synthetic namespace proof, not a biological NaPi2b mapping claim",
+        "no residue-number or chain offsets", "sequence alignment",
+        "residue-name matching heuristics", "web/API lookup",
+        "self-describing JSON", "Later publication tables remain CSV",
+        "canonical_residue_mapping.json", "mania.canonical_residue_mapping.v0.1",
+        "canonical_reference_sequence_sha256", "mapping_count",
+        "find_source_residue_mapping", "require_source_residue_mapping",
+        "require_mapped_source_residue", "canonical_residue_for_mapping",
+        "Empty and sparse tables are structurally valid",
+        "does not bind mapping to a Dataset trajectory "
+        "and does not modify source tables",
+        "Stage 30.C applies explicit mapping", "Stage 30.D integrates mapping",
     ):
         assert phrase in text
 

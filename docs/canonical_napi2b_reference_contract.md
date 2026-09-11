@@ -3,7 +3,10 @@
 ## Status
 
 Stage 29 is complete. Stage 30.A canonical reference is implemented.
-Stage 30 remains incomplete. Stage 30.B source-to-canonical mapping is next.
+Stage 30.A is accepted. Stage 30.B explicit source mapping is implemented and
+uses the local pinned reference as validation authority; no live UniProt
+dependency was introduced. Stage 30 remains incomplete.
+Stage 30.C mapping application is next.
 Dataset v1.0 remains unreleased; the accepted scientific contract is unchanged.
 
 ## Canonical reference
@@ -139,7 +142,7 @@ explicit, validated Stage 30.B mapping record proves the association.
 For example, `source_resid = 311` does **not** imply
 `canonical_residue_number = 311`. GROMACS residue 311 and NAMD residue 330 do not
 acquire UniProt positions from their numeric values. Only an explicit validated
-mapping record can establish a future source-to-canonical identity.
+mapping record can establish a source-to-canonical identity.
 
 ## No mapping
 
@@ -165,9 +168,10 @@ Wheel acceptance builds and installs into a temporary target, then loads and
 reconstructs the reference outside the checkout with network/process access
 blocked. Existing scientific regressions remain required.
 
-## Future
+## Mapping and next steps
 
-Stage 30.B provides explicit source-to-canonical mapping and strict validation.
+Stage 30.B provides [explicit source-to-canonical mapping and strict offline
+validation](canonical_residue_mapping_contract.md) against this local reference.
 Stage 30.C applies validated mapping to protein/lipid/glycan Dataset window
 tables. Stage 30.D adds biological annotations, workflow/provenance/validation
-integration, and final Stage 30 acceptance. These are future capabilities.
+integration, and final Stage 30 acceptance. Stage 30.C/30.D are future capabilities.
