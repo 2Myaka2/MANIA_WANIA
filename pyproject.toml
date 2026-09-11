@@ -37,6 +37,9 @@ mania = "mania.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+mania = ["data/canonical/slc34a2_o95436_reference.json"]
+
 [tool.setuptools.dynamic]
 version = {attr = "mania._version.__version__"}
 

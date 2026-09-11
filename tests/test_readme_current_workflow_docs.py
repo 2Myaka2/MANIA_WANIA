@@ -268,11 +268,20 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
             )
         assert "Stage 29 is complete" in text
         assert "pre-canonical" in text
-        assert (
-            "Stage 30 canonical mapping / biological annotations "
-            "is next and has not started"
-            in text
-        )
+        if name == "docs/architecture.md":
+            assert "Stage 30.A local canonical reference is implemented" in text
+            assert "canonical_napi2b_reference_contract.md" in text
+            assert "Stage 30 remains incomplete" in text
+            assert "Stage 30.B source-to-canonical mapping is next" in text
+            assert "source mapping and workflow integration are not implemented" in text
+            assert "carries no mapping authority" in text
+        else:
+            # These files retain their accepted Stage 29 checkpoint context.
+            assert (
+                "Stage 30 canonical mapping / biological annotations "
+                "is next and has not started"
+                in text
+            )
         # Preserve accepted A/B/C history alongside completed D integration.
         if name == "docs/architecture.md":
             assert re.search(r"Stage 28\.A is accepted\b", text)
@@ -295,6 +304,31 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
         assert "Analysis Dataset-context propagation is outside Stage 26" in text
     assert "mania artifacts validate out --scope preprocessing" in readme_text()
     assert "docs/stage25_final_acceptance.md" in readme_text()
+
+
+def test_stage30a_contract_documents_offline_reference_and_mapping_boundary():
+    text = " ".join(
+        (REPO_ROOT / "docs/canonical_napi2b_reference_contract.md")
+        .read_text(encoding="utf-8").split()
+    )
+    for phrase in (
+        "Stage 29 is complete", "Stage 30.A canonical reference is implemented",
+        "Stage 30 remains incomplete", "Stage 30.B source-to-canonical mapping is next",
+        "NaPi2b-only contract", "O95436-1", "NPT2B_HUMAN", "SLC34A2", "Homo sapiens",
+        "690 aa", "2010-11-30", "16C21D07D36DC8B416EA72769F0B0280",
+        "33ce6c59e28a7373fce51debe32cec8d891ef691c2e77a0655a74040da25eef9",
+        "uniprotkb:O95436-1:sequence-v3", "slc34a2_o95436_reference.json",
+        "importlib.resources", "Production runs never fetch UniProt",
+        "It is not a live dependency", "ASCII sequence bytes with no newline",
+        "source_resid != canonical_residue_number",
+        "Numeric equality carries zero mapping authority", "source_resid = 311",
+        "explicit, validated Stage 30.B mapping record", "canonical = source + offset",
+        "uppercase standard three-letter amino-acid code",
+        "CanonicalReferenceReadError", "Stage 30.C applies validated mapping",
+        "Stage 30.D adds biological annotations",
+        "unified validation, analysis, dependencies, and WANIA remain unchanged",
+    ):
+        assert phrase in text
 
 
 def test_stage29a_contract_documents_identification_and_scientific_boundary():

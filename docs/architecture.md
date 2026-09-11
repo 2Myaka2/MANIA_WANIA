@@ -71,7 +71,14 @@ Stage 29 is complete. The main protein-only graph and Stage 28 source table are
 unchanged; specialized artifacts remain preprocessing-only and pre-canonical.
 The standalone 29.A/B/C documents retain their accepted checkpoint context;
 current integrated Stage 29 status is recorded here and in the window contract.
-Stage 30 canonical mapping / biological annotations is next and has not started.
+Stage 30.A local canonical reference is implemented in `canonical_reference.py`
+and `canonical_reference_io.py`, backed by one packaged offline O95436-1 JSON.
+The [canonical NaPi2b reference contract](canonical_napi2b_reference_contract.md)
+defines pinned target coordinates only; source mapping and workflow integration
+are not implemented. Stage 30 remains incomplete. Stage 30.B source-to-canonical
+mapping is next. Numeric equality between source and canonical residue numbers
+carries no mapping authority.
+Stage 30 canonical mapping / biological annotations is next, in 30.B–30.D.
 Stage 30 mapping to UniProt O95436 remains mandatory before Dataset publication.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
