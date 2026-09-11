@@ -4,7 +4,9 @@
 
 Stage 29 is complete. Stage 30.A is accepted. Stage 30.B explicit source mapping
 is implemented as a standalone contract with strict offline validation.
-Stage 30 remains incomplete. Stage 30.C mapping application is next.
+Stage 30.B is accepted. Stage 30.C canonicalized intermediate tables are
+implemented through exact source keys and explicit replica-key bindings.
+Stage 30 remains incomplete. Stage 30.D biological annotations/integration is next.
 Dataset v1.0 remains unreleased; its frozen scientific contract is unchanged.
 
 ## Target authority
@@ -188,6 +190,11 @@ workflow/CLI changes, provenance/inventory changes, unified validation integrati
 or biological annotations. Stage 27–29 science, PBC, analysis, dependencies, the
 frozen Dataset scientific contract, and WANIA remain unchanged.
 
-Stage 30.C applies explicit mapping to protein/lipid/glycan window outputs.
+Stage 30.C applies explicit mapping to protein/lipid/glycan window outputs
+through exact source keys and explicit `(dataset_id, system_id, trajectory_id,
+replica_id)` binding, never condition. Its
+[canonicalized intermediate tables](canonical_window_table_contract.md)
+preserve source evidence and reject missing,
+unmapped, and colliding application identities without changing 30.B semantics.
 Stage 30.D integrates mapping and biological annotations with workflow,
-provenance, validation, and final Stage 30 acceptance. These remain future work.
+provenance, validation, and final Stage 30 acceptance; this remains future work.

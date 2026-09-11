@@ -78,12 +78,19 @@ defines pinned target coordinates only. Stage 30.A is accepted.
 Stage 30.B explicit source mapping is implemented in `canonical_residue_mapping.py`
 and `canonical_residue_mapping_io.py`; the [mapping contract](canonical_residue_mapping_contract.md)
 defines exact source keys and strict offline JSON validation against the local
-pinned reference. No canonical output tables or mapping workflow integration
-are implemented. Stage 30 remains incomplete. Stage 30.C mapping application
-is next. Numeric equality between source and canonical residue numbers
+pinned reference. Stage 30.B is accepted.
+Stage 30.C canonicalized intermediate tables are implemented in
+`canonical_window_tables.py` and `canonical_window_tables_io.py`; the
+[canonical window table contract](canonical_window_table_contract.md) applies
+explicit replica-key mappings to accepted protein/lipid/glycan source rows.
+It preserves source and scientific evidence, enforces canonical edge orientation,
+and rejects missing/unmapped mappings, self-loops and canonical collisions.
+Numeric equality between source and canonical residue numbers
 carries no mapping authority.
-Stage 30 canonical mapping / biological annotations is next for Dataset outputs
-in 30.C–30.D.
+No biological annotations or mapping workflow integration are implemented.
+Stage 30 remains incomplete. Stage 30.D biological annotations/integration is next.
+The accepted Stage 29 roadmap stated: "Stage 30 canonical mapping / biological
+annotations is next". Its remaining scope is now 30.D annotations and integration.
 Stage 30 mapping to UniProt O95436 remains mandatory before Dataset publication.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;

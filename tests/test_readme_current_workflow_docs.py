@@ -275,9 +275,14 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
             assert "Stage 30.B explicit source mapping is implemented" in text
             assert "canonical_residue_mapping_contract.md" in text
             assert "Stage 30 remains incomplete" in text
-            assert "Stage 30.C mapping application is next" in text
+            assert "Stage 30.B is accepted" in text
             assert (
-                "No canonical output tables or mapping workflow integration "
+                "Stage 30.C canonicalized intermediate tables are implemented" in text
+            )
+            assert "Stage 30.D biological annotations/integration is next" in text
+            assert "canonical_window_table_contract.md" in text
+            assert (
+                "No biological annotations or mapping workflow integration "
                 "are implemented" in text
             )
             assert "carries no mapping authority" in text
@@ -320,7 +325,9 @@ def test_stage30a_contract_documents_offline_reference_and_mapping_boundary():
     for phrase in (
         "Stage 29 is complete", "Stage 30.A canonical reference is implemented",
         "Stage 30.A is accepted", "Stage 30.B explicit source mapping is implemented",
-        "Stage 30 remains incomplete", "Stage 30.C mapping application is next",
+        "Stage 30 remains incomplete", "Stage 30.B is accepted",
+        "Stage 30.C canonicalized intermediate tables are implemented",
+        "Stage 30.D biological annotations/integration is next",
         "uses the local pinned reference as validation authority",
         "no live UniProt dependency was introduced",
         "canonical_residue_mapping_contract.md",
@@ -341,7 +348,7 @@ def test_stage30a_contract_documents_offline_reference_and_mapping_boundary():
         assert phrase in text
 
 
-def test_stage30b_contract_documents_explicit_mapping_and_future_application():
+def test_stage30b_contract_documents_explicit_mapping_and_application_status():
     text = " ".join(
         (REPO_ROOT / "docs/canonical_residue_mapping_contract.md")
         .read_text(encoding="utf-8").split()
@@ -349,7 +356,9 @@ def test_stage30b_contract_documents_explicit_mapping_and_future_application():
     for phrase in (
         "Stage 29 is complete", "Stage 30.A is accepted",
         "Stage 30.B explicit source mapping is implemented",
-        "Stage 30 remains incomplete", "Stage 30.C mapping application is next",
+        "Stage 30 remains incomplete", "Stage 30.B is accepted",
+        "Stage 30.C canonicalized intermediate tables are implemented",
+        "Stage 30.D biological annotations/integration is next",
         "uniprotkb:O95436-1:sequence-v3",
         "33ce6c59e28a7373fce51debe32cec8d891ef691c2e77a0655a74040da25eef9",
         "source_resid != canonical_residue_number",
@@ -508,5 +517,20 @@ def test_stage29d_contract_documents_formulas_metadata_and_release_boundary():
         "checksum",
         "one",
         "source-topology-local",
+    ):
+        assert phrase in text
+
+
+def test_stage30c_contract_current_status_and_next_stage():
+    text = " ".join(
+        (REPO_ROOT / "docs/canonical_window_table_contract.md")
+        .read_text(encoding="utf-8").split()
+    )
+    for phrase in (
+        "Stage 29 is complete", "Stage 30.A is accepted", "Stage 30.B is accepted",
+        "Stage 30.C canonicalized intermediate tables are implemented",
+        "Stage 30 remains incomplete", "Stage 30.D biological annotations",
+        "workflow/provenance/validation integration is next",
+        "Dataset v1.0 remains unreleased",
     ):
         assert phrase in text
