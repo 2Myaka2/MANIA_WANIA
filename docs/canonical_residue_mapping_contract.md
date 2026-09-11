@@ -6,7 +6,8 @@ Stage 29 is complete. Stage 30.A is accepted. Stage 30.B explicit source mapping
 is implemented as a standalone contract with strict offline validation.
 Stage 30.B is accepted. Stage 30.C canonicalized intermediate tables are
 implemented through exact source keys and explicit replica-key bindings.
-Stage 30 remains incomplete. Stage 30.D biological annotations/integration is next.
+Stage 30 is complete. Stage 30.C is accepted. Stage 30.D biological annotations/integration is complete.
+Stage 31 replica/system aggregation is next and has not started.
 Dataset v1.0 remains unreleased; its frozen scientific contract is unchanged.
 
 ## Target authority
@@ -197,4 +198,5 @@ replica_id)` binding, never condition. Its
 preserve source evidence and reject missing,
 unmapped, and colliding application identities without changing 30.B semantics.
 Stage 30.D integrates mapping and biological annotations with workflow,
-provenance, validation, and final Stage 30 acceptance; this remains future work.
+provenance, validation, and final Stage 30 acceptance. The accepted mapping
+semantics remain unchanged; see the [integrated annotation contract](biological_annotation_contract.md).

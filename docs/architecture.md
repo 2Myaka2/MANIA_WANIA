@@ -87,11 +87,18 @@ It preserves source and scientific evidence, enforces canonical edge orientation
 and rejects missing/unmapped mappings, self-loops and canonical collisions.
 Numeric equality between source and canonical residue numbers
 carries no mapping authority.
-No biological annotations or mapping workflow integration are implemented.
-Stage 30 remains incomplete. Stage 30.D biological annotations/integration is next.
-The accepted Stage 29 roadmap stated: "Stage 30 canonical mapping / biological
-annotations is next". Its remaining scope is now 30.D annotations and integration.
-Stage 30 mapping to UniProt O95436 remains mandatory before Dataset publication.
+Stage 30.C is accepted. Stage 30.D biological annotations and workflow integration
+are complete. `biological_annotations.py` and `biological_annotations_io.py` provide
+strict complete-system site metadata and canonical ECD/MX35 flags.
+`annotated_window_tables.py` and `annotated_window_tables_io.py` enrich accepted
+canonical rows without changing their identity, metrics, or evidence. The
+[biological annotation contract](biological_annotation_contract.md) defines
+preflight control validation, replica/system bindings, additive preprocessing
+exports, inventory/provenance and offline reconstruction through the same pure APIs.
+Stage 30 adds zero trajectory passes and leaves analysis/PCA unchanged.
+Stage 30 is complete. Stage 31 replica/system aggregation is next and has not started.
+Stage 33 publication export remains later. Explicit mapping to UniProt O95436
+and authoritative system annotations remain mandatory before Dataset publication.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.

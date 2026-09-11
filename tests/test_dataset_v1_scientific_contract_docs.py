@@ -374,12 +374,13 @@ def test_document_links_resolve(path: Path) -> None:
 
 
 
-def test_current_stage29_status_is_separate_from_frozen_historical_contract():
+def test_current_stage30_status_is_separate_from_frozen_historical_contract():
     root = SCIENTIFIC.parents[1]
     for name in ("README.md", "AGENTS.md", "docs/architecture.md"):
         text = normalized((root / name).read_text(encoding="utf-8"))
         assert "stage 28 is complete" in text
         assert "stage 29 is complete" in text
         assert "pre-canonical" in text
-        assert "stage 30 canonical mapping / biological annotations is next" in text
+        assert "stage 30 is complete" in text
+        assert "stage 31 replica/system aggregation is next and has not started" in text
         assert "95% exclusion policy remains stage 32" in text

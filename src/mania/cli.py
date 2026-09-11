@@ -11,6 +11,10 @@ from pathlib import Path
 from typing import Any, NoReturn, cast
 
 from mania import __version__
+from mania import annotated_window_tables as annotated_tables
+from mania import annotated_window_tables_io as annotated_tables_io
+from mania import canonical_window_tables as canonical_tables
+from mania import canonical_window_tables_io as canonical_tables_io
 from mania.analysis import (
     CONFORMATION_CLUSTERING_BASES,
     CONFORMATION_CLUSTERING_BASIS_FINGERPRINT,
@@ -36,7 +40,23 @@ from mania.analysis.run_provenance import (
     build_completed_analysis_run_provenance,
     build_failed_analysis_run_provenance,
 )
-from mania.artifact_inventory_io import write_artifact_inventory
+from mania.artifact_inventory_io import (
+    ArtifactInventoryFileSpec,
+    write_artifact_inventory,
+)
+from mania.biological_annotations import (
+    BiologicalAnnotationError,
+    DatasetSystemBiologicalAnnotations,
+)
+from mania.biological_annotations_io import read_dataset_system_biological_annotations
+from mania.canonical_residue_mapping import (
+    CANONICAL_RESIDUE_MAPPING_REFERENCE_ID,
+    CANONICAL_RESIDUE_MAPPING_REFERENCE_SHA256,
+)
+from mania.canonical_residue_mapping_io import (
+    CanonicalResidueMappingReadError,
+    read_canonical_residue_mapping,
+)
 from mania.config import load_config
 from mania.pipeline import build_pipeline_plan, format_pipeline_plan
 from mania.pipeline_steps import (
@@ -47,13 +67,17 @@ from mania.preprocessing.artifact_inventory import (
     PREPROCESSING_ARTIFACT_INVENTORY_PATH,
     PREPROCESSING_ARTIFACT_INVENTORY_ROLE,
     build_preprocessing_artifact_inventory,
+    collect_stage30_input_file_specs,
 )
 from mania.preprocessing.dataset_binding import (
     PreprocessingDatasetBindingError,
     PreprocessingDatasetResolution,
     resolve_preprocessing_dataset_context,
 )
-from mania.preprocessing.input_manifest import load_preprocessing_input_manifest
+from mania.preprocessing.input_manifest import (
+    PreprocessingInputManifest,
+    load_preprocessing_input_manifest,
+)
 from mania.preprocessing.molecular_partner_catalog_io import (
     write_molecular_partner_catalog,
 )
@@ -75,6 +99,7 @@ from mania.preprocessing.protein_edge_window_table import (
     DATASET_PROTEIN_EDGE_WINDOW_CSV_FILENAME,
 )
 from mania.preprocessing.protein_edge_window_table_io import (
+    read_dataset_protein_edge_window_csv,
     write_dataset_protein_edge_window_csv,
 )
 from mania.preprocessing.run_provenance import (
@@ -98,6 +123,8 @@ from mania.preprocessing.specialized_contact_execution import (
     read_specialized_metadata_inputs,
 )
 from mania.preprocessing.specialized_contact_window_tables_io import (
+    read_protein_glycan_window_csv,
+    read_protein_lipid_window_csv,
     write_protein_glycan_window_csv,
     write_protein_lipid_window_csv,
 )
@@ -1103,6 +1130,197 @@ def _preprocessing_inventory_inputs_available(
     )
 
 
+def _preflight_stage30_controls(
+    manifest: PreprocessingInputManifest,
+    resolution: PreprocessingDatasetResolution,
+    base_dir: Path,
+) -> tuple[
+    canonical_tables.DatasetCanonicalResidueMappingBindings,
+    annotated_tables.DatasetBiologicalAnnotationBindings,
+    dict[str, object],
+    tuple[ArtifactInventoryFileSpec, ...],
+]:
+    """Read explicit controls before trajectory access; bind only resolved keys."""
+    mapping_bindings = []
+    annotation_bindings: dict[tuple[str, str], DatasetSystemBiologicalAnnotations] = {}
+    mapping_paths = []
+    annotation_paths: set[tuple[tuple[str, str], Path]] = set()
+    context = resolution.context
+    for config in manifest.conditions:
+        path = config.canonical_residue_mapping_path
+        if path is None:
+            continue
+        spec = (
+            next(
+                (
+                    b.dataset_spec
+                    for b in context.bindings
+                    if b.execution_condition == config.condition
+                ),
+                None,
+            )
+            if context
+            else None
+        )
+        if spec is None:
+            raise CanonicalResidueMappingReadError(
+                "Explicit Dataset context is required."
+            )
+        local_path = path if path.is_absolute() else base_dir / path
+        mapping = read_canonical_residue_mapping(local_path)
+        key = spec.identity.replica_key
+        mapping_bindings.append(
+            canonical_tables.DatasetCanonicalResidueMappingBinding(
+                *key,
+                mapping,
+            )
+        )
+        mapping_paths.append((key, local_path))
+        annotation_path = config.biological_annotation_metadata_path
+        if annotation_path is None:
+            continue
+        annotation_path = (
+            annotation_path
+            if annotation_path.is_absolute()
+            else base_dir / annotation_path
+        )
+        annotations = read_dataset_system_biological_annotations(annotation_path)
+        system_key = key[:2]
+        if system_key != (annotations.dataset_id, annotations.system_id):
+            raise BiologicalAnnotationError(
+                "Annotation Dataset system identity must match."
+            )
+        if (
+            system_key in annotation_bindings
+            and annotation_bindings[system_key] != annotations
+        ):
+            raise BiologicalAnnotationError(
+                "Conflicting complete annotations for Dataset system."
+            )
+        annotation_bindings[system_key] = annotations
+        annotation_paths.add((system_key, annotation_path))
+    mappings = canonical_tables.DatasetCanonicalResidueMappingBindings(
+        tuple(sorted(mapping_bindings, key=lambda b: b.replica_key))
+    )
+    bindings = annotated_tables.DatasetBiologicalAnnotationBindings(
+        tuple(
+            annotated_tables.DatasetBiologicalAnnotationBinding(
+                *key, annotation_bindings[key]
+            )
+            for key in sorted(annotation_bindings)
+        )
+    )
+    ordered_mapping_paths = tuple(sorted(mapping_paths))
+    ordered_annotation_paths = tuple(sorted(annotation_paths))
+    specs = collect_stage30_input_file_specs(
+        ordered_mapping_paths, ordered_annotation_paths
+    )
+    configuration: dict[str, object] = {}
+    if mappings.bindings:
+        configuration["canonical_reference"] = {
+            "reference_id": CANONICAL_RESIDUE_MAPPING_REFERENCE_ID,
+            "sequence_sha256": CANONICAL_RESIDUE_MAPPING_REFERENCE_SHA256,
+        }
+        mapping_specs = tuple(s for s in specs if s.role == "canonical_residue_mapping")
+        configuration["canonical_residue_mapping_bindings"] = [
+            dict(
+                zip(
+                    ("dataset_id", "system_id", "trajectory_id", "replica_id"),
+                    key,
+                    strict=True,
+                ),
+                mapping_path=spec.path,
+            )
+            for (key, _), spec in zip(ordered_mapping_paths, mapping_specs, strict=True)
+        ]
+    if bindings.bindings:
+        annotation_specs = tuple(
+            s for s in specs if s.role == "biological_annotation_metadata"
+        )
+        configuration["biological_annotation_bindings"] = [
+            {
+                "dataset_id": key[0],
+                "system_id": key[1],
+                "annotation_metadata_path": spec.path,
+            }
+            for (key, _), spec in zip(
+                ordered_annotation_paths, annotation_specs, strict=True
+            )
+        ]
+    return mappings, bindings, configuration, specs
+
+
+def _export_stage30_tables(
+    output_dir: Path,
+    source_paths: dict[str, Any],
+    mapping_bindings: canonical_tables.DatasetCanonicalResidueMappingBindings,
+    annotation_bindings: annotated_tables.DatasetBiologicalAnnotationBindings,
+    *,
+    overwrite: bool,
+) -> tuple[tuple[tuple[str, Path], ...], PreprocessingRunFailureStage | None]:
+    """Enrich only successful source exports; never access trajectory runtimes."""
+    generated: list[tuple[str, Path]] = []
+    failure_stage: PreprocessingRunFailureStage = "canonical_table_export"
+    prefix = "Canonical table generation failed:"
+    try:
+        for family, kind, reader in (
+            ("protein_edges", "edge", read_dataset_protein_edge_window_csv),
+            ("protein_lipid_contacts", "lipid", read_protein_lipid_window_csv),
+            ("protein_glycan_contacts", "glycan", read_protein_glycan_window_csv),
+        ):
+            source_path = source_paths.get(f"{family}_by_window_source_path")
+            if source_path is None:
+                continue
+            prefix = "Canonical table generation failed:"
+            failure_stage = "canonical_table_export"
+            canonical = getattr(
+                canonical_tables, f"build_canonical_protein_{kind}_window_table"
+            )(
+                reader(source_path),
+                mapping_bindings=mapping_bindings,
+            )
+            prefix = "Canonical table export write failed:"
+            written = getattr(
+                canonical_tables_io, f"write_canonical_protein_{kind}_window_csv"
+            )(
+                canonical,
+                output_dir,
+                overwrite=overwrite,
+            )
+            if not written.passed:
+                raise ValueError("Canonical write failed")
+            generated.append((f"{family}_by_window_canonical", written.output_path))
+            if not annotation_bindings.bindings:
+                continue
+            prefix = "Biological annotation failed:"
+            failure_stage = "annotated_table_export"
+            annotated = getattr(
+                annotated_tables,
+                f"build_annotated_canonical_protein_{kind}_window_table",
+            )(
+                canonical,
+                annotation_bindings=annotation_bindings,
+            )
+            prefix = "Annotated table export write failed:"
+            written = getattr(
+                annotated_tables_io,
+                f"write_annotated_canonical_protein_{kind}_window_csv",
+            )(
+                annotated,
+                output_dir,
+                overwrite=overwrite,
+            )
+            if not written.passed:
+                raise ValueError("Annotated write failed")
+            generated.append(
+                (f"{family}_by_window_canonical_annotated", written.output_path)
+            )
+    except (ValueError, TypeError, OSError, RuntimeError):
+        print(f"{prefix} Stage 30 artifact stage could not complete.", file=sys.stderr)
+        return tuple(generated), failure_stage
+    return tuple(generated), None
+
+
 def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     if _analysis_input_export_requested(args):
         if args.skip_contacts:
@@ -1130,6 +1348,9 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     ) = None
     inventory_outputs: dict[str, Any] = {}
     dataset_resolution = PreprocessingDatasetResolution(None, None)
+    stage30_configuration: dict[str, object] = {}
+    mapping_bindings = None
+    annotation_bindings = None
     analysis_input_export: object | None = (
         None
         if _analysis_input_export_requested(args)
@@ -1216,14 +1437,16 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 ended_at_utc=ended_at_utc,
                 software_identity=software_identity,
                 command=_portable_preprocessing_command(command),
-                resolved_configuration=_preprocessing_resolved_configuration(
-                    args, options
-                ),
+                resolved_configuration={
+                    **_preprocessing_resolved_configuration(args, options),
+                    **stage30_configuration,
+                },
                 conditions=conditions,
                 frame_sampling=options.frame_sampling,
                 artifact_references=_completed_preprocessing_artifact_references(
                     args, options, plan.output_layout, failure_stage=stage
-                ) + inventory_references,
+                )
+                + inventory_references,
                 computation=computation,
                 dataset_context=dataset_resolution.context,
             )
@@ -1280,6 +1503,37 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         except PreprocessingDatasetBindingError as exc:
             print(f"Dataset specification binding failed: {exc}", file=sys.stderr)
             return 1
+        if any(
+            c.canonical_residue_mapping_path is not None for c in manifest.conditions
+        ):
+            try:
+                (
+                    mapping_bindings,
+                    annotation_bindings,
+                    stage30_configuration,
+                    stage30_inputs,
+                ) = _preflight_stage30_controls(
+                    manifest,
+                    dataset_resolution,
+                    options.manifest_path.parent,
+                )
+            except (
+                CanonicalResidueMappingReadError,
+                canonical_tables.CanonicalWindowTableError,
+            ):
+                print(
+                    "Canonical residue mapping failed: Invalid mapping control input.",
+                    file=sys.stderr,
+                )
+                return 1
+            except BiologicalAnnotationError:
+                print(
+                    "Biological annotation failed: Invalid system annotation input.",
+                    file=sys.stderr,
+                )
+                return 1
+            if stage30_inputs:
+                inventory_outputs["stage30_input_specs"] = stage30_inputs
 
     _print_preprocessing_graph_export_progress(args, 2)
     runtime_loading = load_preprocessing_graph_workflow_condition_runtimes(
@@ -1686,6 +1940,26 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
             specialized_export_failed = True
+    stage30_failure: PreprocessingRunFailureStage | None = None
+    if (
+        mapping_bindings is not None
+        and annotation_bindings is not None
+        and mapping_bindings.bindings
+        and metadata_passed
+        and not protein_edge_export_failed
+        and not specialized_export_failed
+    ):
+        stage30_paths, stage30_failure = _export_stage30_tables(
+            plan.output_layout.output_dir,
+            inventory_outputs,
+            mapping_bindings,
+            annotation_bindings,
+            overwrite=options.overwrite,
+        )
+        inventory_outputs["stage30_output_paths"] = stage30_paths
+        technical_references.extend(
+            PortableArtifactReference(role, path.name) for role, path in stage30_paths
+        )
     ended_at_utc = _utc_now()
     try:
         runtime_metadata = build_preprocessing_runtime_metadata(
@@ -1749,10 +2023,11 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             metadata_passed = False
     inventory_references, inventory_passed = emit_inventory()
     try:
-        if protein_edge_export_failed or specialized_export_failed:
+        if protein_edge_export_failed or specialized_export_failed or stage30_failure:
             provenance = build_failed_preprocessing_run_provenance(
                 run_id=options.run_name,
-                failure_stage=(
+                failure_stage=stage30_failure
+                or (
                     "specialized_contact_export"
                     if specialized_export_failed
                     else "protein_edge_window_export"
@@ -1761,9 +2036,10 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 ended_at_utc=ended_at_utc,
                 software_identity=software_identity,
                 command=_portable_preprocessing_command(command),
-                resolved_configuration=_preprocessing_resolved_configuration(
-                    args, options
-                ),
+                resolved_configuration={
+                    **_preprocessing_resolved_configuration(args, options),
+                    **stage30_configuration,
+                },
                 conditions=computation.condition_names,
                 frame_sampling=options.frame_sampling,
                 computation=computation,
@@ -1782,13 +2058,16 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 ended_at_utc=ended_at_utc,
                 software_identity=software_identity,
                 command=_portable_preprocessing_command(command),
-                resolved_configuration=_preprocessing_resolved_configuration(
-                    args, options
-                ),
+                resolved_configuration={
+                    **_preprocessing_resolved_configuration(args, options),
+                    **stage30_configuration,
+                },
                 dataset_context=dataset_resolution.context,
                 artifact_references=_completed_preprocessing_artifact_references(
                     args, options, plan.output_layout
-                ) + tuple(technical_references) + inventory_references,
+                )
+                + tuple(technical_references)
+                + inventory_references,
             )
     except PreprocessingRunProvenanceBuildError as exc:
         print(f"Run provenance build failed: {exc}", file=sys.stderr)
@@ -1812,6 +2091,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     if (
         protein_edge_export_failed
         or specialized_export_failed
+        or stage30_failure is not None
         or not metadata_passed
         or not inventory_passed
     ):

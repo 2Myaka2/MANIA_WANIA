@@ -59,20 +59,42 @@ class TrajectoryInputConfig(BaseModel):
     dataset_spec: DatasetTrajectorySpec | None = None
     dataset_ref: DatasetTrajectoryReference | None = None
     molecular_partner_metadata_path: Path | None = None
+    canonical_residue_mapping_path: Path | None = None
+    biological_annotation_metadata_path: Path | None = None
 
     @model_serializer(mode="wrap")
     def serialize_execution_metadata(
         self, handler: SerializerFunctionWrapHandler
     ) -> dict[str, Any]:
-        """Omit absent Stage 29 metadata in direct and manifest serialization."""
+        """Omit absent optional controls in direct and manifest serialization."""
         values: dict[str, Any] = handler(self)
         if self.molecular_partner_metadata_path is None:
             values.pop("molecular_partner_metadata_path", None)
+        for name in (
+            "canonical_residue_mapping_path",
+            "biological_annotation_metadata_path",
+        ):
+            if getattr(self, name) is None:
+                values.pop(name, None)
         return values
 
     @model_validator(mode="after")
     def validate_dataset_condition(self) -> Self:
         """Match supplied scientific labels without inferring unresolved labels."""
+        if (
+            self.biological_annotation_metadata_path is not None
+            and self.canonical_residue_mapping_path is None
+        ):
+            raise ValueError(
+                "biological_annotation_metadata_path requires "
+                "canonical_residue_mapping_path"
+            )
+        if (
+            self.canonical_residue_mapping_path is not None
+            and self.dataset_spec is None
+            and self.dataset_ref is None
+        ):
+            raise ValueError("Canonical mapping requires explicit Dataset context")
         if self.dataset_spec is not None:
             scientific_condition = self.dataset_spec.identity.condition
             if (
@@ -105,6 +127,8 @@ class TrajectoryInputConfig(BaseModel):
         "topology_path",
         "reference_structure_path",
         "molecular_partner_metadata_path",
+        "canonical_residue_mapping_path",
+        "biological_annotation_metadata_path",
         mode="before",
     )
     @classmethod

@@ -32,9 +32,14 @@ Stage 28 is complete: accepted 28.A episodes, 28.B aggregation, and 28.C source
 CSV contracts are integrated by 28.D with artifact lineage and unified validation.
 Stage 29 is complete: accepted 29.A/B/C identity and geometry are integrated by
 29.D with explicit metadata, specialized windows, source exports, and validation.
-Stage 30 canonical mapping / biological annotations is next and has not started.
-Protein-edge and specialized source CSVs remain pre-canonical; Stage 30 mapping
-to UniProt O95436 is mandatory before Dataset release publication.
+Stage 30 is complete: accepted 30.A/B/C reference, explicit mapping, and canonical
+intermediate tables are integrated by 30.D with complete system biological
+annotations, preprocessing lineage, and offline reconstruction validation.
+Protein-edge and specialized source CSVs remain pre-canonical and unchanged;
+canonical and annotated outputs are additive. Explicit mapping to UniProt O95436
+and authoritative system annotations remain mandatory before Dataset publication.
+Stage 31 replica/system aggregation is next and has not started.
+Stage 33 publication export remains later.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.
@@ -1397,7 +1402,13 @@ The planning-level scientific roadmap is:
 - **Stage 29 — Protein-lipid / protein-glycan dynamic layers:** complete; explicit
   metadata, one shared geometry pass, sparse window metrics and pre-canonical
   source artifacts with inventory/provenance and unified validation.
-- **Stage 30 — Canonical mapping / biological annotations:** next; not started.
+- **Stage 30 — Canonical mapping / biological annotations:** complete; explicit
+  replica mapping, complete system annotations, additive canonical/annotated CSVs,
+  portable lineage and offline reconstruction. See the
+  [biological annotation and workflow contract](docs/biological_annotation_contract.md).
+- **Stage 31 — Replica/system aggregation:** next; not started.
+- **Stage 32 — QC/exclusion:** later; the 95% exclusion policy is not implemented.
+- **Stage 33 — Publication export:** later; Stage 30 outputs remain intermediates.
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
 Stages 20–23 are now complete within their accepted boundaries. Stage 24.A

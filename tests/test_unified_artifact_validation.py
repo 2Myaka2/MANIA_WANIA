@@ -315,7 +315,15 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
         / "protein_glycan_contacts_by_window_source.csv",
         protein_edges_by_window_source_path=root / "protein_edges_by_window_source.csv",
         pbc_audit_path=root / "pbc_audit.json",
+        stage30_output_paths=tuple(
+            (role, root / f"{role}.csv")
+            for role in preprocessing_adapter.STAGE30_OUTPUT_ROLES
+        ),
         **stages,
+    )
+    prep += preprocessing_adapter.collect_stage30_input_file_specs(
+        ((("dataset", "system", "trajectory", "replica"), tmp_path / "mapping.json"),),
+        ((("dataset", "system"), tmp_path / "biology.json"),),
     )
     request = AnalyzeRequest(tmp_path / "in", root, ("normal", "tumor"))
     analysis = analysis_adapter.collect_analysis_input_file_specs(
@@ -327,7 +335,7 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
     )
     assert {e.role for e in prep} == unified._PREPROCESSING_POLICY.keys()
     assert {e.role for e in analysis} == unified._ANALYSIS_POLICY.keys()
-    assert len({e.role for e in prep}) == 30
+    assert len({e.role for e in prep}) == 38
     assert len({e.role for e in analysis}) == 17
 
 

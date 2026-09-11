@@ -5,10 +5,11 @@
 Stage 29 is complete. Stage 30.A canonical reference is implemented.
 Stage 30.A is accepted. Stage 30.B explicit source mapping is implemented and
 uses the local pinned reference as validation authority; no live UniProt
-dependency was introduced. Stage 30 remains incomplete.
+dependency was introduced. Stage 30 is complete.
 Stage 30.B is accepted. Stage 30.C canonicalized intermediate tables are
 implemented and use the pinned reference to validate canonicalized outputs.
-Stage 30.D biological annotations/integration is next.
+Stage 30.C is accepted. Stage 30.D biological annotations/integration is complete.
+Stage 31 replica/system aggregation is next and has not started.
 Dataset v1.0 remains unreleased; the accepted scientific contract is unchanged.
 
 ## Canonical reference
@@ -176,6 +177,8 @@ Stage 30.B provides [explicit source-to-canonical mapping and strict offline
 validation](canonical_residue_mapping_contract.md) against this local reference.
 Stage 30.C applies validated mapping to protein/lipid/glycan Dataset window
 tables. Stage 30.D adds biological annotations, workflow/provenance/validation
-integration, and final Stage 30 acceptance; Stage 30.D remains future work.
+integration, and final Stage 30 acceptance. This integration is complete and
+preserves the accepted reference semantics; see the
+[biological annotation contract](biological_annotation_contract.md).
 The [Stage 30.C table contract](canonical_window_table_contract.md) retains source
 names alongside pinned canonical names without adding a live UniProt dependency.

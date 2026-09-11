@@ -36,9 +36,14 @@ Stage 28 is complete: accepted 28.A episodes, 28.B aggregation, and 28.C source
 CSV contracts are integrated by 28.D with artifact lineage and unified validation.
 Stage 29 is complete: accepted 29.A/B/C identity and geometry are integrated by
 29.D with explicit metadata, specialized windows, source exports, and validation.
-Stage 30 canonical mapping / biological annotations is next and has not started.
-Protein-edge and specialized source CSVs remain pre-canonical; Stage 30 mapping
-to UniProt O95436 is mandatory before Dataset release publication.
+Stage 30 is complete: accepted 30.A/B/C reference, explicit mapping, and canonical
+intermediate tables are integrated by 30.D with complete system biological
+annotations, preprocessing lineage, and offline reconstruction validation.
+Protein-edge and specialized source CSVs remain pre-canonical and unchanged;
+canonical and annotated outputs are additive. Explicit mapping to UniProt O95436
+and authoritative system annotations remain mandatory before Dataset publication.
+Stage 31 replica/system aggregation is next and has not started.
+Stage 33 publication export remains later.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.

@@ -274,25 +274,22 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
             assert "canonical_napi2b_reference_contract.md" in text
             assert "Stage 30.B explicit source mapping is implemented" in text
             assert "canonical_residue_mapping_contract.md" in text
-            assert "Stage 30 remains incomplete" in text
+            assert "Stage 30 is complete" in text
             assert "Stage 30.B is accepted" in text
             assert (
                 "Stage 30.C canonicalized intermediate tables are implemented" in text
             )
-            assert "Stage 30.D biological annotations/integration is next" in text
+            assert (
+                "Stage 30.D biological annotations and workflow integration "
+                "are complete" in text
+            )
             assert "canonical_window_table_contract.md" in text
-            assert (
-                "No biological annotations or mapping workflow integration "
-                "are implemented" in text
-            )
+            assert "biological_annotation_contract.md" in text
+            assert "Stage 30 adds zero trajectory passes" in text
             assert "carries no mapping authority" in text
-        else:
-            # These files retain their accepted Stage 29 checkpoint context.
-            assert (
-                "Stage 30 canonical mapping / biological annotations "
-                "is next and has not started"
-                in text
-            )
+        assert "Stage 30 is complete" in text
+        assert "Stage 31 replica/system aggregation is next and has not started" in text
+        assert "Stage 33 publication export remains later" in text
         # Preserve accepted A/B/C history alongside completed D integration.
         if name == "docs/architecture.md":
             assert re.search(r"Stage 28\.A is accepted\b", text)
@@ -325,9 +322,9 @@ def test_stage30a_contract_documents_offline_reference_and_mapping_boundary():
     for phrase in (
         "Stage 29 is complete", "Stage 30.A canonical reference is implemented",
         "Stage 30.A is accepted", "Stage 30.B explicit source mapping is implemented",
-        "Stage 30 remains incomplete", "Stage 30.B is accepted",
+        "Stage 30 is complete", "Stage 30.B is accepted",
         "Stage 30.C canonicalized intermediate tables are implemented",
-        "Stage 30.D biological annotations/integration is next",
+        "Stage 30.D biological annotations/integration is complete",
         "uses the local pinned reference as validation authority",
         "no live UniProt dependency was introduced",
         "canonical_residue_mapping_contract.md",
@@ -347,7 +344,6 @@ def test_stage30a_contract_documents_offline_reference_and_mapping_boundary():
     ):
         assert phrase in text
 
-
 def test_stage30b_contract_documents_explicit_mapping_and_application_status():
     text = " ".join(
         (REPO_ROOT / "docs/canonical_residue_mapping_contract.md")
@@ -356,9 +352,9 @@ def test_stage30b_contract_documents_explicit_mapping_and_application_status():
     for phrase in (
         "Stage 29 is complete", "Stage 30.A is accepted",
         "Stage 30.B explicit source mapping is implemented",
-        "Stage 30 remains incomplete", "Stage 30.B is accepted",
+        "Stage 30 is complete", "Stage 30.B is accepted",
         "Stage 30.C canonicalized intermediate tables are implemented",
-        "Stage 30.D biological annotations/integration is next",
+        "Stage 30.D biological annotations/integration is complete",
         "uniprotkb:O95436-1:sequence-v3",
         "33ce6c59e28a7373fce51debe32cec8d891ef691c2e77a0655a74040da25eef9",
         "source_resid != canonical_residue_number",
@@ -380,7 +376,6 @@ def test_stage30b_contract_documents_explicit_mapping_and_application_status():
         "Stage 30.C applies explicit mapping", "Stage 30.D integrates mapping",
     ):
         assert phrase in text
-
 
 def test_stage29a_contract_documents_identification_and_scientific_boundary():
     text = " ".join((REPO_ROOT / "docs/molecular_partner_identification_contract.md")
@@ -529,8 +524,47 @@ def test_stage30c_contract_current_status_and_next_stage():
     for phrase in (
         "Stage 29 is complete", "Stage 30.A is accepted", "Stage 30.B is accepted",
         "Stage 30.C canonicalized intermediate tables are implemented",
-        "Stage 30 remains incomplete", "Stage 30.D biological annotations",
-        "workflow/provenance/validation integration is next",
+        "Stage 30 is complete", "Stage 30.D biological annotations",
+        "workflow/provenance/validation integration are complete",
         "Dataset v1.0 remains unreleased",
     ):
         assert phrase in text
+
+def test_stage30d_complete_annotation_and_workflow_contract():
+    text = " ".join(
+        (REPO_ROOT / "docs/biological_annotation_contract.md")
+        .read_text(encoding="utf-8")
+        .split()
+    )
+    for phrase in (
+        "234..361",
+        "311..341",
+        "complete_for_system",
+        "exhaustive lists",
+        "Without complete metadata there are no system-supplied annotated outputs",
+        "canonical_residue_mapping_path",
+        "biological_annotation_metadata_path",
+        "(dataset_id, system_id, trajectory_id, replica_id)",
+        "(dataset_id, system_id)",
+        "condition=None",
+        "zero additional trajectory passes",
+        "protein_edges_by_window_canonical_annotated.csv",
+        "protein_lipid_contacts_by_window_canonical_annotated.csv",
+        "protein_glycan_contacts_by_window_canonical_annotated.csv",
+        "Exact model equality is required",
+        "canonical_reference",
+        "canonical_residue_mapping_bindings",
+        "biological_annotation_bindings",
+        "site annotations only",
+        "Stage 33 owns publication bundles",
+        "Dependencies, version 0.1.0, WANIA",
+        "never fabricated",
+    ):
+        assert phrase in text
+    for module in (
+        "biological_annotations",
+        "biological_annotations_io",
+        "annotated_window_tables",
+        "annotated_window_tables_io",
+    ):
+        assert module in text

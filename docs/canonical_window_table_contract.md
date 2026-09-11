@@ -4,9 +4,10 @@
 
 Stage 29 is complete. Stage 30.A is accepted. Stage 30.B is accepted.
 Stage 30.C canonicalized intermediate tables are implemented.
-Stage 30 remains incomplete. Stage 30.D biological annotations and
-workflow/provenance/validation integration is next. Dataset v1.0 remains
-unreleased; its frozen scientific contract is unchanged.
+Stage 30.C is accepted. Stage 30.D biological annotations and
+workflow/provenance/validation integration are complete. Stage 30 is complete.
+Stage 31 replica/system aggregation is next and has not started.
+Dataset v1.0 remains unreleased; its frozen scientific contract is unchanged.
 
 ## Inputs and explicit Dataset binding
 
@@ -39,9 +40,9 @@ canonical table. No mapping coverage is inferred from an empty result.
 
 This binding is an in-memory application contract. It contains no paths,
 manifest fields, automatic mapping-file reads, or preprocessing integration.
-Stage 30.D will bind authoritative external mapping files to real trajectories.
-Synthetic explicit mappings suffice for this stage; they make no claim to be
-real GROMACS/NAMD Dataset mappings.
+Stage 30.D binds authoritative external mapping files to resolved Dataset replicas
+in preprocessing, with strict preflight and offline validation. Synthetic explicit
+mappings provide technical evidence without claiming real Dataset mappings.
 
 ## Mapping authority
 
@@ -265,8 +266,11 @@ their names, schemas, bytes, source objects, and mapping inputs are unchanged.
 These three canonical outputs are additive intermediate tables, not final
 biologically annotated Stage 30 release outputs.
 
-No ECD/MX35, glycosylation, variant-site, disulfide-site, or other biological
-annotations are attached. There are no CLI/manifest changes, automatic exports,
-provenance/inventory changes, or unified validation integration. Stage 27–29
-science, PBC, analysis, dependencies and WANIA are unchanged. Stage 30.D remains
-required for biological annotations/integration and final Stage 30 acceptance.
+These 30.C canonical tables attach no biological annotation columns. Their
+schemas remain unchanged. Stage 30.D integrates the accepted builders into
+preprocessing through explicit manifest mapping paths, portable provenance and
+inventory, and offline model reconstruction. Separate additive annotated CSVs
+attach reference-derived regions plus complete system-supplied site metadata;
+see the [biological annotation and workflow contract](biological_annotation_contract.md).
+Stage 27–29 science, source tables, PBC, analysis, dependencies and WANIA remain
+unchanged. Stage 33 still owns final publication bundles/export.

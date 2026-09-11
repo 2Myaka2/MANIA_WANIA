@@ -675,3 +675,53 @@ def test_specialized_inputs_and_outputs_are_explicit_condition_scoped_specs(tmp_
         collect_preprocessing_input_file_specs(
             runtime, molecular_partner_metadata_paths=(("unknown", metadata),)
         )
+
+
+def test_stage30_explicit_inventory_controls_and_outputs(tmp_path):
+    from mania.preprocessing.artifact_inventory import (
+        STAGE30_OUTPUT_ROLES,
+        collect_stage30_input_file_specs,
+    )
+
+    replica = ("dataset", "system", "trajectory", "replica")
+    system = replica[:2]
+    controls = collect_stage30_input_file_specs(
+        ((replica, tmp_path / "mapping.json"),),
+        ((system, tmp_path / "biology.json"),),
+    )
+    assert [(s.artifact_id, s.role, s.path, s.condition) for s in controls] == [
+        (
+            "input:canonical_residue_mapping:0001",
+            "canonical_residue_mapping",
+            "inputs/canonical_residue_mapping/0001/mapping.json",
+            None,
+        ),
+        (
+            "input:biological_annotation_metadata:0001",
+            "biological_annotation_metadata",
+            "inputs/biological_annotation_metadata/0001/biology.json",
+            None,
+        ),
+    ]
+    # File spec collection is metadata-only: these paths need not exist.
+    outputs = adapter.collect_preprocessing_output_file_specs(
+        output_root=tmp_path,
+        stage30_output_paths=tuple(
+            (role, tmp_path / f"{role}.csv") for role in STAGE30_OUTPUT_ROLES
+        ),
+    )
+    assert tuple(s.role for s in outputs) == STAGE30_OUTPUT_ROLES
+    for malformed in (
+        ((("NORM",), tmp_path / "mapping.json"),),
+        ((replica, tmp_path / "mapping.json"), (replica, tmp_path / "other.json")),
+    ):
+        with pytest.raises(ValueError):
+            collect_stage30_input_file_specs(malformed)
+    for role, path in (
+        ("unknown", tmp_path / "unknown.csv"),
+        (STAGE30_OUTPUT_ROLES[0], tmp_path / "wrong.csv"),
+    ):
+        with pytest.raises(ValueError):
+            adapter.collect_preprocessing_output_file_specs(
+                output_root=tmp_path, stage30_output_paths=((role, path),)
+            )

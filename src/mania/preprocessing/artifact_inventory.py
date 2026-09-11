@@ -42,6 +42,61 @@ class PreprocessingArtifactInventoryError(ValueError):
     """Retained workflow state cannot describe a complete portable inventory."""
 
 
+STAGE30_OUTPUT_ROLES = tuple(
+    f"{family}_by_window_canonical{suffix}"
+    for suffix in ("", "_annotated")
+    for family in ("protein_edges", "protein_lipid_contacts", "protein_glycan_contacts")
+)
+
+
+def collect_stage30_input_file_specs(
+    mapping_paths: tuple[tuple[tuple[str, str, str, str], Path], ...] = (),
+    annotation_paths: tuple[tuple[tuple[str, str], Path], ...] = (),
+) -> tuple[ArtifactInventoryFileSpec, ...]:
+    """Explicit replica/system controls in key/path order, with no directory scan."""
+    specs = []
+    for role, paths in (
+        ("canonical_residue_mapping", mapping_paths),
+        ("biological_annotation_metadata", annotation_paths),
+    ):
+        width = 4 if role == "canonical_residue_mapping" else 2
+        if any(
+            type(key) is not tuple
+            or len(key) != width
+            or any(
+                type(value) is not str or not value or value != value.strip()
+                for value in key
+            )
+            or not isinstance(path, Path)
+            for key, path in paths
+        ):
+            raise PreprocessingArtifactInventoryError(
+                "Invalid Stage 30 input key/path."
+            )
+        keys = [(key, path.as_posix()) for key, path in paths]
+        if len(set(keys)) != len(keys) or keys != sorted(keys):
+            raise PreprocessingArtifactInventoryError(
+                "Stage 30 input bindings must be unique and sorted."
+            )
+        if width == 4 and len({key for key, _ in paths}) != len(paths):
+            raise PreprocessingArtifactInventoryError(
+                "Mapping replica keys must be unique."
+            )
+        for ordinal, (_key, path) in enumerate(paths, 1):
+            specs.append(
+                ArtifactInventoryFileSpec(
+                    f"input:{role}:{ordinal:04d}",
+                    "input",
+                    role,
+                    path,
+                    f"inputs/{role}/{ordinal:04d}/{path.name}",
+                    "json",
+                    None,
+                )
+            )
+    return tuple(specs)
+
+
 def _format(path: Path) -> str:
     suffix = path.suffix[1:].lower()
     if not suffix or re.fullmatch(r"[a-z0-9+_\-]+", suffix) is None:
@@ -208,6 +263,7 @@ def collect_preprocessing_output_file_specs(
     temporal_execution_path: Path | None = None,
     runtime_metadata_path: Path | None = None,
     pbc_audit_path: Path | None = None,
+    stage30_output_paths: tuple[tuple[str, Path], ...] = (),
 ) -> tuple[ArtifactInventoryFileSpec, ...]:
     """Describe supplied successful stages in execution order, without discovery.
 
@@ -350,6 +406,10 @@ def collect_preprocessing_output_file_specs(
                     "Specialized output must use its exact preprocessing path."
                 )
             add(role, specialized_path)
+    for role, path in stage30_output_paths:
+        if role not in STAGE30_OUTPUT_ROLES or path != output_root / f"{role}.csv":
+            raise PreprocessingArtifactInventoryError("Invalid Stage 30 output path.")
+        add(role, path)
     for role, technical_path in (
         ("temporal_execution", temporal_execution_path),
         ("runtime_metadata", runtime_metadata_path),
@@ -391,6 +451,8 @@ def build_preprocessing_artifact_inventory(
     temporal_execution_path: Path | None = None,
     runtime_metadata_path: Path | None = None,
     pbc_audit_path: Path | None = None,
+    stage30_input_specs: tuple[ArtifactInventoryFileSpec, ...] = (),
+    stage30_output_paths: tuple[tuple[str, Path], ...] = (),
 ) -> ArtifactInventory:
     """Inspect authoritative files through the generic builder; never write."""
     inputs = collect_preprocessing_input_file_specs(
@@ -416,12 +478,13 @@ def build_preprocessing_artifact_inventory(
         temporal_execution_path=temporal_execution_path,
         runtime_metadata_path=runtime_metadata_path,
         pbc_audit_path=pbc_audit_path,
+        stage30_output_paths=stage30_output_paths,
     )
     return build_artifact_inventory(
         run_id=run_id,
         workflow=PREPROCESSING_RUN_PROVENANCE_WORKFLOW,
         inventory_path=PREPROCESSING_ARTIFACT_INVENTORY_PATH,
-        file_specs=inputs + outputs,
+        file_specs=inputs + stage30_input_specs + outputs,
         checksum_mode=checksum_mode,
     )
 

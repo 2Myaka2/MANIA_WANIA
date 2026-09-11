@@ -476,3 +476,65 @@ def test_partner_metadata_path_is_optional_execution_metadata():
     payload["conditions"][0]["molecular_partner_metadata_path"] = " "
     with pytest.raises(ValueError):
         PreprocessingInputManifest.model_validate(payload)
+
+
+@pytest.mark.parametrize("annotations", [False, True])
+def test_stage30_paths_are_optional_relative_dataset_controls(annotations):
+    from test_preprocessing_dataset_binding import manifest, spec
+    from test_preprocessing_dataset_spec_manifest import LEGACY_ENTRY
+
+    legacy = manifest(LEGACY_ENTRY)
+    for values in (
+        legacy.to_dict()["conditions"][0],
+        legacy.conditions[0].model_dump(mode="json"),
+    ):
+        assert "canonical_residue_mapping_path" not in values
+        assert "biological_annotation_metadata_path" not in values
+    entry = LEGACY_ENTRY | {
+        "dataset_spec": spec(condition=None),
+        "canonical_residue_mapping_path": "controls/mapping.json",
+    }
+    if annotations:
+        entry["biological_annotation_metadata_path"] = "controls/biology.json"
+    result = manifest(entry, LEGACY_ENTRY | {"condition": "legacy-other"})
+    assert result.conditions[0].canonical_residue_mapping_path == Path(
+        "controls/mapping.json"
+    )
+    assert (
+        result.to_dict()["conditions"][0]["canonical_residue_mapping_path"]
+        == "controls/mapping.json"
+    )
+    assert (
+        result.conditions[0].biological_annotation_metadata_path is not None
+    ) is annotations
+    assert "canonical_residue_mapping_path" not in result.to_dict()["conditions"][1]
+    assert result.conditions[0].dataset_spec.identity.condition is None
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "annotation_only",
+        "legacy_mapping",
+        "legacy_both",
+        "empty_mapping",
+        "empty_annotation",
+    ],
+)
+def test_stage30_manifest_relationships(case):
+    from test_preprocessing_dataset_binding import manifest, spec
+    from test_preprocessing_dataset_spec_manifest import LEGACY_ENTRY
+
+    entry = LEGACY_ENTRY.copy()
+    if not case.startswith("legacy"):
+        entry["dataset_spec"] = spec(condition=None)
+    if case != "annotation_only":
+        entry["canonical_residue_mapping_path"] = (
+            "" if case == "empty_mapping" else "mapping.json"
+        )
+    if case != "legacy_mapping":
+        entry["biological_annotation_metadata_path"] = (
+            " " if case == "empty_annotation" else "biology.json"
+        )
+    with pytest.raises(ValueError):
+        manifest(entry)

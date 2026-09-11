@@ -320,6 +320,270 @@ _VALIDATORS = {
 }
 
 
+_STAGE30_INPUT_ROLES = ("canonical_residue_mapping", "biological_annotation_metadata")
+_STAGE30_FAMILIES = {
+    "protein_edges": "edge",
+    "protein_lipid_contacts": "lipid",
+    "protein_glycan_contacts": "glycan",
+}
+_STAGE30_OUTPUT_ROLES = tuple(
+    f"{family}_by_window_canonical{suffix}"
+    for suffix in ("", "_annotated")
+    for family in _STAGE30_FAMILIES
+)
+_STAGE30_ROLES = (*_STAGE30_INPUT_ROLES, *_STAGE30_OUTPUT_ROLES)
+_PREPROCESSING_POLICY.update({role: role for role in _STAGE30_ROLES})
+_VALIDATORS.update({role: f"read_{role}" for role in _STAGE30_ROLES})
+
+
+def _read_stage30(contract: str, path: Path) -> object:
+    from mania import annotated_window_tables_io, canonical_window_tables_io
+    from mania.biological_annotations_io import (
+        read_dataset_system_biological_annotations,
+    )
+    from mania.canonical_residue_mapping_io import read_canonical_residue_mapping
+
+    if contract == "canonical_residue_mapping":
+        return read_canonical_residue_mapping(path)
+    if contract == "biological_annotation_metadata":
+        return read_dataset_system_biological_annotations(path)
+    annotated = contract.endswith("_annotated")
+    family = contract.split("_by_window_canonical")[0]
+    kind = _STAGE30_FAMILIES[family]
+    module = annotated_window_tables_io if annotated else canonical_window_tables_io
+    prefix = "annotated_canonical" if annotated else "canonical"
+    return getattr(module, f"read_{prefix}_protein_{kind}_window_csv")(path)
+
+
+def _cross_check_stage30(
+    run_root: Path,
+    entries: tuple[ArtifactInventoryEntry, ...],
+    provenance: Any,
+    dataset_context: Any,
+    models: dict[str, Any],
+    sources: dict[str, Any],
+) -> None:
+    """Reconstruct using the production pure APIs and explicit portable bindings."""
+    from mania import annotated_window_tables as annotations_api
+    from mania import canonical_window_tables as canonical_api
+    from mania.canonical_residue_mapping import (
+        CANONICAL_RESIDUE_MAPPING_REFERENCE_ID,
+        CANONICAL_RESIDUE_MAPPING_REFERENCE_SHA256,
+    )
+
+    configuration = provenance.to_dict()["resolved_configuration"] if provenance else {}
+    completed_run = provenance is not None and provenance.status == "completed"
+    by_role = {
+        role: tuple(e for e in entries if e.role == role) for role in _STAGE30_ROLES
+    }
+    refs = provenance.artifact_references if provenance else ()
+    mapping_specs = configuration.get("canonical_residue_mapping_bindings", [])
+    annotation_specs = configuration.get("biological_annotation_bindings", [])
+    mapping_entries = by_role[_STAGE30_INPUT_ROLES[0]]
+    annotation_entries = by_role[_STAGE30_INPUT_ROLES[1]]
+    active = bool(
+        mapping_specs or annotation_specs or mapping_entries or annotation_entries
+    )
+    if not active and "canonical_reference" in configuration:
+        raise ValueError("Canonical reference requires explicit mapping inputs")
+    if active:
+        if dataset_context is None or not mapping_entries:
+            raise ValueError(
+                "Stage 30 controls require Dataset context and mapping inputs"
+            )
+        if configuration.get("canonical_reference") != {
+            "reference_id": CANONICAL_RESIDUE_MAPPING_REFERENCE_ID,
+            "sequence_sha256": CANONICAL_RESIDUE_MAPPING_REFERENCE_SHA256,
+        }:
+            raise ValueError(
+                "Canonical reference provenance must match pinned reference"
+            )
+    replica_keys = (
+        {b.dataset_spec.identity.replica_key for b in dataset_context.bindings}
+        if dataset_context
+        else set()
+    )
+    system_keys = {key[:2] for key in replica_keys}
+    if (
+        not active
+        and not any(by_role[role] for role in _STAGE30_OUTPUT_ROLES)
+        and not any(ref.role in _STAGE30_ROLES for ref in refs)
+        and not any(
+            (run_root / f"{role}.csv").exists() for role in _STAGE30_OUTPUT_ROLES
+        )
+    ):
+        return
+    bound_mappings = []
+    bound_annotations: dict[tuple[str, ...], Any] = {}
+    for role, spec_list, control_entries, key_fields, path_field in (
+        (
+            _STAGE30_INPUT_ROLES[0],
+            mapping_specs,
+            mapping_entries,
+            ("dataset_id", "system_id", "trajectory_id", "replica_id"),
+            "mapping_path",
+        ),
+        (
+            _STAGE30_INPUT_ROLES[1],
+            annotation_specs,
+            annotation_entries,
+            ("dataset_id", "system_id"),
+            "annotation_metadata_path",
+        ),
+    ):
+        if type(spec_list) is not list or len(spec_list) != len(control_entries):
+            raise ValueError(
+                "Stage 30 provenance and inventory input counts must match"
+            )
+        controls = {entry.path: entry for entry in control_entries}
+        used_paths = []
+        keys = []
+        for ordinal, spec in enumerate(spec_list, 1):
+            if type(spec) is not dict or set(spec) != {*key_fields, path_field}:
+                raise ValueError("Exact Stage 30 binding fields required")
+            key = tuple(spec[name] for name in key_fields)
+            if any(
+                type(value) is not str or not value or value != value.strip()
+                for value in key
+            ):
+                raise ValueError("Stage 30 binding identifiers must be strict strings")
+            if key not in (
+                replica_keys if role == _STAGE30_INPUT_ROLES[0] else system_keys
+            ):
+                raise ValueError("Stage 30 binding must match Dataset identity")
+            path = spec[path_field]
+            if type(path) is not str or path not in controls:
+                raise ValueError("Stage 30 binding path must match an input entry")
+            entry = controls[path]
+            if (
+                entry.direction != "input"
+                or entry.condition is not None
+                or entry.format != "json"
+                or entry.artifact_id != f"input:{role}:{ordinal:04d}"
+                or path != f"inputs/{role}/{ordinal:04d}/{Path(path).name}"
+            ):
+                raise ValueError("Stage 30 control inventory identity must match")
+            used_paths.append(path)
+            keys.append(key)
+            model = models.get(entry.artifact_id)
+            if model is None:
+                continue  # unresolved/failed strict input reads already have records
+            if role == _STAGE30_INPUT_ROLES[0]:
+                bound_mappings.append(
+                    canonical_api.DatasetCanonicalResidueMappingBinding(
+                        key[0], key[1], key[2], key[3], model
+                    )
+                )
+            else:
+                binding = annotations_api.DatasetBiologicalAnnotationBinding(
+                    key[0], key[1], model
+                )
+                if key in bound_annotations and bound_annotations[key] != binding:
+                    raise ValueError(
+                        "Conflicting annotation content for Dataset system"
+                    )
+                bound_annotations[key] = binding
+        if len(set(used_paths)) != len(used_paths) or set(used_paths) != set(controls):
+            raise ValueError("Stage 30 control paths must bind exactly once")
+        if keys != sorted(keys) or (
+            role == _STAGE30_INPUT_ROLES[0] and len(set(keys)) != len(keys)
+        ):
+            raise ValueError("Stage 30 binding keys must be deterministic and unique")
+    mappings = canonical_api.DatasetCanonicalResidueMappingBindings(
+        tuple(bound_mappings)
+    )
+    annotations = annotations_api.DatasetBiologicalAnnotationBindings(
+        tuple(bound_annotations[key] for key in sorted(bound_annotations))
+    )
+    for family, kind in _STAGE30_FAMILIES.items():
+        source_role = f"{family}_by_window_source"
+        canonical_role = f"{family}_by_window_canonical"
+        annotated_role = f"{canonical_role}_annotated"
+        source_entries = tuple(e for e in entries if e.role == source_role)
+        for role, required in (
+            (canonical_role, bool(mapping_entries and source_entries)),
+            (annotated_role, bool(annotation_entries and source_entries)),
+        ):
+            outputs = by_role[role]
+            references = tuple(ref for ref in refs if ref.role == role)
+            if (
+                (
+                    completed_run
+                    and required
+                    and (len(outputs) != 1 or len(references) != 1)
+                )
+                or len(outputs) > 1
+                or len(references) > 1
+                or bool(outputs) != bool(references)
+                or any(
+                    e.direction != "output"
+                    or e.condition is not None
+                    or e.path != f"{role}.csv"
+                    or e.format != "csv"
+                    or e.artifact_id != f"output:{role}"
+                    for e in outputs
+                )
+                or any(ref.path != f"{role}.csv" for ref in references)
+                or (
+                    completed_run
+                    and (run_root / f"{role}.csv").exists()
+                    and not outputs
+                )
+            ):
+                raise ValueError("Stage 30 required artifact and lineage must match")
+            if outputs and (
+                not mapping_entries
+                or not source_entries
+                or (
+                    role == annotated_role
+                    and (not annotation_entries or not by_role[canonical_role])
+                )
+            ):
+                raise ValueError(
+                    "Stage 30 output requires explicit input and source lineage"
+                )
+        source = sources.get(source_role)
+        canonical_entries = by_role[canonical_role]
+        canonical = (
+            models.get(canonical_entries[0].artifact_id) if canonical_entries else None
+        )
+        if (
+            canonical is not None
+            and source is not None
+            and all(e.artifact_id in models for e in mapping_entries)
+        ):
+            expected = getattr(
+                canonical_api, f"build_canonical_protein_{kind}_window_table"
+            )(
+                source,
+                mapping_bindings=mappings,
+            )
+            if expected != canonical:
+                raise ValueError(
+                    "Canonical table must equal reconstruction from explicit mapping"
+                )
+        annotated_entries = by_role[annotated_role]
+        annotated = (
+            models.get(annotated_entries[0].artifact_id) if annotated_entries else None
+        )
+        if (
+            canonical is not None
+            and annotated is not None
+            and all(e.artifact_id in models for e in annotation_entries)
+        ):
+            expected_annotated = getattr(
+                annotations_api,
+                f"build_annotated_canonical_protein_{kind}_window_table",
+            )(
+                canonical,
+                annotation_bindings=annotations,
+            )
+            if expected_annotated != annotated:
+                raise ValueError(
+                    "Annotated table must equal complete system reconstruction"
+                )
+
+
 def _csv_contracts() -> dict[str, tuple[str, ...]]:
     # Explicit local imports keep the existing validation package import boundary
     # free of preprocessing/analysis initialization cycles. No discovery occurs.
@@ -364,6 +628,8 @@ def _invoke(
     condition: str | None,
     peer: Path | None = None,
 ) -> object:
+    if contract in _STAGE30_ROLES:
+        return _read_stage30(contract, path)
     if contract in ("preprocessing_runtime_metadata", "analysis_runtime_metadata"):
         metadata = read_runtime_metadata(path)
         scope = contract.removesuffix("_runtime_metadata")
@@ -449,6 +715,10 @@ def _invoke(
 
 
 def _failure_count(call: Callable[[], object]) -> int:
+    from mania.annotated_window_tables_io import AnnotatedWindowCsvReadError
+    from mania.biological_annotations_io import BiologicalAnnotationReadError
+    from mania.canonical_residue_mapping_io import CanonicalResidueMappingReadError
+    from mania.canonical_window_tables_io import CanonicalWindowCsvReadError
     from mania.preprocessing.dataset_binding import PreprocessingDatasetBindingError
     from mania.preprocessing.molecular_partner_catalog_io import (
         MolecularPartnerCatalogReadError,
@@ -483,6 +753,10 @@ def _failure_count(call: Callable[[], object]) -> int:
         MolecularPartnerCatalogReadError,
         MolecularPartnerMetadataReadError,
         SpecializedContactWindowCsvReadError,
+        AnnotatedWindowCsvReadError,
+        BiologicalAnnotationReadError,
+        CanonicalResidueMappingReadError,
+        CanonicalWindowCsvReadError,
     ):
         # Public validator exceptions and ordinary file/read failures only.
         return 1
@@ -599,6 +873,13 @@ def validate_run_artifacts(
         "protein_glycan_contacts_by_window_source",
     )
     specialized_artifacts: dict[str, Any] = {}
+    stage30_models: dict[str, Any] = {}
+
+    def validate_stage30(entry: ArtifactInventoryEntry) -> object:
+        artifact = _read_stage30(entry.role, local(entry))
+        stage30_models[entry.artifact_id] = artifact
+        return artifact
+
     metadata_entries = tuple(
         e for e in entries if e.role == "molecular_partner_metadata"
     )
@@ -1044,7 +1325,9 @@ def validate_run_artifacts(
             valid = check(
                 (entry,),
                 validator,
-                partial(validate_dataset_table, local(entry))
+                partial(validate_stage30, entry)
+                if contract in _STAGE30_ROLES
+                else partial(validate_dataset_table, local(entry))
                 if contract == "dataset_parameter_table"
                 else partial(validate_temporal, local(entry))
                 if contract == "temporal_execution"
@@ -1122,6 +1405,32 @@ def validate_run_artifacts(
                     "Specialized catalog and source rows must match "
                     "Dataset, temporal, and partner evidence.",
                     path="molecular_partner_catalog.json",
+                )
+            )
+    if scope == "preprocessing":
+        try:
+            _cross_check_stage30(
+                run_root,
+                entries,
+                provenance,
+                dataset_context,
+                stage30_models,
+                {source_role: source_table, **specialized_artifacts},
+            )
+        except (ValueError, TypeError):
+            records[:] = [
+                replace(r, status="failed", issue_count=r.issue_count + 1)
+                if r.role in _STAGE30_ROLES and r.status == "passed"
+                else r
+                for r in records
+            ]
+            issues.append(
+                UnifiedArtifactValidationIssue(
+                    "error",
+                    "stage30_lineage_or_reconstruction_mismatch",
+                    "Canonical and annotated tables must match Dataset controls, "
+                    "pinned reference provenance, source models, and artifact lineage.",
+                    path=integrity.inventory_path,
                 )
             )
     if temporal_execution is not None and pbc_audit is not None:
