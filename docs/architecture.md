@@ -44,7 +44,15 @@ and adds zero trajectory passes. Automatic export requires Dataset temporal
 execution, contacts enabled, and protein-only selection; empty science writes a
 header-only CSV. The artifact is pre-canonical and preprocessing-only, with
 inventory/provenance lineage and strict Dataset/window validation.
-Stage 29 protein-lipid / protein-glycan dynamic layers are next and have not started.
+Stage 29.A molecular partner identification is implemented as standalone pure
+`molecular_partner_entities.py` and `molecular_partner_identification.py` modules.
+The [identification contract](molecular_partner_identification_contract.md)
+separates supplied classification from connectivity/explicit grouping and retains
+glycan carrier/first-sugar evidence. Stage 29 remains incomplete. Stage 29.B
+protein-lipid contacts is next. No lipid/glycan contact calculations or workflow
+integration are implemented in 29.A; the main protein-only graph is unchanged.
+Stage 29 protein-lipid / protein-glycan dynamic layers are next after this
+identity prerequisite.
 Stage 30 canonical mapping remains future and mandatory before release.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;

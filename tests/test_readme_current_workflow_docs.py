@@ -251,8 +251,22 @@ def test_current_status_documents_completed_stage28_and_stage29_boundary() -> No
         assert "Stage 27 physical-time sampling/window engine is complete" in text
         assert "Stage 27 is complete" in text
         assert "Stage 28 is complete" in text
-        assert "Stage 29 protein-lipid / protein-glycan dynamic layers are next" in text
-        assert "have not started" in text
+        if name == "docs/architecture.md":
+            assert "Stage 29.A molecular partner identification is implemented" in text
+            assert "Stage 29 remains incomplete" in text
+            assert "Stage 29.B protein-lipid contacts is next" in text
+            assert "molecular_partner_identification_contract.md" in text
+            assert (
+                "No lipid/glycan contact calculations or workflow integration" in text
+            )
+        else:
+            # These documents retain the accepted Stage 28 checkpoint wording;
+            # Stage 29.A updates only architecture and its standalone contract.
+            assert (
+                "Stage 29 protein-lipid / protein-glycan dynamic layers are next"
+                in text
+            )
+            assert "have not started" in text
         assert "pre-canonical" in text
         assert "Stage 30 canonical mapping remains future" in text
         # Preserve accepted A/B/C history alongside completed D integration.
@@ -277,6 +291,28 @@ def test_current_status_documents_completed_stage28_and_stage29_boundary() -> No
         assert "Analysis Dataset-context propagation is outside Stage 26" in text
     assert "mania artifacts validate out --scope preprocessing" in readme_text()
     assert "docs/stage25_final_acceptance.md" in readme_text()
+
+
+def test_stage29a_contract_documents_identification_and_scientific_boundary():
+    text = " ".join((REPO_ROOT / "docs/molecular_partner_identification_contract.md")
+                    .read_text(encoding="utf-8").split())
+    for phrase in (
+        "Stage 28 is complete",
+        "Stage 29.A topology/entity identification is implemented",
+        "Stage 29 remains incomplete",
+        "Stage 29.B protein-lipid contacts is next",
+        "Classification is supplied metadata",
+        "MANIA never classifies a lipid/glycan merely from resname patterns",
+        "protein_residue_indexes",
+        "external_metadata",
+        "carrier_link_bond=None",
+        "They are NOT cross-system canonical molecular identifiers",
+        "Stage 29.C/29.D",
+        "no distance calculation",
+        "main protein graph changes",
+        "The main dynRIN remains protein-only",
+    ):
+        assert phrase in text
 
 
 def test_stage28c_source_table_docs_preserve_canonical_publication_boundary():
