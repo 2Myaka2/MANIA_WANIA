@@ -6,8 +6,11 @@ Stage 28 is complete. Stage 29.A topology/entity identification is implemented
 as two standalone pure modules. Stage 29.A is accepted. Stage 29.B protein-lipid
 per-frame geometry is implemented (see the [contact contract](protein_lipid_contact_contract.md))
 and consumes accepted lipid partner identity directly, without reclassifying or
-regrouping partners. Stage 29 remains incomplete. Stage 29.C protein-glycan
-contacts is next after 29.B. Stage 29.D owns window aggregation/export,
+regrouping partners. Stage 29.B is accepted. Stage 29.C protein-glycan per-frame
+geometry is implemented (see the [glycan contract](protein_glycan_contact_contract.md))
+and consumes carrier/first-sugar/linkage evidence directly, without reconstructing
+glycan identity. Stage 29 remains incomplete. Stage 29.D is next after 29.C.
+Stage 29.D owns window aggregation/export,
 workflow integration, and acceptance.
 Lipid/glycan contact calculations and workflow integration do not exist in 29.A.
 
@@ -19,7 +22,7 @@ unchanged. Stage 29.A implements its identity prerequisite without amending it.
 ## Why this layer exists
 
 Distance calculation is meaningless until molecular partner identity is defined.
-One partner may contain several source residues. Stage 29.B and future 29.C
+One partner may contain several source residues. Stage 29.B and 29.C
 calculations need exact molecular membership, and glycans also need
 carrier/first-sugar evidence for the covalent-linkage exclusion.
 
@@ -228,11 +231,17 @@ Carrier/first-sugar source evidence lets Stage 29.C/29.D enforce the frozen
 rule: the covalent carrier-residue <-> directly attached first-sugar linkage
 must not artificially enter ordinary occupancy/lifetime summaries. Stage 29.A
 records evidence only and performs no exclusion or contact calculations.
+Stage 29.C consumes that evidence directly and retains raw whole-glycan minimum
+heavy-atom distances, including first-sugar/link atoms. Carrier positives carry
+`standard_summary_excluded=True` with reason
+`covalent_carrier_first_sugar_linkage`; Stage 29.D must exclude them from ordinary
+occupancy/lifetime summaries. Stage 29.C never reconstructs glycan identity.
 
 All source component atoms are retained. Stage 29.A does not label atoms heavy
 or light. Stage 29.B requires an explicit hydrogen flag with caller-supplied
 coordinates and never rediscovers molecular membership. Authoritative runtime
-atom typing adapters remain future Stage 29.D integration scope; 29.C is next.
+atom typing adapters remain future Stage 29.D integration scope; 29.C reuses the
+accepted Stage 29.B coordinate model. Stage 29.D is next after 29.C.
 
 In Stage 29.A there is no distance calculation, contact cutoff implementation,
 contact presence, occupancy, episodes, lifetime, or distance statistic. There are no

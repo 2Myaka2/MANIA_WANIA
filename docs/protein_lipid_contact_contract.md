@@ -4,8 +4,11 @@
 
 Stage 28 is complete. Stage 29.A is accepted. Stage 29.B protein-lipid per-frame
 geometry is implemented as the standalone pure
-`mania.preprocessing.protein_lipid_contacts` module. Stage 29 remains incomplete.
-Stage 29.C protein-glycan contacts is next. Stage 29.D owns window aggregation,
+`mania.preprocessing.protein_lipid_contacts` module. Stage 29.B is accepted.
+Stage 29.C protein-glycan per-frame geometry is implemented and reuses the same
+`SourceAtomFrameCoordinate`, explicit heavy-atom, and no-PBC principles with its
+own inclusive 4.5 Å cutoff (see the [glycan contract](protein_glycan_contact_contract.md)).
+Stage 29 remains incomplete. Stage 29.D is next. Stage 29.D owns window aggregation,
 export, workflow integration, and final Stage 29 acceptance.
 
 The accepted Stage 29.A checkpoint is

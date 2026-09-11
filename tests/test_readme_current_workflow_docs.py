@@ -256,7 +256,10 @@ def test_current_status_documents_completed_stage28_and_stage29_boundary() -> No
             assert "Stage 29.A is accepted" in text
             assert "Stage 29.B protein-lipid per-frame geometry is implemented" in text
             assert "Stage 29 remains incomplete" in text
-            assert "Stage 29.C protein-glycan contacts is next" in text
+            assert "Stage 29.B is accepted" in text
+            assert "Stage 29.C protein-glycan per-frame geometry is implemented" in text
+            assert "Stage 29.D is next" in text
+            assert "protein_glycan_contact_contract.md" in text
             assert "molecular_partner_identification_contract.md" in text
             assert "protein_lipid_contact_contract.md" in text
             assert (
@@ -264,7 +267,7 @@ def test_current_status_documents_completed_stage28_and_stage29_boundary() -> No
             )
         else:
             # These documents retain the accepted Stage 28 checkpoint wording;
-            # Stage 29.A/B update only architecture and their standalone contracts.
+            # Stage 29.A/B/C update only architecture and their standalone contracts.
             assert (
                 "Stage 29 protein-lipid / protein-glycan dynamic layers are next"
                 in text
@@ -305,7 +308,9 @@ def test_stage29a_contract_documents_identification_and_scientific_boundary():
         "Stage 29.A is accepted",
         "Stage 29.B protein-lipid per-frame geometry is implemented",
         "Stage 29 remains incomplete",
-        "Stage 29.C protein-glycan contacts is next",
+        "Stage 29.B is accepted",
+        "Stage 29.C protein-glycan per-frame geometry is implemented",
+        "Stage 29.D is next",
         "consumes accepted lipid partner identity directly",
         "without reclassifying or regrouping partners",
         "Classification is supplied metadata",
@@ -330,8 +335,24 @@ def test_stage29b_contract_documents_current_status():
         "Stage 29.A is accepted",
         "Stage 29.B protein-lipid per-frame geometry is implemented",
         "Stage 29 remains incomplete",
-        "Stage 29.C protein-glycan contacts is next",
+        "Stage 29.B is accepted",
+        "Stage 29.C protein-glycan per-frame geometry is implemented",
+        "Stage 29.D is next",
         "Stage 29.D owns window aggregation",
+    ):
+        assert phrase in text
+
+
+def test_stage29c_contract_documents_current_status():
+    text = " ".join((REPO_ROOT / "docs/protein_glycan_contact_contract.md")
+                    .read_text(encoding="utf-8").split())
+    for phrase in (
+        "Stage 28 is complete",
+        "Stage 29.A is accepted",
+        "Stage 29.B is accepted",
+        "Stage 29.C protein-glycan per-frame geometry is implemented",
+        "Stage 29 remains incomplete",
+        "Stage 29.D is next",
     ):
         assert phrase in text
 

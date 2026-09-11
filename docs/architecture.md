@@ -54,11 +54,17 @@ Stage 29.B protein-lipid per-frame geometry is implemented in the standalone pur
 `protein_lipid_contacts.py` module; its [contact contract](protein_lipid_contact_contract.md)
 consumes accepted 29.A identity without reclassification or regrouping. Explicit
 non-hydrogen atoms determine minimum Cartesian distance in Å at the inclusive
-6.0 Å cutoff, with no internal PBC correction. Stage 29 remains incomplete.
-Stage 29.C protein-glycan contacts is next. Window metrics, export, and workflow
+6.0 Å cutoff, with no internal PBC correction. Stage 29.B is accepted.
+Stage 29.C protein-glycan per-frame geometry is implemented in the standalone pure
+`protein_glycan_contacts.py` module; its [glycan contract](protein_glycan_contact_contract.md)
+reuses the accepted 29.B coordinate model and 29.A glycan/linkage evidence.
+Whole-partner minimum heavy-heavy distance uses an inclusive 4.5 Å cutoff without
+PBC correction. Raw carrier positives retain their distance and explicit covalent
+exclusion evidence for future ordinary summaries. Stage 29 remains incomplete.
+Stage 29.D is next. Window metrics, export, and workflow
 integration remain Stage 29.D scope; the main protein-only graph is unchanged.
 The Stage 28 checkpoint statement, "Stage 29 protein-lipid / protein-glycan
-dynamic layers are next", is historical roadmap context; the current 29.A/B
+dynamic layers are next", is historical roadmap context; the current 29.A/B/C
 implementation status is recorded above.
 Stage 30 canonical mapping remains future and mandatory before release.
 The 95% exclusion policy remains Stage 32.
