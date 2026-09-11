@@ -439,3 +439,40 @@ def test_dataset_reference_mismatch_and_duplicate_effective_keys():
                 | {"condition": "different", "dataset_ref": reference(value)},
                 table="parameters.csv",
             )
+
+
+def test_partner_metadata_path_is_optional_execution_metadata():
+    from mania.preprocessing.input_manifest import PreprocessingInputManifest
+
+    payload = {
+        "output_root": "out",
+        "conditions": [
+            {
+                "condition": "route",
+                "topology_path": "topology.tpr",
+                "trajectory_paths": ["trajectory.xtc"],
+            }
+        ],
+    }
+    legacy = PreprocessingInputManifest.model_validate(payload)
+    assert legacy.conditions[0].molecular_partner_metadata_path is None
+    assert "molecular_partner_metadata_path" not in legacy.conditions[0].model_dump(
+        mode="json"
+    )
+    assert "molecular_partner_metadata_path" not in legacy.to_dict()["conditions"][0]
+    payload["conditions"][0]["molecular_partner_metadata_path"] = (
+        "controls/partners.json"
+    )
+    manifest = PreprocessingInputManifest.model_validate(payload)
+    assert (
+        str(manifest.conditions[0].molecular_partner_metadata_path)
+        == "controls/partners.json"
+    )
+    assert (
+        manifest.to_dict()["conditions"][0]["molecular_partner_metadata_path"]
+        == "controls/partners.json"
+    )
+    assert manifest.conditions[0].dataset_spec is None
+    payload["conditions"][0]["molecular_partner_metadata_path"] = " "
+    with pytest.raises(ValueError):
+        PreprocessingInputManifest.model_validate(payload)

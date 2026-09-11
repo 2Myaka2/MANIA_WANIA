@@ -117,7 +117,10 @@ def command(tmp_path, *extra):
 
 
 # Dataset-only Stage 28 failure coverage lives in the source-export integration suite.
-@pytest.mark.parametrize("stage", PREPROCESSING_RUN_FAILURE_STAGES[:-1])
+@pytest.mark.parametrize("stage", tuple(
+    stage for stage in PREPROCESSING_RUN_FAILURE_STAGES
+    if stage not in ("protein_edge_window_export", "specialized_contact_export")
+))
 @pytest.mark.parametrize("verbose", [False, True])
 def test_each_failure_emits_once_with_preserved_output(
     monkeypatch, capsys, tmp_path, stage, verbose

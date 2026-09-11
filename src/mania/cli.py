@@ -54,6 +54,9 @@ from mania.preprocessing.dataset_binding import (
     resolve_preprocessing_dataset_context,
 )
 from mania.preprocessing.input_manifest import load_preprocessing_input_manifest
+from mania.preprocessing.molecular_partner_catalog_io import (
+    write_molecular_partner_catalog,
+)
 from mania.preprocessing.pbc_audit import PBC_AUDIT_FILENAME, build_pbc_audit
 from mania.preprocessing.pbc_audit_io import write_pbc_audit
 from mania.preprocessing.physical_time_execution import (
@@ -86,6 +89,17 @@ from mania.preprocessing.runtime_metadata import (
     PREPROCESSING_RUNTIME_METADATA_PATH,
     PREPROCESSING_RUNTIME_METADATA_ROLE,
     build_preprocessing_runtime_metadata,
+)
+from mania.preprocessing.specialized_contact_execution import (
+    MolecularPartnerIdentificationExecutionError,
+    SpecializedContactComputationError,
+    build_specialized_contact_source_tables,
+    execute_preprocessing_specialized_contacts,
+    read_specialized_metadata_inputs,
+)
+from mania.preprocessing.specialized_contact_window_tables_io import (
+    write_protein_glycan_window_csv,
+    write_protein_lipid_window_csv,
 )
 from mania.preprocessing.trajectory_contacts import (
     ContactProgressCallback,
@@ -1531,7 +1545,6 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
 
     if options.enable_reference_comparison:
         inventory_outputs["reference_comparison"] = reference_comparison
-    ended_at_utc = _utc_now()
     metadata_passed = True
     technical_references: list[PortableArtifactReference] = []
     if temporal_execution is not None:
@@ -1602,6 +1615,78 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                     file=sys.stderr,
                 )
                 protein_edge_export_failed = True
+    specialized_export_failed = False
+    if (
+        temporal_execution is not None
+        and metadata_passed
+        and not protein_edge_export_failed
+    ):
+        failure_prefix = "Molecular partner metadata failed:"
+        try:
+            specialized_inputs = read_specialized_metadata_inputs(
+                manifest,
+                temporal_execution,
+                base_dir=options.manifest_path.parent,
+            )
+            if specialized_inputs:
+                inventory_outputs["molecular_partner_metadata_paths"] = tuple(
+                    (condition, path) for condition, path, _ in specialized_inputs
+                )
+                failure_prefix = "Molecular partner identification failed:"
+                specialized = execute_preprocessing_specialized_contacts(
+                    runtime_loading,
+                    temporal_execution,
+                    specialized_inputs,
+                )
+                failure_prefix = "Specialized contact aggregation failed:"
+                lipid_table, glycan_table = build_specialized_contact_source_tables(
+                    specialized,
+                    temporal_execution,
+                )
+                catalog = specialized.catalog()
+                failure_prefix = "Specialized contact export write failed:"
+                specialized_paths = []
+                for role, writer, artifact in (
+                    (
+                        "molecular_partner_catalog",
+                        write_molecular_partner_catalog,
+                        catalog,
+                    ),
+                    (
+                        "protein_lipid_contacts_by_window_source",
+                        write_protein_lipid_window_csv,
+                        lipid_table,
+                    ),
+                    (
+                        "protein_glycan_contacts_by_window_source",
+                        write_protein_glycan_window_csv,
+                        glycan_table,
+                    ),
+                ):
+                    written = cast(Any, writer)(
+                        artifact,
+                        plan.output_layout.output_dir,
+                        overwrite=options.overwrite,
+                    )
+                    if not written.passed:
+                        raise ValueError("Specialized output write failed")
+                    specialized_paths.append((role, written.output_path))
+                for role, path in specialized_paths:
+                    inventory_outputs[f"{role}_path"] = path
+                    technical_references.append(
+                        PortableArtifactReference(role, path.name)
+                    )
+        except Exception as exc:
+            if isinstance(exc, SpecializedContactComputationError):
+                failure_prefix = "Specialized contact computation failed:"
+            elif isinstance(exc, MolecularPartnerIdentificationExecutionError):
+                failure_prefix = "Molecular partner identification failed:"
+            print(
+                f"{failure_prefix} Specialized artifact stage could not complete.",
+                file=sys.stderr,
+            )
+            specialized_export_failed = True
+    ended_at_utc = _utc_now()
     try:
         runtime_metadata = build_preprocessing_runtime_metadata(
             run_id=options.run_name,
@@ -1664,10 +1749,14 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             metadata_passed = False
     inventory_references, inventory_passed = emit_inventory()
     try:
-        if protein_edge_export_failed:
+        if protein_edge_export_failed or specialized_export_failed:
             provenance = build_failed_preprocessing_run_provenance(
                 run_id=options.run_name,
-                failure_stage="protein_edge_window_export",
+                failure_stage=(
+                    "specialized_contact_export"
+                    if specialized_export_failed
+                    else "protein_edge_window_export"
+                ),
                 started_at_utc=started_at_utc,
                 ended_at_utc=ended_at_utc,
                 software_identity=software_identity,
@@ -1681,7 +1770,9 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 dataset_context=dataset_resolution.context,
                 artifact_references=_completed_preprocessing_artifact_references(
                     args, options, plan.output_layout
-                ) + tuple(technical_references) + inventory_references,
+                )
+                + tuple(technical_references)
+                + inventory_references,
             )
         else:
             provenance = build_completed_preprocessing_run_provenance(
@@ -1718,7 +1809,12 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     if not write_result.passed:
         print(f"Run provenance write failed: {write_result.error}", file=sys.stderr)
         return 1
-    if protein_edge_export_failed or not metadata_passed or not inventory_passed:
+    if (
+        protein_edge_export_failed
+        or specialized_export_failed
+        or not metadata_passed
+        or not inventory_passed
+    ):
         return 1
 
     _print_preprocessing_graph_export_progress(

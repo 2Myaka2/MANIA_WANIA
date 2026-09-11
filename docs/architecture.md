@@ -60,13 +60,19 @@ Stage 29.C protein-glycan per-frame geometry is implemented in the standalone pu
 reuses the accepted 29.B coordinate model and 29.A glycan/linkage evidence.
 Whole-partner minimum heavy-heavy distance uses an inclusive 4.5 Å cutoff without
 PBC correction. Raw carrier positives retain their distance and explicit covalent
-exclusion evidence for future ordinary summaries. Stage 29 remains incomplete.
-Stage 29.D is next. Window metrics, export, and workflow
-integration remain Stage 29.D scope; the main protein-only graph is unchanged.
-The Stage 28 checkpoint statement, "Stage 29 protein-lipid / protein-glycan
-dynamic layers are next", is historical roadmap context; the current 29.A/B/C
-implementation status is recorded above.
-Stage 30 canonical mapping remains future and mandatory before release.
+exclusion evidence. Stage 29.C is accepted.
+Stage 29.D integrates strict external molecular-partner metadata, runtime topology
+and atom authority, one shared selected-frame lipid/glycan pass, pure window
+aggregation, a combined partner catalog and two specialized source CSVs. The
+[window and artifact contract](specialized_contact_window_contract.md) defines
+resolved-frame occupancy, positive-only distances, covalent exclusion, sparse
+rows, inventory/provenance and offline Dataset/window/partner validation.
+Stage 29 is complete. The main protein-only graph and Stage 28 source table are
+unchanged; specialized artifacts remain preprocessing-only and pre-canonical.
+The standalone 29.A/B/C documents retain their accepted checkpoint context;
+current integrated Stage 29 status is recorded here and in the window contract.
+Stage 30 canonical mapping / biological annotations is next and has not started.
+Stage 30 mapping to UniProt O95436 remains mandatory before Dataset publication.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.

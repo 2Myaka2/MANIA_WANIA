@@ -6,7 +6,7 @@ from dataclasses import dataclass, field, replace
 from decimal import Context, Decimal, localcontext
 from functools import partial
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from mania.artifact_inventory import ArtifactInventoryEntry
 from mania.artifact_inventory_io import (
@@ -267,6 +267,14 @@ _PREPROCESSING_POLICY: dict[str, str | None] = {
     "pbc_audit": "pbc_audit",
     "temporal_execution": "temporal_execution",
     "protein_edges_by_window_source": "protein_edges_by_window_source",
+    "molecular_partner_metadata": "molecular_partner_metadata",
+    "molecular_partner_catalog": "molecular_partner_catalog",
+    "protein_lipid_contacts_by_window_source": (
+        "protein_lipid_contacts_by_window_source"
+    ),
+    "protein_glycan_contacts_by_window_source": (
+        "protein_glycan_contacts_by_window_source"
+    ),
 }
 _ANALYSIS_POLICY: dict[str, str | None] = {
     "preprocessing_manifest": None,
@@ -305,6 +313,10 @@ _VALIDATORS = {
     "pbc_audit": "read_pbc_audit",
     "temporal_execution": "read_preprocessing_temporal_execution",
     "protein_edges_by_window_source": "read_dataset_protein_edge_window_csv",
+    "molecular_partner_metadata": "read_molecular_partner_metadata",
+    "molecular_partner_catalog": "read_molecular_partner_catalog",
+    "protein_lipid_contacts_by_window_source": "read_protein_lipid_window_csv",
+    "protein_glycan_contacts_by_window_source": "read_protein_glycan_window_csv",
 }
 
 
@@ -362,6 +374,30 @@ def _invoke(
         if metadata.scope != scope or metadata.metadata_path != expected_path:
             raise RuntimeMetadataReadError("Runtime metadata scope/path mismatch.")
         return metadata
+    if contract == "molecular_partner_metadata":
+        from mania.preprocessing.molecular_partner_metadata_io import (
+            read_molecular_partner_metadata,
+        )
+
+        return read_molecular_partner_metadata(path)
+    if contract == "molecular_partner_catalog":
+        from mania.preprocessing.molecular_partner_catalog_io import (
+            read_molecular_partner_catalog,
+        )
+
+        return read_molecular_partner_catalog(path)
+    if contract == "protein_lipid_contacts_by_window_source":
+        from mania.preprocessing.specialized_contact_window_tables_io import (
+            read_protein_lipid_window_csv,
+        )
+
+        return read_protein_lipid_window_csv(path)
+    if contract == "protein_glycan_contacts_by_window_source":
+        from mania.preprocessing.specialized_contact_window_tables_io import (
+            read_protein_glycan_window_csv,
+        )
+
+        return read_protein_glycan_window_csv(path)
     if contract == "protein_edges_by_window_source":
         from mania.preprocessing.protein_edge_window_table_io import (
             read_dataset_protein_edge_window_csv,
@@ -414,6 +450,12 @@ def _invoke(
 
 def _failure_count(call: Callable[[], object]) -> int:
     from mania.preprocessing.dataset_binding import PreprocessingDatasetBindingError
+    from mania.preprocessing.molecular_partner_catalog_io import (
+        MolecularPartnerCatalogReadError,
+    )
+    from mania.preprocessing.molecular_partner_metadata_io import (
+        MolecularPartnerMetadataReadError,
+    )
     from mania.preprocessing.pbc_audit_io import PbcAuditReadError
     from mania.preprocessing.physical_time_execution_io import (
         PreprocessingTemporalExecutionReadError,
@@ -421,14 +463,26 @@ def _failure_count(call: Callable[[], object]) -> int:
     from mania.preprocessing.protein_edge_window_table_io import (
         DatasetProteinEdgeWindowCsvReadError,
     )
+    from mania.preprocessing.specialized_contact_window_tables_io import (
+        SpecializedContactWindowCsvReadError,
+    )
 
     try:
         result = call()
     except (
-        artifacts.ArtifactValidationError, OSError, UnicodeError, csv.Error,
-        RuntimeMetadataReadError, PbcAuditReadError,
-        DatasetParameterTableReadError, PreprocessingDatasetBindingError,
-        PreprocessingTemporalExecutionReadError, DatasetProteinEdgeWindowCsvReadError,
+        artifacts.ArtifactValidationError,
+        OSError,
+        UnicodeError,
+        csv.Error,
+        RuntimeMetadataReadError,
+        PbcAuditReadError,
+        DatasetParameterTableReadError,
+        PreprocessingDatasetBindingError,
+        PreprocessingTemporalExecutionReadError,
+        DatasetProteinEdgeWindowCsvReadError,
+        MolecularPartnerCatalogReadError,
+        MolecularPartnerMetadataReadError,
+        SpecializedContactWindowCsvReadError,
     ):
         # Public validator exceptions and ordinary file/read failures only.
         return 1
@@ -539,6 +593,15 @@ def validate_run_artifacts(
         DatasetProteinEdgeWindowCsvReadError,
     )
 
+    specialized_roles = (
+        "molecular_partner_catalog",
+        "protein_lipid_contacts_by_window_source",
+        "protein_glycan_contacts_by_window_source",
+    )
+    specialized_artifacts: dict[str, Any] = {}
+    metadata_entries = tuple(
+        e for e in entries if e.role == "molecular_partner_metadata"
+    )
     source_table: DatasetProteinEdgeWindowTable | None = None
     source_role = "protein_edges_by_window_source"
     source_path = f"{source_role}.csv"
@@ -641,6 +704,73 @@ def validate_run_artifacts(
                 "declared source tables require Dataset and temporal evidence.",
                 path=integrity.inventory_path,
             ))
+        metadata_names = tuple(e.condition for e in metadata_entries)
+        dataset_names = (
+            tuple(b.execution_condition for b in dataset_context.bindings)
+            if dataset_context is not None
+            else ()
+        )
+        if len(set(metadata_names)) != len(metadata_names) or any(
+            e.direction != "input"
+            or e.format != "json"
+            or e.condition not in dataset_names
+            or e.artifact_id
+            != (f"input:condition:{provenance.conditions.index(e.condition) + 1:04d}"
+                ":molecular_partner_metadata")
+            for e in metadata_entries
+            if provenance is not None
+        ):
+            issues.append(
+                UnifiedArtifactValidationIssue(
+                    "error",
+                    "molecular_partner_metadata_lineage_mismatch",
+                    "Molecular partner metadata requires unique "
+                    "condition-scoped Dataset inputs.",
+                    path=integrity.inventory_path,
+                )
+            )
+        for role in specialized_roles:
+            suffix = "json" if role == "molecular_partner_catalog" else "csv"
+            expected_path = f"{role}.{suffix}"
+            specialized_entries = tuple(e for e in entries if e.role == role)
+            refs = (
+                tuple(r for r in provenance.artifact_references if r.role == role)
+                if provenance is not None
+                else ()
+            )
+            required = (
+                bool(metadata_entries)
+                and provenance is not None
+                and provenance.status == "completed"
+            )
+            if (
+                (required and (len(specialized_entries) != 1 or len(refs) != 1))
+                or len(specialized_entries) > 1
+                or len(refs) > 1
+                or bool(specialized_entries) != bool(refs)
+                or (
+                    bool(specialized_entries or refs)
+                    and (not metadata_entries or not temporal_entries)
+                )
+                or any(
+                    e.direction != "output"
+                    or e.path != expected_path
+                    or e.format != suffix
+                    or e.condition is not None
+                    or e.artifact_id != f"output:{role}"
+                    for e in specialized_entries
+                )
+                or any(r.path != expected_path for r in refs)
+            ):
+                issues.append(
+                    UnifiedArtifactValidationIssue(
+                        "error",
+                        "specialized_contact_lineage_mismatch",
+                        "Successful metadata-bearing Dataset execution requires "
+                        "exactly one catalog and both source tables.",
+                        path=expected_path,
+                    )
+                )
         table_entries = tuple(e for e in entries if e.role == "dataset_parameter_table")
         uses_table = dataset_context is not None and any(
             b.source != "inline_manifest" for b in dataset_context.bindings
@@ -687,6 +817,11 @@ def validate_run_artifacts(
             )
         temporal_execution = execution
         return execution
+
+    def validate_specialized(role: str, path: Path) -> object:
+        artifact = _invoke(role, path, None)
+        specialized_artifacts[role] = artifact
+        return artifact
 
     def validate_source(path: Path) -> object:
         nonlocal source_table
@@ -915,6 +1050,8 @@ def validate_run_artifacts(
                 if contract == "temporal_execution"
                 else partial(validate_source, local(entry))
                 if contract == source_role
+                else partial(validate_specialized, contract, local(entry))
+                if contract in specialized_roles
                 else partial(validate_pbc, local(entry))
                 if contract == "pbc_audit"
                 else partial(_invoke, contract, local(entry), entry.condition),
@@ -943,6 +1080,50 @@ def validate_run_artifacts(
             "Source rows must match Dataset replica identity and temporal windows.",
             path=source_path,
         ))
+    if scope == "preprocessing" and specialized_artifacts:
+
+        def cross_check_specialized() -> object:
+            from mania.preprocessing.molecular_partner_catalog_io import (
+                MolecularPartnerCatalogReadError,
+                cross_check_specialized_source_tables,
+            )
+
+            try:
+                if temporal_execution is None or any(
+                    role not in specialized_artifacts for role in specialized_roles
+                ):
+                    raise ValueError("Missing specialized or temporal evidence")
+                cross_check_specialized_source_tables(
+                    specialized_artifacts[specialized_roles[0]],
+                    temporal_execution,
+                    specialized_artifacts[specialized_roles[1]],
+                    specialized_artifacts[specialized_roles[2]],
+                    tuple(
+                        e.condition for e in metadata_entries if e.condition is not None
+                    ),
+                )
+            except ValueError:
+                raise MolecularPartnerCatalogReadError(
+                    "Specialized context evidence mismatch."
+                ) from None
+            return specialized_artifacts
+
+        if _failure_count(cross_check_specialized):
+            records[:] = [
+                replace(r, status="failed", issue_count=r.issue_count + 1)
+                if r.role in specialized_roles and r.status == "passed"
+                else r
+                for r in records
+            ]
+            issues.append(
+                UnifiedArtifactValidationIssue(
+                    "error",
+                    "specialized_contact_context_mismatch",
+                    "Specialized catalog and source rows must match "
+                    "Dataset, temporal, and partner evidence.",
+                    path="molecular_partner_catalog.json",
+                )
+            )
     if temporal_execution is not None and pbc_audit is not None:
         counts = {c.condition: c.sampled_frame_count for c in pbc_audit.conditions}
         if any(

@@ -450,7 +450,10 @@ def test_inventory_failure_after_scientific_success_attempts_completed_provenanc
 
 
 # Stage 28 failures use real Dataset execution in the dedicated export suite.
-@pytest.mark.parametrize("stage", PREPROCESSING_RUN_FAILURE_STAGES[:-1])
+@pytest.mark.parametrize("stage", tuple(
+    stage for stage in PREPROCESSING_RUN_FAILURE_STAGES
+    if stage not in ("protein_edge_window_export", "specialized_contact_export")
+))
 @pytest.mark.parametrize("inventory_failure", [None, "build", "write"])
 def test_failed_workflow_inventory_preserves_primary_failure(
     monkeypatch,

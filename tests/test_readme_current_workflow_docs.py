@@ -227,7 +227,7 @@ def test_readme_stage25c_inventory_and_scientific_boundary() -> None:
     assert "FastAPI remains postponed" in text
 
 
-def test_current_status_documents_completed_stage28_and_stage29_boundary() -> None:
+def test_current_status_documents_completed_stage29_and_stage30_boundary() -> None:
     root = Path(__file__).resolve().parents[1]
     for name in (
         "README.md", "AGENTS.md", "docs/architecture.md", "docs/code_review.md",
@@ -255,26 +255,24 @@ def test_current_status_documents_completed_stage28_and_stage29_boundary() -> No
             assert "Stage 29.A molecular partner identification is implemented" in text
             assert "Stage 29.A is accepted" in text
             assert "Stage 29.B protein-lipid per-frame geometry is implemented" in text
-            assert "Stage 29 remains incomplete" in text
+            assert "Stage 29 remains incomplete" not in text
             assert "Stage 29.B is accepted" in text
             assert "Stage 29.C protein-glycan per-frame geometry is implemented" in text
-            assert "Stage 29.D is next" in text
+            assert "Stage 29.C is accepted" in text
+            assert "specialized_contact_window_contract.md" in text
             assert "protein_glycan_contact_contract.md" in text
             assert "molecular_partner_identification_contract.md" in text
             assert "protein_lipid_contact_contract.md" in text
             assert (
                 "No lipid/glycan contact calculations or workflow integration" in text
             )
-        else:
-            # These documents retain the accepted Stage 28 checkpoint wording;
-            # Stage 29.A/B/C update only architecture and their standalone contracts.
-            assert (
-                "Stage 29 protein-lipid / protein-glycan dynamic layers are next"
-                in text
-            )
-            assert "have not started" in text
+        assert "Stage 29 is complete" in text
         assert "pre-canonical" in text
-        assert "Stage 30 canonical mapping remains future" in text
+        assert (
+            "Stage 30 canonical mapping / biological annotations "
+            "is next and has not started"
+            in text
+        )
         # Preserve accepted A/B/C history alongside completed D integration.
         if name == "docs/architecture.md":
             assert re.search(r"Stage 28\.A is accepted\b", text)
@@ -327,7 +325,7 @@ def test_stage29a_contract_documents_identification_and_scientific_boundary():
         assert phrase in text
 
 
-def test_stage29b_contract_documents_current_status():
+def test_stage29b_contract_preserves_accepted_checkpoint_status():
     text = " ".join((REPO_ROOT / "docs/protein_lipid_contact_contract.md")
                     .read_text(encoding="utf-8").split())
     for phrase in (
@@ -343,7 +341,7 @@ def test_stage29b_contract_documents_current_status():
         assert phrase in text
 
 
-def test_stage29c_contract_documents_current_status():
+def test_stage29c_contract_preserves_accepted_checkpoint_status():
     text = " ".join((REPO_ROOT / "docs/protein_glycan_contact_contract.md")
                     .read_text(encoding="utf-8").split())
     for phrase in (
@@ -387,8 +385,11 @@ def test_readme_links_stage25f_reproducibility_and_software_reference() -> None:
 
 def test_readme_documents_completed_runtime_pbc_artifacts_and_boundary():
     text = " ".join(readme_text().split())
-    for path in ("<output>/runtime_metadata.json", "<output>/pbc_audit.json",
-                 "<output>/analysis/runtime_metadata.json"):
+    for path in (
+        "<output>/runtime_metadata.json",
+        "<output>/pbc_audit.json",
+        "<output>/analysis/runtime_metadata.json",
+    ):
         assert path in text
     assert "There is no new PBC CLI option" in text
     assert "`undeclared` automatically" in text
@@ -398,3 +399,38 @@ def test_readme_documents_completed_runtime_pbc_artifacts_and_boundary():
         in text
     )
     assert "docs/pbc_runtime_metadata.md" in text
+
+
+def test_stage29d_contract_documents_formulas_metadata_and_release_boundary():
+    text = " ".join(
+        (REPO_ROOT / "docs/specialized_contact_window_contract.md")
+        .read_text(encoding="utf-8")
+        .split()
+    )
+    for phrase in (
+        "Stage 29.D: PASS",
+        "Stage 29: COMPLETE",
+        "Classification is explicit metadata",
+        "MANIA never auto-classifies lipids or glycans from resname",
+        "Connectivity groups already classified components only",
+        "molecular_partner_metadata_path",
+        "mania.molecular_partner_metadata.v0.1",
+        "molecular_partner_catalog.json",
+        "protein_lipid_contacts_by_window_source.csv",
+        "protein_glycan_contacts_by_window_source.csv",
+        "compute_window_contact_episodes",
+        "ordinary positive frames only",
+        "standard_summary_excluded=True",
+        "There is no specialized `edge_weight`",
+        "header-only",
+        "PRE-CANONICAL",
+        "UniProt O95436",
+        "Stage 30",
+        "Stage 32",
+        "no internal minimum-image correction",
+        "condition",
+        "checksum",
+        "one",
+        "source-topology-local",
+    ):
+        assert phrase in text

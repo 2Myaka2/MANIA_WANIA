@@ -30,12 +30,26 @@ Stage 27 physical-time sampling/window engine is complete. Stage 27.A and 27.B
 are accepted; Stage 27.C integrates their plans into preprocessing. Stage 27 is complete.
 Stage 28 is complete: accepted 28.A episodes, 28.B aggregation, and 28.C source
 CSV contracts are integrated by 28.D with artifact lineage and unified validation.
-Stage 29 protein-lipid / protein-glycan dynamic layers are next and have not started.
-`protein_edges_by_window_source.csv` is pre-canonical; Stage 30 canonical mapping
-remains future and is mandatory before Dataset release publication.
+Stage 29 is complete: accepted 29.A/B/C identity and geometry are integrated by
+29.D with explicit metadata, specialized windows, source exports, and validation.
+Stage 30 canonical mapping / biological annotations is next and has not started.
+Protein-edge and specialized source CSVs remain pre-canonical; Stage 30 mapping
+to UniProt O95436 is mandatory before Dataset release publication.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.
+
+**Stage 29 — COMPLETE.** Dataset-aware manifest conditions may supply
+`molecular_partner_metadata_path` to an explicit JSON control file. MANIA never
+auto-classifies partners from residue names. One additional trajectory pass
+computes both specialized layers and produces `molecular_partner_catalog.json`,
+`protein_lipid_contacts_by_window_source.csv`, and
+`protein_glycan_contacts_by_window_source.csv`. Empty metadata writes a catalog
+and header-only tables without a specialized pass. Conditions without metadata
+retain their existing behavior. See the
+[specialized window and artifact contract](docs/specialized_contact_window_contract.md).
+Authoritative real NaPi2b partner metadata is still pending; generic Stage 29
+acceptance uses synthetic authoritative evidence and does not invent real labels.
 
 See the [Dataset identity contract](docs/dataset_identity_contract.md) and
 [parameter-table contract](docs/dataset_parameter_table_contract.md). A manifest
@@ -1380,7 +1394,10 @@ The planning-level scientific roadmap is:
 - **Stage 28 — Contact episodes/lifetime/publication protein-edge tables:** complete;
   accepted pure science, automatic source export, lineage, and unified validation.
   The source CSV is pre-canonical; Stage 30 mapping remains required before release.
-- **Stage 29 — Protein-lipid / protein-glycan dynamic layers:** next; not started.
+- **Stage 29 — Protein-lipid / protein-glycan dynamic layers:** complete; explicit
+  metadata, one shared geometry pass, sparse window metrics and pre-canonical
+  source artifacts with inventory/provenance and unified validation.
+- **Stage 30 — Canonical mapping / biological annotations:** next; not started.
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
 Stages 20–23 are now complete within their accepted boundaries. Stage 24.A

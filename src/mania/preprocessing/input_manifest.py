@@ -7,10 +7,18 @@ import math
 from collections.abc import Mapping
 from json import JSONDecodeError
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializerFunctionWrapHandler,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 from mania.dataset_identity import DatasetTrajectorySpec
 
@@ -50,6 +58,17 @@ class TrajectoryInputConfig(BaseModel):
     metadata: dict[str, str] = Field(default_factory=dict)
     dataset_spec: DatasetTrajectorySpec | None = None
     dataset_ref: DatasetTrajectoryReference | None = None
+    molecular_partner_metadata_path: Path | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_execution_metadata(
+        self, handler: SerializerFunctionWrapHandler
+    ) -> dict[str, Any]:
+        """Omit absent Stage 29 metadata in direct and manifest serialization."""
+        values: dict[str, Any] = handler(self)
+        if self.molecular_partner_metadata_path is None:
+            values.pop("molecular_partner_metadata_path", None)
+        return values
 
     @model_validator(mode="after")
     def validate_dataset_condition(self) -> Self:
@@ -85,6 +104,7 @@ class TrajectoryInputConfig(BaseModel):
     @field_validator(
         "topology_path",
         "reference_structure_path",
+        "molecular_partner_metadata_path",
         mode="before",
     )
     @classmethod
@@ -266,7 +286,13 @@ class PreprocessingInputManifest(BaseModel):
         payload = self.model_dump(
             mode="json",
             exclude={
-                "conditions": {"__all__": {"dataset_spec", "dataset_ref"}},
+                "conditions": {
+                    "__all__": {
+                        "dataset_spec",
+                        "dataset_ref",
+                        "molecular_partner_metadata_path",
+                    }
+                },
                 "dataset_parameter_table_path": True,
             },
         )
@@ -277,6 +303,10 @@ class PreprocessingInputManifest(BaseModel):
                 serialized["dataset_spec"] = config.dataset_spec.to_dict()
             if config.dataset_ref is not None:
                 serialized["dataset_ref"] = config.dataset_ref.model_dump(mode="json")
+            if config.molecular_partner_metadata_path is not None:
+                serialized["molecular_partner_metadata_path"] = str(
+                    config.molecular_partner_metadata_path
+                )
         if self.dataset_parameter_table_path is not None:
             payload["dataset_parameter_table_path"] = str(
                 self.dataset_parameter_table_path

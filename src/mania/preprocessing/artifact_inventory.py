@@ -57,6 +57,7 @@ def collect_preprocessing_input_file_specs(
     reference_graph_path: Path | None = None,
     include_reference_inputs: bool = False,
     parameter_table_local_path: Path | None = None,
+    molecular_partner_metadata_paths: tuple[tuple[str, Path], ...] = (),
 ) -> tuple[ArtifactInventoryFileSpec, ...]:
     """Describe all intended conditions, even when their runtime load failed."""
     if not isinstance(runtime_loading, PreprocessingGraphWorkflowRuntimeLoadingResult):
@@ -125,11 +126,31 @@ def collect_preprocessing_input_file_specs(
             "csv",
             None,
         ))
+    metadata_paths = dict(molecular_partner_metadata_paths)
+    if len(metadata_paths) != len(molecular_partner_metadata_paths) or not set(
+        metadata_paths
+    ) <= set(intended):
+        raise PreprocessingArtifactInventoryError(
+            "Invalid molecular partner metadata routing."
+        )
     for ordinal, result in enumerate(loaded.condition_results, 1):
         source = result.runtime_input
         identity = f"input:condition:{ordinal:04d}"
         prefix = f"inputs/conditions/{ordinal:04d}"
         condition = result.condition_name
+        if condition in metadata_paths:
+            metadata_path = metadata_paths[condition]
+            specs.append(
+                ArtifactInventoryFileSpec(
+                    f"{identity}:molecular_partner_metadata",
+                    "input",
+                    "molecular_partner_metadata",
+                    metadata_path,
+                    f"{prefix}/molecular_partner_metadata/{metadata_path.name}",
+                    "json",
+                    condition,
+                )
+            )
         add(
             f"{identity}:topology",
             "condition_topology",
@@ -181,6 +202,9 @@ def collect_preprocessing_output_file_specs(
     reference_comparison: PreprocessingGraphWorkflowReferenceComparisonResult
     | None = None,
     protein_edges_by_window_source_path: Path | None = None,
+    molecular_partner_catalog_path: Path | None = None,
+    protein_lipid_contacts_by_window_source_path: Path | None = None,
+    protein_glycan_contacts_by_window_source_path: Path | None = None,
     temporal_execution_path: Path | None = None,
     runtime_metadata_path: Path | None = None,
     pbc_audit_path: Path | None = None,
@@ -307,6 +331,25 @@ def collect_preprocessing_output_file_specs(
                 "Protein edge source output must use its exact preprocessing path."
             )
         add("protein_edges_by_window_source", protein_edges_by_window_source_path)
+    for role, specialized_path, suffix in (
+        ("molecular_partner_catalog", molecular_partner_catalog_path, "json"),
+        (
+            "protein_lipid_contacts_by_window_source",
+            protein_lipid_contacts_by_window_source_path,
+            "csv",
+        ),
+        (
+            "protein_glycan_contacts_by_window_source",
+            protein_glycan_contacts_by_window_source_path,
+            "csv",
+        ),
+    ):
+        if specialized_path is not None:
+            if specialized_path != output_root / f"{role}.{suffix}":
+                raise PreprocessingArtifactInventoryError(
+                    "Specialized output must use its exact preprocessing path."
+                )
+            add(role, specialized_path)
     for role, technical_path in (
         ("temporal_execution", temporal_execution_path),
         ("runtime_metadata", runtime_metadata_path),
@@ -332,6 +375,7 @@ def build_preprocessing_artifact_inventory(
     reference_graph_path: Path | None = None,
     include_reference_inputs: bool = False,
     parameter_table_local_path: Path | None = None,
+    molecular_partner_metadata_paths: tuple[tuple[str, Path], ...] = (),
     graph_export: PreprocessingGraphWorkflowGraphExportResult | None = None,
     analysis_input_export: PreprocessingGraphWorkflowAnalysisInputExportResult
     | None = None,
@@ -341,6 +385,9 @@ def build_preprocessing_artifact_inventory(
     reference_comparison: PreprocessingGraphWorkflowReferenceComparisonResult
     | None = None,
     protein_edges_by_window_source_path: Path | None = None,
+    molecular_partner_catalog_path: Path | None = None,
+    protein_lipid_contacts_by_window_source_path: Path | None = None,
+    protein_glycan_contacts_by_window_source_path: Path | None = None,
     temporal_execution_path: Path | None = None,
     runtime_metadata_path: Path | None = None,
     pbc_audit_path: Path | None = None,
@@ -353,6 +400,7 @@ def build_preprocessing_artifact_inventory(
         reference_graph_path=reference_graph_path,
         include_reference_inputs=include_reference_inputs,
         parameter_table_local_path=parameter_table_local_path,
+        molecular_partner_metadata_paths=molecular_partner_metadata_paths,
     )
     outputs = collect_preprocessing_output_file_specs(
         output_root=output_root,
@@ -362,6 +410,9 @@ def build_preprocessing_artifact_inventory(
         diagnostics=diagnostics,
         reference_comparison=reference_comparison,
         protein_edges_by_window_source_path=protein_edges_by_window_source_path,
+        molecular_partner_catalog_path=molecular_partner_catalog_path,
+        protein_lipid_contacts_by_window_source_path=protein_lipid_contacts_by_window_source_path,
+        protein_glycan_contacts_by_window_source_path=protein_glycan_contacts_by_window_source_path,
         temporal_execution_path=temporal_execution_path,
         runtime_metadata_path=runtime_metadata_path,
         pbc_audit_path=pbc_audit_path,

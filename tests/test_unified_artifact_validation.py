@@ -299,15 +299,23 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
     prep = preprocessing_adapter.collect_preprocessing_input_file_specs(
         runtime,
         parameter_table_local_path=tmp_path / "parameters.csv",
+        molecular_partner_metadata_paths=(("normal", tmp_path / "partners.json"),),
         include_reference_inputs=True,
         reference_nodes_path=options.reference_nodes_csv_path,
         reference_edges_path=options.reference_edges_csv_path,
         reference_graph_path=options.reference_graph_json_path,
     ) + preprocessing_adapter.collect_preprocessing_output_file_specs(
-        output_root=root, runtime_metadata_path=root / "runtime_metadata.json",
+        output_root=root,
+        runtime_metadata_path=root / "runtime_metadata.json",
         temporal_execution_path=root / "temporal_execution.json",
+        molecular_partner_catalog_path=root / "molecular_partner_catalog.json",
+        protein_lipid_contacts_by_window_source_path=root
+        / "protein_lipid_contacts_by_window_source.csv",
+        protein_glycan_contacts_by_window_source_path=root
+        / "protein_glycan_contacts_by_window_source.csv",
         protein_edges_by_window_source_path=root / "protein_edges_by_window_source.csv",
-        pbc_audit_path=root / "pbc_audit.json", **stages
+        pbc_audit_path=root / "pbc_audit.json",
+        **stages,
     )
     request = AnalyzeRequest(tmp_path / "in", root, ("normal", "tumor"))
     analysis = analysis_adapter.collect_analysis_input_file_specs(
@@ -319,7 +327,7 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
     )
     assert {e.role for e in prep} == unified._PREPROCESSING_POLICY.keys()
     assert {e.role for e in analysis} == unified._ANALYSIS_POLICY.keys()
-    assert len({e.role for e in prep}) == 26
+    assert len({e.role for e in prep}) == 30
     assert len({e.role for e in analysis}) == 17
 
 

@@ -631,3 +631,47 @@ def test_source_table_exact_supplied_path_order_checksum_and_no_scan(
             output_root=root,
             protein_edges_by_window_source_path=root / "other.csv",
         )
+
+
+def test_specialized_inputs_and_outputs_are_explicit_condition_scoped_specs(tmp_path):
+    from mania.preprocessing.artifact_inventory import (
+        collect_preprocessing_input_file_specs,
+        collect_preprocessing_output_file_specs,
+    )
+
+    runtime = make_runtime(tmp_path)
+    metadata = tmp_path / "custom-control.json"
+    entries = collect_preprocessing_input_file_specs(
+        runtime, molecular_partner_metadata_paths=(("normal", metadata),)
+    )
+    entry = next(e for e in entries if e.role == "molecular_partner_metadata")
+    assert entry.artifact_id == "input:condition:0001:molecular_partner_metadata"
+    assert entry.direction == "input" and entry.condition == "normal"
+    assert (
+        entry.path
+        == "inputs/conditions/0001/molecular_partner_metadata/custom-control.json"
+    )
+    assert entry.local_path == metadata
+    root = tmp_path / "out"
+    roles = (
+        "molecular_partner_catalog",
+        "protein_lipid_contacts_by_window_source",
+        "protein_glycan_contacts_by_window_source",
+    )
+    outputs = collect_preprocessing_output_file_specs(
+        output_root=root,
+        **{
+            f"{role}_path": root / f"{role}.{'json' if role == roles[0] else 'csv'}"
+            for role in roles
+        },
+    )
+    assert tuple(e.role for e in outputs) == roles
+    assert all(e.direction == "output" and e.condition is None for e in outputs)
+    with pytest.raises(ValueError):
+        collect_preprocessing_output_file_specs(
+            output_root=root, molecular_partner_catalog_path=root / "other.json"
+        )
+    with pytest.raises(ValueError):
+        collect_preprocessing_input_file_specs(
+            runtime, molecular_partner_metadata_paths=(("unknown", metadata),)
+        )
