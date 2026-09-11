@@ -253,15 +253,18 @@ def test_current_status_documents_completed_stage28_and_stage29_boundary() -> No
         assert "Stage 28 is complete" in text
         if name == "docs/architecture.md":
             assert "Stage 29.A molecular partner identification is implemented" in text
+            assert "Stage 29.A is accepted" in text
+            assert "Stage 29.B protein-lipid per-frame geometry is implemented" in text
             assert "Stage 29 remains incomplete" in text
-            assert "Stage 29.B protein-lipid contacts is next" in text
+            assert "Stage 29.C protein-glycan contacts is next" in text
             assert "molecular_partner_identification_contract.md" in text
+            assert "protein_lipid_contact_contract.md" in text
             assert (
                 "No lipid/glycan contact calculations or workflow integration" in text
             )
         else:
             # These documents retain the accepted Stage 28 checkpoint wording;
-            # Stage 29.A updates only architecture and its standalone contract.
+            # Stage 29.A/B update only architecture and their standalone contracts.
             assert (
                 "Stage 29 protein-lipid / protein-glycan dynamic layers are next"
                 in text
@@ -299,8 +302,12 @@ def test_stage29a_contract_documents_identification_and_scientific_boundary():
     for phrase in (
         "Stage 28 is complete",
         "Stage 29.A topology/entity identification is implemented",
+        "Stage 29.A is accepted",
+        "Stage 29.B protein-lipid per-frame geometry is implemented",
         "Stage 29 remains incomplete",
-        "Stage 29.B protein-lipid contacts is next",
+        "Stage 29.C protein-glycan contacts is next",
+        "consumes accepted lipid partner identity directly",
+        "without reclassifying or regrouping partners",
         "Classification is supplied metadata",
         "MANIA never classifies a lipid/glycan merely from resname patterns",
         "protein_residue_indexes",
@@ -311,6 +318,20 @@ def test_stage29a_contract_documents_identification_and_scientific_boundary():
         "no distance calculation",
         "main protein graph changes",
         "The main dynRIN remains protein-only",
+    ):
+        assert phrase in text
+
+
+def test_stage29b_contract_documents_current_status():
+    text = " ".join((REPO_ROOT / "docs/protein_lipid_contact_contract.md")
+                    .read_text(encoding="utf-8").split())
+    for phrase in (
+        "Stage 28 is complete",
+        "Stage 29.A is accepted",
+        "Stage 29.B protein-lipid per-frame geometry is implemented",
+        "Stage 29 remains incomplete",
+        "Stage 29.C protein-glycan contacts is next",
+        "Stage 29.D owns window aggregation",
     ):
         assert phrase in text
 

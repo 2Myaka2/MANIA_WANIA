@@ -48,11 +48,18 @@ Stage 29.A molecular partner identification is implemented as standalone pure
 `molecular_partner_entities.py` and `molecular_partner_identification.py` modules.
 The [identification contract](molecular_partner_identification_contract.md)
 separates supplied classification from connectivity/explicit grouping and retains
-glycan carrier/first-sugar evidence. Stage 29 remains incomplete. Stage 29.B
-protein-lipid contacts is next. No lipid/glycan contact calculations or workflow
-integration are implemented in 29.A; the main protein-only graph is unchanged.
-Stage 29 protein-lipid / protein-glycan dynamic layers are next after this
-identity prerequisite.
+glycan carrier/first-sugar evidence. Stage 29.A is accepted. No lipid/glycan
+contact calculations or workflow integration are implemented in 29.A.
+Stage 29.B protein-lipid per-frame geometry is implemented in the standalone pure
+`protein_lipid_contacts.py` module; its [contact contract](protein_lipid_contact_contract.md)
+consumes accepted 29.A identity without reclassification or regrouping. Explicit
+non-hydrogen atoms determine minimum Cartesian distance in Å at the inclusive
+6.0 Å cutoff, with no internal PBC correction. Stage 29 remains incomplete.
+Stage 29.C protein-glycan contacts is next. Window metrics, export, and workflow
+integration remain Stage 29.D scope; the main protein-only graph is unchanged.
+The Stage 28 checkpoint statement, "Stage 29 protein-lipid / protein-glycan
+dynamic layers are next", is historical roadmap context; the current 29.A/B
+implementation status is recorded above.
 Stage 30 canonical mapping remains future and mandatory before release.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;

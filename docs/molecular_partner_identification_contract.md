@@ -3,9 +3,12 @@
 ## Status
 
 Stage 28 is complete. Stage 29.A topology/entity identification is implemented
-as two standalone pure modules. Stage 29 remains incomplete. Stage 29.B
-protein-lipid contacts is next; Stage 29.C owns protein-glycan contacts and
-Stage 29.D owns window aggregation/export, workflow integration, and acceptance.
+as two standalone pure modules. Stage 29.A is accepted. Stage 29.B protein-lipid
+per-frame geometry is implemented (see the [contact contract](protein_lipid_contact_contract.md))
+and consumes accepted lipid partner identity directly, without reclassifying or
+regrouping partners. Stage 29 remains incomplete. Stage 29.C protein-glycan
+contacts is next after 29.B. Stage 29.D owns window aggregation/export,
+workflow integration, and acceptance.
 Lipid/glycan contact calculations and workflow integration do not exist in 29.A.
 
 The accepted Stage 28.D checkpoint is
@@ -16,9 +19,9 @@ unchanged. Stage 29.A implements its identity prerequisite without amending it.
 ## Why this layer exists
 
 Distance calculation is meaningless until molecular partner identity is defined.
-One partner may contain several source residues. Future Stage 29.B/C calculations
-need exact molecular membership, and glycans also need carrier/first-sugar
-evidence for the covalent-linkage exclusion.
+One partner may contain several source residues. Stage 29.B and future 29.C
+calculations need exact molecular membership, and glycans also need
+carrier/first-sugar evidence for the covalent-linkage exclusion.
 
 **Classification is supplied metadata; grouping establishes one molecular entity.**
 A `MolecularPartnerComponentClassification` states that one source residue
@@ -227,11 +230,12 @@ must not artificially enter ordinary occupancy/lifetime summaries. Stage 29.A
 records evidence only and performs no exclusion or contact calculations.
 
 All source component atoms are retained. Stage 29.A does not label atoms heavy
-or light; authoritative runtime atom data and heavy-atom filtering belong to
-29.B/C. The future calculations should not rediscover molecular membership.
+or light. Stage 29.B requires an explicit hydrogen flag with caller-supplied
+coordinates and never rediscovers molecular membership. Authoritative runtime
+atom typing adapters remain future Stage 29.D integration scope; 29.C is next.
 
-There is no distance calculation, contact cutoff implementation, contact
-presence, occupancy, episodes, lifetime, or distance statistic. There are no
+In Stage 29.A there is no distance calculation, contact cutoff implementation,
+contact presence, occupancy, episodes, lifetime, or distance statistic. There are no
 coordinates, trajectory access, MDAnalysis imports, PBC changes, or main protein
 graph changes. The main dynRIN remains protein-only. The modules perform no
 filesystem, Git/subprocess, clock, environment, or random-ID access.
