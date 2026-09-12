@@ -321,7 +321,10 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
             assert "Stage 32 remains incomplete" in text
             assert "Stage 32.A is accepted" in text
             assert "Stage 32.B hard-QC evaluator is implemented" in text
-            assert "Stage 32.C manual-review QC is next" in text
+            assert "Stage 32.B is accepted" in text
+            assert "Stage 32.C manual-review QC is implemented" in text
+            assert "Stage 32.D integration is next" in text
+            assert "dataset_review_qc.md" in text
         else:
             # These unchanged files retain the accepted Stage 31 checkpoint.
             assert "Stage 32 Dataset QC / exclusion is next and has not started" in text
@@ -362,7 +365,9 @@ def test_stage32a_contract_documents_current_status():
     assert "Stage 32 remains incomplete" in text
     assert "Stage 32.A is accepted" in text
     assert "Stage 32.B hard-QC evaluator is implemented" in text
-    assert "Stage 32.C manual-review QC is next" in text
+    assert "Stage 32.B is accepted" in text
+    assert "Stage 32.C manual-review QC is implemented" in text
+    assert "Stage 32.D integration is next" in text
     assert "without final release decisions" in text
 
 
@@ -719,11 +724,50 @@ def test_stage32b_hard_qc_documents_current_status_and_authority():
         "Stage 32.A is accepted",
         "Stage 32.B hard-QC evaluator is implemented",
         "Stage 32 remains incomplete",
-        "Stage 32.C manual-review QC is next",
+        "Stage 32.B is accepted",
+        "Stage 32.C manual-review QC is implemented",
+        "Stage 32.D integration is next",
         "ReplicaHardQCEvaluation",
         "Stage 32.D combines hard and review findings",
         "Equal atom counts do not prove",
         "header-only/zero-row protein-edge table",
         "Scientific PBC status remains unresolved",
+        "Only hard-pass replicas feed Stage 32.C reference cohorts",
+        "do not participate in manual-review distributions",
+        "Stage 32.C does not override hard failures",
+    ):
+        assert expected in text
+
+
+def test_stage32c_review_qc_documents_current_status_and_scientific_boundary():
+    text = " ".join(
+        (REPO_ROOT / "docs/dataset_review_qc.md").read_text(encoding="utf-8").split()
+    )
+    for expected in (
+        "Stage 31 is complete",
+        "Stage 32.A is accepted",
+        "Stage 32.B is accepted",
+        "Stage 32.C manual-review QC is implemented",
+        "Stage 32 remains incomplete",
+        "Stage 32.D integration is next",
+        "85fc62f17b47b94120b3e1e21c2c8af579396f60",
+        "Review is not exclusion",
+        "RMSDDriftAssessment",
+        "No numeric drift threshold",
+        "Exactly 1% passes",
+        "Missing windows/artifacts remain hard-QC territory",
+        "MAD is raw and unscaled",
+        "there is no 1.4826 factor",
+        "Boundary values pass",
+        "(dataset_id, system_id, engine, metric_family, metric_name)",
+        "Hard-failed replicas cannot influence the median, MAD or bands",
+        "no leave-one-out calculation",
+        "MAD_ZERO_REFERENCE_DISTRIBUTION_REVIEW",
+        "not_applicable_single_replica",
+        "Missing one metric is invalid incomplete input",
+        "No condition is required",
+        "Real Stage 32.C smoke is therefore skipped",
+        "does not mutate Stage 31",
+        "no new runtime dependency or version change",
     ):
         assert expected in text

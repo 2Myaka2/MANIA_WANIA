@@ -6,8 +6,10 @@ Stage 31 is complete. Stage 32.A QC contract is implemented in the standalone
 pure `mania.dataset_qc_contract` module. Stage 32 remains incomplete.
 Stage 32.A is accepted. Stage 32.B hard-QC evaluator is implemented; see the
 [hard-QC contract](dataset_hard_qc.md). It produces PASS/FAIL findings without
-final release decisions. Stage 32.C manual-review QC is next. Stage 32.D
-aggregation availability/report/provenance/validation integration remains later.
+final release decisions. Stage 32.B is accepted. Stage 32.C manual-review QC is
+implemented; the [review-QC evaluator](dataset_review_qc.md) evaluates review-only
+criteria into PASS/REVIEW findings. Stage 32.D integration is next and will add
+aggregation availability/report/provenance/validation integration.
 Dataset v1.0 remains unreleased.
 
 The accepted, committed Stage 31.D / Stage 31 COMPLETE checkpoint is
@@ -273,8 +275,9 @@ source resid equality or any other heuristic.
 
 ## Review-QC boundary
 
-32.C later calculates RMSD drift, empty protein-edge window fractions, medians,
-MAD, outlier bands and contact/basic-metric review evidence. None of these
+32.C converts supplied authoritative RMSD drift assessments and calculates empty
+protein-edge window fractions, raw medians/MAD and contact/basic-metric outlier
+bands from explicit evidence. It does not calculate RMSD. None of these
 calculations is implemented in 32.A. Review codes never cause automatic
 exclusion; only explicit manual resolution can clear or exclude a REVIEW.
 
@@ -283,8 +286,10 @@ exclusion; only explicit manual resolution can clear or exclude a REVIEW.
 `MAD_ZERO_REFERENCE_DISTRIBUTION_REVIEW` does not mean automatic outlier or
 automatic exclusion. It signals that MAD-based automatic classification is not
 valid for that reference distribution. Its automatic decision remains
-`pending_review`. Stage 32.C implements the evaluation later; 32.A does not
-calculate MAD or median ± 3 MAD bands.
+`pending_review`. Stage 32.C implements the evaluation: with at least two
+hard-passing replicas, only targets differing from the median receive this
+reason. Equal targets pass; single-replica comparison is not applicable and
+passes. 32.A does not calculate MAD or median ± 3 MAD bands.
 
 ### Empty protein-edge windows vs missing artifacts
 
@@ -295,7 +300,8 @@ protein edge remains distinct from missing input.
 
 `REQUIRED_ARTIFACT_MISSING` means a technically required artifact, table or
 schema input is missing. It must not mean that a valid sparse window contains
-no positive protein edge. Stage 32.C later evaluates the >1% empty-window rule.
+no positive protein edge. Stage 32.C evaluates the >1% empty-window rule;
+exactly 1% passes.
 
 ## Aggregation bridge and preserved science
 

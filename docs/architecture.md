@@ -129,9 +129,13 @@ provenance for manual REVIEW resolutions. Stage 32 remains incomplete.
 Stage 32.A is accepted. Stage 32.B hard-QC evaluator is implemented in the pure
 `dataset_hard_qc.py` module; see [Dataset hard QC](dataset_hard_qc.md). It consumes
 accepted existing evidence and emits PASS/FAIL findings without final release
-decisions. Stage 32.C manual-review QC is next. Stage 32.D will combine hard and
-review findings before applying release decisions and the Stage 31 availability
-bridge. No final QC workflow is implemented; Stage 32 remains incomplete.
+decisions. Stage 32.B is accepted. Stage 32.C manual-review QC is implemented in
+the pure `dataset_review_qc.py` module; see [Dataset review QC](dataset_review_qc.md).
+It consumes explicit drift/window/metric evidence and returns PASS/REVIEW findings
+only for hard-passing replicas, using isolated raw-MAD cohorts without condition
+grouping. Stage 32.D integration is next and will combine hard and review findings
+before applying release decisions and the Stage 31 availability bridge.
+No final QC workflow is implemented; Stage 32 remains incomplete.
 Historical Stage 30 checkpoint wording: "Stage 31 replica/system aggregation is
 next and has not started." The completed Stage 31 status above supersedes that record.
 Stage 33 publication export remains later. Stage 34 multi-engine pilot and

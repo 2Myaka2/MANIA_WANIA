@@ -5,7 +5,10 @@
 Stage 31 is complete. Stage 32.A is accepted at committed checkpoint
 `c5e3e29afce3a20c509eb4ddeae385aff7b92c89` on `FAIR`.
 Stage 32.B hard-QC evaluator is implemented in `mania.dataset_hard_qc`.
-Stage 32 remains incomplete. Stage 32.C manual-review QC is next.
+Stage 32.B is accepted at committed checkpoint
+`85fc62f17b47b94120b3e1e21c2c8af579396f60` on `FAIR`.
+Stage 32.C manual-review QC is implemented; see [Dataset review QC](dataset_review_qc.md).
+Stage 32 remains incomplete. Stage 32.D integration is next.
 Dataset v1.0 remains unreleased; version remains `mania-wania 0.1.0`.
 
 ## Hard-QC vs final release decision
@@ -24,6 +27,10 @@ still produce REVIEW findings. Stage 32.D combines hard and review findings and
 then applies the unchanged 32.A decision semantics to construct authoritative
 release decisions and bridge Stage 31 availability. 32.B does not call any
 release-decision helper or create `ReplicaQCDecisionRecord`.
+
+Only hard-pass replicas feed Stage 32.C reference cohorts. Hard-failed replicas
+do not participate in manual-review distributions and receive no 32.C review
+evaluation. Stage 32.C does not override hard failures.
 
 ## Existing evidence and API
 
@@ -290,4 +297,4 @@ any chosen replica. No atom-order, PBC, mapping or availability evidence is fabr
 There is no CLI, workflow/I/O, inventory/provenance, unified validation, Stage 31
 manifest or availability integration. Frozen scientific contract, Stage 27–31
 source, preprocessing, aggregation, annotations, PBC code, analysis, dependencies
-and WANIA remain unchanged. Stage 32.C is next; Stage 32 is incomplete.
+and WANIA remain unchanged. Stage 32.D integration is next; Stage 32 is incomplete.
