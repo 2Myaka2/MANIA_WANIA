@@ -96,7 +96,16 @@ canonical rows without changing their identity, metrics, or evidence. The
 preflight control validation, replica/system bindings, additive preprocessing
 exports, inventory/provenance and offline reconstruction through the same pure APIs.
 Stage 30 adds zero trajectory passes and leaves analysis/PCA unchanged.
-Stage 30 is complete. Stage 31 replica/system aggregation is next and has not started.
+Stage 30 is complete. Stage 31.A compatible canonical replica/window grouping is
+implemented in the standalone pure `replica_aggregation_contract.py` module.
+The [replica aggregation contract](replica_aggregation_contract.md) pins Stage 30
+canonical identity, isolates engines, compares requested physical windows, and
+requires explicit expected membership and availability. No replica statistics,
+QC exclusion, workflow integration or exports are implemented in 31.A.
+Stage 31 remains incomplete. Stage 31.B pure canonical protein-edge replica
+aggregation is next.
+Historical Stage 30 checkpoint wording: "Stage 31 replica/system aggregation is
+next and has not started." The Stage 31.A status above supersedes that record.
 Stage 33 publication export remains later. Explicit mapping to UniProt O95436
 and authoritative system annotations remain mandatory before Dataset publication.
 The 95% exclusion policy remains Stage 32.

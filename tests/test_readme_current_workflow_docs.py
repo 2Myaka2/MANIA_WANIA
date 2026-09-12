@@ -288,7 +288,23 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
             assert "Stage 30 adds zero trajectory passes" in text
             assert "carries no mapping authority" in text
         assert "Stage 30 is complete" in text
-        assert "Stage 31 replica/system aggregation is next and has not started" in text
+        if name == "docs/architecture.md":
+            assert (
+                "Stage 31.A compatible canonical replica/window grouping is implemented"
+                in text
+            )
+            assert "replica_aggregation_contract.md" in text
+            assert "Stage 31 remains incomplete" in text
+            assert (
+                "Stage 31.B pure canonical protein-edge replica aggregation is next"
+                in text
+            )
+            assert "Historical Stage 30 checkpoint wording" in text
+        else:
+            assert (
+                "Stage 31 replica/system aggregation is next and has not started"
+                in text
+            )
         assert "Stage 33 publication export remains later" in text
         # Preserve accepted A/B/C history alongside completed D integration.
         if name == "docs/architecture.md":
@@ -312,6 +328,17 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
         assert "Analysis Dataset-context propagation is outside Stage 26" in text
     assert "mania artifacts validate out --scope preprocessing" in readme_text()
     assert "docs/stage25_final_acceptance.md" in readme_text()
+
+
+def test_stage31a_contract_documents_current_status():
+    text = " ".join(
+        (REPO_ROOT / "docs/replica_aggregation_contract.md")
+        .read_text(encoding="utf-8").split()
+    )
+    assert "Stage 30 is complete" in text
+    assert "Stage 31.A group/window contract is implemented" in text
+    assert "Stage 31 remains incomplete" in text
+    assert "Stage 31.B pure canonical protein-edge replica aggregation is next" in text
 
 
 def test_stage30a_contract_documents_offline_reference_and_mapping_boundary():
