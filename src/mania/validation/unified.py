@@ -769,6 +769,182 @@ def _failure_count(call: Callable[[], object]) -> int:
     return 0
 
 
+def _validate_replica_aggregation(
+    run_root: Path,
+    integrity: ArtifactSetValidationReport,
+    input_artifact_paths: Mapping[str, Path] | None,
+) -> UnifiedArtifactValidationReport:
+    """Strict controls plus accepted A/B/C reconstruction, with no trajectory access."""
+    from mania.replica_aggregation_manifest_io import read_replica_aggregation_manifest
+    from mania.replica_aggregation_run import (
+        MANIFEST_ARTIFACT_ID,
+        MANIFEST_ROLE,
+        REPLICA_AGGREGATION_WORKFLOW,
+        collect_replica_aggregation_input_specs,
+        replica_aggregation_configuration,
+    )
+    from mania.replica_aggregation_tables_io import replica_aggregation_csv_bytes
+    from mania.replica_aggregation_workflow import (
+        FAMILIES,
+        execute_replica_aggregation_manifest,
+    )
+
+    records: list[SpecializedArtifactValidationRecord] = []
+    issues: list[UnifiedArtifactValidationIssue] = []
+    mappings = {} if input_artifact_paths is None else input_artifact_paths
+
+    def report() -> UnifiedArtifactValidationReport:
+        return UnifiedArtifactValidationReport(
+            integrity.scope, integrity.run_id, integrity.workflow, integrity,
+            tuple(records), tuple(issues),
+        )
+
+    def fail(code: str, message: str) -> None:
+        issues.append(UnifiedArtifactValidationIssue("error", code, message))
+
+    try:
+        inventory = read_artifact_inventory(run_root / integrity.inventory_path)
+        provenance = read_run_provenance(run_root / integrity.provenance_path)
+    except (ArtifactInventoryReadError, RunProvenanceReadError):
+        return report()
+    if inventory.workflow != REPLICA_AGGREGATION_WORKFLOW or (
+        provenance.workflow != REPLICA_AGGREGATION_WORKFLOW
+    ):
+        fail("aggregation_workflow_mismatch",
+             "Selected scope requires aggregation run.")
+    observations = {r.artifact_id: r for r in integrity.artifact_records}
+    entries = inventory.artifacts
+    if tuple((e.artifact_id, e.direction, e.role, e.path, e.condition,
+              e.byte_size, e.sha256) for e in entries) != tuple(
+        (r.artifact_id, r.direction, r.role, r.path, r.condition,
+         r.byte_size_expected, r.sha256_expected) for r in integrity.artifact_records
+    ):
+        fail("inventory_changed", "Inventory differs from integrity observations.")
+        return report()
+    readers: dict[str, Callable[[str | Path], Any]] = {
+        MANIFEST_ROLE: read_replica_aggregation_manifest,
+    }
+    readers.update({f.input_role: f.canonical_reader for f in FAMILIES})
+    readers.update({f.output_role: f.reader for f in FAMILIES})
+    models: dict[str, Any] = {}
+    for entry in entries:
+        observation = observations[entry.artifact_id]
+        reader = readers.get(entry.role)
+        validator = f"read_{entry.role}" if reader is not None else None
+        status: SpecializedValidationStatus
+        if observation.resolution_status == "not_resolved":
+            status = "not_resolved" if reader is not None else "unsupported"
+        elif observation.byte_size_matches is not True or (
+            observation.sha256_expected is not None
+            and observation.sha256_matches is not True
+        ):
+            status = "skipped_integrity_failure"
+        elif reader is None:
+            status = "unsupported"
+        else:
+            try:
+                path = run_root / entry.path if entry.direction == "output" else (
+                    mappings[entry.artifact_id]
+                )
+                models[entry.artifact_id] = reader(path)
+                status = "passed"
+            except (OSError, ValueError, TypeError, KeyError, OverflowError):
+                status = "failed"
+                fail("aggregation_artifact_invalid",
+                     "Strict aggregation reader failed.")
+        if status == "unsupported":
+            issues.append(UnifiedArtifactValidationIssue(
+                "warning", "unsupported_artifact_role",
+                "Artifact role has no supported aggregation validation policy.",
+                artifact_id=entry.artifact_id, path=entry.path,
+            ))
+        records.append(SpecializedArtifactValidationRecord(
+            entry.artifact_id, entry.role, entry.path, entry.condition, validator,
+            status, int(status == "failed"),
+        ))
+
+    manifest_entries = tuple(e for e in entries if e.role == MANIFEST_ROLE)
+    if len(manifest_entries) != 1 or any(
+        e.direction != "input" or e.artifact_id != MANIFEST_ARTIFACT_ID
+        for e in manifest_entries
+    ):
+        fail("aggregation_manifest_missing",
+             "Exactly one control manifest is required.")
+        return report()
+    manifest = models.get(MANIFEST_ARTIFACT_ID)
+    if manifest is None:
+        return report()
+    try:
+        specs = collect_replica_aggregation_input_specs(
+            manifest, mappings[MANIFEST_ARTIFACT_ID],
+        )
+        expected_inputs = tuple(
+            (s.artifact_id, s.direction, s.role, s.path, s.format, s.condition)
+            for s in specs
+        )
+        actual_inputs = tuple(
+            (e.artifact_id, e.direction, e.role, e.path, e.format, e.condition)
+            for e in entries if e.direction == "input"
+        )
+        if actual_inputs != expected_inputs:
+            raise ValueError("Manifest canonical input inventory mismatch")
+        if provenance.to_dict()["resolved_configuration"] != (
+            replica_aggregation_configuration(manifest, inventory.checksum_mode)
+        ):
+            raise ValueError("Manifest provenance configuration mismatch")
+        if provenance.conditions != tuple(dict.fromkeys(
+            g.spec.condition for g in manifest.groups if g.spec.condition is not None
+        )) or provenance.sampling_by_condition:
+            raise ValueError("Aggregation condition or sampling evidence mismatch")
+        output_refs = {
+            (e.role, e.path) for e in entries if e.direction == "output"
+        }
+        if output_refs != {
+            (r.role, r.path) for r in provenance.artifact_references
+            if r.role != "artifact_inventory"
+        }:
+            raise ValueError("Output inventory and provenance references must agree")
+        for family in FAMILIES:
+            declared = tuple(e for e in entries if e.role == family.output_role)
+            present = bool(getattr(manifest, f"{family.name}_canonical_table_paths"))
+            if len(declared) > 1 or (declared and not present):
+                raise ValueError("Unexpected aggregate family output")
+            if provenance.status == "completed" and len(declared) != int(present):
+                raise ValueError("Missing required aggregate output")
+            if not present and (run_root / family.filename).exists():
+                raise ValueError("Unexpected aggregate file for absent family")
+            if any(e.direction != "output" or e.path != family.filename
+                   or e.artifact_id != f"output:{family.name}" or e.format != "csv"
+                   or e.condition is not None for e in declared):
+                raise ValueError("Invalid aggregate output lineage")
+    except (ValueError, TypeError, KeyError):
+        fail("aggregation_lineage_mismatch",
+             "Aggregation controls and lineage disagree.")
+        return report()
+
+    # Failed runs may have incomplete outputs or invalid scientific group binding.
+    # Strict readers and generic integrity still apply to every declared artifact.
+    if provenance.status == "failed" or any(r.status != "passed" for r in records):
+        return report()
+    try:
+        mapped = {s.local_path: mappings[s.artifact_id]
+                  for s in specs if s.role != MANIFEST_ROLE}
+        expected = execute_replica_aggregation_manifest(manifest, mapped_paths=mapped)
+        for family in FAMILIES:
+            if family.name not in expected:
+                continue
+            model = expected[family.name]
+            if models[f"output:{family.name}"] != model or (
+                (run_root / family.filename).read_bytes()
+                != replica_aggregation_csv_bytes(model)
+            ):
+                raise ValueError("Aggregate differs from accepted API reconstruction")
+    except (OSError, ValueError, TypeError, KeyError, OverflowError):
+        fail("aggregation_reconstruction_mismatch",
+             "Aggregate models and bytes must equal accepted A/B/C reconstruction.")
+    return report()
+
+
 def validate_run_artifacts(
     run_root: Path,
     *,
@@ -779,6 +955,8 @@ def validate_run_artifacts(
     integrity = run_artifacts.validate_run_artifact_integrity(
         run_root, scope=scope, input_artifact_paths=input_artifact_paths
     )
+    if scope == "replica_aggregation":
+        return _validate_replica_aggregation(run_root, integrity, input_artifact_paths)
     records: list[SpecializedArtifactValidationRecord] = []
     issues: list[UnifiedArtifactValidationIssue] = []
 

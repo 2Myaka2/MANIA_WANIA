@@ -12,9 +12,12 @@ aggregation is implemented in the
 Stage 31.B is accepted. Stage 31.C specialized lipid/glycan replica aggregation
 is implemented with mandatory explicit specialized-partner correspondence in the
 [specialized aggregation contract](replica_specialized_aggregation_contract.md).
-Availability semantics remain unchanged. Stage 31 remains incomplete.
-Stage 31.D is next and owns Dataset workflow, aggregate
-exports, provenance/validation, and final Stage 31 acceptance.
+Availability semantics remain unchanged. Stage 31.C is accepted at checkpoint
+`dfe614cada83b91cf8015df89c1ea551960b1113`. Stage 31 is complete.
+Stage 31.D integrates accepted A/B/C without changing science through the
+[Dataset aggregation workflow](replica_aggregation_workflow.md), aggregate exports,
+portable inventory/provenance and unified reconstruction validation.
+Stage 32 Dataset QC / exclusion is next and has not started.
 
 ## Canonical-only boundary
 
@@ -259,8 +262,9 @@ protein edges. Sample standard deviation with ddof=1 is frozen in Stage 31.B;
 one available replica has `std_occupancy = None`. Stage 31.A itself chooses no
 estimator and its compatibility semantics remain unchanged. Stage 31.C applies
 the same statistics only to explicitly corresponding specialized partners.
-Stage 31.D is next.
-There is no workflow integration, CLI change, export, provenance/inventory
-change or unified-validation integration. Accepted Stage 27–30 science, source
+Stage 31.D now integrates these APIs in a separate Dataset workflow.
+Stage 31.A itself has no workflow integration, CLI change, export,
+provenance/inventory or unified-validation responsibilities; these belong to 31.D.
+Accepted Stage 27–30 science, source
 and canonical tables, annotations, PBC, analysis, dependencies, frozen Dataset
 scientific contract and WANIA remain unchanged.

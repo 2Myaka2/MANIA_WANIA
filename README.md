@@ -38,8 +38,14 @@ annotations, preprocessing lineage, and offline reconstruction validation.
 Protein-edge and specialized source CSVs remain pre-canonical and unchanged;
 canonical and annotated outputs are additive. Explicit mapping to UniProt O95436
 and authoritative system annotations remain mandatory before Dataset publication.
-Stage 31 replica/system aggregation is next and has not started.
-Stage 33 publication export remains later.
+Stage 31 is complete: accepted 31.A/B/C are integrated by 31.D through a
+separate canonical-only Dataset aggregation workflow, aggregate CSV exports,
+portable inventory/provenance, and exact offline reconstruction validation.
+Stage 32 Dataset QC / exclusion is next and has not started.
+Historical Stage 30 checkpoint: "Stage 31 replica/system aggregation is next
+and has not started." The completed Stage 31 status above supersedes this record.
+Stage 33 publication export remains later. Stage 34 multi-engine pilot and
+Stage 35 full production remain later.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.
@@ -100,7 +106,7 @@ are implemented through `validate_run_artifacts` and the technical validation CL
 mania artifacts validate out --scope preprocessing
 ```
 
-Scope is explicit (`preprocessing` or `analysis`). Optional repeated
+Scope is explicit (`preprocessing`, `analysis`, or `replica_aggregation`). Optional repeated
 `--input-artifact-path ARTIFACT_ID=PATH` mappings resolve external inputs; their
 paths are never guessed. `passed` and `partial` return exit 0; `failed` returns
 exit 1. A partial report has no technical errors but incomplete validation.
@@ -832,6 +838,23 @@ unchanged. No YAML or JSON analysis configuration exists.
 
 ## Current Backend Workflow
 
+Stage 31 provides a separate Dataset-level command after Stage 30 canonicalization:
+
+```bash
+mania dataset aggregate-replicas --manifest replica_aggregation_manifest.json \
+  --output aggregate_run --artifact-checksum-mode none
+```
+
+The manifest explicitly supplies expected replica states and specialized partner
+correspondence. No trajectory is reopened and no QC decision is inferred.
+Participating protein/lipid/glycan families each produce a deterministic aggregate
+CSV, including valid header-only outputs. Mean, median, sample SD (ddof=1),
+available/supporting counts and support fraction come from accepted Stage 31 APIs;
+one available replica has blank CSV SD. The separate run includes portable
+inventory and provenance. `mania artifacts validate aggregate_run --scope
+replica_aggregation` reconstructs results when every external input is mapped.
+See the [exact manifest, output and validation contract](docs/replica_aggregation_workflow.md).
+
 Accepted Stage 15 workflow:
 
 ```text
@@ -1406,9 +1429,13 @@ The planning-level scientific roadmap is:
   replica mapping, complete system annotations, additive canonical/annotated CSVs,
   portable lineage and offline reconstruction. See the
   [biological annotation and workflow contract](docs/biological_annotation_contract.md).
-- **Stage 31 — Replica/system aggregation:** next; not started.
-- **Stage 32 — QC/exclusion:** later; the 95% exclusion policy is not implemented.
-- **Stage 33 — Publication export:** later; Stage 30 outputs remain intermediates.
+- **Stage 31 — Replica/system aggregation:** complete; explicit canonical Dataset
+  controls, occupancy/support CSVs, inventory/provenance and exact reconstruction.
+  See the [replica aggregation workflow](docs/replica_aggregation_workflow.md).
+- **Stage 32 — Dataset QC/exclusion:** next; not started. The 95% policy is not implemented.
+- **Stage 33 — Publication export:** later; Stage 30/31 outputs remain intermediates.
+- **Stage 34 — Multi-engine pilot:** later.
+- **Stage 35 — Full production:** later.
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
 Stages 20–23 are now complete within their accepted boundaries. Stage 24.A

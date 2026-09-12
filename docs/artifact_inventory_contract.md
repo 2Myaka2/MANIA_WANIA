@@ -1,5 +1,33 @@
 # Artifact inventory contract v0.1
 
+## Stage 31.D — separate Dataset replica aggregation
+
+The [canonical replica aggregation workflow](replica_aggregation_workflow.md)
+uses the unchanged generic schema in a dedicated output root, with workflow
+`replica_aggregation` and inventory path `artifact_inventory.json`.
+Inputs are the manifest (`input:replica_aggregation_manifest`, role
+`replica_aggregation_manifest`) and every explicitly listed canonical file.
+Canonical input roles are `canonical_protein_edge_window_table`,
+`canonical_protein_lipid_window_table`, and `canonical_protein_glycan_window_table`.
+IDs are `input:protein:0001`, `input:lipid:0001`, `input:glycan:0001`, etc.
+Portable paths are `inputs/replica_aggregation_manifest.json` and
+`inputs/<family>/<ordinal>/canonical.csv`; ordinals follow manifest array order.
+Distinct files are never collapsed by identical contents. No directory scan occurs.
+
+Outputs use IDs `output:protein`, `output:lipid`, `output:glycan`; their roles are
+`canonical_protein_edge_replica_aggregation`,
+`canonical_protein_lipid_replica_aggregation`, and
+`canonical_protein_glycan_replica_aggregation`. Paths are the exact aggregate
+filenames in the workflow contract. Input-family presence requires its output
+even when header-only. Conditions are null because tables can contain many groups.
+
+`none` records exact byte sizes with null hashes and invokes no content hashing.
+`sha256` uses the accepted bounded streaming helper for every listed input and
+successfully produced aggregate CSV. Inventory excludes itself and run provenance.
+No PBC, runtime or temporal artifact is emitted. Failed runs inventory only
+successfully written outputs, with best-effort metadata if an input cannot be
+read. Earlier preprocessing inventory and all analysis roles remain unchanged.
+
 ## Status and purpose
 
 Stage 25.C.1 is implemented: immutable models, an explicit file-specification

@@ -1,5 +1,39 @@
 # Unified technical artifact validation — Stage 25.D
 
+## Stage 31.D — canonical replica aggregation scope
+
+The [separate Dataset aggregation workflow](replica_aggregation_workflow.md)
+uses explicit scope `replica_aggregation`, with root `artifact_inventory.json`
+and `run_provenance.json`. Generic schemas and preprocessing/analysis validation
+behavior are unchanged. All seven aggregation roles have strict readers:
+the manifest, three canonical input families and three aggregate output families.
+
+Complete technical validation requires explicit `ARTIFACT_ID=PATH` mappings for
+the manifest and every listed canonical file. It reads exact Stage 31.A/C control
+models and the accepted Stage 30.C canonical CSV models, reconstructs A groups,
+reruns accepted B/C aggregation, builds aggregate tables, and compares exact
+models **and deterministic CSV bytes**. Inputs may be relocated without the
+checkout or original source paths; no directory scan or trajectory access occurs.
+
+Completed runs require exactly one aggregate output for each participating input
+family, including header-only outputs, and no output for an absent family.
+Provenance configuration must equal the reconstructed manifest summary; output
+references and inventory agree in both directions. Wrong reference, group/window
+binding, explicit correspondence, statistics, required output or family lineage
+fails. Unmapped external inputs remain partial; mapped missing/invalid files
+fail. Failed-run outputs receive strict/integrity checks, but incomplete outputs
+and scientific reconstruction are not required for a failed execution.
+
+```bash
+mania artifacts validate aggregate_run --scope replica_aggregation \
+  --input-artifact-path input:replica_aggregation_manifest=replica_aggregation_manifest.json \
+  --input-artifact-path input:protein:0001=replica1/protein_edges_by_window_canonical.csv
+```
+
+Repeat canonical mappings for every manifest file and participating family.
+The complete synthetic acceptance run passes with `complete=true` and zero
+unknown current roles. Technical validation does not decide Stage 32 exclusions.
+
 ## Current status
 
 Stage 25 and Stage 26 are complete. Stage 27.C integrates physical-time

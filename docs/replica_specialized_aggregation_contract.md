@@ -6,8 +6,12 @@ Stage 30 is complete. Stage 31.A is accepted. Stage 31.B is accepted at checkpoi
 `aae168ab2fc253382c78c9f4248927a9dd4de33c`.
 Stage 31.C specialized lipid/glycan replica aggregation is implemented in
 [`replica_specialized_aggregation.py`](../src/mania/replica_specialized_aggregation.py).
-Stage 31 remains incomplete. Stage 31.D is next: Dataset workflow, aggregate
-exports, provenance/validation and final Stage 31 acceptance.
+Stage 31.C is accepted at checkpoint
+`dfe614cada83b91cf8015df89c1ea551960b1113`. Stage 31 is complete.
+Stage 31.D integrates accepted A/B/C without changing science through the
+[Dataset aggregation workflow](replica_aggregation_workflow.md), aggregate exports,
+portable inventory/provenance and unified reconstruction validation.
+Stage 32 Dataset QC / exclusion is next and has not started.
 
 ## Canonical protein boundary
 
@@ -201,8 +205,9 @@ indexes are added to aggregate rows.
 
 No Stage 32 QC, 95% policy, exclusions, outlier thresholds, RMSD, MAD or annotation
 filtering is performed. Explicit upstream member availability is respected.
-No automatic partner matching, workflow/CLI integration, CSV/export, manifest,
-provenance/inventory or unified-validation work is included. The API uses no
+No automatic partner matching is included. The pure Stage 31.C module has no
+workflow/CLI, CSV/export, manifest or provenance/validation responsibilities;
+these are provided separately by Stage 31.D. The API uses no
 filesystem, network, Git, subprocess, clock, trajectory or MDAnalysis operations.
 Stage 27–30 science, 31.A/B source, canonical per-replica tables, frozen Dataset
 scientific contract, dependencies, PBC, analysis and WANIA remain unchanged.

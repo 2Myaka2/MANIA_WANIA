@@ -294,7 +294,7 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
                 in text
             )
             assert "replica_aggregation_contract.md" in text
-            assert "Stage 31 remains incomplete" in text
+            assert "Stage 31 is complete" in text
             assert (
                 "Stage 31.B pure canonical protein-edge replica aggregation "
                 "is implemented"
@@ -307,14 +307,14 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
                 in text
             )
             assert "Stage 31.B is accepted" in text
-            assert "Stage 31.D is next" in text
+            assert "Stage 31.C is accepted" in text
             assert "replica_specialized_aggregation_contract.md" in text
             assert "Historical Stage 30 checkpoint wording" in text
         else:
-            assert (
-                "Stage 31 replica/system aggregation is next and has not started"
-                in text
-            )
+            assert "Stage 31 is complete" in text
+        assert "Stage 32 Dataset QC / exclusion is next and has not started" in text
+        assert "Stage 34 multi-engine pilot" in text
+        assert "Stage 35 full production remain later" in text
         assert "Stage 33 publication export remains later" in text
         # Preserve accepted A/B/C history alongside completed D integration.
         if name == "docs/architecture.md":
@@ -347,7 +347,7 @@ def test_stage31a_contract_documents_current_status():
     )
     assert "Stage 30 is complete" in text
     assert "Stage 31.A group/window contract is implemented" in text
-    assert "Stage 31 remains incomplete" in text
+    assert "Stage 31 is complete" in text
     assert "Stage 31.A is accepted" in text
     assert (
         "Stage 31.B pure canonical protein-edge replica aggregation is implemented"
@@ -358,7 +358,7 @@ def test_stage31a_contract_documents_current_status():
         in text
     )
     assert "Stage 31.B is accepted" in text
-    assert "Stage 31.D is next" in text
+    assert "Stage 31.C is accepted" in text
 
 
 def test_stage31b_contract_documents_current_status():
@@ -372,13 +372,13 @@ def test_stage31b_contract_documents_current_status():
         "Stage 31.B pure canonical protein-edge replica aggregation is implemented"
         in text
     )
-    assert "Stage 31 remains incomplete" in text
+    assert "Stage 31 is complete" in text
     assert (
         "Stage 31.C specialized lipid/glycan replica aggregation is implemented"
         in text
     )
     assert "Stage 31.B is accepted" in text
-    assert "Stage 31.D is next" in text
+    assert "Stage 31.C is accepted" in text
 
 
 def test_stage31c_contract_documents_current_status():
@@ -393,8 +393,39 @@ def test_stage31c_contract_documents_current_status():
         "Stage 31.C specialized lipid/glycan replica aggregation is implemented"
         in text
     )
-    assert "Stage 31 remains incomplete" in text
-    assert "Stage 31.D is next" in text
+    assert "Stage 31 is complete" in text
+    assert "Stage 31.C is accepted" in text
+
+
+def test_stage31d_workflow_documents_explicit_controls_and_reconstruction(tmp_path):
+    from mania.replica_aggregation_manifest_io import read_replica_aggregation_manifest
+
+    text = (REPO_ROOT / "docs/replica_aggregation_workflow.md").read_text(
+        encoding="utf-8"
+    )
+    normalized = " ".join(text.split())
+    for phrase in (
+        "Stage 31.D: PASS", "Stage 31: COMPLETE", "zero trajectory passes",
+        "canonical", "explicit control metadata", "ddof=1", "empty CSV cell",
+        "Stage 32", "No directory scan", "exact models", "deterministic CSV bytes",
+        "Input family present", "condition=null", "header-only", "MDAnalysis",
+        "protein_edges_by_window_canonical_replica_aggregation.csv",
+        "protein_lipid_contacts_by_window_canonical_replica_aggregation.csv",
+        "protein_glycan_contacts_by_window_canonical_replica_aggregation.csv",
+        "dfe614cada83b91cf8015df89c1ea551960b1113",
+    ):
+        assert phrase in normalized
+    example_section = text.split("## Exact synthetic manifest example", 1)[1]
+    example = re.search(r"```json\n(.*?)\n```", example_section, re.DOTALL)
+    assert example is not None
+    path = tmp_path / "replica_aggregation_manifest.json"
+    path.write_text(example.group(1), encoding="utf-8")
+    manifest = read_replica_aggregation_manifest(path)
+    assert manifest.groups[0].spec.condition is None
+    assert len(manifest.groups[0].lipid_correspondences.correspondences) == 1
+    assert len(manifest.groups[0].glycan_correspondences.correspondences) == 1
+    assert "mania dataset aggregate-replicas" in readme_text()
+    assert "docs/replica_aggregation_workflow.md" in readme_text()
 
 
 def test_stage30a_contract_documents_offline_reference_and_mapping_boundary():

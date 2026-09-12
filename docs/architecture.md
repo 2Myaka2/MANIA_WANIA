@@ -114,12 +114,18 @@ The [specialized aggregation contract](replica_specialized_aggregation_contract.
 requires explicit correspondence of topology-local partners across every
 available replica before sparse absence contributes zero. It uses the same
 occupancy/support statistics and sample SD as 31.B, with no distance, lifetime
-or contact-frame aggregation. Stage 31 remains incomplete. Stage 31.D is next:
-Dataset workflow integration, aggregate exports, provenance/validation and final
-acceptance. QC exclusion decisions remain Stage 32.
+or contact-frame aggregation. Stage 31.C is accepted at checkpoint
+`dfe614cada83b91cf8015df89c1ea551960b1113`. Stage 31 is complete.
+Stage 31.D integrates these unchanged APIs in the separate Dataset-level
+[replica aggregation workflow](replica_aggregation_workflow.md), with a strict
+control manifest, canonical-only inputs, three occupancy aggregate CSVs,
+portable inventory/provenance and exact model/byte reconstruction validation.
+Stage 31 adds zero trajectory passes. Stage 32 Dataset QC / exclusion is next
+and has not started.
 Historical Stage 30 checkpoint wording: "Stage 31 replica/system aggregation is
-next and has not started." The Stage 31.A/B/C status above supersedes that record.
-Stage 33 publication export remains later. Explicit mapping to UniProt O95436
+next and has not started." The completed Stage 31 status above supersedes that record.
+Stage 33 publication export remains later. Stage 34 multi-engine pilot and
+Stage 35 full production remain later. Explicit mapping to UniProt O95436
 and authoritative system annotations remain mandatory before Dataset publication.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;

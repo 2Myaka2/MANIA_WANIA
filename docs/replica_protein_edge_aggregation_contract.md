@@ -12,8 +12,12 @@ Stage 31.C specialized lipid/glycan replica aggregation is implemented with the
 same occupancy/support statistics for explicitly corresponding partners.
 Partner correspondence is mandatory; see the
 [specialized aggregation contract](replica_specialized_aggregation_contract.md).
-Stage 31 remains incomplete. Stage 31.D is next and owns Dataset workflow,
-aggregate exports, provenance/validation and final Stage 31 acceptance.
+Stage 31.C is accepted at checkpoint
+`dfe614cada83b91cf8015df89c1ea551960b1113`. Stage 31 is complete.
+Stage 31.D integrates accepted A/B/C without changing science through the
+[Dataset aggregation workflow](replica_aggregation_workflow.md), aggregate exports,
+portable inventory/provenance and unified reconstruction validation.
+Stage 32 Dataset QC / exclusion is next and has not started.
 
 ## Canonical-only input and identity
 

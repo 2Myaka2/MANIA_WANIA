@@ -38,8 +38,12 @@ annotations, preprocessing lineage, and offline reconstruction validation.
 Protein-edge and specialized source CSVs remain pre-canonical and unchanged;
 canonical and annotated outputs are additive. Explicit mapping to UniProt O95436
 and authoritative system annotations remain mandatory before Dataset publication.
-Stage 31 replica/system aggregation is next and has not started.
-Stage 33 publication export remains later.
+Stage 31 is complete: accepted 31.A/B/C are integrated by 31.D through a
+separate canonical-only Dataset aggregation workflow, aggregate CSV exports,
+portable inventory/provenance, and exact offline reconstruction validation.
+Stage 32 Dataset QC / exclusion is next and has not started.
+Stage 33 publication export remains later. Stage 34 multi-engine pilot and
+Stage 35 full production remain later.
 The 95% exclusion policy remains Stage 32.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.

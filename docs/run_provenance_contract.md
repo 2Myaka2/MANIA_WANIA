@@ -1,5 +1,30 @@
 # MANIA Run-Provenance Contract
 
+## Stage 31.D — separate Dataset replica aggregation
+
+The [replica aggregation workflow](replica_aggregation_workflow.md) uses the
+unchanged `RunProvenance` schema at its dedicated root's `run_provenance.json`.
+Workflow is `replica_aggregation`. Resolved configuration records workflow,
+portable manifest path `inputs/replica_aggregation_manifest.json`, exact pinned
+`canonical_reference` (`reference_id`, `sequence_sha256`), `group_count`,
+`input_families` (protein/lipid/glycan booleans), `scientific_conditions`
+(including null labels), and `artifact_checksum_mode`. Full controls and
+scientific rows are not embedded; the manifest is an inventoried input.
+
+Generic `conditions` contains only explicitly supplied non-null labels in group
+order; a NAMD null condition is preserved in configuration, manifest and CSV.
+No label is invented. Sampling is empty. References contain only roles and
+portable paths for successfully written aggregate CSVs and inventory, with no
+checksum duplication. No PBC or trajectory runtime claim is added. Prior
+preprocessing provenance and analysis provenance/roles remain unchanged.
+
+All scientific models are built before exports. Scientific failure writes no
+new aggregate CSV; an export failure may retain earlier atomically written
+outputs. Best-effort failed provenance references only successful writes and
+includes a portable issue. Incomplete outputs are not completion requirements
+for a failed run. A successful scientific build followed by technical metadata
+failure returns failure, never a completed CLI summary.
+
 ## Status and purpose
 
 Stage 25.B.1 is implemented: the contract and validated in-memory model are
