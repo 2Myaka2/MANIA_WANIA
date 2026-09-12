@@ -312,7 +312,17 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
             assert "Historical Stage 30 checkpoint wording" in text
         else:
             assert "Stage 31 is complete" in text
-        assert "Stage 32 Dataset QC / exclusion is next and has not started" in text
+        if name == "docs/architecture.md":
+            assert (
+                "Stage 32.A QC model, severity and release-decision contract "
+                "is implemented" in text
+            )
+            assert "dataset_qc_contract.md" in text
+            assert "Stage 32 remains incomplete" in text
+            assert "Stage 32.B hard QC is next" in text
+        else:
+            # These unchanged files retain the accepted Stage 31 checkpoint.
+            assert "Stage 32 Dataset QC / exclusion is next and has not started" in text
         assert "Stage 34 multi-engine pilot" in text
         assert "Stage 35 full production remain later" in text
         assert "Stage 33 publication export remains later" in text
@@ -338,6 +348,17 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
         assert "Analysis Dataset-context propagation is outside Stage 26" in text
     assert "mania artifacts validate out --scope preprocessing" in readme_text()
     assert "docs/stage25_final_acceptance.md" in readme_text()
+
+
+def test_stage32a_contract_documents_current_status():
+    text = " ".join(
+        (REPO_ROOT / "docs/dataset_qc_contract.md")
+        .read_text(encoding="utf-8").split()
+    )
+    assert "Stage 31 is complete" in text
+    assert "Stage 32.A QC contract is implemented" in text
+    assert "Stage 32 remains incomplete" in text
+    assert "Stage 32.B hard QC is next" in text
 
 
 def test_stage31a_contract_documents_current_status():

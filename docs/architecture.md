@@ -120,8 +120,14 @@ Stage 31.D integrates these unchanged APIs in the separate Dataset-level
 [replica aggregation workflow](replica_aggregation_workflow.md), with a strict
 control manifest, canonical-only inputs, three occupancy aggregate CSVs,
 portable inventory/provenance and exact model/byte reconstruction validation.
-Stage 31 adds zero trajectory passes. Stage 32 Dataset QC / exclusion is next
-and has not started.
+Stage 31 adds zero trajectory passes.
+Stage 32.A QC model, severity and release-decision contract is implemented in
+the pure `dataset_qc_contract.py` module; see the
+[Dataset QC contract](dataset_qc_contract.md). QC status and release decisions
+are separate, with reason/finding/evidence traceability and explicit reviewer
+provenance for manual REVIEW resolutions. Stage 32 remains incomplete.
+Stage 32.B hard QC is next; QC evaluation and the Stage 31 availability bridge
+are not implemented in 32.A.
 Historical Stage 30 checkpoint wording: "Stage 31 replica/system aggregation is
 next and has not started." The completed Stage 31 status above supersedes that record.
 Stage 33 publication export remains later. Stage 34 multi-engine pilot and
