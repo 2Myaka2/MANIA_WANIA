@@ -4,8 +4,10 @@
 
 Stage 31 is complete. Stage 32.A QC contract is implemented in the standalone
 pure `mania.dataset_qc_contract` module. Stage 32 remains incomplete.
-Stage 32.B hard QC is next. Stage 32.C manual-review evaluation and Stage 32.D
-aggregation availability/report/provenance/validation integration remain later.
+Stage 32.A is accepted. Stage 32.B hard-QC evaluator is implemented; see the
+[hard-QC contract](dataset_hard_qc.md). It produces PASS/FAIL findings without
+final release decisions. Stage 32.C manual-review QC is next. Stage 32.D
+aggregation availability/report/provenance/validation integration remains later.
 Dataset v1.0 remains unreleased.
 
 The accepted, committed Stage 31.D / Stage 31 COMPLETE checkpoint is
@@ -245,12 +247,14 @@ No JSON readers/writers or QC files are added in 32.A.
 
 ## Hard-QC boundary
 
-32.B later evaluates hard criteria from existing evidence. 32.A only freezes
-reason/status semantics. It reads no topology, trajectory, temporal execution,
+32.B evaluates hard criteria from existing evidence into PASS/FAIL findings.
+It does not construct final release decisions; 32.D combines these findings with
+32.C review findings before applying the unchanged 32.A decision semantics.
+32.A only freezes reason/status semantics. It reads no topology, trajectory, temporal execution,
 PBC audit, mapping table or aggregate table, and performs no occupancy or
 duplicate-row scanning.
 
-The future Stage 32.B production-frame coverage rule is: coverage below 95%
+The Stage 32.B production-frame coverage rule is: coverage below 95%
 produces hard FAIL `PRODUCTION_FRAME_COVERAGE_BELOW_95_PERCENT`. Coverage uses
 accepted Stage 27 requested/resolved physical-sampling semantics. A missing
 expected sample remains missing, not negative. No coverage calculation occurs
@@ -258,7 +262,7 @@ in 32.A. The mandatory synthetic smoke supplies the text observation `0.94`
 and threshold `>=0.95` for `production_frame_coverage`; the supplied FAIL finding
 produces automatic excluded with reason/evidence traceability.
 
-`PROTEIN_PBC_BROKEN` is hard FAIL. Later Stage 32 evaluates already-existing
+`PROTEIN_PBC_BROKEN` is hard FAIL. Stage 32.B evaluates already-existing
 evidence only; it does not repair PBC, unwrap or center coordinates, or apply
 internal minimum-image correction (MIC). The broader scientific PBC status
 remains unresolved.

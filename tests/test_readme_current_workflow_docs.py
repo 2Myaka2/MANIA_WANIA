@@ -319,7 +319,9 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
             )
             assert "dataset_qc_contract.md" in text
             assert "Stage 32 remains incomplete" in text
-            assert "Stage 32.B hard QC is next" in text
+            assert "Stage 32.A is accepted" in text
+            assert "Stage 32.B hard-QC evaluator is implemented" in text
+            assert "Stage 32.C manual-review QC is next" in text
         else:
             # These unchanged files retain the accepted Stage 31 checkpoint.
             assert "Stage 32 Dataset QC / exclusion is next and has not started" in text
@@ -358,7 +360,10 @@ def test_stage32a_contract_documents_current_status():
     assert "Stage 31 is complete" in text
     assert "Stage 32.A QC contract is implemented" in text
     assert "Stage 32 remains incomplete" in text
-    assert "Stage 32.B hard QC is next" in text
+    assert "Stage 32.A is accepted" in text
+    assert "Stage 32.B hard-QC evaluator is implemented" in text
+    assert "Stage 32.C manual-review QC is next" in text
+    assert "without final release decisions" in text
 
 
 def test_stage31a_contract_documents_current_status():
@@ -703,3 +708,22 @@ def test_stage30d_complete_annotation_and_workflow_contract():
         "annotated_window_tables_io",
     ):
         assert module in text
+
+
+def test_stage32b_hard_qc_documents_current_status_and_authority():
+    text = " ".join(
+        (REPO_ROOT / "docs/dataset_hard_qc.md").read_text(encoding="utf-8").split()
+    )
+    for expected in (
+        "Stage 31 is complete",
+        "Stage 32.A is accepted",
+        "Stage 32.B hard-QC evaluator is implemented",
+        "Stage 32 remains incomplete",
+        "Stage 32.C manual-review QC is next",
+        "ReplicaHardQCEvaluation",
+        "Stage 32.D combines hard and review findings",
+        "Equal atom counts do not prove",
+        "header-only/zero-row protein-edge table",
+        "Scientific PBC status remains unresolved",
+    ):
+        assert expected in text
