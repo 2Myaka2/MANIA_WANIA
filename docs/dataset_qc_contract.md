@@ -3,13 +3,15 @@
 ## Status
 
 Stage 31 is complete. Stage 32.A QC contract is implemented in the standalone
-pure `mania.dataset_qc_contract` module. Stage 32 remains incomplete.
+pure `mania.dataset_qc_contract` module. Its accepted models are unchanged.
 Stage 32.A is accepted. Stage 32.B hard-QC evaluator is implemented; see the
 [hard-QC contract](dataset_hard_qc.md). It produces PASS/FAIL findings without
 final release decisions. Stage 32.B is accepted. Stage 32.C manual-review QC is
 implemented; the [review-QC evaluator](dataset_review_qc.md) evaluates review-only
-criteria into PASS/REVIEW findings. Stage 32.D integration is next and will add
-aggregation availability/report/provenance/validation integration.
+criteria into PASS/REVIEW findings. Stage 32.C is accepted. Stage 32.D integration
+is complete in the [Dataset QC workflow](dataset_qc_workflow.md), the authority
+and orchestration layer for aggregation availability, reports, provenance and
+validation. Final decisions reuse accepted models unchanged. Stage 32 is complete.
 Dataset v1.0 remains unreleased.
 
 The accepted, committed Stage 31.D / Stage 31 COMPLETE checkpoint is
@@ -21,8 +23,8 @@ is unchanged. This document adds QC contracts, not scientific evaluation.
 
 Stage 31 accepts explicit `available`, `unavailable` and `excluded` aggregation
 control states. It does not decide why a replica is excluded. Stage 32 is the
-first layer that owns authoritative QC exclusion reasoning. In future production
-Dataset execution, every `excluded` state must trace to an authoritative Stage 32
+first layer that owns authoritative QC exclusion reasoning. In Stage 32.D production
+Dataset execution, every derived `excluded` state must trace to an authoritative Stage 32
 decision with a reason and supporting evidence. Arbitrary anonymous/manual
 exclusion is forbidden in that production path.
 
@@ -64,8 +66,9 @@ is not a resolution.
 
 Stage 31 `unavailable` is a technical/statistical availability state, separate
 from QC failure or exclusion. It is deliberately not a `QCReleaseDecision`.
-`pending_review` is not production-available. Stage 32.D will define the exact
-bridge without treating unavailable data as a QC failure or statistical zero.
+`pending_review` is not production-available. Stage 32.D preserves technical
+`unavailable` and its reason exactly, without converting it into a QC failure
+or statistical zero. Any pending review prevents a production-derived manifest.
 
 ## Reason codes and severity ownership
 

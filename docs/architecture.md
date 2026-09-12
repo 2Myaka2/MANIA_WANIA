@@ -125,7 +125,7 @@ Stage 32.A QC model, severity and release-decision contract is implemented in
 the pure `dataset_qc_contract.py` module; see the
 [Dataset QC contract](dataset_qc_contract.md). QC status and release decisions
 are separate, with reason/finding/evidence traceability and explicit reviewer
-provenance for manual REVIEW resolutions. Stage 32 remains incomplete.
+provenance for manual REVIEW resolutions. The accepted models are unchanged.
 Stage 32.A is accepted. Stage 32.B hard-QC evaluator is implemented in the pure
 `dataset_hard_qc.py` module; see [Dataset hard QC](dataset_hard_qc.md). It consumes
 accepted existing evidence and emits PASS/FAIL findings without final release
@@ -133,15 +133,26 @@ decisions. Stage 32.B is accepted. Stage 32.C manual-review QC is implemented in
 the pure `dataset_review_qc.py` module; see [Dataset review QC](dataset_review_qc.md).
 It consumes explicit drift/window/metric evidence and returns PASS/REVIEW findings
 only for hard-passing replicas, using isolated raw-MAD cohorts without condition
-grouping. Stage 32.D integration is next and will combine hard and review findings
-before applying release decisions and the Stage 31 availability bridge.
-No final QC workflow is implemented; Stage 32 remains incomplete.
+grouping. Stage 32.C is accepted. Stage 32.D integration is complete in the
+[Dataset QC workflow](dataset_qc_workflow.md): strict evidence/control inputs feed
+accepted evaluators and authoritative decisions, then summary and optional
+QC-derived Stage 31 availability with exact correspondence projection. A shared
+bridge preserves retained local bindings; no correspondence is inferred. Separate
+inventory/provenance and unified validation reconstruct every output with zero
+trajectory passes. Pending review is a valid completed QC run that cannot produce
+a production aggregation manifest. Stage 32 is complete.
 Historical Stage 30 checkpoint wording: "Stage 31 replica/system aggregation is
 next and has not started." The completed Stage 31 status above supersedes that record.
-Stage 33 publication export remains later. Stage 34 multi-engine pilot and
+Historical Stage 30 policy wording: "The 95% exclusion policy remains Stage 32."
+The implemented Stage 32 status below supersedes that milestone.
+Stage 33 publication export is next and has not started. Stage 34 multi-engine pilot and
 Stage 35 full production remain later. Explicit mapping to UniProt O95436
 and authoritative system annotations remain mandatory before Dataset publication.
-The 95% exclusion policy remains Stage 32.
+Stage 34 acceptance requires a real three-replica group, real canonical mapping,
+a real physical window contract, authoritative real QC-derived availability and
+exclusion, and real aggregation; preferably T330M. Specialized layers require
+authoritative real partner correspondence. Synthetic QC cannot satisfy this gate.
+The 95% exclusion policy is implemented in Stage 32 through accepted 32.B.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.
 

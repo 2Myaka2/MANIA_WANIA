@@ -1,5 +1,22 @@
 # MANIA Run-Provenance Contract
 
+## Stage 32.D — separate Dataset QC provenance
+
+The [Dataset QC workflow](dataset_qc_workflow.md) uses this unchanged schema with
+workflow `dataset_qc`. Configuration records portable QC manifest path, pinned
+canonical reference, unique replica count, hard pass/fail and review pass/review
+counts, final pass/fail and available/pending/excluded counts, `production_ready`,
+and checksum mode. Counts derive from authoritative replica decisions; repeated
+windows do not increase replica counts. Findings and evidence are not embedded.
+Conditions and sampling are empty; no analysis-role propagation is introduced.
+
+Successful pending review is a completed QC run with `production_ready=false`;
+it references decisions and summary but no derived aggregation manifest.
+Successful resolved runs also reference the QC-derived accepted Stage 31 manifest.
+Inventory is referenced only after writing. Failed metadata remains conservative
+about successful writes. Existing preprocessing, analysis and aggregation
+provenance is never mutated or replaced by a QC run.
+
 ## Stage 31.D — separate Dataset replica aggregation
 
 The [replica aggregation workflow](replica_aggregation_workflow.md) uses the

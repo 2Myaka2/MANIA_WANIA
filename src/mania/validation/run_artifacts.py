@@ -23,7 +23,9 @@ from mania.run_provenance_io import RunProvenanceReadError, read_run_provenance
 PREPROCESSING_VALIDATION_SCOPE = "preprocessing"
 ANALYSIS_VALIDATION_SCOPE = "analysis"
 
-ArtifactValidationScope = Literal["preprocessing", "analysis", "replica_aggregation"]
+ArtifactValidationScope = Literal[
+    "preprocessing", "analysis", "replica_aggregation", "dataset_qc",
+]
 ArtifactSetValidationStatus = Literal["passed", "partial", "failed"]
 ArtifactResolutionStatus = Literal["resolved", "not_resolved"]
 
@@ -37,8 +39,11 @@ def _scope(value: object) -> None:
     if value not in (
         PREPROCESSING_VALIDATION_SCOPE, ANALYSIS_VALIDATION_SCOPE,
         "replica_aggregation",
+        "dataset_qc",
     ):
-        raise ValueError("scope must be preprocessing, analysis or replica_aggregation")
+        raise ValueError(
+            "scope must be preprocessing, analysis, replica_aggregation or dataset_qc"
+        )
 
 
 @dataclass(frozen=True)

@@ -8,7 +8,8 @@ Stage 32.B hard-QC evaluator is implemented in `mania.dataset_hard_qc`.
 Stage 32.B is accepted at committed checkpoint
 `85fc62f17b47b94120b3e1e21c2c8af579396f60` on `FAIR`.
 Stage 32.C manual-review QC is implemented; see [Dataset review QC](dataset_review_qc.md).
-Stage 32 remains incomplete. Stage 32.D integration is next.
+Stage 32.C is accepted. Stage 32.D integration is complete;
+see the [Dataset QC workflow](dataset_qc_workflow.md). Stage 32 is complete.
 Dataset v1.0 remains unreleased; version remains `mania-wania 0.1.0`.
 
 ## Hard-QC vs final release decision
@@ -51,7 +52,8 @@ The caller supplies the complete authoritative requirements for the replica,
 including requested window definitions/artifacts. Requirements are never inferred
 from sparse scientific rows. Empty requirement tuples explicitly declare no
 additional requirements in that category; they are not Dataset discovery.
-Stage 32.D owns readers, requirement discovery and binding evidence to execution.
+Stage 32.D owns strict readers and binds explicitly supplied requirements
+and evidence to execution; it does not infer requirements from sparse rows.
 The sampling plan has no embedded replica identity; supplying the correct plan
 for the explicit replica key is the caller's responsibility, as with raw/PBC
 observations. Mapping bindings are checked against all four replica fields.
@@ -294,7 +296,10 @@ task. Real smoke is skipped until both are supplied; the accepted box audit is
 insufficient. Explicit complete real mapping authority must also be supplied for
 any chosen replica. No atom-order, PBC, mapping or availability evidence is fabricated.
 
-There is no CLI, workflow/I/O, inventory/provenance, unified validation, Stage 31
-manifest or availability integration. Frozen scientific contract, Stage 27–31
-source, preprocessing, aggregation, annotations, PBC code, analysis, dependencies
-and WANIA remain unchanged. Stage 32.D integration is next; Stage 32 is incomplete.
+The 32.B pure module adds no CLI or workflow I/O. Stage 32.D now consumes its
+findings for release decisions, reports, inventory/provenance and validation.
+The first FAIL in accepted deterministic check order supplies the automatic
+exclusion reason, prose and evidence IDs; all findings remain preserved.
+Frozen scientific contract, Stage 27–31 source, preprocessing, aggregation,
+annotations, PBC code, analysis, dependencies and WANIA remain unchanged.
+Stage 32.D integration is complete. Stage 32 is complete.

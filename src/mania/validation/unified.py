@@ -957,6 +957,10 @@ def validate_run_artifacts(
     )
     if scope == "replica_aggregation":
         return _validate_replica_aggregation(run_root, integrity, input_artifact_paths)
+    if scope == "dataset_qc":
+        from mania.validation.dataset_qc import validate_dataset_qc_run
+
+        return validate_dataset_qc_run(run_root, integrity, input_artifact_paths)
     records: list[SpecializedArtifactValidationRecord] = []
     issues: list[UnifiedArtifactValidationIssue] = []
 

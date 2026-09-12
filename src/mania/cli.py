@@ -273,6 +273,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     aggregate_parser.add_argument("--overwrite", action="store_true")
 
+    qc_parser = dataset_commands.add_parser(
+        "qc", help="Evaluate explicit Dataset QC evidence and release decisions.",
+    )
+    qc_parser.add_argument("--manifest", type=Path, required=True)
+    qc_parser.add_argument("--output", type=Path, required=True)
+    qc_parser.add_argument(
+        "--artifact-checksum-mode", choices=("none", "sha256"), default="none",
+    )
+    qc_parser.add_argument("--overwrite", action="store_true")
+
     artifacts_parser = subparsers.add_parser(
         "artifacts",
         help="Technical artifact/integrity validation: mania artifacts validate.",
@@ -292,7 +302,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     artifact_validate.add_argument("run_root", type=Path, metavar="RUN_ROOT")
     artifact_validate.add_argument(
-        "--scope", choices=("preprocessing", "analysis", "replica_aggregation"),
+        "--scope", choices=("preprocessing", "analysis", "replica_aggregation",
+                            "dataset_qc"),
         required=True,
         help="Explicit metadata scope; never auto-detected.",
     )
@@ -2462,6 +2473,21 @@ def main() -> None:
     """Run the MANIA command-line interface."""
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.command == "dataset" and args.dataset_command == "qc":
+        from mania.dataset_qc_run import run_dataset_qc
+        from mania.dataset_qc_workflow import DatasetQCWorkflowError
+
+        try:
+            qc_result = run_dataset_qc(
+                args.manifest, args.output,
+                checksum_mode=args.artifact_checksum_mode, overwrite=args.overwrite,
+            )
+        except DatasetQCWorkflowError as exc:
+            print(str(exc), file=sys.stderr)
+            raise SystemExit(1) from None
+        print(json.dumps(qc_result.to_dict(), sort_keys=True))
+        return
 
     if args.command == "dataset" and args.dataset_command == "aggregate-replicas":
         from mania.replica_aggregation_run import (

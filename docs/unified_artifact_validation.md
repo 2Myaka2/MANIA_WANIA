@@ -1,5 +1,35 @@
 # Unified technical artifact validation — Stage 25.D
 
+## Stage 32.D — Dataset QC scope
+
+Explicit scope `dataset_qc` validates the
+[separate QC run](dataset_qc_workflow.md) using the unchanged generic technical
+schemas. All seven current QC input/output roles have strict readers. External
+manifest, template, hard evidence and review evidence require explicit artifact-ID
+mappings. After integrity checks, reconstruction follows:
+
+```text
+QC manifest + hard/review evidence + original Stage 31 template
+→ accepted 32.B → accepted 32.C → accepted 32.A decisions
+→ summary + production_ready → optional derived Stage 31 manifest
+```
+
+Workflow and validator share the bridge that projects every specialized
+correspondence onto QC-derived available replicas, preserving correspondence
+identities and retained local bindings. The entire derived model is rebuilt;
+output correspondence membership is never trusted. No trajectory, contact,
+RMSD, mapping, sampling, or aggregation recomputation occurs.
+
+Every output model and its deterministic bytes must match reconstruction.
+Input inventory must match controls exactly; output inventory and provenance
+must agree in both directions; provenance counts must equal unique decisions.
+Completed runs require decisions and summary, plus a derived manifest exactly
+when production-ready. Valid pending-review runs can pass with `complete=true`;
+they must have no derived manifest, including undeclared files. Failed runs do
+not require a full successful output set, but cannot receive complete Stage 32
+acceptance. The existing preprocessing, analysis and replica-aggregation scopes
+retain their behavior.
+
 ## Stage 31.D — canonical replica aggregation scope
 
 The [separate Dataset aggregation workflow](replica_aggregation_workflow.md)

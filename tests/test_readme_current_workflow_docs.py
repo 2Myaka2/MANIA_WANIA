@@ -318,19 +318,19 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
                 "is implemented" in text
             )
             assert "dataset_qc_contract.md" in text
-            assert "Stage 32 remains incomplete" in text
+            assert "Stage 32 is complete" in text
             assert "Stage 32.A is accepted" in text
             assert "Stage 32.B hard-QC evaluator is implemented" in text
             assert "Stage 32.B is accepted" in text
             assert "Stage 32.C manual-review QC is implemented" in text
-            assert "Stage 32.D integration is next" in text
+            assert "Stage 32.D integration is complete" in text
             assert "dataset_review_qc.md" in text
         else:
-            # These unchanged files retain the accepted Stage 31 checkpoint.
-            assert "Stage 32 Dataset QC / exclusion is next and has not started" in text
+            # Current status follows accepted Stage 32.D integration.
+            assert "Stage 32 is complete" in text
         assert "Stage 34 multi-engine pilot" in text
         assert "Stage 35 full production remain later" in text
-        assert "Stage 33 publication export remains later" in text
+        assert "Stage 33 publication export is next and has not started" in text
         # Preserve accepted A/B/C history alongside completed D integration.
         if name == "docs/architecture.md":
             assert re.search(r"Stage 28\.A is accepted\b", text)
@@ -342,7 +342,7 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
             assert "protein_edges_by_window_source.csv" in text
             assert "requiring Stage 30 canonical mapping" in text
             assert "adds zero trajectory passes" in text
-        assert "95% exclusion policy remains Stage 32" in text
+        assert "95% exclusion policy is implemented in Stage 32" in text
         assert (
             "scientific contract is frozen except for concrete NAMD condition" in text
         )
@@ -362,12 +362,12 @@ def test_stage32a_contract_documents_current_status():
     )
     assert "Stage 31 is complete" in text
     assert "Stage 32.A QC contract is implemented" in text
-    assert "Stage 32 remains incomplete" in text
+    assert "Stage 32 is complete" in text
     assert "Stage 32.A is accepted" in text
     assert "Stage 32.B hard-QC evaluator is implemented" in text
     assert "Stage 32.B is accepted" in text
     assert "Stage 32.C manual-review QC is implemented" in text
-    assert "Stage 32.D integration is next" in text
+    assert "Stage 32.D integration is complete" in text
     assert "without final release decisions" in text
 
 
@@ -723,10 +723,10 @@ def test_stage32b_hard_qc_documents_current_status_and_authority():
         "Stage 31 is complete",
         "Stage 32.A is accepted",
         "Stage 32.B hard-QC evaluator is implemented",
-        "Stage 32 remains incomplete",
+        "Stage 32 is complete",
         "Stage 32.B is accepted",
         "Stage 32.C manual-review QC is implemented",
-        "Stage 32.D integration is next",
+        "Stage 32.D integration is complete",
         "ReplicaHardQCEvaluation",
         "Stage 32.D combines hard and review findings",
         "Equal atom counts do not prove",
@@ -748,8 +748,8 @@ def test_stage32c_review_qc_documents_current_status_and_scientific_boundary():
         "Stage 32.A is accepted",
         "Stage 32.B is accepted",
         "Stage 32.C manual-review QC is implemented",
-        "Stage 32 remains incomplete",
-        "Stage 32.D integration is next",
+        "Stage 32 is complete",
+        "Stage 32.D integration is complete",
         "85fc62f17b47b94120b3e1e21c2c8af579396f60",
         "Review is not exclusion",
         "RMSDDriftAssessment",
@@ -771,3 +771,51 @@ def test_stage32c_review_qc_documents_current_status_and_scientific_boundary():
         "no new runtime dependency or version change",
     ):
         assert expected in text
+
+
+def test_stage32d_workflow_documents_strict_controls_and_projection(tmp_path):
+    from mania.dataset_qc_manifest_io import read_dataset_qc_manifest
+
+    text = (REPO_ROOT / "docs/dataset_qc_workflow.md").read_text(encoding="utf-8")
+    normalized = " ".join(text.split())
+    for phrase in (
+        "Stage 32.D: PASS", "Stage 32: COMPLETE", "All 132 criteria pass",
+        "revised criterion 55", "zero trajectory passes", "pending_review",
+        "production_ready", "QCManualReviewResolution", "exactly all available",
+        "build_qc_derived_replica_aggregation_manifest", "retained local bindings",
+        "no scientific evidence is deleted", "every correspondence",
+        "No CWD-based guessing", "Failed provenance cannot receive complete",
+        "dataset_qc_decision_set.json", "dataset_qc_summary.csv",
+        "replica_aggregation_manifest_qc_derived.json",
+        "32.A model is the final validator",
+        "MDAnalysis is not required", "Stage 31 scientific source is unchanged",
+        "Real Stage 32 QC smoke not run because authoritative hard-QC and/or "
+        "review-QC evidence is not yet available.",
+    ):
+        assert phrase in normalized
+    example = re.search(r"```json\n(.*?)\n```", text, re.DOTALL)
+    assert example is not None
+    path = tmp_path / "dataset_qc_manifest.json"
+    path.write_text(example.group(1), encoding="utf-8")
+    manifest = read_dataset_qc_manifest(path)
+    assert len(manifest.replicas) == 1
+    assert manifest.replicas[0].manual_resolution is None
+    assert "mania dataset qc" in readme_text()
+    assert "docs/dataset_qc_workflow.md" in readme_text()
+    for name in (
+        "docs/artifact_inventory_contract.md", "docs/run_provenance_contract.md",
+        "docs/unified_artifact_validation.md",
+    ):
+        assert "dataset_qc" in (REPO_ROOT / name).read_text(encoding="utf-8")
+
+
+def test_stage34_roadmap_requires_real_evidence_and_stage33_is_unstarted():
+    text = " ".join(readme_text().split())
+    for phrase in (
+        "Stage 33 publication export is next and has not started",
+        "real three-replica group", "real canonical mapping",
+        "real physical window contract", "authoritative real QC-derived",
+        "real aggregation", "preferably T330M",
+        "Specialized layers require authoritative real partner correspondence",
+    ):
+        assert phrase in text

@@ -1,5 +1,19 @@
 # Artifact inventory contract v0.1
 
+## Stage 32.D — Dataset QC roles
+
+The [Dataset QC workflow](dataset_qc_workflow.md) reuses this schema with workflow
+`dataset_qc` at a separate output root. Input roles are `dataset_qc_manifest`,
+`replica_aggregation_manifest_template`, `dataset_hard_qc_evidence`, and
+`dataset_review_qc_evidence`. Distinct listed evidence files retain separate
+entries, including optional review evidence for hard-failed replicas.
+Output roles are `dataset_qc_decision_set`, `dataset_qc_summary`, and
+`qc_derived_replica_aggregation_manifest`; the last exists only for resolved,
+production-ready decisions. Exact IDs, paths and filenames are in the workflow
+contract. `none` never invokes content hashing; `sha256` uses the same bounded
+helper. Inventory excludes itself and run provenance. Failed writes are never
+claimed, and prior preprocessing/aggregation inventories are unchanged.
+
 ## Stage 31.D — separate Dataset replica aggregation
 
 The [canonical replica aggregation workflow](replica_aggregation_workflow.md)

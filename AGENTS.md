@@ -45,12 +45,21 @@ and authoritative system annotations remain mandatory before Dataset publication
 Stage 31 is complete: accepted 31.A/B/C are integrated by 31.D through a
 separate canonical-only Dataset aggregation workflow, aggregate CSV exports,
 portable inventory/provenance, and exact offline reconstruction validation.
-Stage 32 Dataset QC / exclusion is next and has not started.
+Stage 32 is complete: accepted 32.A/B/C are integrated by 32.D through strict
+Dataset QC evidence controls, authoritative release decisions, reports,
+QC-derived aggregation availability and correspondence projection, portable
+inventory/provenance, and exact offline reconstruction validation.
 Historical Stage 30 checkpoint: "Stage 31 replica/system aggregation is next
 and has not started." The completed Stage 31 status above supersedes this record.
-Stage 33 publication export remains later. Stage 34 multi-engine pilot and
+Historical Stage 30 policy wording: "The 95% exclusion policy remains Stage 32."
+The implemented Stage 32 status below supersedes that milestone.
+Stage 33 publication export is next and has not started. Stage 34 multi-engine pilot and
 Stage 35 full production remain later.
-The 95% exclusion policy remains Stage 32.
+Stage 34 acceptance requires a real three-replica group, real canonical mapping,
+a real physical window contract, authoritative real QC-derived availability and
+exclusion, and real aggregation; preferably T330M. Specialized layers require
+authoritative real partner correspondence. Synthetic QC cannot satisfy this gate.
+The 95% exclusion policy is implemented in Stage 32 through accepted 32.B.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.
 

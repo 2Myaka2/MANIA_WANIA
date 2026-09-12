@@ -5,7 +5,8 @@
 Stage 31 is complete. Stage 32.A is accepted. Stage 32.B is accepted at committed
 checkpoint `85fc62f17b47b94120b3e1e21c2c8af579396f60` on branch `FAIR`.
 Stage 32.C manual-review QC is implemented in `mania.dataset_review_qc`.
-Stage 32 remains incomplete. Stage 32.D integration is next.
+Stage 32.C is accepted. Stage 32.D integration is complete;
+see the [Dataset QC workflow](dataset_qc_workflow.md). Stage 32 is complete.
 Dataset v1.0 remains unreleased; version remains `mania-wania 0.1.0`.
 
 ## Review is not exclusion
@@ -14,7 +15,7 @@ The evaluator produces accepted Stage 32.A `ReplicaQCCheckResult` findings with
 statuses **pass** or **review** only. `review_qc_status == "review"` does not imply
 exclusion. No FAIL finding, release decision, decision mode, availability state,
 reviewer, decision note, manual clearance or manual exclusion is produced.
-Stage 32.D will combine the independent hard and review findings and apply the
+Stage 32.D combines the independent hard and review findings and applies the
 unchanged [32.A decision contract](dataset_qc_contract.md), including unresolved
 `pending_review` or an explicit manual resolution. A normal scientific REVIEW
 is a valid result, not an exception.
@@ -238,10 +239,14 @@ This does not block implementation or synthetic acceptance.
 
 ## Stage 32.D and scientific boundary
 
-Stage 32.D integration is next: it will combine hard and review findings, create
-authoritative release decisions, bridge Stage 31 aggregation availability, and
-add reports, inventory/provenance and validation. None of that integration exists
-in 32.C; Stage 32 remains incomplete.
+Stage 32.D integration is complete in the separate Dataset QC workflow. It
+combines hard and review findings, creates authoritative release decisions,
+bridges Stage 31 availability and correspondence membership, and adds reports,
+inventory/provenance and reconstruction validation. Unresolved REVIEW becomes
+`pending_review`, using the first REVIEW in accepted deterministic check order.
+Manual clearance or exclusion requires explicit 32.A-compliant reason/evidence,
+reviewer and note. REVIEW never causes automatic exclusion. These responsibilities
+remain outside the unchanged 32.C evaluator. Stage 32 is complete.
 
 The evaluator uses no filesystem, network, Git, subprocess, clock, trajectory or
 topology access. It does not calculate RMSD, protein/lipid/glycan contacts,

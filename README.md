@@ -41,12 +41,17 @@ and authoritative system annotations remain mandatory before Dataset publication
 Stage 31 is complete: accepted 31.A/B/C are integrated by 31.D through a
 separate canonical-only Dataset aggregation workflow, aggregate CSV exports,
 portable inventory/provenance, and exact offline reconstruction validation.
-Stage 32 Dataset QC / exclusion is next and has not started.
+Stage 32 is complete: accepted 32.A/B/C are integrated by 32.D through strict
+Dataset QC evidence controls, authoritative release decisions, reports,
+QC-derived aggregation availability and correspondence projection, portable
+inventory/provenance, and exact offline reconstruction validation.
 Historical Stage 30 checkpoint: "Stage 31 replica/system aggregation is next
 and has not started." The completed Stage 31 status above supersedes this record.
-Stage 33 publication export remains later. Stage 34 multi-engine pilot and
+Historical Stage 30 policy wording: "The 95% exclusion policy remains Stage 32."
+The implemented Stage 32 status below supersedes that milestone.
+Stage 33 publication export is next and has not started. Stage 34 multi-engine pilot and
 Stage 35 full production remain later.
-The 95% exclusion policy remains Stage 32.
+The 95% exclusion policy is implemented in Stage 32 through accepted 32.B.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.
 
@@ -838,6 +843,24 @@ unchanged. No YAML or JSON analysis configuration exists.
 
 ## Current Backend Workflow
 
+Stage 32 provides authoritative Dataset QC before production aggregation:
+
+```bash
+mania dataset qc --manifest dataset_qc_manifest.json --output qc_run \
+  --artifact-checksum-mode none
+```
+
+Strict hard/review evidence feeds accepted Stage 32.A/B/C models with zero
+trajectory passes. A pending REVIEW completes normally with decisions and
+summary, `production_ready=false`, and no derived aggregation manifest.
+Resolved decisions produce `replica_aggregation_manifest_qc_derived.json` for the
+separate Stage 31 aggregation command. Pre-QC exclusions are forbidden; technical
+`unavailable` stays distinct. Specialized correspondence membership is restricted
+to QC-derived available replicas while preserving retained local bindings.
+`mania artifacts validate qc_run --scope dataset_qc` reconstructs all results
+when every external input is mapped. See the
+[Dataset QC workflow and final acceptance](docs/dataset_qc_workflow.md).
+
 Stage 31 provides a separate Dataset-level command after Stage 30 canonicalization:
 
 ```bash
@@ -1432,9 +1455,14 @@ The planning-level scientific roadmap is:
 - **Stage 31 — Replica/system aggregation:** complete; explicit canonical Dataset
   controls, occupancy/support CSVs, inventory/provenance and exact reconstruction.
   See the [replica aggregation workflow](docs/replica_aggregation_workflow.md).
-- **Stage 32 — Dataset QC/exclusion:** next; not started. The 95% policy is not implemented.
-- **Stage 33 — Publication export:** later; Stage 30/31 outputs remain intermediates.
-- **Stage 34 — Multi-engine pilot:** later.
+- **Stage 32 — Dataset QC/exclusion:** complete; accepted hard/review evaluation,
+  authoritative release decisions, correspondence projection and offline validation.
+- **Stage 33 — Publication export:** next; not started. Stage 30/31 outputs remain intermediates.
+- **Stage 34 — Multi-engine pilot:** later. Acceptance requires at least one
+  real three-replica group, real canonical mapping, a real physical window contract,
+  authoritative real QC-derived availability/exclusion, and real aggregation;
+  preferably T330M. Specialized layers require authoritative real partner
+  correspondence. Synthetic Stage 32 evidence cannot satisfy the real pilot.
 - **Stage 35 — Full production:** later.
 
 The Stage 19 scope freeze originally recorded Stages 20–23 as future work.
