@@ -108,11 +108,17 @@ The [protein-edge replica aggregation contract](replica_protein_edge_aggregation
 defines canonical identity, available-only sparse edge unions, absent available
 rows as statistical zeroes, and occupancy statistics. Unavailable/excluded
 members contribute no observation.
-Stage 31 remains incomplete. Stage 31.C specialized lipid/glycan replica
-aggregation is next. Specialized replica aggregation, QC exclusion decisions,
-Dataset workflow integration and aggregate exports remain unimplemented.
+Stage 31.B is accepted. Stage 31.C specialized lipid/glycan replica aggregation
+is implemented in the standalone pure `replica_specialized_aggregation.py` module.
+The [specialized aggregation contract](replica_specialized_aggregation_contract.md)
+requires explicit correspondence of topology-local partners across every
+available replica before sparse absence contributes zero. It uses the same
+occupancy/support statistics and sample SD as 31.B, with no distance, lifetime
+or contact-frame aggregation. Stage 31 remains incomplete. Stage 31.D is next:
+Dataset workflow integration, aggregate exports, provenance/validation and final
+acceptance. QC exclusion decisions remain Stage 32.
 Historical Stage 30 checkpoint wording: "Stage 31 replica/system aggregation is
-next and has not started." The Stage 31.A/B status above supersedes that record.
+next and has not started." The Stage 31.A/B/C status above supersedes that record.
 Stage 33 publication export remains later. Explicit mapping to UniProt O95436
 and authoritative system annotations remain mandatory before Dataset publication.
 The 95% exclusion policy remains Stage 32.

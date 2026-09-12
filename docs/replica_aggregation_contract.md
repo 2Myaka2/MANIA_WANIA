@@ -9,8 +9,11 @@ Stage 31.A group/window contract is implemented in
 Stage 31.A is accepted. Stage 31.B pure canonical protein-edge replica
 aggregation is implemented in the
 [protein-edge aggregation contract](replica_protein_edge_aggregation_contract.md).
-Stage 31 remains incomplete. Stage 31.C specialized lipid/glycan replica
-aggregation is next; Stage 31.D owns Dataset workflow, aggregate
+Stage 31.B is accepted. Stage 31.C specialized lipid/glycan replica aggregation
+is implemented with mandatory explicit specialized-partner correspondence in the
+[specialized aggregation contract](replica_specialized_aggregation_contract.md).
+Availability semantics remain unchanged. Stage 31 remains incomplete.
+Stage 31.D is next and owns Dataset workflow, aggregate
 exports, provenance/validation, and final Stage 31 acceptance.
 
 ## Canonical-only boundary
@@ -28,7 +31,8 @@ across replicas. Source resid equality is never a replica aggregation key:
 GROMACS source resid 311 and NAMD source resid 311 must not be joined by numeric
 equality. Stage 31.A accepts no tables; Stage 31.B accepts only canonical
 Stage 30 protein-edge tables, never Stage 28/29 `_source` inputs. Stage 31.C
-will apply the canonical-only boundary to specialized tables.
+applies the canonical-only protein boundary to specialized tables and requires
+explicit correspondence for topology-local partners.
 
 The public constants derive from accepted Stage 30 mapping constants:
 
@@ -176,15 +180,21 @@ along with both physical-window identity and label/index evidence.
 `ReplicaWindowAvailabilityStatus` is exactly
 `Literal["available", "unavailable", "excluded"]`.
 
-| Explicit member state | Meaning | Stage 31.B / future Stage 31.C absent canonical entity row |
+| Explicit member state | Meaning | Stage 31.B / Stage 31.C absent corresponding entity row |
 | --- | --- | --- |
 | `available` | Replica/window scientifically available for aggregation | Observed occupancy 0 for this available replica |
 | `unavailable` | Known replica/window explicitly unavailable | Not occupancy 0; omitted from statistics and available-replica denominator |
 | `excluded` | Explicit upstream exclusion state | Not occupancy 0; omitted from statistics and available-replica denominator |
 
-**An available replica plus an absent sparse canonical entity/edge row contributes
+**An available replica plus an absent sparse corresponding entity/edge row contributes
 occupancy 0 in aggregation. An unavailable or excluded replica never
 contributes occupancy 0 and never participates in occupancy statistics.**
+
+For Stage 31.C, this rule requires explicit partner correspondence covering
+every available replica. Missing correspondence is invalid input, never sparse
+absence or occupancy zero. Equal topology-local partner IDs or names do not
+establish correspondence. This adds partner evidence without changing member
+availability semantics.
 
 Stage 28/29 source tables and Stage 30 canonical tables are sparse. Absence of
 one edge/partner row must never be interpreted as replica unavailability.
@@ -247,7 +257,9 @@ No statistics are implemented in Stage 31.A. Stage 31.B implements mean, median,
 standard deviation, supporting replica count and support fraction for canonical
 protein edges. Sample standard deviation with ddof=1 is frozen in Stage 31.B;
 one available replica has `std_occupancy = None`. Stage 31.A itself chooses no
-estimator and its compatibility semantics remain unchanged. Stage 31.C is next.
+estimator and its compatibility semantics remain unchanged. Stage 31.C applies
+the same statistics only to explicitly corresponding specialized partners.
+Stage 31.D is next.
 There is no workflow integration, CLI change, export, provenance/inventory
 change or unified-validation integration. Accepted Stage 27–30 science, source
 and canonical tables, annotations, PBC, analysis, dependencies, frozen Dataset

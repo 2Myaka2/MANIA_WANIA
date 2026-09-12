@@ -303,9 +303,12 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
             assert "Stage 31.A is accepted" in text
             assert "replica_protein_edge_aggregation_contract.md" in text
             assert (
-                "Stage 31.C specialized lipid/glycan replica aggregation is next"
+                "Stage 31.C specialized lipid/glycan replica aggregation is implemented"
                 in text
             )
+            assert "Stage 31.B is accepted" in text
+            assert "Stage 31.D is next" in text
+            assert "replica_specialized_aggregation_contract.md" in text
             assert "Historical Stage 30 checkpoint wording" in text
         else:
             assert (
@@ -350,7 +353,12 @@ def test_stage31a_contract_documents_current_status():
         "Stage 31.B pure canonical protein-edge replica aggregation is implemented"
         in text
     )
-    assert "Stage 31.C specialized lipid/glycan replica aggregation is next" in text
+    assert (
+        "Stage 31.C specialized lipid/glycan replica aggregation is implemented"
+        in text
+    )
+    assert "Stage 31.B is accepted" in text
+    assert "Stage 31.D is next" in text
 
 
 def test_stage31b_contract_documents_current_status():
@@ -365,7 +373,28 @@ def test_stage31b_contract_documents_current_status():
         in text
     )
     assert "Stage 31 remains incomplete" in text
-    assert "Stage 31.C specialized lipid/glycan replica aggregation is next" in text
+    assert (
+        "Stage 31.C specialized lipid/glycan replica aggregation is implemented"
+        in text
+    )
+    assert "Stage 31.B is accepted" in text
+    assert "Stage 31.D is next" in text
+
+
+def test_stage31c_contract_documents_current_status():
+    text = " ".join(
+        (REPO_ROOT / "docs/replica_specialized_aggregation_contract.md")
+        .read_text(encoding="utf-8").split()
+    )
+    assert "Stage 30 is complete" in text
+    assert "Stage 31.A is accepted" in text
+    assert "Stage 31.B is accepted" in text
+    assert (
+        "Stage 31.C specialized lipid/glycan replica aggregation is implemented"
+        in text
+    )
+    assert "Stage 31 remains incomplete" in text
+    assert "Stage 31.D is next" in text
 
 
 def test_stage30a_contract_documents_offline_reference_and_mapping_boundary():

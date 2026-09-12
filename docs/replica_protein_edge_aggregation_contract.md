@@ -6,9 +6,14 @@ Stage 30 is complete. Stage 31.A is accepted at checkpoint
 `b7f112c890503d192ca1356ce775256f575424ff`.
 Stage 31.B pure canonical protein-edge replica aggregation is implemented in
 [`replica_protein_edge_aggregation.py`](../src/mania/replica_protein_edge_aggregation.py).
-Stage 31 remains incomplete. Stage 31.C specialized lipid/glycan replica
-aggregation is next. Stage 31.D owns Dataset workflow, aggregate exports,
-provenance/validation and final Stage 31 acceptance.
+Stage 31.B is accepted at checkpoint
+`aae168ab2fc253382c78c9f4248927a9dd4de33c`.
+Stage 31.C specialized lipid/glycan replica aggregation is implemented with the
+same occupancy/support statistics for explicitly corresponding partners.
+Partner correspondence is mandatory; see the
+[specialized aggregation contract](replica_specialized_aggregation_contract.md).
+Stage 31 remains incomplete. Stage 31.D is next and owns Dataset workflow,
+aggregate exports, provenance/validation and final Stage 31 acceptance.
 
 ## Canonical-only input and identity
 
@@ -171,8 +176,9 @@ support cutoff, RMSD, MAD or variance filtering. Explicit upstream exclusions
 are respected; Stage 32 owns QC policy. There is no annotation-based biological
 filtering, cross-window aggregation or cross-system/engine aggregation.
 
-No specialized lipid/glycan aggregation, CSV export, workflow/CLI integration,
-manifest, provenance/inventory or unified-validation change is implemented.
+Specialized lipid/glycan aggregation belongs to the separate Stage 31.C module.
+No CSV export, workflow/CLI integration, manifest, provenance/inventory or
+unified-validation change is implemented by these pure aggregation modules.
 The pure API uses no filesystem, network, Git, subprocess, clock, trajectory or
 MDAnalysis. Stage 27–30 science and canonical per-replica tables, PBC, analysis,
 dependencies and WANIA remain unchanged.
