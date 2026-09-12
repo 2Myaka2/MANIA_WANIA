@@ -6,9 +6,11 @@ Stage 30 is complete at accepted Stage 30.D checkpoint
 `ea7ca9ddb0f3b19cce883b955521ddbbd1153353`.
 Stage 31.A group/window contract is implemented in
 [`replica_aggregation_contract.py`](../src/mania/replica_aggregation_contract.py).
-Stage 31 remains incomplete. Stage 31.B pure canonical protein-edge replica
-aggregation is next. Stage 31.C covers specialized lipid/glycan replica
-aggregation where applicable; Stage 31.D owns Dataset workflow, aggregate
+Stage 31.A is accepted. Stage 31.B pure canonical protein-edge replica
+aggregation is implemented in the
+[protein-edge aggregation contract](replica_protein_edge_aggregation_contract.md).
+Stage 31 remains incomplete. Stage 31.C specialized lipid/glycan replica
+aggregation is next; Stage 31.D owns Dataset workflow, aggregate
 exports, provenance/validation, and final Stage 31 acceptance.
 
 ## Canonical-only boundary
@@ -24,8 +26,9 @@ Stage 31 statistical aggregation is defined only over canonicalized tables.
 Source-indexed tables remain audit inputs and are never statistical join keys
 across replicas. Source resid equality is never a replica aggregation key:
 GROMACS source resid 311 and NAMD source resid 311 must not be joined by numeric
-equality. Stage 31.A accepts no tables; Stage 31.B/31.C will accept only canonical
-Stage 30 tables, never Stage 28/29 `_source` inputs.
+equality. Stage 31.A accepts no tables; Stage 31.B accepts only canonical
+Stage 30 protein-edge tables, never Stage 28/29 `_source` inputs. Stage 31.C
+will apply the canonical-only boundary to specialized tables.
 
 The public constants derive from accepted Stage 30 mapping constants:
 
@@ -168,26 +171,28 @@ Its `replica_key` is the accepted Dataset identity:
 All group metadata and canonical reference fields must match the specification,
 along with both physical-window identity and label/index evidence.
 
-## Availability and the critical future absent-row rule
+## Availability and the critical absent-row rule
 
 `ReplicaWindowAvailabilityStatus` is exactly
 `Literal["available", "unavailable", "excluded"]`.
 
-| Explicit member state | Meaning | Future Stage 31.B/31.C absent canonical entity row |
+| Explicit member state | Meaning | Stage 31.B / future Stage 31.C absent canonical entity row |
 | --- | --- | --- |
 | `available` | Replica/window scientifically available for aggregation | Observed occupancy 0 for this available replica |
 | `unavailable` | Known replica/window explicitly unavailable | Not occupancy 0; omitted from statistics and available-replica denominator |
 | `excluded` | Explicit upstream exclusion state | Not occupancy 0; omitted from statistics and available-replica denominator |
 
 **An available replica plus an absent sparse canonical entity/edge row contributes
-occupancy 0 in future aggregation. An unavailable or excluded replica never
+occupancy 0 in aggregation. An unavailable or excluded replica never
 contributes occupancy 0 and never participates in occupancy statistics.**
 
 Stage 28/29 source tables and Stage 30 canonical tables are sparse. Absence of
 one edge/partner row must never be interpreted as replica unavailability.
 Availability comes only from the explicit member state. Stage 31.A does not
 materialize edge-specific zeroes; it establishes the evidence required to do
-that correctly in 31.B/31.C.
+that correctly in 31.B/31.C. Stage 31.B now materializes sparse protein-edge
+absence as zero only in available members' statistical vectors, leaving the
+underlying canonical tables unchanged.
 
 For `available`, `availability_reason` must be `None`. For `unavailable` and
 `excluded`, a non-empty portable reason is required. Only surrounding whitespace
@@ -238,9 +243,11 @@ or edge-count decision and no 95% threshold. Stage 32 remains responsible for
 Dataset release QC/exclusion policy; Stage 31.A preserves explicitly supplied
 state only.
 
-No statistics are implemented: no mean, median, standard deviation, supporting
-replica count or support fraction. Stage 31.B must freeze the exact standard
-deviation estimator before statistics are implemented; Stage 31.A chooses none.
+No statistics are implemented in Stage 31.A. Stage 31.B implements mean, median,
+standard deviation, supporting replica count and support fraction for canonical
+protein edges. Sample standard deviation with ddof=1 is frozen in Stage 31.B;
+one available replica has `std_occupancy = None`. Stage 31.A itself chooses no
+estimator and its compatibility semantics remain unchanged. Stage 31.C is next.
 There is no workflow integration, CLI change, export, provenance/inventory
 change or unified-validation integration. Accepted Stage 27–30 science, source
 and canonical tables, annotations, PBC, analysis, dependencies, frozen Dataset
