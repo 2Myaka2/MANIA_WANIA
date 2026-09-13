@@ -5,10 +5,16 @@
 Stage 32 is complete (Stage 32 COMPLETE). Stage 33.A is accepted at
 `60940ef803d6bdbdc98956aa559c7e2f72548313` and remains the frozen schema authority.
 Stage 33.B metadata/QC/canonical publication exporters are implemented.
-Stage 33 remains incomplete. Stage 33.C scientific publication exporters are next.
+Stage 33.B is accepted. Stage 33.C scientific publication exporters are implemented;
+see [scientific exports](dataset_release_science_exports.md).
+Stage 33 remains incomplete. Stage 33.D release assembly is next.
 Dataset v1.0 remains unreleased. Package version remains `mania-wania 0.1.0`.
 
-Exactly these ten tables are supported:
+Stage 33.B owns exactly these ten publication builders. The shared publication
+CSV infrastructure now supports all seventeen frozen tabular Dataset v1.0
+publication schemas through the same Stage 33.A registry, logical table model,
+strict reader and writer. Release JSON, unknown and control/audit IDs are rejected.
+This infrastructure extension does not change Stage 33.B builder semantics.
 
 | Table | Exact relative path |
 | --- | --- |
@@ -85,8 +91,9 @@ replicas whose required publication science has been proven present. Keys must
 be unique full candidate keys, each with `release_decision=available`.
 `included_in_scientific_release` is true exactly for that set. QC availability
 does not prove science-file existence. The builder never examines source files
-or sparse science rows. 33.C/33.D will derive this selection from publication
-science models.
+or sparse science rows. Stage 33.C consumes the resulting simulations table as
+the sole authority for `included_in_scientific_release`. It does not recalculate
+scientific inclusion or accept a second independent selection list.
 
 ## Technical unavailable
 
@@ -222,7 +229,9 @@ provides independent audit dictionaries and retains Decimal scalars.
 
 ## Stage 33.C
 
-Per-replica science, replica/system aggregates and metrics remain 33.C work.
+Per-replica science, replica/system aggregates and explicit metrics are implemented
+by 33.C using the same shared CSV serialization authority. Stage 33.D release
+assembly is next after these scientific exports.
 33.D owns release assembly, JSON manifest/inventory/provenance, full cross-table
 validation and final acceptance. No publication CLI, Parquet adapter, runtime
 roles, dependencies, WANIA changes or QC/science recomputation are added here.

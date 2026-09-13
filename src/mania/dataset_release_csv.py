@@ -1,4 +1,4 @@
-"""Schema-bound Stage 33.B logical tables and deterministic, strict CSV I/O."""
+"""Dataset v1.0 tabular publication models and deterministic, strict CSV I/O."""
 
 import csv
 import io
@@ -40,10 +40,11 @@ class DatasetReleaseCSVError(ValueError):
 
 
 def publication_table_spec(table_id: str) -> PublicationTableSpec:
-    """Return the exact accepted descriptor; 33.C adapters are not supported."""
-    if table_id not in METADATA_TABLE_IDS:
-        raise DatasetReleaseCSVError("Unsupported Stage 33.B table ID")
-    return next(s for s in PUBLICATION_TABLE_SPECS if s.table_id == table_id)
+    """Return only an exact frozen Stage 33.A tabular publication descriptor."""
+    for spec in PUBLICATION_TABLE_SPECS:
+        if spec.table_id == table_id:
+            return spec
+    raise DatasetReleaseCSVError("Unsupported publication table ID")
 
 
 def require_portable_publication_path(value: str) -> None:

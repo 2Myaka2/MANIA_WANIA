@@ -339,7 +339,7 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
                 "Stage 33.B metadata/QC/canonical publication exporters are implemented"
                 in text
             )
-            assert "Stage 33.C scientific publication exporters are next" in text
+            assert "Stage 33.C scientific publication exporters are implemented" in text
             assert "Production execution order differs from development order" in text
             assert "27–30 -> 32 -> 31 -> 33" in text
         else:
@@ -383,7 +383,7 @@ def test_stage33a_contract_documents_current_status_and_production_order():
         "Stage 33.B metadata/QC/canonical publication exporters are implemented"
         in text
     )
-    assert "Stage 33.C scientific publication exporters are next" in text
+    assert "Stage 33.C scientific publication exporters are implemented" in text
     assert "Production execution order differs from development order" in text
     assert "27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33" in text
     assert "27–30 -> 32 -> 31 -> 33" in text
@@ -401,7 +401,7 @@ def test_stage33b_documents_authoritative_metadata_and_explicit_selections():
         "Stage 32 COMPLETE", "Stage 33.A is accepted",
         "Stage 33.B metadata/QC/canonical publication exporters are implemented",
         "Stage 33 remains incomplete",
-        "Stage 33.C scientific publication exporters are next",
+        "Stage 33.C scientific publication exporters are implemented",
         "60940ef803d6bdbdc98956aa559c7e2f72548313",
         "scientific_release_replica_keys", "annotation_publication_system_keys",
         "QCDerivedAggregationEvidence", "pending_review", "complete_for_system",
@@ -411,6 +411,30 @@ def test_stage33b_documents_authoritative_metadata_and_explicit_selections():
         "No duplicate publication schemas", "atomic", "no sampling is rerun",
     ):
         assert phrase in text
+
+
+def test_stage33c_documents_scientific_exports_and_pending_release_assembly():
+    for name in (
+        "docs/architecture.md", "docs/dataset_release_contract.md",
+        "docs/dataset_release_metadata_exports.md",
+        "docs/dataset_release_science_exports.md",
+    ):
+        text = " ".join((REPO_ROOT / name).read_text(encoding="utf-8").split())
+        for phrase in (
+            "Stage 32 COMPLETE", "Stage 33.A is accepted", "Stage 33.B is accepted",
+            "Stage 33.C scientific publication exporters are implemented",
+            "Stage 33 remains incomplete", "Stage 33.D release assembly is next",
+        ):
+            assert phrase in text
+    science = (REPO_ROOT / "docs/dataset_release_science_exports.md").read_text()
+    for phrase in (
+        "included_in_scientific_release", "aggregation_manifest_used",
+        "QC-derived Stage 31", "Pending review fails", "330 THR",
+        "topology-local", "contact-positive-frame-only", "carrier-residue",
+        "partner_correspondence_id", "source_record_key", "finite numeric",
+        "same CSV serialization authority", "17 frozen tabular",
+    ):
+        assert phrase in science
 
 
 def test_stage32a_contract_documents_current_status():

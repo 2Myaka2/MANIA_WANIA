@@ -8,6 +8,7 @@ from decimal import Decimal, localcontext
 import pytest
 from test_dataset_release_metadata import contact_table, synthetic_inputs
 
+import mania.dataset_release_csv as csv_layer
 from mania.dataset_release_contract import PUBLICATION_TABLE_SPECS
 from mania.dataset_release_csv import (
     METADATA_TABLE_IDS,
@@ -229,15 +230,87 @@ def test_immutable_rows_schema_and_snapshot(bundle):
 @pytest.mark.parametrize(
     "table_id",
     [
-        "metrics",
-        "protein_edges_by_window",
-        "protein_edges_by_window_replica_aggregation",
+        "dataset_manifest",
+        "artifact_inventory",
+        "provenance",
+        "release/dataset_manifest.json",
+        "release/artifact_inventory.json",
+        "release/provenance.json",
+        "replica_aggregation_manifest",
+        "dataset_qc_decision_set",
+        "protein_edges_by_window_canonical.csv",
+        "trajectory_parameters.csv",
+        "unknown.csv",
         "unknown",
     ],
 )
-def test_no_stage33c_table_exporter(table_id):
+def test_non_tabular_or_non_publication_ids_rejected(table_id, tmp_path):
     with pytest.raises(ValueError, match="Unsupported"):
         publication_table_spec(table_id)
+    with pytest.raises(ValueError, match="Unsupported"):
+        build_publication_table(table_id, ())
+    with pytest.raises(ValueError, match="Unsupported"):
+        read_publication_csv(table_id, tmp_path / "unused.csv")
+    spec = replace(publication_table_spec("systems"), table_id=table_id)
+    with pytest.raises(ValueError, match="Unsupported"):
+        DatasetReleaseTable(spec, ())
+    malformed = build_publication_table("systems", ())
+    object.__setattr__(malformed, "spec", spec)
+    with pytest.raises(ValueError, match="Unsupported"):
+        write_publication_csv(malformed, tmp_path / "unused.csv")
+    assert not tuple(tmp_path.iterdir())
+
+
+def test_exact_seventeen_tabular_publication_ids():
+    expected = {
+        "systems",
+        "simulations",
+        "time_windows",
+        "contact_definitions",
+        "software_versions",
+        "quality_control",
+        "quality_control_findings",
+        "quality_control_evidence",
+        "nodes",
+        "residue_annotations",
+        "protein_edges_by_window",
+        "protein_lipid_contacts_by_window",
+        "protein_glycan_contacts_by_window",
+        "protein_edges_by_window_replica_aggregation",
+        "protein_lipid_contacts_by_window_replica_aggregation",
+        "protein_glycan_contacts_by_window_replica_aggregation",
+        "metrics",
+    }
+    assert {s.table_id for s in PUBLICATION_TABLE_SPECS} == expected
+    for spec in PUBLICATION_TABLE_SPECS:
+        assert publication_table_spec(spec.table_id) is spec
+
+
+@pytest.mark.parametrize(
+    "spec", [s for s in PUBLICATION_TABLE_SPECS if s.table_id not in METADATA_TABLE_IDS]
+)
+def test_seven_science_schemas_use_shared_csv_layer(spec, tmp_path):
+    table = build_publication_table(spec.table_id, ())
+    assert table == DatasetReleaseTable(spec, ())
+    path = write_publication_csv(table, tmp_path / spec.relative_path)
+    assert read_publication_csv(spec.table_id, path) == table
+    assert path.read_bytes() == (",".join(c.name for c in spec.columns) + "\n").encode()
+
+
+def test_ten_metadata_models_and_bytes_match_legacy_lookup(bundle, monkeypatch):
+    before = tuple((t, publication_csv_bytes(t)) for t in bundle.tables)
+
+    def legacy_lookup(table_id):
+        if table_id not in METADATA_TABLE_IDS:
+            raise ValueError("Unsupported Stage 33.B table ID")
+        return next(s for s in PUBLICATION_TABLE_SPECS if s.table_id == table_id)
+
+    monkeypatch.setattr(csv_layer, "publication_table_spec", legacy_lookup)
+    assert len(before) == 10
+    for table, payload in before:
+        legacy = build_publication_table(table.table_id, table.records())
+        assert legacy == table
+        assert publication_csv_bytes(legacy) == payload
 
 
 def test_path_binding_and_atomic_overwrite_protection(bundle, tmp_path):

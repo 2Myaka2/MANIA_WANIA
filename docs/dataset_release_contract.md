@@ -7,8 +7,11 @@ implemented in [`dataset_release_contract.py`](../src/mania/dataset_release_cont
 Stage 33.A is accepted and remains the frozen schema authority. Stage 33.B
 metadata/QC/canonical publication exporters are implemented for exactly ten CSV
 tables; see [metadata exports](dataset_release_metadata_exports.md).
-Stage 33 remains incomplete. Stage 33.C scientific publication exporters are next.
-33.C owns scientific per-replica, aggregate and metric exporters; 33.D owns
+Stage 33.B is accepted. Stage 33.C scientific publication exporters are implemented
+for the seven frozen per-replica, aggregate and metric tables; see
+[scientific exports](dataset_release_science_exports.md). Publication aggregate
+authority remains QC-derived. Stage 33 remains incomplete. Stage 33.D release
+assembly is next. 33.D owns
 assembly, cross-table validation, lineage enforcement and final acceptance.
 Dataset v1.0 remains unreleased. Stage 25–32 accepted science and the
 [frozen scientific contract](dataset_v1_scientific_contract.md) are unchanged.

@@ -157,7 +157,13 @@ tables in `dataset_release_metadata.py`, `dataset_release_qc.py`,
 see [metadata exports](dataset_release_metadata_exports.md). Pure builders consume
 accepted authority and explicit scientific/annotation selections. CSV writing is
 separate, with no release assembly or runtime integration.
-Stage 33 remains incomplete. Stage 33.C scientific publication exporters are next.
+Stage 33.B is accepted. Stage 33.C scientific publication exporters are implemented
+in `dataset_release_science.py`, `dataset_release_aggregates.py` and
+`dataset_release_metrics.py`; see [scientific exports](dataset_release_science_exports.md).
+Seven pure scientific/aggregate/metric projections consume 33.B simulation inclusion
+and exact QC-derived aggregate authority. The shared CSV layer supports all 17
+frozen tabular schemas; Stage 33.B retains its ten builders and their semantics.
+Stage 33 remains incomplete. Stage 33.D release assembly is next.
 Production execution order differs from development order: development was
 27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33; the production DAG is
 27–30 -> 32 -> 31 -> 33, with authoritative QC decisions generating the accepted
