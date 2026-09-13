@@ -140,7 +140,7 @@ QC-derived Stage 31 availability with exact correspondence projection. A shared
 bridge preserves retained local bindings; no correspondence is inferred. Separate
 inventory/provenance and unified validation reconstruct every output with zero
 trajectory passes. Pending review is a valid completed QC run that cannot produce
-a production aggregation manifest. Stage 32 is complete.
+a production aggregation manifest. Stage 32 is complete (Stage 32 COMPLETE).
 Historical Stage 30 checkpoint wording: "Stage 31 replica/system aggregation is
 next and has not started." The completed Stage 31 status above supersedes that record.
 Historical Stage 30 policy wording: "The 95% exclusion policy remains Stage 32."
@@ -150,7 +150,14 @@ Stage 33.A release schema contract is implemented in the pure
 [Dataset publication/release contract](dataset_release_contract.md). It freezes
 immutable logical schemas, artifact classes, release paths and format policy,
 including excluded-replica history and mandatory QC-derived aggregate lineage.
-Stage 33 remains incomplete. Stage 33.B metadata/nodes/QC exporters are next.
+Stage 33.A is accepted and remains the frozen schema authority. Stage 33.B
+metadata/QC/canonical publication exporters are implemented for exactly ten CSV
+tables in `dataset_release_metadata.py`, `dataset_release_qc.py`,
+`dataset_release_canonical.py` and the shared `dataset_release_csv.py` layer;
+see [metadata exports](dataset_release_metadata_exports.md). Pure builders consume
+accepted authority and explicit scientific/annotation selections. CSV writing is
+separate, with no release assembly or runtime integration.
+Stage 33 remains incomplete. Stage 33.C scientific publication exporters are next.
 Production execution order differs from development order: development was
 27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33; the production DAG is
 27–30 -> 32 -> 31 -> 33, with authoritative QC decisions generating the accepted

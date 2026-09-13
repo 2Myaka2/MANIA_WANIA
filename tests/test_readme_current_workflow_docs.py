@@ -333,7 +333,13 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
         if name == "docs/architecture.md":
             assert "Stage 33.A release schema contract is implemented" in text
             assert "Stage 33 remains incomplete" in text
-            assert "Stage 33.B metadata/nodes/QC exporters are next" in text
+            assert "Stage 32 COMPLETE" in text
+            assert "Stage 33.A is accepted" in text
+            assert (
+                "Stage 33.B metadata/QC/canonical publication exporters are implemented"
+                in text
+            )
+            assert "Stage 33.C scientific publication exporters are next" in text
             assert "Production execution order differs from development order" in text
             assert "27–30 -> 32 -> 31 -> 33" in text
         else:
@@ -371,13 +377,40 @@ def test_stage33a_contract_documents_current_status_and_production_order():
     assert "Stage 32 is complete" in text
     assert "Stage 33.A release schema contract is implemented" in text
     assert "Stage 33 remains incomplete" in text
-    assert "Stage 33.B metadata/nodes/QC exporters are next" in text
+    assert "Stage 32 COMPLETE" in text
+    assert "Stage 33.A is accepted" in text
+    assert (
+        "Stage 33.B metadata/QC/canonical publication exporters are implemented"
+        in text
+    )
+    assert "Stage 33.C scientific publication exporters are next" in text
     assert "Production execution order differs from development order" in text
     assert "27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33" in text
     assert "27–30 -> 32 -> 31 -> 33" in text
     assert "Excluded trajectories remain part of Dataset history" in text
     assert "QC-derived Stage 31 aggregation manifest" in text
     assert "Stage 34 cannot close on synthetic evidence alone" in text
+
+
+def test_stage33b_documents_authoritative_metadata_and_explicit_selections():
+    text = " ".join(
+        (REPO_ROOT / "docs/dataset_release_metadata_exports.md")
+        .read_text(encoding="utf-8").split()
+    )
+    for phrase in (
+        "Stage 32 COMPLETE", "Stage 33.A is accepted",
+        "Stage 33.B metadata/QC/canonical publication exporters are implemented",
+        "Stage 33 remains incomplete",
+        "Stage 33.C scientific publication exporters are next",
+        "60940ef803d6bdbdc98956aa559c7e2f72548313",
+        "scientific_release_replica_keys", "annotation_publication_system_keys",
+        "QCDerivedAggregationEvidence", "pending_review", "complete_for_system",
+        "used_for_decision", "positive-frame-only", "source/verifier",
+        "690 rows", "330 remains THR", "Stage 32's technical-unavailable precedence",
+        "Empty windows preserve null effective bounds", "exact `Decimal` values",
+        "No duplicate publication schemas", "atomic", "no sampling is rerun",
+    ):
+        assert phrase in text
 
 
 def test_stage32a_contract_documents_current_status():
