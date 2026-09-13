@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from mania.dataset_release_csv import DatasetReleaseTable
+from mania.dataset_release_manifest import require_text
 from mania.dataset_release_manifest_io import release_json_text
 from mania.dataset_release_metadata import (
     build_dataset_release_contact_definition,
@@ -28,6 +29,7 @@ class DatasetReleasePublicationInputs:
     contact_definitions: tuple[DatasetReleaseTable, ...]
     software_versions: DatasetReleaseTable
     metrics: tuple[AuthoritativePublicationMetric, ...]
+    metric_source_value_fields: tuple[str, ...]
 
 
 def publication_inputs_from_payload(data: Any) -> DatasetReleasePublicationInputs:
@@ -70,16 +72,21 @@ def publication_inputs_from_payload(data: Any) -> DatasetReleasePublicationInput
     software = build_dataset_release_software_versions(
         json_array(data["software_versions"])
     )
-    metrics = tuple(
-        AuthoritativePublicationMetric(
-            **exact_fields(
-                row,
-                {f.name for f in fields(AuthoritativePublicationMetric)},
-            )
+    metrics = []
+    source_fields = []
+    for row in json_array(data["metrics"]):
+        values = exact_fields(
+            row,
+            {f.name for f in fields(AuthoritativePublicationMetric)}
+            | {"source_value_field"},
         )
-        for row in json_array(data["metrics"])
+        source_field = values.pop("source_value_field")
+        require_text(source_field)
+        source_fields.append(source_field)
+        metrics.append(AuthoritativePublicationMetric(**values))
+    return DatasetReleasePublicationInputs(
+        tuple(contacts), software, tuple(metrics), tuple(source_fields)
     )
-    return DatasetReleasePublicationInputs(tuple(contacts), software, metrics)
 
 
 def read_dataset_release_publication_inputs(

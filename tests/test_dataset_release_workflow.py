@@ -1,6 +1,7 @@
 """Synthetic production controls; publication never executes upstream science."""
 
-from dataclasses import asdict, replace
+import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -11,7 +12,7 @@ from test_dataset_release_metadata import (
     contact_parameters,
     temporal_evidence,
 )
-from test_dataset_release_science import make_science_case, metric
+from test_dataset_release_science import make_science_case
 from test_dataset_review_qc import review
 
 from mania import canonical_window_tables_io as canonical_io
@@ -308,19 +309,39 @@ def make_release_case(
                 ("engine", "NAMD", None),
             )
         ],
-        "metrics": []
-        if empty or outcomes[0] == "excluded"
-        else [
-            asdict(metric()),
-            asdict(
-                metric(
-                    metric_id="window-metric",
-                    window_id=template.groups[0].spec.window.window_id,
-                    window_index=template.groups[0].spec.window.window_index,
-                )
-            ),
-        ],
+        "metrics": [],
     }
+    if not empty and outcomes[0] != "excluded":
+        binding = next(b for b in canonical_bindings if b.family == "protein")
+        source = canonical_io.read_canonical_protein_edge_window_csv(
+            root / binding.path
+        )
+        row = next(r for r in source.rows if r.replica_id == "1")
+        publication_input["metrics"].append(
+            dict(
+                **{
+                    name: getattr(row, name)
+                    for name in (
+                        "dataset_id",
+                        "system_id",
+                        "trajectory_id",
+                        "replica_id",
+                        "window_id",
+                        "window_index",
+                    )
+                },
+                metric_id="window-metric",
+                metric_name="explicit canonical occupancy",
+                metric_value=row.occupancy,
+                unit=None,
+                source_artifact_role="canonical_protein_edge_window_table",
+                source_artifact_path=binding.path,
+                source_record_key=json.dumps(
+                    row.row_identity, ensure_ascii=False, separators=(",", ":")
+                ),
+                source_value_field="occupancy",
+            )
+        )
     assert write_dataset_release_publication_inputs(
         publication_input, root / "publication_inputs.json"
     ).written

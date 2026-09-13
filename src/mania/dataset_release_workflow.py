@@ -36,6 +36,10 @@ from mania.dataset_release_science import (
     DatasetReleaseScientificTables,
     build_dataset_release_scientific_tables,
 )
+from mania.dataset_release_source_authority import (
+    validate_publication_metric_sources,
+    validate_release_canonical_source_authority,
+)
 from mania.preprocessing.physical_time_execution_io import (
     read_preprocessing_temporal_execution,
 )
@@ -328,6 +332,11 @@ def build_dataset_release(manifest_path: Path) -> DatasetReleaseBundle:
             canonical[family.name] = family.canonical_table(
                 tuple(sorted(rows, key=lambda r: r.row_order))
             )
+        phase = "canonical source authority"
+        validate_release_canonical_source_authority(
+            control, authority.aggregation_manifest_used, canonical
+        )
+        phase = "input"
         temporal = tuple(
             b
             for path in control.temporal_evidence_paths
@@ -366,6 +375,8 @@ def build_dataset_release(manifest_path: Path) -> DatasetReleaseBundle:
             contact_definitions=inputs.contact_definitions,
             software_version_records=inputs.software_versions.records(),
         )
+        phase = "metric source authority"
+        validate_publication_metric_sources(inputs, control, base, metadata)
         phase = "science export"
         science = build_dataset_release_scientific_tables(
             metadata_tables=metadata,

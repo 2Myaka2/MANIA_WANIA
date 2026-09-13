@@ -43,7 +43,7 @@ def payload():
                 source_artifact_path="evidence/engine.json",
             )
         ],
-        "metrics": [asdict(metric())],
+        "metrics": [asdict(metric()) | {"source_value_field": "occupancy"}],
     }
 
 
@@ -53,6 +53,7 @@ def test_publication_input_roundtrip_and_values(tmp_path):
     model = read_dataset_release_publication_inputs(path)
     assert model.software_versions.records()[0]["version"] is None
     assert model.metrics == (metric(),)
+    assert model.metric_source_value_fields == ("occupancy",)
     assert len(model.contact_definitions) == 3
     lipid = {r["parameter_path"]: r for r in model.contact_definitions[1].records()}
     glycan = {r["parameter_path"]: r for r in model.contact_definitions[2].records()}

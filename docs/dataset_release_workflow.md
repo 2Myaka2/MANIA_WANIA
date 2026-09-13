@@ -84,10 +84,47 @@ PBC status, occupancy denominator, episode continuity, gap tolerance, lifetime,
 and specialized distance semantics. Arbitrary nested parameter keys remain data.
 
 Software records have the exact frozen `software_versions` fields. Metric
-records have exactly the fields of accepted `AuthoritativePublicationMetric`.
+records have the fields of accepted `AuthoritativePublicationMetric` plus the
+required control-only `source_value_field`. The frozen public `metrics/metrics.csv`
+schema and the pure Stage 33.C builder are unchanged.
 The adapters validate and copy supplied values; they never query installed
 software or promote QC evidence into primary metrics. Unknown software versions
-remain null. Metrics can be replica-global or have an exact window key.
+remain null. Stage 33.D currently verifies only window-scoped canonical metrics;
+replica-global metrics require a future accepted source adapter.
+
+### Verified metric source contract
+
+The closed supported roles are `canonical_protein_edge_window_table`,
+`canonical_protein_lipid_window_table`, and
+`canonical_protein_glycan_window_table`. Each metric's role and path must match
+exactly one existing `canonical_bindings` entry of the corresponding family.
+Paths are relative to the export control, including when publication inputs are
+stored in another directory. Mere file existence is insufficient; arbitrary CSV
+files, legacy analysis artifacts and directory discovery are unsupported.
+
+`source_record_key` is the accepted Stage 30 row's `row_identity`, serialized as
+a compact JSON array with `ensure_ascii=False` and `separators=(",", ":")`.
+Protein keys contain Dataset, system, trajectory, replica, window ID, source and
+target canonical residue numbers, and edge type. Specialized keys contain Dataset,
+system, trajectory, replica, window ID, canonical residue number, and partner ID.
+The strict Stage 30 reader must resolve exactly one record; malformed, duplicate,
+missing or ambiguous records fail.
+
+| Source fields | Applicable families | Required publication unit |
+| --- | --- | --- |
+| `occupancy`, `n_contact_frames`, `n_contact_episodes` | All three | `null` (unitless counts/fraction) |
+| `mean_episode_length_ns`, `max_episode_length_ns` | All three | `ns` |
+| `edge_weight` | Protein | `null` (unitless fraction) |
+| `distance_mean_A`, `distance_min_A` | Lipid, glycan | `angstrom` |
+
+The explicit numeric field must be in this set. Metric names never select a
+field. The value must equal the source under existing exact `publication_number`
+semantics, with no tolerance, rounding, conversion or plausibility threshold.
+Full Dataset/system/trajectory/replica identity, both window labels, requested
+physical bounds, endpoint inclusion, sampling counts, coverage and effective
+bounds must agree with publication `time_windows`. Omitting the window does not
+make a canonical row replica-global. Unit mismatches and unverifiable sources
+fail before writing; unified validation independently repeats these checks.
 
 ## File-level upstream authority
 
@@ -107,6 +144,21 @@ provenance command/configuration and inventoried input bind that manifest.
 Every produced aggregate family must be explicitly bound to the corresponding
 successful output role and path. A copied unrelated aggregate, different manifest
 binding or pre-QC manifest fails even if its standalone schema is valid.
+
+Publication canonical input models must also equal the actual canonical inputs
+bound to that accepted Stage 31 run. The shared Stage 33.D authority check uses
+the already verified Stage 31 inventory, provenance, manifest and explicit input
+bindings, then reconstructs all families with the accepted strict Stage 30 readers.
+It compares complete deterministic model rows for the publication bindings'
+replica coverage, before Stage 33.C scientific-release filtering. This includes
+source/canonical/partner/window identities, all counts, denominators, occupancies,
+weights, episode/lifetime and distance evidence. Added, removed, changed or
+duplicate rows fail; a nonempty source cannot become a header-only publication
+input. Identical empty models and model-identical copies at different paths pass.
+Excluded or unselected replicas outside the publication input coverage need not
+be supplied to publication. Technical unavailability and publication filtering
+remain unchanged. Aggregate values are never recomputed or silently substituted.
+SHA256 integrity alone does not establish this scientific source equivalence.
 
 Stage 33 does not execute upstream unified science reconstruction, QC evaluators
 or aggregation. It uses structural integrity and accepted strict readers, then
@@ -231,6 +283,24 @@ Validation is read-only and needs no trajectory runtime.
 Synthetic framework acceptance does not release Dataset v1.0 or satisfy Stage 34.
 Real Stage 33 Dataset release smoke not run because authoritative complete
 real production inputs are not yet available.
+
+The F1/F2 corrective task did not run any of the 33 production calculations or
+modify existing real outputs. Synthetic regression fixtures validate code only.
+For Stage 34, real QC evidence must come from actual authoritative production
+observations. Fixture constants such as `atom_order_consistent=True`,
+`protein_remains_broken=False`, or synthetic RMSD assessments are not evidence
+about real trajectories. Real publication metrics must use source-verified real
+artifact records, never test constants.
+
+Real PSF-based specialized-contact execution must verify authoritative element /
+hydrogen metadata and atom-index correspondence before relying on heavy-atom
+selection. Do not weaken explicit H metadata requirements by guessing from atom
+names or masses without separate approval.
+
+The legacy `mania analyze` temporal path is not yet proven to use accepted
+Stage 27 physical-window authority. A similar `window_id` does not establish
+compatibility with a Stage 33 metric. Such analysis artifacts need an explicit
+future adapter with verified compatible record and window semantics.
 
 Stage 34 remains next and unstarted: a real multi-engine pilot requires at least
 one real three-replica group, real canonical mapping and physical-window contract,
