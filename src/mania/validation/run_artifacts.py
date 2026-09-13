@@ -24,7 +24,7 @@ PREPROCESSING_VALIDATION_SCOPE = "preprocessing"
 ANALYSIS_VALIDATION_SCOPE = "analysis"
 
 ArtifactValidationScope = Literal[
-    "preprocessing", "analysis", "replica_aggregation", "dataset_qc",
+    "preprocessing", "analysis", "replica_aggregation", "dataset_qc", "dataset_release",
 ]
 ArtifactSetValidationStatus = Literal["passed", "partial", "failed"]
 ArtifactResolutionStatus = Literal["resolved", "not_resolved"]
@@ -40,9 +40,11 @@ def _scope(value: object) -> None:
         PREPROCESSING_VALIDATION_SCOPE, ANALYSIS_VALIDATION_SCOPE,
         "replica_aggregation",
         "dataset_qc",
+        "dataset_release",
     ):
         raise ValueError(
-            "scope must be preprocessing, analysis, replica_aggregation or dataset_qc"
+            "scope must be preprocessing, analysis, replica_aggregation, "
+            "dataset_qc or dataset_release"
         )
 
 
@@ -496,6 +498,9 @@ def validate_run_artifact_integrity(
     prefix = "analysis/" if scope == ANALYSIS_VALIDATION_SCOPE else ""
     provenance_path = prefix + "run_provenance.json"
     inventory_path = prefix + "artifact_inventory.json"
+    if scope == "dataset_release":
+        provenance_path = "release/provenance.json"
+        inventory_path = "release/artifact_inventory.json"
     issues: list[ArtifactSetValidationIssue] = []
     provenance = None
     inventory = None

@@ -49,8 +49,12 @@ Historical Stage 30 checkpoint: "Stage 31 replica/system aggregation is next
 and has not started." The completed Stage 31 status above supersedes this record.
 Historical Stage 30 policy wording: "The 95% exclusion policy remains Stage 32."
 The implemented Stage 32 status below supersedes that milestone.
-Stage 33 publication export is next and has not started. Stage 34 multi-engine pilot and
-Stage 35 full production remain later.
+Stage 33 is complete (Stage 33 COMPLETE): accepted 33.A/B/C are integrated by
+33.D through explicit production lineage, 17 CSV + 3 JSON publication artifacts,
+full cross-table validation, cycle-free inventory/provenance, and offline
+reconstruction. Stage 34 multi-engine pilot is next and has not started.
+Stage 35 full production remains later. Production execution is
+27–30 -> 32 -> QC-derived Stage 31 manifest -> 31 aggregation -> 33 publication.
 The 95% exclusion policy is implemented in Stage 32 through accepted 32.B.
 WANIA is unchanged. Analysis Dataset-context propagation is outside Stage 26;
 analysis temporal propagation is outside Stage 27.
@@ -861,10 +865,11 @@ to QC-derived available replicas while preserving retained local bindings.
 when every external input is mapped. See the
 [Dataset QC workflow and final acceptance](docs/dataset_qc_workflow.md).
 
-Stage 31 provides a separate Dataset-level command after Stage 30 canonicalization:
+Stage 31 provides a separate Dataset-level command. Production aggregation uses
+the authoritative QC-derived manifest after Stage 32:
 
 ```bash
-mania dataset aggregate-replicas --manifest replica_aggregation_manifest.json \
+mania dataset aggregate-replicas --manifest qc_run/replica_aggregation_manifest_qc_derived.json \
   --output aggregate_run --artifact-checksum-mode none
 ```
 
@@ -877,6 +882,22 @@ one available replica has blank CSV SD. The separate run includes portable
 inventory and provenance. `mania artifacts validate aggregate_run --scope
 replica_aggregation` reconstructs results when every external input is mapped.
 See the [exact manifest, output and validation contract](docs/replica_aggregation_workflow.md).
+
+Stage 33 assembles the final publication surface from explicit accepted inputs:
+
+```bash
+mania dataset publish --manifest dataset_release_export_manifest.json \
+  --output dataset_release --artifact-checksum-mode none
+mania artifacts validate dataset_release --scope dataset_release \
+  --input-artifact-path input:dataset_release_export_manifest=dataset_release_export_manifest.json
+```
+
+The release contains exactly 17 CSV + 3 JSON artifacts, complete excluded-replica
+history, verified Stage 32-to-31 lineage, and deterministic inventory/provenance.
+Assembly and validation reuse accepted publication builders with zero trajectory
+passes and no scientific recalculation. See the
+[release control, publication tree and final acceptance](docs/dataset_release_workflow.md).
+Real Dataset v1.0 publication awaits authoritative complete production inputs.
 
 Accepted Stage 15 workflow:
 
@@ -1457,8 +1478,10 @@ The planning-level scientific roadmap is:
   See the [replica aggregation workflow](docs/replica_aggregation_workflow.md).
 - **Stage 32 — Dataset QC/exclusion:** complete; accepted hard/review evaluation,
   authoritative release decisions, correspondence projection and offline validation.
-- **Stage 33 — Publication export:** next; not started. Stage 30/31 outputs remain intermediates.
-- **Stage 34 — Multi-engine pilot:** later. Acceptance requires at least one
+- **Stage 33 — Publication export:** complete; 17 CSV + 3 JSON assembly, explicit
+  production lineage, complete historical metadata, and offline reconstruction.
+  Stage 30/31 outputs remain intermediates; publication outputs are additive.
+- **Stage 34 — Multi-engine pilot:** next; not started. Acceptance requires at least one
   real three-replica group, real canonical mapping, a real physical window contract,
   authoritative real QC-derived availability/exclusion, and real aggregation;
   preferably T330M. Specialized layers require authoritative real partner

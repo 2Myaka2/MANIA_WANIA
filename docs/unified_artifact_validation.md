@@ -1,5 +1,37 @@
 # Unified technical artifact validation — Stage 25.D
 
+## Stage 33.D — Dataset publication scope
+
+Explicit scope `dataset_release` validates the exact 17 CSV + 3 JSON
+[publication tree](dataset_release_workflow.md). The control remains external:
+
+```bash
+mania artifacts validate dataset_release --scope dataset_release \
+  --input-artifact-path input:dataset_release_export_manifest=dataset_release_export_manifest.json
+```
+
+This mapping is required for complete reconstruction and is handled by the narrow
+release dispatcher. It is not an inventory input entry; the cycle-free release
+inventory contains exactly 18 publication outputs. Authority paths resolve
+relative to the explicitly mapped control location. No input directory scanning
+or control-location guessing occurs. Output inspection rejects extra files.
+
+Validation calls the same release assembly API as export: strict upstream readers
+and generic integrity checks prove Stage 32 -> QC-derived manifest -> Stage 31
+file lineage, then accepted Stage 33.B/C builders reconstruct every expected table.
+The complete relationship validator checks all declared foreign keys, historical
+population, inclusion, canonical annotation coverage, exact group/window identity,
+denominators and correspondence. Strict CSV models and deterministic bytes must
+match, as must the reconstructed dataset manifest. Inventory sizes/checksums and
+provenance configuration, command, counts and successful references are checked.
+
+Missing external controls, excluded-history removal, substituted aggregates,
+pre-QC lineage, altered release files and unknown roles fail validation. Empty
+expected science tables remain valid. Validation performs zero trajectory passes
+and does not rerun QC, sampling, mapping, contacts or replica aggregation.
+Existing preprocessing, analysis, replica-aggregation and Dataset-QC scopes keep
+their accepted reconstruction behavior.
+
 ## Stage 32.D — Dataset QC scope
 
 Explicit scope `dataset_qc` validates the

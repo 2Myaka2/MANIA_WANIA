@@ -1,5 +1,22 @@
 # MANIA Run-Provenance Contract
 
+## Stage 33.D — Dataset publication provenance
+
+The [release workflow](dataset_release_workflow.md) reuses this unchanged schema
+with workflow `dataset_release`, at `release/provenance.json`. Configuration
+records the explicit export-control alias, Dataset/release/canonical identity,
+the actual production DAG, Stage 32/31 file authority, manifest used, exact
+historical/included/excluded/unavailable counts, checksum mode and verified
+aggregate lineage. Source paths resolve against the externally mapped control.
+
+References identify the 18 successful inventoried publication outputs plus the
+inventory itself. The inventory excludes provenance, preventing a checksum cycle.
+The run ID is a stable logical release identity; only accepted runtime timestamps
+and duration may differ between repeated identical exports. Runtime package
+identity uses the running MANIA version with Git fields unavailable; scientific
+software publication records come exclusively from explicit control evidence.
+No Git, host or current package discovery supplies publication authority.
+
 ## Stage 32.D — separate Dataset QC provenance
 
 The [Dataset QC workflow](dataset_qc_workflow.md) uses this unchanged schema with

@@ -45,8 +45,12 @@ Stage 32 is complete: accepted 32.A/B/C are integrated by 32.D through strict
 Dataset QC evidence controls, authoritative release decisions, reports,
 QC-derived aggregation availability and correspondence projection, portable
 inventory/provenance, and exact offline reconstruction validation.
-Stage 33 publication export is next and has not started. Stage 34 multi-engine pilot and
-Stage 35 full production remain later.
+Stage 33 is complete (Stage 33 COMPLETE): accepted 33.A/B/C are integrated by
+33.D through explicit production lineage, 17 CSV + 3 JSON publication artifacts,
+full cross-table validation, cycle-free inventory/provenance, and offline
+reconstruction. Stage 34 multi-engine pilot is next and has not started.
+Stage 35 full production remains later. Production execution is
+27–30 -> 32 -> QC-derived Stage 31 manifest -> 31 aggregation -> 33 publication.
 Stage 34 acceptance requires a real three-replica group, real canonical mapping,
 a real physical window contract, authoritative real QC-derived availability and
 exclusion, and real aggregation; preferably T330M. Specialized layers require

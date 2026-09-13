@@ -952,6 +952,10 @@ def validate_run_artifacts(
     input_artifact_paths: Mapping[str, Path] | None = None,
 ) -> UnifiedArtifactValidationReport:
     """Validate declared artifacts read-only; never certify scientific acceptance."""
+    if scope == "dataset_release":
+        from mania.validation.dataset_release import validate_dataset_release_run
+
+        return validate_dataset_release_run(run_root, input_artifact_paths)
     integrity = run_artifacts.validate_run_artifact_integrity(
         run_root, scope=scope, input_artifact_paths=input_artifact_paths
     )

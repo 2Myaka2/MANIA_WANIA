@@ -163,15 +163,21 @@ in `dataset_release_science.py`, `dataset_release_aggregates.py` and
 Seven pure scientific/aggregate/metric projections consume 33.B simulation inclusion
 and exact QC-derived aggregate authority. The shared CSV layer supports all 17
 frozen tabular schemas; Stage 33.B retains its ten builders and their semantics.
-Stage 33 remains incomplete. Stage 33.D release assembly is next.
+Stage 33.C is accepted. Stage 33.D final release assembly is implemented in
+`dataset_release_manifest.py`, `dataset_release_manifest_io.py`,
+`dataset_release_inputs_io.py`, `dataset_release_workflow.py`,
+`dataset_release_validation.py` and `dataset_release_run.py`, with narrow unified
+validation dispatch. It integrates the accepted builders without changing science;
+see the [release workflow and acceptance](dataset_release_workflow.md).
+Stage 33 is complete (Stage 33 COMPLETE) after final Stage 33.D acceptance.
 Production execution order differs from development order: development was
 27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33; the production DAG is
 27–30 -> 32 -> 31 -> 33, with authoritative QC decisions generating the accepted
 QC-derived Stage 31 manifest before Stage 31 aggregation and Stage 33 publication.
 A technically valid pre-QC aggregate is not publication-authoritative.
 33.A adds no exporters, release files, CLI or runtime validation integration.
-Stage 34 multi-engine pilot and
-Stage 35 full production remain later. Explicit mapping to UniProt O95436
+Stage 34 multi-engine pilot is next and has not started.
+Stage 35 full production remains later. Explicit mapping to UniProt O95436
 and authoritative system annotations remain mandatory before Dataset publication.
 Stage 34 acceptance requires a real three-replica group, real canonical mapping,
 a real physical window contract, authoritative real QC-derived availability and

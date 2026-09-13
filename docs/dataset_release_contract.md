@@ -10,17 +10,18 @@ tables; see [metadata exports](dataset_release_metadata_exports.md).
 Stage 33.B is accepted. Stage 33.C scientific publication exporters are implemented
 for the seven frozen per-replica, aggregate and metric tables; see
 [scientific exports](dataset_release_science_exports.md). Publication aggregate
-authority remains QC-derived. Stage 33 remains incomplete. Stage 33.D release
-assembly is next. 33.D owns
-assembly, cross-table validation, lineage enforcement and final acceptance.
+authority remains QC-derived. Stage 33.C is accepted. Stage 33.D final release
+assembly is implemented through the accepted builders without changing science;
+see the [release workflow](dataset_release_workflow.md). Stage 33 is complete
+(Stage 33 COMPLETE) after final Stage 33.D acceptance.
 Dataset v1.0 remains unreleased. Stage 25–32 accepted science and the
 [frozen scientific contract](dataset_v1_scientific_contract.md) are unchanged.
 
 Accepted Stage 32.D checkpoint: `9958f491632c11d18ed44d178d224a41083a6ad1`.
 The contract schema version is `mania.dataset_release_contract.v0.1`; the Dataset
 release version is `1.0`. Package version remains `mania-wania 0.1.0`.
-This document and the architecture status supersede older Stage 33-unstarted
-status text, which remains the historical Stage 32 checkpoint in other files.
+The current status documents record completed Stage 33 framework acceptance.
+Historical Stage 33.A implementation boundaries below remain unchanged.
 
 33.A defines immutable logical descriptors and validates their structure only.
 It performs no file reading/writing, release assembly, QC, aggregation, canonical

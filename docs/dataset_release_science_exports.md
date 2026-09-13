@@ -5,8 +5,12 @@
 Stage 32 is complete (Stage 32 COMPLETE). Stage 33.A is accepted and remains the
 sole frozen schema authority. Stage 33.B is accepted at
 `5f093a088df721a9d1bf743bc8259ee566b473da`.
-Stage 33.C scientific publication exporters are implemented. Stage 33 remains
-incomplete. Stage 33.D release assembly is next. Dataset v1.0 remains unreleased;
+Stage 33.C scientific publication exporters are implemented and accepted at
+`4239b3cc74f6979eaeb9224db0a905f857b29b64`. Stage 33.C is accepted.
+Stage 33.D final release assembly is implemented through these accepted builders
+without changing science; see the [release workflow](dataset_release_workflow.md).
+Stage 33 is complete (Stage 33 COMPLETE) after final Stage 33.D acceptance.
+Dataset v1.0 remains unreleased;
 package version remains `mania-wania 0.1.0`.
 
 ## Production authority
@@ -105,7 +109,7 @@ including paths, groups, members and correspondence. Pending review fails.
 Decision-set and manifest candidate populations must agree. Availability must
 respect accepted Stage 32 decisions, including technical-unavailable precedence.
 This is structural model-level authority supplied by the caller; full file and
-provenance proof is Stage 33.D work. No QC decision is created or reevaluated.
+provenance proof is implemented in the separate Stage 33.D workflow. No QC decision is created or reevaluated.
 
 Accepted Dataset-level `CanonicalProteinEdgeReplicaAggregationTable`,
 `CanonicalProteinLipidReplicaAggregationTable` and
@@ -179,6 +183,7 @@ roundtrips and deterministic bytes, including header-only output.
 
 Release assembly, the three release JSON artifacts, inventory/provenance, full
 lineage, complete cross-table validation, runtime integration, publication CLI
-and final Stage 33 acceptance remain next. This stage adds no Parquet adapter,
+and final Stage 33 acceptance are implemented by the separate release workflow.
+It reuses the accepted Stage 33.B/C builders. This adds no Parquet adapter,
 dependency, trajectory runtime, scientific recomputation or aggregation engine.
 Accepted Stage 27–32 science, PBC, analysis and WANIA remain unchanged.

@@ -7,7 +7,10 @@ Stage 32 is complete (Stage 32 COMPLETE). Stage 33.A is accepted at
 Stage 33.B metadata/QC/canonical publication exporters are implemented.
 Stage 33.B is accepted. Stage 33.C scientific publication exporters are implemented;
 see [scientific exports](dataset_release_science_exports.md).
-Stage 33 remains incomplete. Stage 33.D release assembly is next.
+Stage 33.C is accepted. Stage 33.D final release assembly is implemented through
+the accepted builders without changing science; see the
+[release workflow](dataset_release_workflow.md). Stage 33 is complete
+(Stage 33 COMPLETE) after final Stage 33.D acceptance.
 Dataset v1.0 remains unreleased. Package version remains `mania-wania 0.1.0`.
 
 Stage 33.B owns exactly these ten publication builders. The shared publication
@@ -230,8 +233,8 @@ provides independent audit dictionaries and retains Decimal scalars.
 ## Stage 33.C
 
 Per-replica science, replica/system aggregates and explicit metrics are implemented
-by 33.C using the same shared CSV serialization authority. Stage 33.D release
-assembly is next after these scientific exports.
-33.D owns release assembly, JSON manifest/inventory/provenance, full cross-table
-validation and final acceptance. No publication CLI, Parquet adapter, runtime
-roles, dependencies, WANIA changes or QC/science recomputation are added here.
+by accepted 33.C using the same shared CSV serialization authority. Stage 33.D
+integrates these builders into release assembly, JSON manifest/inventory/provenance,
+full cross-table validation and the publication CLI. These additions are separate
+from the accepted 33.B builders. No Parquet adapter, dependency, WANIA change or
+QC/science recomputation is introduced.

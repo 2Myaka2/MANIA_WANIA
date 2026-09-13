@@ -283,6 +283,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     qc_parser.add_argument("--overwrite", action="store_true")
 
+    publish_parser = dataset_commands.add_parser(
+        "publish", help="Assemble a Dataset release from explicit accepted artifacts.",
+    )
+    publish_parser.add_argument("--manifest", type=Path, required=True)
+    publish_parser.add_argument("--output", type=Path, required=True)
+    publish_parser.add_argument(
+        "--artifact-checksum-mode", choices=("none", "sha256"), default="none",
+    )
+    publish_parser.add_argument("--overwrite", action="store_true")
+
     artifacts_parser = subparsers.add_parser(
         "artifacts",
         help="Technical artifact/integrity validation: mania artifacts validate.",
@@ -303,7 +313,7 @@ def build_parser() -> argparse.ArgumentParser:
     artifact_validate.add_argument("run_root", type=Path, metavar="RUN_ROOT")
     artifact_validate.add_argument(
         "--scope", choices=("preprocessing", "analysis", "replica_aggregation",
-                            "dataset_qc"),
+                            "dataset_qc", "dataset_release"),
         required=True,
         help="Explicit metadata scope; never auto-detected.",
     )
@@ -2474,6 +2484,20 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
+    if args.command == "dataset" and args.dataset_command == "publish":
+        from mania.dataset_release_run import run_dataset_release
+        from mania.dataset_release_workflow import DatasetReleaseError
+
+        try:
+            release_result = run_dataset_release(
+                args.manifest, args.output,
+                checksum_mode=args.artifact_checksum_mode, overwrite=args.overwrite,
+            )
+        except DatasetReleaseError as exc:
+            print(str(exc), file=sys.stderr)
+            raise SystemExit(1) from None
+        print(json.dumps(release_result.to_dict(), indent=2))
+        return
     if args.command == "dataset" and args.dataset_command == "qc":
         from mania.dataset_qc_run import run_dataset_qc
         from mania.dataset_qc_workflow import DatasetQCWorkflowError

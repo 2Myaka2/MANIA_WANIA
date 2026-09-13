@@ -1,5 +1,20 @@
 # Artifact inventory contract v0.1
 
+## Stage 33.D — Dataset publication inventory
+
+The [release workflow](dataset_release_workflow.md) uses the unchanged generic
+schema with workflow `dataset_release`, at `release/artifact_inventory.json`.
+Exactly 18 outputs are inventoried: all 17 frozen publication CSVs and
+`release/dataset_manifest.json`. Roles are the Stage 33.A registry artifact IDs,
+and inventory IDs are `output:<artifact_id>`. Inventory and provenance are excluded
+from this content graph. External authority remains bound by the release control;
+it is not copied into the 20-file publication surface.
+
+The logical run ID is `dataset-release:<dataset_id>:1.0`, so inventories are
+deterministic across repeated identical exports. `none` records exact sizes and
+null SHA256 without hashing; `sha256` uses the accepted streaming helper.
+This adapter does not alter historical Stage 25 inventory semantics.
+
 ## Stage 32.D — Dataset QC roles
 
 The [Dataset QC workflow](dataset_qc_workflow.md) reuses this schema with workflow

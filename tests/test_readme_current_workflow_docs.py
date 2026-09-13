@@ -329,10 +329,10 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
             # Current status follows accepted Stage 32.D integration.
             assert "Stage 32 is complete" in text
         assert "Stage 34 multi-engine pilot" in text
-        assert "Stage 35 full production remain later" in text
+        assert "Stage 35 full production remains later" in text
         if name == "docs/architecture.md":
             assert "Stage 33.A release schema contract is implemented" in text
-            assert "Stage 33 remains incomplete" in text
+            assert "Stage 33 COMPLETE" in text
             assert "Stage 32 COMPLETE" in text
             assert "Stage 33.A is accepted" in text
             assert (
@@ -343,8 +343,8 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
             assert "Production execution order differs from development order" in text
             assert "27–30 -> 32 -> 31 -> 33" in text
         else:
-            # Other status files retain their accepted Stage 32 checkpoint.
-            assert "Stage 33 publication export is next and has not started" in text
+            # Current status records completed Stage 33 framework acceptance.
+            assert "Stage 33 is complete (Stage 33 COMPLETE)" in text
         # Preserve accepted A/B/C history alongside completed D integration.
         if name == "docs/architecture.md":
             assert re.search(r"Stage 28\.A is accepted\b", text)
@@ -376,7 +376,7 @@ def test_stage33a_contract_documents_current_status_and_production_order():
     )
     assert "Stage 32 is complete" in text
     assert "Stage 33.A release schema contract is implemented" in text
-    assert "Stage 33 remains incomplete" in text
+    assert "Stage 33 COMPLETE" in text
     assert "Stage 32 COMPLETE" in text
     assert "Stage 33.A is accepted" in text
     assert (
@@ -400,7 +400,7 @@ def test_stage33b_documents_authoritative_metadata_and_explicit_selections():
     for phrase in (
         "Stage 32 COMPLETE", "Stage 33.A is accepted",
         "Stage 33.B metadata/QC/canonical publication exporters are implemented",
-        "Stage 33 remains incomplete",
+        "Stage 33 COMPLETE",
         "Stage 33.C scientific publication exporters are implemented",
         "60940ef803d6bdbdc98956aa559c7e2f72548313",
         "scientific_release_replica_keys", "annotation_publication_system_keys",
@@ -413,7 +413,7 @@ def test_stage33b_documents_authoritative_metadata_and_explicit_selections():
         assert phrase in text
 
 
-def test_stage33c_documents_scientific_exports_and_pending_release_assembly():
+def test_stage33c_documents_scientific_exports_and_completed_release_assembly():
     for name in (
         "docs/architecture.md", "docs/dataset_release_contract.md",
         "docs/dataset_release_metadata_exports.md",
@@ -423,7 +423,7 @@ def test_stage33c_documents_scientific_exports_and_pending_release_assembly():
         for phrase in (
             "Stage 32 COMPLETE", "Stage 33.A is accepted", "Stage 33.B is accepted",
             "Stage 33.C scientific publication exporters are implemented",
-            "Stage 33 remains incomplete", "Stage 33.D release assembly is next",
+            "Stage 33 COMPLETE", "Stage 33.D final release assembly is implemented",
         ):
             assert phrase in text
     science = (REPO_ROOT / "docs/dataset_release_science_exports.md").read_text()
@@ -891,13 +891,34 @@ def test_stage32d_workflow_documents_strict_controls_and_projection(tmp_path):
         assert "dataset_qc" in (REPO_ROOT / name).read_text(encoding="utf-8")
 
 
-def test_stage34_roadmap_requires_real_evidence_and_stage33_is_unstarted():
+def test_stage34_roadmap_requires_real_evidence_after_stage33():
     text = " ".join(readme_text().split())
     for phrase in (
-        "Stage 33 publication export is next and has not started",
+        "Stage 33 is complete (Stage 33 COMPLETE)",
         "real three-replica group", "real canonical mapping",
         "real physical window contract", "authoritative real QC-derived",
         "real aggregation", "preferably T330M",
         "Specialized layers require authoritative real partner correspondence",
     ):
         assert phrase in text
+
+
+def test_stage33d_documents_complete_release_and_external_control():
+    from mania.dataset_release_contract import PUBLICATION_ARTIFACT_REGISTRY
+
+    text = (REPO_ROOT / "docs/dataset_release_workflow.md").read_text(encoding="utf-8")
+    for artifact in PUBLICATION_ARTIFACT_REGISTRY.artifacts:
+        assert artifact.relative_path in text
+    normalized = " ".join(text.split())
+    for phrase in (
+        "Stage 33 COMPLETE", "Stage 34 is next and has not started",
+        "4239b3cc74f6979eaeb9224db0a905f857b29b64",
+        "dataset_release_export_manifest.json", "release/dataset_manifest.json",
+        "mania.dataset_release_export_manifest.v0.1",
+        "mania.dataset_release_manifest.v0.1", "Exactly 17 CSV + 3 JSON",
+        "exactly 18 output entries", "two window identity fields must both be null",
+        "input:dataset_release_export_manifest=dataset_release_export_manifest.json",
+        "Real Stage 33 Dataset release smoke not run because authoritative complete "
+        "real production inputs are not yet available",
+    ):
+        assert phrase in normalized
