@@ -330,7 +330,15 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
             assert "Stage 32 is complete" in text
         assert "Stage 34 multi-engine pilot" in text
         assert "Stage 35 full production remain later" in text
-        assert "Stage 33 publication export is next and has not started" in text
+        if name == "docs/architecture.md":
+            assert "Stage 33.A release schema contract is implemented" in text
+            assert "Stage 33 remains incomplete" in text
+            assert "Stage 33.B metadata/nodes/QC exporters are next" in text
+            assert "Production execution order differs from development order" in text
+            assert "27–30 -> 32 -> 31 -> 33" in text
+        else:
+            # Other status files retain their accepted Stage 32 checkpoint.
+            assert "Stage 33 publication export is next and has not started" in text
         # Preserve accepted A/B/C history alongside completed D integration.
         if name == "docs/architecture.md":
             assert re.search(r"Stage 28\.A is accepted\b", text)
@@ -353,6 +361,23 @@ def test_current_status_documents_completed_stage29_and_stage30_boundary() -> No
         assert "Analysis Dataset-context propagation is outside Stage 26" in text
     assert "mania artifacts validate out --scope preprocessing" in readme_text()
     assert "docs/stage25_final_acceptance.md" in readme_text()
+
+
+def test_stage33a_contract_documents_current_status_and_production_order():
+    text = " ".join(
+        (REPO_ROOT / "docs/dataset_release_contract.md")
+        .read_text(encoding="utf-8").split()
+    )
+    assert "Stage 32 is complete" in text
+    assert "Stage 33.A release schema contract is implemented" in text
+    assert "Stage 33 remains incomplete" in text
+    assert "Stage 33.B metadata/nodes/QC exporters are next" in text
+    assert "Production execution order differs from development order" in text
+    assert "27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33" in text
+    assert "27–30 -> 32 -> 31 -> 33" in text
+    assert "Excluded trajectories remain part of Dataset history" in text
+    assert "QC-derived Stage 31 aggregation manifest" in text
+    assert "Stage 34 cannot close on synthetic evidence alone" in text
 
 
 def test_stage32a_contract_documents_current_status():

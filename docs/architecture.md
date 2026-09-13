@@ -145,7 +145,19 @@ Historical Stage 30 checkpoint wording: "Stage 31 replica/system aggregation is
 next and has not started." The completed Stage 31 status above supersedes that record.
 Historical Stage 30 policy wording: "The 95% exclusion policy remains Stage 32."
 The implemented Stage 32 status below supersedes that milestone.
-Stage 33 publication export is next and has not started. Stage 34 multi-engine pilot and
+Stage 33.A release schema contract is implemented in the pure
+`dataset_release_contract.py` module; see the
+[Dataset publication/release contract](dataset_release_contract.md). It freezes
+immutable logical schemas, artifact classes, release paths and format policy,
+including excluded-replica history and mandatory QC-derived aggregate lineage.
+Stage 33 remains incomplete. Stage 33.B metadata/nodes/QC exporters are next.
+Production execution order differs from development order: development was
+27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33; the production DAG is
+27–30 -> 32 -> 31 -> 33, with authoritative QC decisions generating the accepted
+QC-derived Stage 31 manifest before Stage 31 aggregation and Stage 33 publication.
+A technically valid pre-QC aggregate is not publication-authoritative.
+33.A adds no exporters, release files, CLI or runtime validation integration.
+Stage 34 multi-engine pilot and
 Stage 35 full production remain later. Explicit mapping to UniProt O95436
 and authoritative system annotations remain mandatory before Dataset publication.
 Stage 34 acceptance requires a real three-replica group, real canonical mapping,
