@@ -134,18 +134,27 @@ def test_distinct_molecules_keep_periodic_contact_ambiguity():
     )
     candidate = records[2]
     assert all_bonds(candidate)["prepared_direct_disagreement_count"] == 0
-    probes = candidate["contact_diagnostics"]["environment_environment"]["thresholds"]
+    supplemental = candidate["contact_diagnostics"][
+        "supplemental_environment_environment"
+    ]
+    probes = supplemental["thresholds"]
     assert [p["lost_periodic_close"] for p in probes] == [4, 4]
+    assert [p["substantive_lost_periodic_close"] for p in probes] == [4, 4]
     assert [p["direct_only_close"] for p in probes] == [0, 0]
     coverage = candidate["checked_atom_set_coverage"]
-    assert coverage["selected_environment_component_ids"] == [1, 2]
+    assert coverage["selected_environment_component_ids"] == []
+    assert coverage["detailed_coverage_equals_full_qualifying_set"] is True
+    assert supplemental["environment_component_ids"] == [1, 2]
+    assert supplemental["left_atom_index_ranges"] == [[2, 5]]
+    assert supplemental["left_atom_count"] == 4
     assert coverage["subsets"]["representative_environment_heavy"] == {
-        "atom_count": 4,
-        "atom_index_ranges": [[2, 5]],
+        "atom_count": 0,
+        "atom_index_ranges": [],
     }
     notes = []
     summary = diagnostic.conclude(records, notes)
     assert "8 lost_periodic_close" in summary
+    assert "near-protein set: FAIL; 8 substantive mismatches" in summary
     assert any("Candidate still loses" in warning for warning in notes)
     assert "PBC PASSED" not in summary
 
@@ -244,6 +253,10 @@ def test_direct_only_contacts_and_reference_drift_are_reported():
     assert report["periodic_reference_drift_count_on_candidate_union"] == 1
     for threshold in report["thresholds"]:
         assert threshold["direct_only_close"] == 1
+        assert threshold["strict_direct_only_close"] == 1
+        assert threshold["substantive_direct_only_close"] == 1
+        assert threshold["numerical_threshold_boundary_flip"] == 0
+        assert threshold["distance_disagreement"] == 1
         assert threshold["lost_periodic_close"] == 0
         assert threshold["examples"][0]["discrepancy_type"] == "direct_only_close"
 
@@ -284,6 +297,240 @@ def test_environment_selection_is_bounded_and_topology_connected(monkeypatch):
     assert coverage["candidate_components_within_6_A"] == 2
     assert coverage["selected_environment_component_ids"] == [1]
     assert subsets["representative_environment_heavy"].tolist() == [2, 3]
+
+
+def many_environment_fragments():
+    return system(
+        [50, 51] + [53, 54] * 20,
+        bonds=[(i, i + 1) for i in range(0, 42, 2)],
+        residues=["ALA"] * 2 + ["ENV-X"] * 40,
+    )
+
+
+def test_variant_c_includes_more_than_16_complete_qualifying_fragments():
+    records = evaluate(many_environment_fragments())
+    for row in records[:2]:
+        control = row["checked_atom_set_coverage"]
+        assert control["detailed_environment_component_count"] == 16
+        assert row["checked_atom_set_coverage"]["full_near_protein_mode"] is False
+    candidate = records[2]
+    coverage = candidate["checked_atom_set_coverage"]
+    assert coverage["eligible_environment_component_count"] == 20
+    assert coverage["candidate_search_environment_heavy_atom_count"] == 40
+    assert coverage["periodic_6A_qualifying_component_count"] == 20
+    assert coverage["periodic_6A_qualifying_heavy_atom_count"] == 40
+    assert coverage["detailed_environment_component_count"] == 20
+    assert coverage["detailed_environment_heavy_atom_count"] == 40
+    assert coverage["selected_environment_component_ids"] == list(range(1, 21))
+    assert coverage["subsets"]["representative_environment_heavy"][
+        "atom_index_ranges"
+    ] == [[2, 41]]
+    assert coverage["detailed_coverage_equals_full_qualifying_set"] is True
+    assert coverage["environment_component_limit"] is None
+    protein_environment = candidate["contact_diagnostics"]["protein_environment"]
+    for threshold in protein_environment["thresholds"]:
+        assert threshold["pairs_examined"] == threshold["close_union_pair_count"] == 80
+    environment = candidate["contact_diagnostics"]["environment_environment"]
+    assert environment["pair_population_count"] == 40 * 39 // 2
+    assert environment["thresholds"][0]["pairs_examined"] == 40 * 39 // 2
+    assert all_bonds(candidate)["bond_count"] == 21
+    assert candidate["bond_integrity"]["all_environment_bonds"]["bond_count"] == 20
+    conclusions = diagnostic.variant_c_conclusions(records)
+    assert conclusions["variant_c_full_near_protein_coverage_completed"] is True
+    assert conclusions["variant_c_substantive_contact_mismatch_count"] == 0
+
+
+def test_only_one_close_atom_selects_all_fragment_heavy_atoms():
+    u = system(
+        [50, 51, 56, 70, 71], bonds=((0, 1), (2, 3), (3, 4)),
+        residues=["ALA"] * 2 + ["ENV-X"] * 3,
+        elements=["C", "C", "C", "C", "H"],
+    )
+    subsets, coverage = diagnostic.diagnostic_subsets(
+        diagnostic.topology_context(u), u.atoms.positions, BOX, full_near_protein=True
+    )
+    assert subsets["representative_environment_heavy"].tolist() == [2, 3]
+    assert coverage["periodic_6A_qualifying_component_count"] == 1
+    assert coverage["periodic_6A_qualifying_heavy_atom_count"] == 2
+    candidate = evaluate(u)[2]["contact_diagnostics"]["protein_environment"]
+    assert candidate["right_atom_index_ranges"] == [[2, 3]]
+    assert candidate["pair_population_count"] == 4
+
+
+def test_full_candidate_definition_includes_single_heavy_components_and_exact_cutoff():
+    u = system(
+        [0, 1, 7, 8, 7.0005, 99],
+        bonds=((0, 1), (2, 3)),
+        residues=["ALA"] * 2 + ["UNCLASSIFIED"] * 4,
+        elements=["C", "C", "O", "H", "Na", "Cl"],
+    )
+    subsets, coverage = diagnostic.diagnostic_subsets(
+        diagnostic.topology_context(u), u.atoms.positions, BOX, full_near_protein=True
+    )
+    assert coverage["eligible_environment_component_count"] == 3
+    assert coverage["candidate_search_environment_heavy_atom_count"] == 3
+    assert coverage["selected_environment_component_ids"] == [1, 3]
+    assert subsets["representative_environment_heavy"].tolist() == [2, 5]
+
+
+@pytest.mark.parametrize("threshold", [4.5, 6.0])
+@pytest.mark.parametrize("direction", ["lost_periodic_close", "direct_only_close"])
+def test_numerical_boundary_flips_remain_strict_but_not_substantive(
+    threshold, direction,
+):
+    u = system([0, threshold])
+    raw = u.atoms.positions.copy()
+    prepared = raw.copy()
+    if direction == "lost_periodic_close":
+        prepared[1, 0] += 0.000005
+    else:
+        raw[1, 0] += 0.000005
+    report = diagnostic.compare_contacts(
+        u, diagnostic.topology_context(u), raw, prepared, BOX,
+        np.array([0]), np.array([1]),
+    )
+    result = next(
+        t for t in report["thresholds"]
+        if t["geometry_probe_threshold_A"] == threshold
+    )
+    assert diagnostic.DISTANCE_TOLERANCE_A == 0.001
+    assert result[direction] == result[f"strict_{direction}"] == 1
+    assert result["numerical_threshold_boundary_flip"] == 1
+    assert result[f"substantive_{direction}"] == result["distance_disagreement"] == 0
+    example = result["numerical_threshold_boundary_examples"][0]
+    assert example["discrepancy_type"] == direction
+    assert example["classification"] == "numerical_threshold_boundary_flip"
+    assert 0 < example["absolute_disagreement_A"] <= 0.001
+    records = evaluate(u)
+    records[2]["contact_diagnostics"] = {"protein_protein": report}
+    conclusions = diagnostic.variant_c_conclusions(records)
+    assert conclusions["variant_c_substantive_contact_mismatch_count"] == 0
+    assert conclusions["variant_c_numerical_threshold_boundary_flip_count"] == 1
+    notes = []
+    summary = diagnostic.conclude(records, notes)
+    assert "full near-protein direct-distance representation: PASS" in summary
+    assert "1 numerical_threshold_boundary_flip" in summary
+    assert not any("Candidate still loses" in note for note in notes)
+
+
+def test_true_lost_contact_near_cutoff_remains_substantive():
+    # Nearness to a cutoff alone does not imply a numerical boundary flip.
+    u = system([0, 6])
+    raw = u.atoms.positions.copy()
+    prepared = raw.copy()
+    prepared[1, 0] = 94
+    report = diagnostic.compare_contacts(
+        u, diagnostic.topology_context(u), raw, prepared, BOX,
+        np.array([0]), np.array([1]),
+    )["thresholds"][1]
+    assert report["strict_lost_periodic_close"] == 1
+    assert report["near_threshold_discrepancy_count"] == 1
+    assert report["numerical_threshold_boundary_flip"] == 0
+    assert report["substantive_lost_periodic_close"] == 1
+    assert report["distance_disagreement"] == 1
+
+
+def test_zero_qualifying_fragments_is_complete_empty_near_protein_coverage():
+    candidate = evaluate(system(
+        [50, 51, 75, 76], bonds=((0, 1), (2, 3)),
+        residues=["ALA"] * 2 + ["ENV-X"] * 2,
+    ))[2]
+    coverage = candidate["checked_atom_set_coverage"]
+    assert coverage["eligible_environment_component_count"] == 1
+    assert coverage["periodic_6A_qualifying_component_count"] == 0
+    assert coverage["periodic_6A_qualifying_heavy_atom_count"] == 0
+    assert coverage["detailed_environment_component_count"] == 0
+    assert coverage["detailed_environment_heavy_atom_count"] == 0
+    assert coverage["detailed_coverage_equals_full_qualifying_set"] is True
+    for probe in candidate["contact_diagnostics"]["protein_environment"]["thresholds"]:
+        assert probe["pairs_examined"] == probe["periodic_close_count"] == 0
+    assert diagnostic.variant_c_conclusions([candidate])[
+        "variant_c_full_near_protein_coverage_completed"
+    ] is True
+
+
+def test_triclinic_periodic_candidate_search_selects_complete_fragment():
+    box = np.array([100, 90, 80, 80, 85, 75], np.float32)
+    vector = mda.lib.mdamath.triclinic_vectors(box)[1]
+    u = system(
+        [0] * 4, bonds=((0, 1), (2, 3)), residues=["ALA"] * 2 + ["ENV-X"] * 2,
+    )
+    u.atoms.positions = [0.99 * vector, 0.98 * vector, 0.01 * vector, 0.15 * vector]
+    subsets, coverage = diagnostic.diagnostic_subsets(
+        diagnostic.topology_context(u), u.atoms.positions, box, full_near_protein=True
+    )
+    assert coverage["selected_environment_component_ids"] == [1]
+    assert subsets["representative_environment_heavy"].tolist() == [2, 3]
+
+
+def test_expanded_results_are_deterministic_across_bounded_block_partitions(
+    monkeypatch,
+):
+    u = many_environment_fragments()
+    # Include equal-sized substantive errors to exercise deterministic example ties.
+    u.atoms.positions[:2, 0] = [99, 1]
+    u.atoms.positions[2:, 0] = np.tile([2, 3], 20)
+    raw = u.atoms.positions.copy()
+    expected = evaluate(u)
+    real_neighbors = diagnostic.neighbors
+
+    def bounded_neighbors(x, y, box):
+        assert len(x) <= diagnostic.REFERENCE_BLOCK
+        assert len(y) <= diagnostic.CONFIGURATION_BLOCK
+        return real_neighbors(x, y, box)
+
+    monkeypatch.setattr(diagnostic, "neighbors", bounded_neighbors)
+    for left_size, right_size in ((2, 3), (7, 5)):
+        monkeypatch.setattr(diagnostic, "REFERENCE_BLOCK", left_size)
+        monkeypatch.setattr(diagnostic, "CONFIGURATION_BLOCK", right_size)
+        u.atoms.positions = raw
+        assert evaluate(u) == expected
+
+
+@pytest.mark.parametrize("corruption", ["count", "atoms", "ids", "flag"])
+def test_incomplete_full_coverage_fails_clearly(corruption):
+    u = many_environment_fragments()
+    context = diagnostic.topology_context(u)
+    subsets, coverage = diagnostic.diagnostic_subsets(
+        context, u.atoms.positions, BOX, full_near_protein=True
+    )
+    if corruption == "count":
+        coverage["detailed_environment_component_count"] -= 1
+    elif corruption == "atoms":
+        subsets["representative_environment_heavy"] = subsets[
+            "representative_environment_heavy"
+        ][:-1]
+    elif corruption == "ids":
+        coverage["selected_environment_component_ids"] = [99] * 20
+    else:
+        coverage["detailed_coverage_equals_full_qualifying_set"] = False
+    with pytest.raises(ValueError, match="coverage incomplete"):
+        diagnostic.require_full_environment_coverage(context, subsets, coverage)
+
+
+def test_full_near_protein_probe_can_fail_while_bonded_integrity_passes():
+    records = evaluate(system(
+        [1, 25, 49, 73, 97, 99, 1],
+        bonds=((0, 1), (1, 2), (2, 3), (3, 4), (5, 6)),
+        residues=["ALA"] * 5 + ["ENV-X"] * 2,
+    ))
+    candidate = records[2]
+    assert all_bonds(candidate)["prepared_direct_disagreement_count"] == 0
+    coverage = candidate["checked_atom_set_coverage"]
+    assert coverage["detailed_coverage_equals_full_qualifying_set"] is True
+    assert coverage["detailed_environment_component_count"] == 1
+    for probe in candidate["contact_diagnostics"]["protein_environment"]["thresholds"]:
+        assert probe["substantive_lost_periodic_close"] > 0
+    conclusions = diagnostic.variant_c_conclusions(records)
+    assert conclusions["variant_c_bonded_integrity_preserved"] is True
+    assert conclusions["variant_c_substantive_contact_mismatch_count"] > 0
+    assert "full near-protein direct-distance representation: FAIL" in (
+        diagnostic.conclude(records, [])
+    )
+    incomplete = diagnostic.variant_c_conclusions(records, complete=False)
+    assert incomplete["variant_c_full_near_protein_coverage_completed"] is False
+    assert incomplete["variant_c_bonded_integrity_preserved"] is None
+    assert incomplete["variant_c_substantive_contact_mismatch_count"] is None
 
 
 class FakeReader:
@@ -374,6 +621,8 @@ def test_profile_hash_guard_stops_before_real_reader(
             bundle.read(f"{archive.stem}/input_observations.json")
         )
     assert result["execution_status"] == "failed"
+    assert result["variant_c_full_near_protein_coverage_completed"] is False
+    assert result["variant_c_bonded_integrity_preserved"] is None
     assert result["error"] == (
         f"ValueError: {condition.upper()} TPR SHA256 differs from the reviewed hash."
     )
@@ -500,6 +749,11 @@ def test_five_frame_runner_archive_and_input_protection(
             summary = bundle.read(f"{archive.stem}/summary.txt").decode()
             assert result["execution_status"] == "completed_observations"
             assert result["production_protocol_approved"] is False
+            assert result["variant_c_bonded_integrity_preserved"] is True
+            assert result["variant_c_full_near_protein_coverage_completed"] is True
+            assert result["variant_c_substantive_contact_mismatch_count"] == 0
+            assert result["variant_c_numerical_threshold_boundary_flip_count"] == 0
+            assert result["full_expanded_coverage_variants"] == [diagnostic.VARIANTS[2]]
             assert len(result["records"]) == 15
             assert "Variant B bonded integrity: 5 bond/frame disagreements" in summary
     assert capsys.readouterr().out.count("SEND THIS ARCHIVE:") == 2

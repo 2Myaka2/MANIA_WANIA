@@ -276,7 +276,7 @@ def neighbors(x, y, box):
     )
 
 
-def diagnostic_subsets(context, raw, box):
+def diagnostic_subsets(context, raw, box, *, full_near_protein=False):
     heavy = context["heavy"]
     if heavy is None:
         return {}, {"heavy_atom_probes": "skipped: no authoritative elements"}
@@ -284,11 +284,14 @@ def diagnostic_subsets(context, raw, box):
     protein = np.flatnonzero(context["protein"] & heavy)
     attached = np.flatnonzero(context["attached"] & heavy)
     counts = np.bincount(components, weights=heavy.astype(int))
-    eligible = ~context["protein_connected"] & (counts[components] >= 2)
+    minimum_heavy_atoms = 1 if full_near_protein else 2
+    eligible = ~context["protein_connected"] & (
+        counts[components] >= minimum_heavy_atoms
+    )
     environment = np.flatnonzero(eligible & heavy)
     closest = {}
-    # Coverage includes every eligible environment heavy atom, but only as a
-    # candidate search against protein. Select whole fragments for later probes.
+    # Search every eligible heavy atom using the raw periodic reference, then
+    # include complete heavy-atom populations, not just individual close atoms.
     for a, b in blocks(protein, environment):
         pairs = neighbors(raw[a], raw[b], box)
         if len(pairs):
@@ -302,10 +305,20 @@ def diagnostic_subsets(context, raw, box):
                 closest[component] = min(
                     closest.get(component, float("inf")), float(distance)
                 )
-    chosen = sorted(closest, key=lambda c: (closest[c], c))[:ENVIRONMENT_LIMIT]
+    qualifying = sorted(closest)
+    qualifying_heavy = np.flatnonzero(np.isin(components, qualifying) & heavy)
+    chosen = (
+        qualifying
+        if full_near_protein
+        else sorted(closest, key=lambda c: (closest[c], c))[:ENVIRONMENT_LIMIT]
+    )
     eligible_ids = np.unique(components[environment])
     selection_rule = "nearest raw periodic protein distance <= 6 A; tie: component ID"
-    if not chosen and len(eligible_ids):
+    if full_near_protein:
+        selection_rule = (
+            "all components with any raw periodic protein-heavy pair <= 6 A"
+        )
+    elif not chosen and len(eligible_ids):
         chosen = eligible_ids[
             np.linspace(
                 0,
@@ -323,20 +336,61 @@ def diagnostic_subsets(context, raw, box):
     }
     coverage = {
         "selection_rule": selection_rule,
-        "environment_component_limit": ENVIRONMENT_LIMIT,
+        "full_near_protein_mode": full_near_protein,
+        "environment_component_limit": None if full_near_protein else ENVIRONMENT_LIMIT,
         "selected_environment_component_ids": [int(c) for c in chosen],
         "eligible_environment_component_count": len(eligible_ids),
         "candidate_search_environment_heavy_atom_count": len(environment),
         "candidate_search_environment_atom_index_ranges": index_ranges(environment),
         "candidate_components_within_6_A": len(closest),
-        "environment_eligibility": "not protein-connected; >= 2 heavy atoms",
+        "periodic_6A_qualifying_component_count": len(qualifying),
+        "periodic_6A_qualifying_component_ids": qualifying,
+        "periodic_6A_qualifying_heavy_atom_count": len(qualifying_heavy),
+        "detailed_environment_component_count": len(chosen),
+        "detailed_environment_heavy_atom_count": int(
+            np.count_nonzero(selected & heavy)
+        ),
+        "detailed_coverage_equals_full_qualifying_set": bool(
+            sorted(chosen) == qualifying
+            and np.array_equal(
+                subsets["representative_environment_heavy"], qualifying_heavy
+            )
+        ),
+        "environment_eligibility": (
+            f"not protein-connected; >= {minimum_heavy_atoms} heavy atoms; "
+            "topology components only, no biological classification"
+        ),
         "subsets": {
             name: {"atom_count": len(ids), "atom_index_ranges": index_ranges(ids)}
             for name, ids in subsets.items()
         },
-        "contact_scope": "selected subsets only; no typed-interaction exclusions",
+        "contact_scope": (
+            "full periodic-near-protein components"
+            if full_near_protein else "legacy sampled components (A/B control)"
+        ) + "; no typed-interaction exclusions",
     }
+    if full_near_protein:
+        require_full_environment_coverage(context, subsets, coverage)
     return subsets, coverage
+
+
+def require_full_environment_coverage(context, subsets, coverage):
+    """Fail explicitly if counts or complete-fragment atom membership diverge."""
+    qualifying = coverage["periodic_6A_qualifying_component_ids"]
+    expected = np.flatnonzero(
+        np.isin(context["components"], qualifying) & context["heavy"]
+    )
+    if not (
+        coverage["full_near_protein_mode"]
+        and coverage["detailed_coverage_equals_full_qualifying_set"]
+        and coverage["selected_environment_component_ids"] == qualifying
+        and coverage["detailed_environment_component_count"]
+        == coverage["periodic_6A_qualifying_component_count"] == len(qualifying)
+        and coverage["detailed_environment_heavy_atom_count"]
+        == coverage["periodic_6A_qualifying_heavy_atom_count"] == len(expected)
+        and np.array_equal(subsets["representative_environment_heavy"], expected)
+    ):
+        raise ValueError("Variant C full near-protein coverage incomplete.")
 
 
 def atom_record(u, context, index):
@@ -367,8 +421,11 @@ def discrepancy(u, context, pair, direct, periodic, category, threshold=None):
 def retain_largest(existing, candidates):
     return sorted(
         existing + candidates,
-        key=lambda row: row["absolute_disagreement_A"],
-        reverse=True,
+        key=lambda row: (
+            -row["absolute_disagreement_A"],
+            tuple(atom["index"] for atom in row["atoms"]),
+            row["discrepancy_type"],
+        ),
     )[:EXAMPLE_LIMIT]
 
 
@@ -381,6 +438,7 @@ def bond_integrity(u, context, raw, prepared, box, coverage):
     after_periodic = calc_bonds(prepared[a], prepared[b], box=box)
     error = np.abs(after - reference)
     groups = dict(context["bond_groups"])
+    groups["all_environment_bonds"] = ~context["protein_connected"][a]
     selected = coverage.get("selected_environment_component_ids", [])
     groups["selected_environment_bonds"] = np.isin(context["components"][a], selected)
     summaries = {}
@@ -434,10 +492,19 @@ def compare_contacts(u, context, raw, prepared, box, left, right, same=False):
             "direct_close_count": 0,
             "lost_periodic_close": 0,
             "direct_only_close": 0,
+            "strict_lost_periodic_close": 0,
+            "strict_direct_only_close": 0,
+            "numerical_threshold_boundary_flip": 0,
+            "substantive_lost_periodic_close": 0,
+            "substantive_direct_only_close": 0,
+            "distance_disagreement": 0,
+            "pairs_examined": 0,
+            "close_union_pair_count": 0,
             "near_threshold_discrepancy_count": 0,
             "close_pair_distance_disagreement_count": 0,
             "max_absolute_disagreement_A": 0.0,
             "examples": [],
+            "numerical_threshold_boundary_examples": [],
         }
         for threshold in THRESHOLDS_A
     ]
@@ -456,6 +523,7 @@ def compare_contacts(u, context, raw, prepared, box, left, right, same=False):
         x, y = pairs.T
         periodic = calc_bonds(raw[x], raw[y], box=box)
         direct = calc_bonds(prepared[x], prepared[y])
+        error = np.abs(direct - periodic)
         after_periodic = calc_bonds(prepared[x], prepared[y], box=box)
         drift_count += int(
             np.count_nonzero(np.abs(after_periodic - periodic) > DISTANCE_TOLERANCE_A)
@@ -463,12 +531,19 @@ def compare_contacts(u, context, raw, prepared, box, left, right, same=False):
         for report in reports:
             threshold = report["geometry_probe_threshold_A"]
             pc, dc = periodic <= threshold, direct <= threshold
+            boundary = (pc != dc) & (error <= DISTANCE_TOLERANCE_A)
+            report["pairs_examined"] += len(pairs)
+            report["close_union_pair_count"] += int(np.count_nonzero(pc | dc))
+            report["numerical_threshold_boundary_flip"] += int(boundary.sum())
             report["periodic_close_count"] += int(pc.sum())
             report["direct_close_count"] += int(dc.sum())
             close_error = np.abs(direct[pc | dc] - periodic[pc | dc])
             report["close_pair_distance_disagreement_count"] += int(
                 np.count_nonzero(close_error > DISTANCE_TOLERANCE_A)
             )
+            report["distance_disagreement"] = report[
+                "close_pair_distance_disagreement_count"
+            ]
             report["max_absolute_disagreement_A"] = max(
                 report["max_absolute_disagreement_A"],
                 float(close_error.max(initial=0)),
@@ -478,6 +553,10 @@ def compare_contacts(u, context, raw, prepared, box, left, right, same=False):
                 ("direct_only_close", dc & ~pc),
             ):
                 report[category] += int(mask.sum())
+                report[f"strict_{category}"] += int(mask.sum())
+                report[f"substantive_{category}"] += int(
+                    np.count_nonzero(mask & ~boundary)
+                )
                 ids = np.flatnonzero(mask)
                 report["near_threshold_discrepancy_count"] += int(
                     np.count_nonzero(
@@ -485,29 +564,49 @@ def compare_contacts(u, context, raw, prepared, box, left, right, same=False):
                         | (np.abs(direct[ids] - threshold) <= DISTANCE_TOLERANCE_A)
                     )
                 )
-                error = np.abs(direct[ids] - periodic[ids])
-                report["max_absolute_disagreement_A"] = max(
-                    report["max_absolute_disagreement_A"], float(error.max(initial=0))
-                )
-                worst = ids[np.argsort(error)[-EXAMPLE_LIMIT:][::-1]]
-                report["examples"] = retain_largest(
-                    report["examples"],
+            # Preserve tiny flips separately even when larger errors fill the
+            # strict example list. Stable pair ordering makes block sizes irrelevant.
+            for mask, example_key in (
+                (pc != dc, "examples"),
+                (boundary, "numerical_threshold_boundary_examples"),
+            ):
+                ids = np.flatnonzero(mask)
+                order = np.lexsort((y[ids], x[ids], -error[ids]))
+                worst = ids[order[:EXAMPLE_LIMIT]]
+                report[example_key] = retain_largest(
+                    report[example_key],
                     [
-                        discrepancy(
-                            u,
-                            context,
-                            pairs[i],
-                            direct[i],
-                            periodic[i],
-                            category,
-                            threshold,
-                        )
+                        {
+                            **discrepancy(
+                                u,
+                                context,
+                                pairs[i],
+                                direct[i],
+                                periodic[i],
+                                "lost_periodic_close" if pc[i] else "direct_only_close",
+                                threshold,
+                            ),
+                            "classification": (
+                                "numerical_threshold_boundary_flip"
+                                if boundary[i] else "substantive_contact_flip"
+                            ),
+                        }
                         for i in worst
                     ],
                 )
     return {
         "left_atom_count": len(left),
         "right_atom_count": len(right),
+        "left_atom_index_ranges": index_ranges(left),
+        "right_atom_index_ranges": index_ranges(right),
+        "pair_population_count": (
+            len(left) * (len(left) - 1) // 2 if same else len(left) * len(right)
+        ),
+        "pair_search_coverage": "all blocks; no pair or component truncation",
+        "pairs_examined_semantics": (
+            "padded 6 A periodic/direct candidate union evaluated at each threshold; "
+            "close_union_pair_count counts pairs close under either geometry"
+        ),
         "pair_semantics": "unique unordered, exclude self" if same else "cross set",
         "periodic_reference_drift_count_on_candidate_union": drift_count,
         "thresholds": reports,
@@ -522,9 +621,18 @@ def evaluate_frame(work, context, raw, box, frame_index, time_ps):
             f"Frame {frame_index}: atom count mismatch or nonfinite coordinates."
         )
     raw.setflags(write=False)
-    subsets, coverage = diagnostic_subsets(context, raw, box)
+    control_subsets, control_coverage = diagnostic_subsets(context, raw, box)
+    full_subsets, full_coverage = diagnostic_subsets(
+        context, raw, box, full_near_protein=True
+    )
     results = []
     for variant in VARIANTS:
+        subsets, coverage = (
+            (full_subsets, full_coverage)
+            if variant == VARIANTS[2] else (control_subsets, control_coverage)
+        )
+        if variant == VARIANTS[2] and subsets:
+            require_full_environment_coverage(context, subsets, coverage)
         prepare_variant(work, raw, box, time_ps, variant)
         prepared = work.atoms.positions.copy()
         checks = {
@@ -562,10 +670,27 @@ def evaluate_frame(work, context, raw, box, frame_index, time_ps):
                 contacts[name] = compare_contacts(
                     work, context, raw, prepared, box, left, right, same
                 )
+            if variant == VARIANTS[2] and not len(e):
+                supplemental = control_subsets["representative_environment_heavy"]
+                if len(supplemental):
+                    name = "supplemental_environment_environment"
+                    contacts[name] = compare_contacts(
+                        work, context, raw, prepared, box,
+                        supplemental, supplemental, True,
+                    )
+                    contacts[name]["scope"] = (
+                        "legacy separate-molecule control outside the empty qualifying "
+                        "set; excluded from full near-protein conclusion"
+                    )
+                    contacts[name]["environment_component_ids"] = control_coverage[
+                        "selected_environment_component_ids"
+                    ]
         for group in list(bonds.values()) + [
             t for c in contacts.values() for t in c["thresholds"]
         ]:
-            for example in group["examples"]:
+            for example in group["examples"] + group.get(
+                "numerical_threshold_boundary_examples", []
+            ):
                 example.update({"source_frame_index": frame_index, "variant": variant})
         results.append(
             {
@@ -585,6 +710,49 @@ def evaluate_frame(work, context, raw, box, frame_index, time_ps):
     return results
 
 
+def variant_c_conclusions(records, *, complete=True):
+    candidate = [r for r in records if r["variant"] == VARIANTS[2]]
+    assessed = complete and bool(candidate)
+    covered = assessed and all(
+        r["checked_atom_set_coverage"].get("full_near_protein_mode", False)
+        and r["checked_atom_set_coverage"].get(
+            "detailed_coverage_equals_full_qualifying_set", False
+        )
+        for r in candidate
+    )
+    probes = [
+        t for r in candidate for name, c in r["contact_diagnostics"].items()
+        if not name.startswith("supplemental_") for t in c["thresholds"]
+    ]
+    return {
+        "variant_c_bonded_integrity_preserved": (
+            all(
+                r["bond_integrity"]["all_topology_bonds"][
+                    "prepared_direct_disagreement_count"
+                ] == 0 for r in candidate
+            ) if assessed else None
+        ),
+        "variant_c_full_near_protein_coverage_completed": covered,
+        # Each substantive flip is already a distance disagreement: count once
+        # per pair/threshold/category/frame, not again for its lost/direct-only label.
+        "variant_c_substantive_contact_mismatch_count": (
+            sum(t["distance_disagreement"] for t in probes)
+            if assessed and probes else None
+        ),
+        "variant_c_numerical_threshold_boundary_flip_count": (
+            sum(t["numerical_threshold_boundary_flip"] for t in probes)
+            if assessed and probes else None
+        ),
+        "variant_c_supplemental_substantive_contact_mismatch_count": (
+            sum(
+                t["distance_disagreement"]
+                for r in candidate for name, c in r["contact_diagnostics"].items()
+                if name.startswith("supplemental_") for t in c["thresholds"]
+            ) if assessed else None
+        ),
+    }
+
+
 def conclude(records, notes):
     lines = ["Stage 34 PBC diagnostic: observations only; Analyzer review required."]
     for label, variant in (
@@ -600,7 +768,8 @@ def conclude(records, notes):
         )
         lines.append(
             f"{label}: {failures} bond/frame disagreements over "
-            f"{len(selected)} frames (tolerance {DISTANCE_TOLERANCE_A} A)."
+            f"{len(selected)} frames (tolerance {DISTANCE_TOLERANCE_A} A); "
+            + ("PASS" if selected and not failures else "FAIL") + "."
         )
     candidate = [r for r in records if r["variant"] == VARIANTS[2]]
     probes = [
@@ -614,23 +783,54 @@ def conclude(records, notes):
     distance_disagreements = sum(
         t["close_pair_distance_disagreement_count"] for t in probes
     )
+    boundary = sum(t["numerical_threshold_boundary_flip"] for t in probes)
+    substantive_lost = sum(t["substantive_lost_periodic_close"] for t in probes)
+    substantive_direct = sum(t["substantive_direct_only_close"] for t in probes)
     lines.append(
         "C. Variant C checked close-contact agreement: "
         + (
             f"{lost} lost_periodic_close; {appearing} direct_only_close; "
+            f"{boundary} numerical_threshold_boundary_flip; "
+            f"{substantive_lost} substantive_lost_periodic_close; "
+            f"{substantive_direct} substantive_direct_only_close; "
             f"{distance_disagreements} close-pair distance disagreements "
-            "(counts summed over frames, probes and both thresholds)."
+            "(strict totals include numerical flips; counts summed over frames, "
+            "probes including supplemental controls, and both thresholds)."
             if probes
             else "NOT ASSESSED: heavy-atom metadata unavailable."
         )
     )
-    if lost:
-        notes.append(
-            "Candidate still loses periodic-close contacts in checked subsets."
+    conclusions = variant_c_conclusions(records)
+    covered = conclusions["variant_c_full_near_protein_coverage_completed"]
+    mismatches = conclusions["variant_c_substantive_contact_mismatch_count"]
+    status = "PASS" if covered and mismatches == 0 else "FAIL"
+    if not probes:
+        status = "NOT ASSESSED"
+    lines.append(
+        f"Variant C full near-protein direct-distance representation: {status}; "
+        f"full coverage completed={covered}; substantive mismatches={mismatches}; "
+        "numerical threshold boundary flips="
+        f"{conclusions['variant_c_numerical_threshold_boundary_flip_count']}. "
+        "Full expanded coverage applies to C only; A/B retain sampled controls."
+    )
+    supplemental = conclusions[
+        "variant_c_supplemental_substantive_contact_mismatch_count"
+    ]
+    if any("supplemental_environment_environment" in r["contact_diagnostics"]
+           for r in candidate):
+        lines.append(
+            "Variant C supplemental separate-molecule control outside the empty "
+            f"near-protein set: {'FAIL' if supplemental else 'PASS'}; "
+            f"{supplemental} substantive mismatches."
         )
-    if appearing:
+    if substantive_lost:
         notes.append(
-            "Candidate has direct-only contacts; inspect numerical boundary/drift."
+            "Candidate still loses substantive periodic-close contacts "
+            "in checked subsets."
+        )
+    if substantive_direct:
+        notes.append(
+            "Candidate has substantive direct-only contacts in checked subsets."
         )
     drift = sum(
         r["bond_integrity"]["all_topology_bonds"][
@@ -741,6 +941,7 @@ def run(topology, trajectory, output_root, condition="normal"):
         "representation_comparison_tolerance_A": DISTANCE_TOLERANCE_A,
         "pair_block_limits": [REFERENCE_BLOCK, CONFIGURATION_BLOCK],
         "examples_per_summary_limit": EXAMPLE_LIMIT,
+        "full_expanded_coverage_variants": [VARIANTS[2]],
     }
     observations = {"condition": condition}
     config = {v: transformation_parameters(v) for v in VARIANTS}
@@ -814,6 +1015,7 @@ def run(topology, trajectory, output_root, condition="normal"):
                 result["error"] = "Interrupted by user; partial observations only."
                 exit_code = 130
             result["warnings"].extend(str(w.message) for w in captured)
+        result.update(variant_c_conclusions(result["records"], complete=exit_code == 0))
         if exit_code == 0:
             summary = conclude(result["records"], result["warnings"])
         else:
