@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import re
 import zipfile
 from pathlib import Path
 from types import SimpleNamespace
@@ -15,6 +16,10 @@ spec = importlib.util.spec_from_file_location("pbc_protocol_diagnostic", SCRIPT)
 diagnostic = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(diagnostic)
 BOX = np.array([100, 100, 100, 90, 90, 90], dtype=np.float32)
+REVIEWED_HASHES = {
+    "normal": "91a9fbbc6c1615095294acd349be3e7df0e0f37eb6329f877ada825efef4654f",
+    "tumor": "6bbb9864b261fba40d945a7401125cfe9da3f1106a4deb65ba2a41bae78d1dcf",
+}
 
 
 def system(x, *, bonds=((0, 1),), residues=None, resids=None, elements=None):
@@ -320,32 +325,94 @@ def test_low_level_xtc_units_are_explicit():
     assert actual == 5000
 
 
-def test_normal_hash_guard_stops_before_real_reader(tmp_path, monkeypatch, capsys):
+def test_exact_reviewed_input_profiles():
+    assert diagnostic.INPUT_PROFILES == {
+        condition: {
+            "topology_path_convention": f"local_md/{condition}/topology.tpr",
+            "topology_sha256": reviewed_hash,
+        }
+        for condition, reviewed_hash in REVIEWED_HASHES.items()
+    }
+
+
+@pytest.mark.parametrize(
+    ("condition", "observed_condition"),
+    [("normal", None), ("tumor", None), ("normal", "tumor"), ("tumor", "normal")],
+)
+def test_profile_hash_guard_stops_before_real_reader(
+    tmp_path, monkeypatch, capsys, condition, observed_condition
+):
     topology, trajectory = tmp_path / "topology.tpr", tmp_path / "trajectory.xtc"
     topology.write_bytes(b"wrong topology")
     trajectory.write_bytes(b"not opened")
+    if observed_condition is not None:
+        real_sha256 = diagnostic.sha256
+        monkeypatch.setattr(
+            diagnostic,
+            "sha256",
+            lambda path: (
+                REVIEWED_HASHES[observed_condition]
+                if path == topology
+                else real_sha256(path)
+            ),
+        )
 
     def forbidden(*args, **kwargs):
         pytest.fail("Reader/parser must not be reached after hash mismatch")
 
     monkeypatch.setattr(diagnostic, "XTCFile", forbidden)
     monkeypatch.setattr(diagnostic, "TPRParser", forbidden)
-    assert diagnostic.run(topology, trajectory, tmp_path / "out") == 1
+    assert diagnostic.run(topology, trajectory, tmp_path / "out", condition) == 1
     archive = next((tmp_path / "out").glob("*.zip"))
+    assert re.fullmatch(
+        rf"stage34_pbc_{condition}_\d{{8}}T\d{{6}}Z_[0-9a-f]{{32}}", archive.stem
+    )
+    assert archive.with_suffix("").is_dir()
     with zipfile.ZipFile(archive) as bundle:
         result = json.loads(bundle.read(f"{archive.stem}/pbc_diagnostic.json"))
         observations = json.loads(
             bundle.read(f"{archive.stem}/input_observations.json")
         )
-    assert "SHA256 differs" in result["error"]
+    assert result["execution_status"] == "failed"
+    assert result["error"] == (
+        f"ValueError: {condition.upper()} TPR SHA256 differs from the reviewed hash."
+    )
+    assert result["condition"] == observations["condition"] == condition
+    assert observations["expected_topology_sha256"] == REVIEWED_HASHES[condition]
+    if observed_condition is not None:
+        assert observations["topology_sha256"] == REVIEWED_HASHES[observed_condition]
     assert observations["trajectory_hash_computed"] is False
-    assert "SEND THIS ARCHIVE:" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "SEND THIS ARCHIVE:" in output
+    assert (
+        f"Checking {condition.upper()} input identity before opening the XTC." in output
+    )
 
 
-def test_five_frame_runner_archive_and_input_protection(tmp_path, monkeypatch, capsys):
+@pytest.mark.parametrize(
+    ("condition_args", "condition"),
+    [
+        ((), "normal"),
+        (("--condition", "normal"), "normal"),
+        (("--condition", "tumor"), "tumor"),
+    ],
+    ids=["default-normal", "explicit-normal", "explicit-tumor"],
+)
+def test_five_frame_runner_archive_and_input_protection(
+    tmp_path, monkeypatch, capsys, condition_args, condition
+):
     topology, trajectory = tmp_path / "topology.tpr", tmp_path / "trajectory.xtc"
     topology.write_bytes(b"synthetic topology sentinel")
-    monkeypatch.setattr(diagnostic, "NORMAL_TPR_SHA256", diagnostic.sha256(topology))
+    real_sha256 = diagnostic.sha256
+    hash_checks = []
+
+    def observed_sha256(path):
+        if path == topology:
+            hash_checks.append(path)
+            return REVIEWED_HASHES[condition]
+        return real_sha256(path)
+
+    monkeypatch.setattr(diagnostic, "sha256", observed_sha256)
     u = system([99, 1])
     monkeypatch.setattr(
         diagnostic,
@@ -363,6 +430,14 @@ def test_five_frame_runner_archive_and_input_protection(tmp_path, monkeypatch, c
                 1000,
             )
     before = {p.name: p.read_bytes() for p in (topology, trajectory)}
+    real_xtc_file = diagnostic.XTCFile
+
+    def guarded_xtc_file(path, mode):
+        assert hash_checks == [topology]
+        assert mode == "r"
+        return real_xtc_file(path, mode)
+
+    monkeypatch.setattr(diagnostic, "XTCFile", guarded_xtc_file)
     read_frames = []
     read = diagnostic.read_selected
 
@@ -372,7 +447,25 @@ def test_five_frame_runner_archive_and_input_protection(tmp_path, monkeypatch, c
 
     monkeypatch.setattr(diagnostic, "read_selected", tracked_read)
     for _ in range(2):
-        assert diagnostic.run(topology, trajectory, tmp_path / "out") == 0
+        hash_checks.clear()
+        assert (
+            diagnostic.main(
+                [
+                    *condition_args,
+                    "--topology",
+                    str(topology),
+                    "--trajectory",
+                    str(trajectory),
+                    "--frames",
+                    "500", "505", "510", "515", "520",
+                    "--expected-times-ps",
+                    "5000", "5050", "5100", "5150", "5200",
+                    "--output",
+                    str(tmp_path / "out"),
+                ]
+            )
+            == 0
+        )
     assert read_frames == list(diagnostic.FRAMES) * 2
     assert {p.name: p.read_bytes() for p in (topology, trajectory)} == before
     assert {p.name for p in tmp_path.iterdir()} == {
@@ -383,12 +476,27 @@ def test_five_frame_runner_archive_and_input_protection(tmp_path, monkeypatch, c
     archives = list((tmp_path / "out").glob("*.zip"))
     assert len(archives) == 2 and archives[0].name != archives[1].name
     for archive in archives:
+        assert re.fullmatch(
+            rf"stage34_pbc_{condition}_\d{{8}}T\d{{6}}Z_[0-9a-f]{{32}}", archive.stem
+        )
+        assert archive.with_suffix("").is_dir()
         with zipfile.ZipFile(archive) as bundle:
             assert {Path(n).name for n in bundle.namelist()} == set(
                 diagnostic.ARTIFACTS
             )
             assert not any(n.endswith((".tpr", ".xtc")) for n in bundle.namelist())
             result = json.loads(bundle.read(f"{archive.stem}/pbc_diagnostic.json"))
+            observations = json.loads(
+                bundle.read(f"{archive.stem}/input_observations.json")
+            )
+            assert result["condition"] == observations["condition"] == condition
+            assert observations["topology_sha256"] == REVIEWED_HASHES[condition]
+            assert (
+                observations["expected_topology_sha256"] == REVIEWED_HASHES[condition]
+            )
+            assert observations["expected_topology_path_convention"] == (
+                f"local_md/{condition}/topology.tpr"
+            )
             summary = bundle.read(f"{archive.stem}/summary.txt").decode()
             assert result["execution_status"] == "completed_observations"
             assert result["production_protocol_approved"] is False

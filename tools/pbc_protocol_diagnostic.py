@@ -26,6 +26,17 @@ from MDAnalysis.topology.TPRParser import TPRParser
 FRAMES = (500, 505, 510, 515, 520)
 TIMES_PS = (5000, 5050, 5100, 5150, 5200)
 NORMAL_TPR_SHA256 = "91a9fbbc6c1615095294acd349be3e7df0e0f37eb6329f877ada825efef4654f"
+TUMOR_TPR_SHA256 = "6bbb9864b261fba40d945a7401125cfe9da3f1106a4deb65ba2a41bae78d1dcf"
+INPUT_PROFILES = {
+    "normal": {
+        "topology_path_convention": "local_md/normal/topology.tpr",
+        "topology_sha256": NORMAL_TPR_SHA256,
+    },
+    "tumor": {
+        "topology_path_convention": "local_md/tumor/topology.tpr",
+        "topology_sha256": TUMOR_TPR_SHA256,
+    },
+}
 VARIANTS = ("A_raw", "B_literal_proposed", "C_fragment_preserving_candidate")
 THRESHOLDS_A = (4.5, 6.0)
 DISTANCE_TOLERANCE_A = 0.001  # Representation comparison, not a bond-length limit.
@@ -650,16 +661,19 @@ def sha256(path):
     return digest.hexdigest()
 
 
-def input_observations(topology, trajectory):
+def input_observations(topology, trajectory, condition="normal"):
     from mania import __version__
 
+    profile = INPUT_PROFILES[condition]
     return {
+        "condition": condition,
         "topology_path": str(topology),
         "trajectory_path": str(trajectory),
+        "expected_topology_path_convention": profile["topology_path_convention"],
         "topology_size_bytes": topology.stat().st_size,
         "trajectory_size_bytes": trajectory.stat().st_size,
         "topology_sha256": sha256(topology),
-        "expected_topology_sha256": NORMAL_TPR_SHA256,
+        "expected_topology_sha256": profile["topology_sha256"],
         "trajectory_hash_computed": False,
         "selected_source_frame_indexes": list(FRAMES),
         "expected_times_ps": list(TIMES_PS),
@@ -711,11 +725,13 @@ def package_results(work):
     return archive
 
 
-def run(topology, trajectory, output_root):
-    name = "stage34_pbc_normal_" + datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+def run(topology, trajectory, output_root, condition="normal"):
+    reviewed_hash = INPUT_PROFILES[condition]["topology_sha256"]
+    name = f"stage34_pbc_{condition}_" + datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     work = output_root.resolve() / f"{name}_{uuid4().hex}"
     work.mkdir(parents=True, exist_ok=False)
     result = {
+        "condition": condition,
         "execution_status": "incomplete",
         "purpose": "diagnostic only",
         "production_protocol_approved": False,
@@ -726,7 +742,7 @@ def run(topology, trajectory, output_root):
         "pair_block_limits": [REFERENCE_BLOCK, CONFIGURATION_BLOCK],
         "examples_per_summary_limit": EXAMPLE_LIMIT,
     }
-    observations = {}
+    observations = {"condition": condition}
     config = {v: transformation_parameters(v) for v in VARIANTS}
     exit_code = 1
     with (work / "diagnostic.log").open("x", encoding="utf-8") as log:
@@ -739,11 +755,15 @@ def run(topology, trajectory, output_root):
         with warnings.catch_warnings(record=True) as captured:
             warnings.simplefilter("always")
             try:
-                emit("Checking NORMAL input identity before opening the XTC.")
-                observations = input_observations(topology, trajectory)
-                if observations["topology_sha256"] != NORMAL_TPR_SHA256:
+                emit(
+                    f"Checking {condition.upper()} input identity "
+                    "before opening the XTC."
+                )
+                observations = input_observations(topology, trajectory, condition)
+                if observations["topology_sha256"] != reviewed_hash:
                     raise ValueError(
-                        "NORMAL TPR SHA256 differs from the reviewed hash."
+                        f"{condition.upper()} TPR SHA256 differs "
+                        "from the reviewed hash."
                     )
                 if mda.__version__ != "2.10.0":
                     raise ValueError(
@@ -815,6 +835,12 @@ def run(topology, trajectory, output_root):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--condition",
+        choices=tuple(INPUT_PROFILES),
+        default="normal",
+        help="Reviewed input profile (default: normal); never inferred from inputs.",
+    )
     parser.add_argument("--topology", type=Path, required=True)
     parser.add_argument("--trajectory", type=Path, required=True)
     parser.add_argument("--frames", nargs="+", type=int, required=True)
@@ -828,10 +854,11 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if tuple(args.frames) != FRAMES or tuple(args.expected_times_ps) != TIMES_PS:
         parser.error(
-            "This NORMAL checkpoint requires frames 500 505 510 515 520 "
+            f"This {args.condition.upper()} checkpoint requires "
+            "frames 500 505 510 515 520 "
             "and expected times 5000 5050 5100 5150 5200 ps, exactly."
         )
-    return run(args.topology, args.trajectory, args.output)
+    return run(args.topology, args.trajectory, args.output, args.condition)
 
 
 if __name__ == "__main__":
