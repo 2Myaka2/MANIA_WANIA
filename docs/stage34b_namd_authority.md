@@ -174,3 +174,108 @@ mapping authority close the canonical input-readiness blocker, while
 the complete NAMD diagnostic/preparation/protein-only pilot runner remains
 unimplemented. No future execution command is fabricated from the GROMACS tools.
 No real scientific run occurred; `scientific_pbc_status = unresolved`.
+
+## Stage 34.B.3 standalone real pilot
+
+This continuation supersedes the earlier unimplemented-runner checkpoint above.
+
+`tools/stage34b_namd_real_pilot.py` consumes the accepted controls and mapping;
+it does not regenerate their scientific authority. Its scope is the exact PSF
+and DCD in `local_md/namd/egor_2ss_r1/raw`, source frames 0–4, at authoritative
+100–500 ps. It verifies the accepted commits, exact input/control hashes, source
+bindings, 690-record mapping, disulfides and both glycan carrier bonds. The
+Dataset scientific condition stays null; `namd-pilot` is only an execution route.
+
+The accepted source loader also observes frame 999 and only accepts the original
+DCD. This runner therefore uses the accepted strict control validators, the
+existing header-only authority check, and a bounded DCD reader. It records the
+initial frame-0 read and the five indexed reads separately from the scientific
+time axis. No endpoint coordinate read, trajectory checksum, or sequential
+1000-frame coordinate pass occurs.
+
+Each raw frame independently enters the unchanged diagnostic helper's Variant C:
+bonded-fragment unwrap, protein geometry centering with `wrap=False`, then
+complete-fragment wrapping with `center="cog"`. Every topology bond is compared
+against its raw periodic distance, including protein, both disulfides, both
+Asn295/Asn308 attachments and branches, and all environment bonds. Protein-heavy
+pair coverage uses the sparse union of periodic and prepared-direct neighbors.
+The maximum enabled range is 7 Å from the accepted aromatic-centroid definition;
+centroids and explicit donor–hydrogen–acceptor geometry are checked separately.
+Interfragment protein observations are explicitly counted. Distance predicates
+remain strict, including the cation–pi `<6 Å` predicate. The 0.001 Å tolerance
+only classifies representation disagreement and numerical threshold flips.
+
+Any substantive PBC mismatch stops execution before trajectory persistence and
+MANIA. If the diagnostic passes, a separate high-precision five-frame XTC is
+written and reopened with the original PSF. Identity, coordinate order, exact
+times, finite coordinates and box precision are checked, followed by another
+complete bond/protein representation diagnostic on the persisted coordinates.
+XTC has no identity labels: the unchanged PSF plus pointwise writer-coordinate
+comparison provides the ordering evidence, rather than an invented XTC label.
+
+The runner supplies an explicit prepared-input loader only within its in-process
+invocation of the existing preprocessing CLI. This loader checks the derivative
+identity, attaches the accepted elements and reuses the accepted absolute-index
+time adapter. Existing Stage 27 planning, all enabled protein contact definitions,
+Stage 28 windows, Stage 30 canonicalization, exports and validators stay unchanged.
+No production source file or public CLI option is added. The invocation skips Rg
+and specialized science. Return-value observation retains the exact production
+per-frame contacts; it does not replace the contact function's result.
+
+An independent checker uses persisted direct float64 coordinates, authoritative
+elements and explicit bonded hydrogens. It reuses only frozen chemical constants
+and site lists, implements the geometry independently, and uses NumPy's symmetric
+eigensolver for aromatic normals. Episodes are reconstructed from adjacent
+requested positions with Decimal time subtraction, zero gap tolerance and
+single-sample lifetime zero. Integer metrics compare exactly; floating values
+use `rel_tol=0, abs_tol=1e-12`. Every serialized source field is compared exactly
+against the canonical table, along with each explicit mapped endpoint.
+
+Each run creates a unique ignored evidence directory and sibling ZIP, including
+blocker evidence if a gate fails. Raw inputs and the prepared trajectory are
+excluded; the latter's path, size and checksum are retained when it exists.
+Repository verification is recorded separately before acceptance. The standalone
+runner does not turn a technical result into final scientific PBC approval:
+`scientific_pbc_status` remains `unresolved`, and internal MANIA MIC remains false.
+
+The 2026-09-22 real execution completed in
+`local_md/stage34b_namd_real_20260922T163031Z_d5711581c4494dc58936d4b91a334ebd`.
+Its five-frame prepared XTC is 17,192,224 bytes, SHA256
+`3f9ac9353ad0a6c551845d166651a0ade0436ee5b815c297ff45f9dfa3d0b28c`.
+All identity/time/box checks passed. Each diagnostic checked 2,195,880 bond
+observations, including both disulfides and 318 bonds in each attached glycan
+branch. The protein comprises one connected fragment and 5,316 heavy atoms.
+In-memory and persisted protein pair coverage was respectively 677,862 and
+677,863 observations, plus 135 centroid pairs and 14,567 explicit hydrogen-bond
+triples per diagnostic. No substantive representation mismatches occurred.
+The respective strict distance-threshold predicate flip totals were 3 and 7;
+all were numerical boundary cases. These count predicates, so a pair crossing
+a distance shared by several definitions contributes more than one observation.
+
+MANIA produced 5,536, 5,537, 5,597, 5,576 and 5,595 protein contact observations
+over the five frames, plus 689 backbone observations per frame. Independent
+direct-coordinate reconstruction matched all 27,841 contacts, with maximum
+distance difference `8.881784197001252e-16 Å`. All 6,514 Stage 28 window rows
+matched, with no missing/extra identities or metric differences. All 6,514
+canonical rows preserved every scientific field. Real Pro3–Lys524 residue contact
+observations at requested positions 0, 2 and 4 demonstrate three separate
+zero-lifetime episodes and occupancy/edge weight `3/5 = 0.6`.
+
+Unified validation passed with `complete=true`, 21 resolved artifact records,
+17 applicable validator checks passed, and zero errors, warnings or unsupported
+validators. The command, exact bindings, source/canonical tables, full diagnostic
+counts and independent comparisons are in the sibling evidence ZIP. The real
+pilot itself took 590.179384381001 seconds; repository verification is recorded
+separately in `commands.json` and `verification.log`. Stage 34 overall still
+requires its real three-replica QC/aggregation proof and remaining partner and
+condition authorities. No Stage 29 specialized NAMD science, Stage 31/32/33
+production workflow, other NAMD source trajectory or full-trajectory contact
+analysis was executed.
+
+Stage 34.B.3 and Stage 34.B are **PASS** after final verification: 32 focused
+tests, 33 tests including the reload-order probe, 1,736 relevant regressions,
+and the full suite with 9,735 passed and 22 skipped. Ruff, mypy, version/config
+checks and offline wheel installation/reference/mapping checks passed. An initial
+full-suite failure was confined to the new synthetic test's software-identity
+fixture; it was corrected using the established fixture pattern. The real runner
+and production source were unchanged, and the real pilot was not repeated.
