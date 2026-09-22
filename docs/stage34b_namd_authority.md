@@ -279,3 +279,132 @@ checks and offline wheel installation/reference/mapping checks passed. An initia
 full-suite failure was confined to the new synthetic test's software-identity
 fixture; it was corrected using the established fixture pattern. The real runner
 and production source were unchanged, and the real pilot was not repeated.
+
+## Stage 34.B.4 specialised continuation
+
+`tools/stage34b4_namd_specialized_pilot.py` binds the exact accepted B.3
+five-frame XTC and the unchanged PSF, element/time controls, canonical mapping,
+frame map, topology features, boxes, and retained PBC diagnostic evidence.
+It reads no source DCD coordinates and performs no new preparation or protein
+contact calculation. The 100–500 ps scientific times and one inclusive
+0.1–0.5 ns window are compared with the accepted Stage 27 artifact.
+
+The partner review is restricted to the pinned replica-1 PSF. It enumerates
+every connected component and requires exact atom-name/type membership against
+the supplied CHARMM source definitions before classifying membrane, solvent,
+or ion components. Names locate source evidence; they do not alone classify
+partners or assign elements. The connected `BGLC + CER160` composition must
+match both residue definitions after the supplied `CERB` patch, including
+its exact `BGLC:O1–CER160:C1S` inter-residue bond. The complete component is
+one membrane partner, with no duplicate glycan-layer entry. Any unreviewed
+composition or mismatched membership stops execution before specialised science.
+This is an explicit pilot review, not a production residue registry.
+
+The two user-authoritative FA2G2S2 glycans are traversed from the exact accepted
+Asn295/Asn308 carrier bonds. Structural attachment evidence is retained
+separately. Every partner retains complete topology-local residue/atom/heavy-atom
+membership. Disconnected components remain distinct. General topology traversal,
+metadata serialization, and independent arithmetic are reused from the earlier
+standalone helper; its GROMACS catalog and classification rules are never used.
+
+After the catalog gate, the runner calls the existing Stage 29 specialised
+execution and window APIs directly, followed by Stage 30 canonical builders and
+writers. This avoids rerunning accepted Stage 28 protein science. Geometry uses
+the unchanged inclusive 6.0 Å lipid and 4.5 Å whole-glycan definitions, direct
+coordinates, and accepted external element authority. Carrier/own-glycan raw
+positives remain separate from every ordinary window metric.
+
+The independent checker evaluates all protein-residue/partner pairs in all five
+frames using direct float64 geometry and explicit heavy-atom membership. Its
+window reconstruction uses adjacent requested sample positions, zero tolerated
+gaps, zero single-frame lifetime, and positive-frame distance summaries. It
+does not call production detection or aggregation. Integer/identity comparisons
+are exact; floating comparisons use `abs_tol=1e-12, rel_tol=0`, with no tolerance
+in scientific cutoff membership. Every common serialized source/canonical field
+must remain exactly equal, with protein identities resolved by the accepted
+NAMD mapping and partner IDs retained unchanged.
+
+Technical validation covers the applicable standalone metadata/catalog, temporal,
+source/canonical CSV, and cross-table checks. It does not manufacture a new
+full-preprocessing provenance bundle or claim release validation. Unique ignored
+evidence directories and sibling ZIPs preserve successful or blocked gates.
+Raw inputs and prepared trajectory bytes are excluded. B.5 remains gated on
+complete B.4 acceptance; C-prep remains gated on complete B.5 acceptance.
+
+Run focused tests before real execution:
+
+```bash
+.venv/bin/pytest -q tests/test_stage34b4_namd_specialized_pilot.py
+.venv/bin/python tools/stage34b4_namd_specialized_pilot.py
+```
+
+Scientific PBC status remains `unresolved`; internal MIC remains false. The final
+NAMD Dataset condition is still null. This continuation establishes no
+three-replica result, full-trajectory result, or final Dataset release.
+
+The 2026-09-22 B.4 execution is **PASS** in
+`local_md/stage34b4_namd_specialized_20260922T182122Z_f919e15778874c6ca1a794b28609b798`.
+The catalog has 828 membrane partners: CHL1 264, PLPC 132, POPC 92,
+POPE 68, NSM 64, SSM 64, PAPE 60, PAPS 44, POPI 20, POPA 4, and
+16 complete `BGLC:1+CER160:1` components. It also has exactly two FA2G2S2
+glycans. All 111,066 waters, 365 sodium ions, and 303 chloride ions are
+inventoried as non-partners. No component is unresolved; all 439,436 atoms
+are accounted for without overlapping partner/non-partner membership.
+
+There are 106 contacting membrane partners, 3,537 lipid-positive observations,
+897 lipid source rows, and 897 canonical lipid rows. Glycans have 29 raw
+positives, 10 excluded carrier-anchor observations, 19 ordinary positives,
+6 source rows, and 6 canonical rows. Every independent population, geometry,
+anchor, count, occupancy, episode, lifetime, distance-summary, and canonical
+scientific-value mismatch count is zero. The maximum independent geometry
+delta is 0 Å. All nine applicable standalone technical checks pass with
+`complete=true`, zero errors, and zero warnings. B.4 took 385.947 seconds:
+15.573 binding, 42.667 catalog, 215.694 production specialised science,
+2.837 canonicalization/validation, and 109.175 independent checking.
+
+## Stage 34.B.5 single-replica downstream smoke
+
+`tools/stage34b5_single_replica_release_smoke.py` implements the reached
+authority gates only. It requires a complete B.4 scientific/technical PASS,
+freezes and hashes the accepted real inputs before QC, and verifies historical
+B.3 protein-source/canonical and temporal bytes against the accepted B.3 ZIP.
+The scientific artifacts are not regenerated after QC. Real evidence is
+serialized through the strict Stage 32 hard-QC adapter and evaluated by the
+unchanged accepted hard-QC evaluator. No Stage 31 availability template is
+created in advance of a QC decision.
+
+```bash
+.venv/bin/pytest -q tests/test_stage34b5_single_replica_release_smoke.py
+.venv/bin/python tools/stage34b5_single_replica_release_smoke.py \
+  --b4-evidence local_md/stage34b4_namd_specialized_20260922T182122Z_f919e15778874c6ca1a794b28609b798
+```
+
+The real B.5 result is **AUTHORITY STOP — pending QC decision**, recorded in
+the linked `b5/` evidence directory. All 38 hard checks pass, including actual
+atom-order evidence, accepted protein-integrity diagnostics, complete canonical
+mapping, artifact/schema/reference integrity, duplicates, self-loops, occupancy,
+and coverage. Coverage is exactly 5/5 for the 0.1–0.5 ns pilot; it makes no
+100 ns coverage claim. The one valid requested window has 6,514 canonical
+protein-edge rows, so the empty-window observation is 0/1 and does not exceed
+the unchanged 1% review threshold. The accepted scalar MAD routine retains
+median 6,514, raw MAD 0, reference count 1, and
+`comparison=not_applicable_single_replica`. This partial scalar finding is
+never promoted to complete review QC.
+
+No authoritative RMSD/drift assessment is supplied for this replica and pilot
+contract. The accepted Stage 32.C model requires an explicit bool assessment;
+neither `False` nor `True` can truthfully replace missing authority. Therefore
+no complete review evaluation or authoritative decision set is constructed.
+`stage32_qc_pending_decision.json` is explicitly an informational pending-authority
+record, not a fabricated Stage 32 decision set. Its reviewer and authoritative
+decision are null, and `production_ready=false`. The tool returns exit code 2
+for this authority stop. B.5 took 17.290 seconds.
+
+QC-derived Stage 31 manifest generation, n=1 aggregation and its independent
+verification, Stage 33 publication/F1/F2/release validation, and C-prep are
+**NOT RUN**, with explicit blocker records. No publication files or C-prep
+helper are created. The real three-replica chain remains blocked by missing
+replicas 2/3 and its subsequent real authority requirements. A final NAMD
+condition label remains unresolved; no PMm-derived publication label is assigned.
+The accepted publication condition columns are nullable, but publication
+eligibility and remaining publication authorities have not been exercised here.
