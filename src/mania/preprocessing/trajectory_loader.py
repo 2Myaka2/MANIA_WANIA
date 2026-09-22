@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mania.preprocessing.namd_runtime import NAMDControlPaths
+
 from mania.preprocessing.scientific_runtime import (
     PreprocessingOptionalDependencyError,
     require_mdanalysis,
@@ -18,6 +23,8 @@ MDANALYSIS_NAME = "MD" + "Analysis"
 
 def load_single_condition_runtime(
     runtime_input: PreprocessingConditionRuntimeInput,
+    *,
+    namd_authority: NAMDControlPaths | None = None,
 ) -> PreprocessingConditionLoadResult:
     """Load one declared topology and its trajectories."""
     path_issues = _validate_paths(runtime_input)
@@ -35,10 +42,28 @@ def load_single_condition_runtime(
         return _failed_result(runtime_input, (issue,))
 
     try:
+        if namd_authority is not None:
+            if runtime_input.frame_time_ps is not None:
+                raise ValueError("NAMD authority conflicts with legacy frame_time_ps")
+            if len(runtime_input.trajectory_paths) != 1:
+                raise ValueError("NAMD authority requires one explicitly bound DCD")
+        options = {"to_guess": ()} if namd_authority is not None else {}
         universe = mda.Universe(
             str(runtime_input.topology_path),
             *[str(path) for path in runtime_input.trajectory_paths],
+            **options,
         )
+        if namd_authority is not None:
+            from mania.preprocessing.namd_runtime import apply_namd_authority
+
+            try:
+                apply_namd_authority(
+                    universe, runtime_input.topology_path,
+                    runtime_input.trajectory_paths[0], namd_authority,
+                )
+            except Exception:
+                universe.trajectory.close()
+                raise
     except Exception:
         issue = PreprocessingTrajectoryLoadIssue(
             kind="load_error",
