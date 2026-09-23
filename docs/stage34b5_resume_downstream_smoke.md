@@ -89,3 +89,69 @@ the existing F1/F2 protections. Regression success is not a real release PASS.
 No production modules, scientific formulas, dependencies or public CLI change.
 Stage 34 remains incomplete; the real three-replica chain still needs replicas
 2/3 and its own authoritative QC and downstream evidence.
+
+## Publication-only resume after external annotation authority
+
+The subsequent September 23 task supplies complete system annotations for the
+same NAMD WT / 2SS / PMm / replica-1 pilot: glycosylation `[295, 308]`, disulfide
+variant sites `[303, 322, 328, 350]`, and cysteine variant sites `[]`.
+`tools/stage34b5_publication_resume.py` strictly reads the existing
+`DatasetSystemBiologicalAnnotations` artifact and a separate provenance record.
+The accepted annotation schema has only Dataset/system identity fields; the
+sidecar binds the full trajectory identity, PMm condition, canonical reference,
+request evidence, and provenance for every category, including the empty list.
+No fields are added to the annotation or release schemas.
+
+Egor's supplied glycosylation and 2SS declarations are the biological authority.
+Previously recorded PSF bonds are independent corroboration, never the source
+of a completeness claim. The accepted explicit WT mapping supplies the sequence
+evidence for the externally accepted empty cysteine list. The helper checks
+ASN295/ASN308 and CYS303/CYS322/CYS328/CYS350 against the pinned reference.
+All 690 published annotations must preserve complete negative semantics, ECD
+234–361, and MX35 311–341.
+
+The publication helper verifies the previous resume against its archived
+inventory and pins the QC-derived manifest, original B.3 canonical source,
+condition-bound Stage 31 source, QC decision, and aggregate hashes. It calls
+only the accepted upstream integrity/lineage readers and the independent n=1
+comparison. It does not run QC, regenerate a decision, aggregate, read trajectory
+coordinates, or calculate RMSD. The protein publication binding resolves to the
+same Stage 31 canonical file. Per-replica lipid/glycan sources are retained;
+their absent aggregate families use Stage 33's accepted header-only behavior.
+
+The historical temporal artifact still carries `condition=null` and execution
+label `namd-pilot`. An additive publication copy binds both condition labels to
+the previously accepted PMm authority. Complete equality after reverting those
+two labels proves that the sampling/window plans and scientific interval remain
+unchanged. The historical artifact and all frozen Stage 32/31 inputs stay intact.
+
+Contact definitions come from recorded B.3 options and edge semantics plus the
+accepted Stage 28/29 contracts. Optional metrics remain empty because this smoke
+has no separately supplied metric selection; canonical science remains in its
+normal tables. F1 compares complete canonical models; F2 runs with zero optional
+metric records. No fixture or unsupported analysis metric is inserted.
+
+The helper runs the existing Stage 33 workflow, both corrective guards, all-table
+validation, and complete offline release reconstruction. Independent checks read
+the emitted science/aggregate CSVs and compare every retained source field.
+Any authority or validation failure records STOP and prevents a B.5 PASS claim.
+The evidence keeps the external PBC approval separately from historical
+`scientific_pbc_status=unresolved` diagnostics, with internal MIC false.
+
+This remains a single-replica 0.1–0.5 ns publication smoke. The frozen release
+version identifies the publication contract; it does not declare final Dataset
+v1.0, a 100-ns analysis, or three-replica production. Stage 34.C still requires
+real replicas 2 and 3 and authoritative specialised partner correspondence.
+
+Required explicit controls are `--prior-evidence`, `--annotation-input`,
+`--annotation-provenance`, and `--publication-inputs`. The helper creates a unique
+ignored evidence directory; its linked historical inputs must remain available
+for reconstruction. The task evidence archive includes controls, checks, actual
+publication outputs, and reference records for the historical archives.
+
+Focused verification:
+
+```bash
+.venv/bin/pytest -q tests/test_stage34b5_publication_resume.py
+.venv/bin/pytest -q tests/test_dataset_release_source_authority.py
+```
