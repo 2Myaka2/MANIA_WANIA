@@ -215,3 +215,115 @@ Git-status guard cases added after full-suite collection. Ruff, mypy (183 source
 files), CLI/module version, MDAnalysis version, config validation, and the
 offline installed-wheel reference/mapping probe passed. No network, staging,
 commit, push, full-100-ns analysis, or r2/r3 specialized science was performed.
+
+## Stage 34.C.3 — real specialised coverage for replicas 2 and 3
+
+`tools/stage34c_r2r3_specialized.py` fills the four missing per-replica lipid and
+glycan canonical sources using only the accepted C.1 prepared trajectories. It
+reuses the accepted B.4 Stage 29 execution, independent arithmetic, Stage 30
+mapping and applicable artifact validators. Production code, formulas,
+dependencies and the public CLI remain unchanged. Protein science, RMSD, QC,
+Stage 31 and Stage 33 are not executed.
+
+The runner pins the B.4, C.1 and C.2 evidence archives. Before reusing any partner
+classification it revalidates the exact shared PSF, accepted external elements
+(97 types, 439,436 atoms, no unresolved or conflicting assignments), and accepted
+canonical mapping. The strict-read B.4 catalog is reconstructed from its explicit
+classification records and actual PSF connectivity. Each replica receives its
+own catalog; the only permitted differences are `trajectory_id` and `replica_id`.
+Every other field, component atom/residue membership, partner name, and glycan
+linkage must match exactly. This does not establish global partner identities or
+Stage 31 correspondence.
+
+Each prepared XTC is checked against its pinned hash and accepted pointwise-order
+and PBC evidence, then reopened for five finite, identity-preserving frames with
+matching boxes at 100, 200, 300, 400 and 500 ps. The accepted physical-time plan
+remains one inclusive 0.1–0.5 ns window, five resolved samples, and 100 ps stride.
+No coordinates are regenerated or transformed. Scientific PBC status remains
+unresolved and internal MIC remains false.
+
+Protein-lipid geometry uses complete explicit membrane partner heavy atoms and
+an inclusive 6.0 angstrom cutoff. Protein-glycan geometry uses whole-glycan heavy
+atoms and an inclusive 4.5 angstrom cutoff. The two PSF-connected FA2G2S2 branches
+retain Asn295 ND2 and Asn308 ND2 to first-sugar C1 anchors. Their carrier-to-own-
+glycan observations are archived separately and excluded from all ordinary
+window statistics. There is no specialised `edge_weight`.
+
+For each replica the independent B.4 checker uses float64 prepared coordinates
+and direct Cartesian minima for every protein residue/explicit partner pair.
+It never calls production contact detection or window aggregation. Requested
+sample adjacency defines episodes with gap tolerance zero; a single-frame
+lifetime is zero. Distance summaries use positive-frame distances only. Integer
+and identity comparisons are exact; floating comparisons use zero relative and
+1e-12 absolute tolerance, without padding contact cutoffs. Strict source and
+canonical readers, catalog/temporal/source checks and exact shared-field
+comparison precede freezing the canonical paths, row counts and SHA256 hashes.
+
+The readiness check runs only the exact canonical-input coverage block extracted
+from the SHA256-pinned Stage 33 workflow. That implementation has no standalone
+coverage API, so its unchanged AST block is isolated without invoking the release
+builder or writer. Additional C.3 checks require nonempty strict canonical rows
+with the declared replica identities and frozen hashes. This is a coverage check,
+not F1, F2, cross-table validation or publication acceptance. The accepted
+QC-derived protein manifest and 7,168-row aggregate remain historical evidence.
+The source/canonical condition remains null under the accepted `namd-pilot`
+execution alias; a later publication task must bind the authoritative PMm label
+consistently, as C.2 already does for protein inputs.
+
+```bash
+.venv/bin/pytest -q tests/test_stage34c_r2r3_specialized.py
+.venv/bin/python tools/stage34c_r2r3_specialized.py --root local_md
+```
+
+The runner creates one unique ignored
+`local_md/stage34c_r2r3_specialized_<UTC>_<uuid>/` directory. Verification and final
+packaging follow execution. The accepted C.1 `package(work)` helper creates the
+sibling ZIP with size/hash inventory verification; raw PSF, DCD, toppar and
+prepared trajectory bytes are excluded. No staging, commit or push is performed.
+
+### Real Stage 34.C.3 result
+
+Stage 34.C.3 passed at unchanged HEAD
+`0d2a17218c2c501baa19ed97d57e058746c88841`. Both replicas have 828 membrane
+partners and two protein-linked FA2G2S2 glycans, zero unresolved components, and
+exact catalog equality after ignoring only trajectory/replica identity.
+
+| Observation | Replica 2 | Replica 3 |
+| --- | ---: | ---: |
+| Membrane partners contacting protein | 105 | 109 |
+| Lipid positive observations | 3,529 | 3,528 |
+| Lipid source / canonical rows | 916 / 916 | 913 / 913 |
+| Raw glycan positives | 35 | 32 |
+| Anchor observations excluded | 10 | 10 |
+| Ordinary glycan positives | 25 | 22 |
+| Glycan source / canonical rows | 7 / 7 | 6 / 6 |
+
+Both replicas have zero missing/extra positives, geometry mismatches,
+missing/extra window rows, mismatches in every window metric, anchor-exclusion
+mismatches and canonical-value differences. The maximum independent geometry
+delta is 0.0 angstrom. Nine applicable artifact checks per replica pass with
+`complete=true`, zero errors, zero warnings and zero unsupported checks. Runtime
+emitted the expected topology-only PSF initialization warning before the prepared
+XTC was explicitly loaded and validated.
+
+Frozen coverage readiness now passes for protein, lipid and glycan sources for
+all three scientifically selected replicas. The C.2 missing-coverage blocker is
+resolved by the real new canonical sources. Stage 33, F1, F2 and cross-table
+validation remain NOT RUN. The accepted QC decisions, QC-derived protein
+manifest and 7,168-row aggregate remain unchanged. Stage 34.C still awaits its
+separately reviewed publication continuation; specialised replica aggregation
+continues to require authoritative correspondence.
+
+Real execution took 1,074.58 seconds. Stage 29 production / independent checking
+took 441.84 / 131.08 seconds for r2 and 250.41 / 114.74 seconds for r3. Evidence
+and its sibling ZIP use basename
+`stage34c_r2r3_specialized_20260923T172052Z_707e6e5f6d6b4426922145487a665bcd`.
+The per-replica freeze JSON files record exact canonical paths, counts and hashes.
+
+Verification: 34 focused tests, 1,273 relevant regressions, and 9,958 passed /
+22 skipped in the full suite. Two final synthetic orchestration tests were added
+after full-suite collection and are included in the 34-test focused result.
+Ruff, mypy (183 source files), CLI/module version, MDAnalysis version, example
+config validation, and offline installed-wheel reference/mapping checks passed.
+Only the standalone runner, its tests and this document changed. No production
+code, network access, staging, commit, push or full-trajectory analysis occurred.
