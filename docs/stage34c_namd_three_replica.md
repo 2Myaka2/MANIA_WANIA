@@ -327,3 +327,130 @@ Ruff, mypy (183 source files), CLI/module version, MDAnalysis version, example
 config validation, and offline installed-wheel reference/mapping checks passed.
 Only the standalone runner, its tests and this document changed. No production
 code, network access, staging, commit, push or full-trajectory analysis occurred.
+
+## Stage 34.C.4 — publication-only continuation
+
+`tools/stage34c_publication_resume.py` resumes Stage 33 from the exact accepted
+C.2 QC decisions, QC-derived manifest, three protein sources and 7,168-row
+aggregate, plus the C.3-frozen specialised sources for all three replicas.
+It verifies pinned archive and live-file bytes, then copies compact authority
+into a fresh ignored workspace. It never calls upstream science, RMSD, QC or
+aggregation. Production modules, schemas, dependencies and scientific formulas
+remain unchanged.
+
+The QC-derived manifest is bound to SHA256
+`a61d84021593a94973539bb1f318ee09bff0595fef0f4052b7fe73063176e452`;
+the protein aggregate is bound to
+`823f43543e0a8459c1353d5ff0f4244ec2ebef9c1ce707a1dbe8a92bf1b57bff`.
+Replica 1 specialised inputs are exactly the history paths frozen by C.3:
+lipid SHA256
+`ea7887ed8dc9de6a029fa791c4c713acb7a0bd83acc7889038b4ce6236c4507c`
+and glycan SHA256
+`7cde63b71bcce0b13df716de4488d4075e7575b5d7eba421cdab6f89a9dfe497`.
+The runner also pins every r2/r3 source hash and requires the accepted independent
+and technical C.3 gates. No historical files are rewritten.
+
+New specialised publication copies bind `condition=PMm`. Strict model equality
+permits only that field to differ: row population, topology-local partner IDs,
+window identity, source identity and every scientific value remain equal.
+Replica 1 already carries PMm and therefore its copy has no changed model fields.
+The unchanged C.3 coverage gate requires real nonempty protein/lipid/glycan rows
+for each of the three replicas before publication.
+
+Stage 33 uses its existing absent-family semantics to emit header-only lipid
+and glycan aggregate tables. The runner rejects specialised aggregation inputs
+or correspondence. It never creates global partner identities. Optional metrics
+remain empty; F2 validates emitted metrics and does not establish article-metric
+or centrality readiness.
+
+The accepted corrective F1 verifies complete protein models against the exact
+three Stage 31 inputs. Since the accepted Stage 31 run contains only protein,
+C.4 additionally compares every specialised canonical model against its frozen
+C.3 authority after the explicit condition binding. Independent inspection reads
+the actual persisted publication CSVs and compares every emitted scientific and
+aggregate field, without invoking aggregate arithmetic. It also checks the exact
+three simulations, exact requested-time Decimal values, five samples, complete
+positive/negative annotations and replica-specific manual QC evidence.
+
+The complete unchanged Stage 33 cross-table and unified release validators are
+required. `status=passed`, `complete=true` and zero unsupported validators are
+mandatory; partial validation cannot promote C.4 to PASS. External PBC approval
+and each trajectory's diagnostics remain explicit, internal MIC stays false,
+and historical `scientific_pbc_status=unresolved` is preserved. The frozen
+`release_version=1.0` identifies the schema; this is only a 0.1–0.5 ns publication
+smoke for NAMD WT NaPi2b / PMm / 2SS replicas 1, 2 and 3.
+
+```bash
+.venv/bin/pytest -q tests/test_stage34c_publication_resume.py
+.venv/bin/python tools/stage34c_publication_resume.py --root local_md
+```
+
+The ignored workspace uses
+`local_md/stage34c_publication_resume_<UTC timestamp>_<uuid>/`. Repository checks,
+offline installed-wheel verification and final evidence packaging follow the
+runner. Its sibling ZIP includes the actual compact release, exact input
+bindings, gate reports, commands and verification logs. No raw topology,
+trajectory, wheel or environment is included.
+
+### Real Stage 34.C.4 result
+
+Publication passed at unchanged HEAD
+`6a72a90975eb8c79914f191e4991eeb59f0ad456`. The actual release contains 17 CSV
+and 3 JSON artifacts, matching the frozen 20-artifact surface. Exactly three
+simulations retain `namd / WT / PMm / 2SS`, with five requested/resolved samples
+per replica in the 0.1–0.5 ns pilot window.
+
+| Published family | Replica 1 | Replica 2 | Replica 3 | Total |
+| --- | ---: | ---: | ---: | ---: |
+| Protein | 6,514 | 6,533 | 6,575 | 19,622 |
+| Lipid | 897 | 916 | 913 | 2,726 |
+| Glycan | 6 | 7 | 6 | 19 |
+
+The protein aggregate has 7,168 rows. Independent comparisons found zero missing,
+extra, identity, numeric, denominator/availability or null mismatches in either
+the aggregate or any per-replica family. Lipid and glycan aggregates are truthful
+header-only tables; metrics are header-only with zero emitted metrics.
+
+All nine canonical source bindings, complete model checks, coverage, F1, F2,
+cross-table validation and independent inspection passed. Unified release
+validation reports `status=passed`, `complete=true`, zero errors, zero warnings
+and zero unsupported validators. F2 PASS applies only to emitted metrics and
+does not establish article-metric readiness.
+
+All 690 residue annotations were checked: ASN295/ASN308 glycosylation,
+CYS303/CYS322/CYS328/CYS350 disulfide variants, no cysteine variants, ECD exactly
+234–361 and MX35 exactly 311–341. All three QC outcomes remain `pass / available`
+and production-ready. The 246 published QC evidence records exactly preserve
+replica-specific human assessments: Ramilya Akhmetovna for r1 and Andrey for
+r2/r3, with the original supplied spellings retained in evidence.
+
+The first standalone final inspection incorrectly expected a review-input
+evidence ID to survive Stage 32 unchanged. Accepted Stage 32 assigns
+finding-local IDs; the reviewer payload was already identical in the release.
+Only that checker assumption was corrected and regression-tested. Reinspection
+passed on identical release bytes, with both exact accepted decision IDs and all
+manual evidence fields checked. No production validator failed or was bypassed,
+and publication, QC, aggregation and upstream science were not rerun.
+
+Initial execution took 329.11 seconds, including 116.80 seconds for binding,
+68.35 for publication and 79.08 for full release validation. Final reinspection
+took 84.41 seconds; combined execution/checking time was 413.52 seconds.
+Evidence and its sibling ZIP use basename
+`stage34c_publication_resume_20260923T180448Z_43c729e565164ac3addfc1e8451b155f`.
+
+Stage 34.C.1, C.2 protein QC/aggregation, C.3 specialised coverage and C.4
+publication are PASS; the real three-replica Stage 34.C chain is PASS. These
+results supersede the historical C.2 publication STOP above. Stage 34 remains
+IN PROGRESS. Separate remaining work is the article-metric readiness audit,
+Stage 34.D clean-install reproducibility, the Russian production run guide,
+Stage 34.E real cluster handoff and any future authoritative specialised
+cross-replica correspondence decision. Dataset v1.0 remains unreleased.
+
+Verification: 81 focused tests passed, 3,514 relevant regressions passed, and
+the final full suite passed 10,041 tests with 22 skipped and 22 warnings in
+591.05 seconds. Ruff reported `All checks passed!`; mypy reported
+`Success: no issues found in 183 source files`. Both CLI version commands returned
+`mania-wania 0.1.0`; MDAnalysis was 2.10.0 and example config validation passed.
+The offline wheel build/install and isolated 690-row reference/mapping round-trip
+passed. Only the allowed standalone runner, its tests and this document changed;
+no production-code change, network access, staging, commit or push occurred.
