@@ -1,0 +1,37 @@
+catalog_schema: mania.production_catalog
+catalog_version: "1.0"
+dataset_id: napi2b-dataset-v1
+dataset_version: "1.0"
+data_root_environment_variable: MANIA_DATA_ROOT
+trajectories_csv: trajectories.csv
+expected_systems: 19
+expected_trajectories: 33
+population_groups:
+  gromacs:
+    engine: gromacs
+    expected_systems: 4
+    expected_trajectories: 12
+    expected_replicas_per_system: 3
+  egor_namd:
+    engine: namd
+    expected_systems: 3
+    expected_trajectories: 9
+    expected_replicas_per_system: 3
+  alina_namd:
+    engine: namd
+    expected_systems: 12
+    expected_trajectories: 12
+    expected_replicas_per_system: 1
+allowed_readiness_statuses:
+  - READY
+  - MISSING_FILES
+  - MISSING_METADATA
+  - NEEDS_AUTHORITY
+readiness_precedence:
+  - MISSING_FILES
+  - MISSING_METADATA
+  - NEEDS_AUTHORITY
+source_head: 9f8a31bdaef1ef8f764a25827a9e8fbfcf23f450
+catalog_basis_head: 9f8a31bdaef1ef8f764a25827a9e8fbfcf23f450
+generation_note: "Catalog readiness only; no science executed."
+stage35_authorized: false
