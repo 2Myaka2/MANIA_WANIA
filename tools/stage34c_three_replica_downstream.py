@@ -217,10 +217,7 @@ def bind_history(root, work):
         b5,
         B5_SHA,
         work / "history/publication",
-        lambda n: (
-            n.startswith(("biological_annotations_", "contact_authority/"))
-            or n == "publication_inputs.json"
-        ),
+        lambda n: n.startswith(("biological_annotations_", "contact_authority/")),
     )
     links = read(b5 / "accepted_evidence_links.json")
     base = Path(links["prior"]["directory"])
@@ -1117,57 +1114,55 @@ def publication_control(qc_control, manifest_path, manifest, paths, temporals, w
 
 
 def publication_inputs(work):
-    original = read(work / "history/publication/publication_inputs.json")
-    require(not original["metrics"], "No additional publication metrics authorized")
     contacts = []
     for replica in REPLICAS:
-        for definition in original["contact_definitions"]:
-            protein = definition["contact_layer"] == "protein-protein"
-            # The accepted protein layer spelling is retained from its definition.
-            protein = (
-                protein or definition["contact_definition_id"] == "residue_contact"
-            )
-            if replica != "1" and not protein:
-                continue
-            source = (
-                (
-                    "history/b3/output/edge_semantics.json"
-                    if replica == "1"
-                    else f"history/c1/replica{replica}/output/edge_semantics.json"
-                )
-                if protein
-                else ("history/publication/" + definition["source_artifact_path"])
-            )
-            if protein and replica != "1":
-                require(
-                    read(work / source)
-                    == read(work / "history/b3/output/edge_semantics.json"),
-                    "Contact semantics differ across replicas",
-                )
-            contacts.append(
-                definition
-                | {"replica_key": list(key(replica)), "source_artifact_path": source}
-            )
-    software = []
-    for directory in (
-        "history/b3/output",
-        "history/c1/replica2/output",
-        "history/c1/replica3/output",
-        "qc",
-        "aggregation",
-    ):
-        provenance = read(work / directory / "run_provenance.json")
-        software.append(
-            dict(
-                dataset_id=key("1")[0],
-                run_id=provenance["run_id"],
-                component_name="mania-wania",
-                component_role="package",
-                version="0.1.0",
-                source_artifact_role="run_provenance",
-                source_artifact_path=f"{directory}/run_provenance.json",
+        directory = (
+            "history/b3/output"
+            if replica == "1"
+            else f"history/c1/replica{replica}/output"
+        )
+        contacts.extend(
+            publication.construct_contact_definitions(
+                work,
+                key(replica),
+                directory,
+                "history/r1/pbc_protocol_approval.json",
+                "history/r1/frozen/b3_pbc.json"
+                if replica == "1"
+                else f"history/c1/replica{replica}/persisted_pbc_validation.json",
+                "history/r1/frozen/partner_catalog.json" if replica == "1" else None,
             )
         )
+    dump(
+        work / "publication_inputs.json",
+        dict(
+            kind=publication.PUBLICATION_INPUT_KIND,
+            schema_version=publication.PUBLICATION_INPUT_SCHEMA_VERSION,
+            contact_definitions=contacts,
+            software_versions=publication_software(work),
+            metrics=[],
+        ),
+    )
+    result = read_dataset_release_publication_inputs(work / "publication_inputs.json")
+    require(not result.metrics, "No fake metric")
+    return result
+
+
+def publication_software(work, prefix=""):
+    software = publication.software_records(
+        work,
+        key("1")[0],
+        tuple(
+            prefix + directory
+            for directory in (
+                "history/b3/output",
+                "history/c1/replica2/output",
+                "history/c1/replica3/output",
+                "qc",
+                "aggregation",
+            )
+        ),
+    )
     for replica, version, path in (
         ("1", "2.14", "history/b3/source_input_observations.json"),
         ("2", "3.0.3", "history/c1/replica2/authority.json"),
@@ -1181,16 +1176,10 @@ def publication_inputs(work):
                 component_role="engine",
                 version=version,
                 source_artifact_role="accepted_namd_source_evidence",
-                source_artifact_path=path,
+                source_artifact_path=prefix + path,
             )
         )
-    dump(
-        work / "publication_inputs.json",
-        original | {"contact_definitions": contacts, "software_versions": software},
-    )
-    result = read_dataset_release_publication_inputs(work / "publication_inputs.json")
-    require(not result.metrics, "No fake metric")
-    return result
+    return software
 
 
 def independent_publication(bundle, sources, expected, work):

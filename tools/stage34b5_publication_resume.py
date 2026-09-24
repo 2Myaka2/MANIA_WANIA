@@ -24,8 +24,16 @@ from mania.biological_annotations_io import (
 from mania.canonical_reference_io import load_default_napi2b_canonical_reference
 from mania.dataset_qc_manifest_io import read_dataset_qc_manifest
 from mania.dataset_qc_run import collect_dataset_qc_input_specs
+from mania.dataset_release_contact_definition_authority import (
+    build_dataset_release_contact_definitions,
+    materialize_contact_definition_authority,
+)
 from mania.dataset_release_csv import publication_number, read_publication_csv
-from mania.dataset_release_inputs_io import read_dataset_release_publication_inputs
+from mania.dataset_release_inputs_io import (
+    PUBLICATION_INPUT_KIND,
+    PUBLICATION_INPUT_SCHEMA_VERSION,
+    read_dataset_release_publication_inputs,
+)
 from mania.dataset_release_manifest import (
     DatasetReleaseExportManifest,
     ReleaseAnnotationBinding,
@@ -453,7 +461,95 @@ def independent_publication_check(bundle, canonical, aggregate, root):
     )
 
 
-def run(base, work, annotation_path, provenance_path, publication_inputs_path):
+def construct_contact_definitions(
+    work, replica_key, edge_directory, protocol_path, diagnostic_path, catalog_path=None
+):
+    """Bind explicit current artifacts to the committed constructor; no seed input."""
+    approval = read(work / protocol_path)
+    require(
+        approval["protocol_scientifically_approved"] is True
+        and approval["internal_mic"] is False,
+        "Explicit external PBC approval with internal MIC=false required",
+    )
+    authority = None
+    if catalog_path is not None:
+        authority = "contact_authority/contact_definition_authority_v1.json"
+        materialize_contact_definition_authority(work, authority)
+    return [
+        model.to_dict()
+        for model in build_dataset_release_contact_definitions(
+            workspace=work,
+            replica_key=replica_key,
+            edge_semantics_path=f"{edge_directory}/edge_semantics.json",
+            run_provenance_path=f"{edge_directory}/run_provenance.json",
+            pbc_correction_status=dict(
+                internal_mic=False,
+                external_protocol_approved=True,
+                historical_scientific_pbc_status="unresolved",
+                protocol_authority=protocol_path,
+                trajectory_preparation_and_diagnostics=diagnostic_path,
+            ),
+            specialized_authority_path=authority,
+            partner_catalog_path=catalog_path,
+        )
+    ]
+
+
+def software_records(work, dataset_id, directories):
+    records = []
+    for directory in directories:
+        provenance = read(work / directory / "run_provenance.json")
+        records.append(
+            dict(
+                dataset_id=dataset_id,
+                run_id=provenance["run_id"],
+                component_name="mania-wania",
+                component_role="package",
+                version=provenance["software_identity"]["version"],
+                source_artifact_role="run_provenance",
+                source_artifact_path=f"{directory}/run_provenance.json",
+            )
+        )
+    return records
+
+
+def prepare_publication_inputs(work):
+    contacts = construct_contact_definitions(
+        work,
+        KEY,
+        "b3/output",
+        "prior/pbc_protocol_approval.json",
+        "prior/frozen/b3_pbc.json",
+        "prior/frozen/partner_catalog.json",
+    )
+    software = software_records(
+        work, KEY[0], ("b3/output", "prior/qc", "prior/aggregation")
+    )
+    software.append(
+        dict(
+            dataset_id=KEY[0],
+            run_id=None,
+            component_name="NAMD",
+            component_role="engine",
+            version=None,
+            source_artifact_role="accepted_namd_source_evidence",
+            source_artifact_path="prior/frozen/b4_source_observations.json",
+        )
+    )
+    dump(
+        work / "publication_inputs.json",
+        dict(
+            kind=PUBLICATION_INPUT_KIND,
+            schema_version=PUBLICATION_INPUT_SCHEMA_VERSION,
+            contact_definitions=contacts,
+            software_versions=software,
+            metrics=[],
+        ),
+    )
+    return read_dataset_release_publication_inputs(work / "publication_inputs.json")
+
+
+def run(base, work, annotation_path, provenance_path, publication_inputs_path=None):
     started = time.perf_counter()
     summary = dict(
         label=LABEL,
@@ -485,7 +581,6 @@ def run(base, work, annotation_path, provenance_path, publication_inputs_path):
         for source, name in (
             (annotation_path, "biological_annotations_authority.json"),
             (provenance_path, "biological_annotations_provenance.json"),
-            (publication_inputs_path, "publication_inputs.json"),
         ):
             (work / name).write_bytes(source.read_bytes())
         dump(work / "biological_annotations_validation.json", check)
@@ -493,6 +588,12 @@ def run(base, work, annotation_path, provenance_path, publication_inputs_path):
             dict(status="PASS", aggregate_mismatches=0), (annotations,)
         )
         bind_temporal(base, work)
+        if publication_inputs_path is None:
+            prepare_publication_inputs(work)
+        else:
+            (work / "publication_inputs.json").write_bytes(
+                publication_inputs_path.read_bytes()
+            )
         control = release_control(base)
         path = work / "dataset_release_export_manifest.json"
         require(
@@ -690,9 +791,9 @@ def main(argv=None):
         "prior-evidence",
         "annotation-input",
         "annotation-provenance",
-        "publication-inputs",
     ):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--publication-inputs", type=Path)
     args = parser.parse_args(argv)
     base = args.prior_evidence.resolve()
     work = base.parent / (

@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import copy
 import importlib.util
 import json
 import subprocess
@@ -157,7 +156,6 @@ def bind_history(root, work):
                 "dataset_release_export_manifest.json",
                 "dataset_qc_manifest.json",
                 "aggregation_template.json",
-                "publication_inputs.json",
                 "biological_annotations_authority.json",
                 "biological_annotations_provenance.json",
                 "stage31_aggregate_check.json",
@@ -461,47 +459,39 @@ def relocate_control(control, paths, work):
 
 
 def prepare_publication_inputs(work):
-    data = read(work / "history/c2/publication_inputs.json")
-    require(not data["metrics"], "No optional metrics authorized")
-    original = copy.deepcopy(data["contact_definitions"])
-    for replica in ("2", "3"):
-        data["contact_definitions"].extend(
-            copy.deepcopy(d) | {"replica_key": list(c2.key(replica))}
-            for d in original
-            if d["contact_layer"] != "protein-protein"
+    contacts = []
+    for replica in REPLICAS:
+        directory = (
+            "history/c2/history/b3/output"
+            if replica == "1"
+            else f"history/c2/history/c1/replica{replica}/output"
         )
-    for definition in data["contact_definitions"]:
-        definition["source_artifact_path"] = (
-            "history/c2/" + definition["source_artifact_path"]
-        )
-        replica = definition["replica_key"][-1]
-        pbc = definition["parameters"]["pbc_correction_status"]
-        # Metadata references identify each trajectory's already frozen evidence.
-        pbc.update(
-            protocol_authority="history/c2/history/r1/pbc_protocol_approval.json",
-            trajectory_preparation_and_diagnostics=(
+        contacts.extend(
+            publication.construct_contact_definitions(
+                work,
+                c2.key(replica),
+                directory,
+                "history/c2/history/r1/pbc_protocol_approval.json",
                 "history/c2/history/r1/frozen/b3_pbc.json"
                 if replica == "1"
                 else (
                     f"history/c2/history/c1/replica{replica}/persisted_pbc_validation.json"
-                )
-            ),
-        )
-        specific = definition["parameters"].get("type_specific_parameters", {})
-        if "partner_catalog" in specific:
-            specific["partner_catalog"] = (
+                ),
                 "history/c2/history/r1/frozen/partner_catalog.json"
                 if replica == "1"
-                else f"history/c3/replica{replica}/molecular_partner_catalog.json"
+                else f"history/c3/replica{replica}/molecular_partner_catalog.json",
             )
-        require(pbc["internal_mic"] is False, "Internal MIC changed")
-        for name in ("protocol_authority", "trajectory_preparation_and_diagnostics"):
-            require((work / pbc[name]).is_file(), "Missing trajectory PBC evidence")
-    for software in data["software_versions"]:
-        software["source_artifact_path"] = (
-            "history/c2/" + software["source_artifact_path"]
         )
-    dump(work / "publication_inputs.json", data)
+    dump(
+        work / "publication_inputs.json",
+        dict(
+            kind=publication.PUBLICATION_INPUT_KIND,
+            schema_version=publication.PUBLICATION_INPUT_SCHEMA_VERSION,
+            contact_definitions=contacts,
+            software_versions=c2.publication_software(work, "history/c2/"),
+            metrics=[],
+        ),
+    )
     return read_dataset_release_publication_inputs(work / "publication_inputs.json")
 
 

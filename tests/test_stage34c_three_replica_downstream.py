@@ -186,12 +186,20 @@ def test_pinned_historical_archive_with_or_without_inventory(tmp_path, inventory
         downstream.verified_copy(base, digest, target, lambda n: True)
 
 
-def test_no_fake_optional_metric(tmp_path):
+def test_no_fake_optional_metric(tmp_path, monkeypatch):
     target = tmp_path / "history/publication"
     target.mkdir(parents=True)
     (target / "publication_inputs.json").write_text(json.dumps({"metrics": [{}]}))
-    with pytest.raises(ValueError, match="No additional publication metrics"):
-        downstream.publication_inputs(tmp_path)
+    # Historical supplied metrics are no longer a construction input. The
+    # constructor's authority guards are exercised in its dedicated tests.
+    monkeypatch.setattr(
+        downstream.publication, "construct_contact_definitions", lambda *_: []
+    )
+    monkeypatch.setattr(downstream, "publication_software", lambda *_: [])
+    inputs = downstream.publication_inputs(tmp_path)
+    assert inputs.metrics == ()
+    payload = json.loads((tmp_path / "publication_inputs.json").read_text())
+    assert payload["metrics"] == []
 
 
 @pytest.mark.parametrize(
