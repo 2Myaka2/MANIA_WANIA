@@ -20,6 +20,10 @@ from mania.preprocessing.molecular_partner_metadata_io import (
     read_strict_json,
     write_atomic_text,
 )
+from mania.preprocessing.temporal_policy import (
+    INCLUSIVE_BOUNDARY_PROFILE,
+    LEGACY_BOUNDARY_PROFILE,
+)
 
 _Model = TypeVar("_Model", DatasetReleaseExportManifest, DatasetReleaseManifest)
 
@@ -96,6 +100,18 @@ def read_dataset_release_export_manifest(
 def read_dataset_release_manifest(path: str | Path) -> DatasetReleaseManifest:
     try:
         data = read_strict_json(path)
+        if type(data) is not dict:
+            raise ValueError("Expected exact release manifest object")
+        if data.get("schema_version") == "mania.dataset_release_manifest.v0.2":
+            if data.get("boundary_profile") != INCLUSIVE_BOUNDARY_PROFILE:
+                raise ValueError("Invalid release boundary profile")
+            data["schema_version"] = DatasetReleaseManifest.__dataclass_fields__[
+                "schema_version"
+            ].default
+        else:
+            if "boundary_profile" in data:
+                raise ValueError("Legacy release must not declare a boundary profile")
+            data["boundary_profile"] = LEGACY_BOUNDARY_PROFILE
         data = exact_fields(
             data,
             {

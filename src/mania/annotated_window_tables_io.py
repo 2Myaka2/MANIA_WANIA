@@ -32,15 +32,22 @@ from mania.preprocessing.protein_edge_window_table_io import (
 from mania.preprocessing.protein_edge_window_table_io import (
     _serialize,
 )
+from mania.preprocessing.temporal_policy import LEGACY_BOUNDARY_PROFILE
 
 ANNOTATED_CANONICAL_PROTEIN_EDGE_WINDOW_CSV_COLUMNS = tuple(
-    item.name for item in fields(AnnotatedCanonicalProteinEdgeWindowRow)
+    item.name
+    for item in fields(AnnotatedCanonicalProteinEdgeWindowRow)
+    if item.name != "boundary_profile"
 )
 ANNOTATED_CANONICAL_PROTEIN_LIPID_WINDOW_CSV_COLUMNS = tuple(
-    item.name for item in fields(AnnotatedCanonicalProteinLipidWindowRow)
+    item.name
+    for item in fields(AnnotatedCanonicalProteinLipidWindowRow)
+    if item.name != "boundary_profile"
 )
 ANNOTATED_CANONICAL_PROTEIN_GLYCAN_WINDOW_CSV_COLUMNS = tuple(
-    item.name for item in fields(AnnotatedCanonicalProteinGlycanWindowRow)
+    item.name
+    for item in fields(AnnotatedCanonicalProteinGlycanWindowRow)
+    if item.name != "boundary_profile"
 )
 
 _Table = TypeVar(
@@ -89,8 +96,10 @@ def _read(
             raise ValueError("Expected a regular CSV file")
         with target.open(encoding="utf-8", newline="") as stream:
             reader = csv.reader(stream, strict=True)
-            if tuple(next(reader, ())) != columns:
+            header = tuple(next(reader, ()))
+            if header not in (columns, (*columns, "boundary_profile")):
                 raise ValueError("Invalid exact CSV header")
+            columns = header
             rows = []
             for cells in reader:
                 values = {
@@ -155,6 +164,8 @@ def _write(
         raise ValueError("output_dir must be a Path or non-empty string")
     # Revalidate before any filesystem mutation, including frozen-object bypasses.
     table.__post_init__()
+    if any(r.boundary_profile != LEGACY_BOUNDARY_PROFILE for r in table.rows):
+        columns = (*columns, "boundary_profile")
     target = Path(output_dir) / filename
     try:
         stream = io.StringIO(newline="")

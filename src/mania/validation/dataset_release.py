@@ -68,7 +68,8 @@ def validate_dataset_release_run(
             )
         validate_dataset_release_tables(
             type(bundle.metadata)(
-                **{t.table_id: observed[t.table_id] for t in bundle.metadata.tables}
+                **{t.table_id: observed[t.table_id] for t in bundle.metadata.tables},
+                boundary_profile=bundle.metadata.boundary_profile,
             ),
             type(bundle.science)(
                 **{t.table_id: observed[t.table_id] for t in bundle.science.tables}

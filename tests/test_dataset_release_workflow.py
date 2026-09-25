@@ -44,6 +44,7 @@ from mania.preprocessing.physical_time_execution import PreprocessingTemporalExe
 from mania.preprocessing.physical_time_execution_io import (
     write_preprocessing_temporal_execution,
 )
+from mania.preprocessing.temporal_policy import LEGACY_BOUNDARY_PROFILE
 from mania.replica_aggregation_manifest_io import write_replica_aggregation_manifest
 from mania.replica_aggregation_run import (
     collect_replica_aggregation_input_specs,
@@ -63,10 +64,14 @@ def make_release_case(
     systems=("T330M",),
     condition=None,
     occupancies=None,
+    boundary_profile=LEGACY_BOUNDARY_PROFILE,
 ):
     """Execute accepted synthetic QC then aggregation before release test guards."""
     root.mkdir(parents=True, exist_ok=True)
-    case, template = make_science_case(root, outcomes=outcomes, unavailable=unavailable)
+    case, template = make_science_case(
+        root, outcomes=outcomes, unavailable=unavailable,
+        boundary_profile=boundary_profile
+    )
     labels = {"engine": "gromacs", "condition": condition} if condition else {}
     groups = []
     for system in systems:
@@ -101,7 +106,7 @@ def make_release_case(
     replicas = tuple(sorted(members))
     executions = {}
     for key in replicas:
-        evidence = temporal_evidence(key[-1])
+        evidence = temporal_evidence(key[-1], boundary_profile=boundary_profile)
         if condition is not None:
             evidence = replace(evidence, execution_condition=condition)
         spec = evidence.dataset_spec.model_copy(
@@ -136,7 +141,7 @@ def make_release_case(
                 dataset_spec=spec,
                 sampling_plan=sampling,
                 window_plan=plan_physical_time_windows(
-                    sampling, temporal=spec.temporal
+                    sampling, temporal=spec.temporal, boundary_profile=boundary_profile
                 ),
             )
         else:

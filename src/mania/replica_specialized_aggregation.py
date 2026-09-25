@@ -26,6 +26,7 @@ from mania.preprocessing.specialized_contact_window_tables import (
     ProteinGlycanWindowRow,
     ProteinLipidWindowRow,
 )
+from mania.preprocessing.temporal_policy import LEGACY_BOUNDARY_PROFILE
 from mania.replica_aggregation_contract import (
     REPLICA_AGGREGATION_CANONICAL_REFERENCE_ID,
     REPLICA_AGGREGATION_CANONICAL_REFERENCE_SHA256,
@@ -574,7 +575,14 @@ def _aggregate_rows(
         )
     _require_reference(table)
     for item in fields(table):
-        if not item.init and getattr(table, item.name) != item.default:
+        expected = item.default
+        if item.name == "schema_version" and any(
+            getattr(r, "boundary_profile", LEGACY_BOUNDARY_PROFILE)
+            != LEGACY_BOUNDARY_PROFILE
+            for r in table.rows
+        ):
+            expected = str(expected).replace(".v0.1", ".v0.2")
+        if not item.init and getattr(table, item.name) != expected:
             raise ReplicaSpecializedAggregationError(
                 "fixed canonical table metadata must match"
             )
@@ -624,6 +632,10 @@ def _aggregate_rows(
                 raise ReplicaSpecializedAggregationError(
                     f"row {name} must match group window"
                 )
+        if row.boundary_profile != window.boundary_profile:
+            raise ReplicaSpecializedAggregationError(
+                "row boundary_profile must match group window"
+            )
         if row.right_endpoint_inclusive != window.right_endpoint_inclusive:
             raise ReplicaSpecializedAggregationError(
                 "row right_endpoint_inclusive must match group window"

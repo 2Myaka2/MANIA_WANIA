@@ -21,6 +21,12 @@ from mania.preprocessing.physical_time_windows import (
     WINDOW_OVERLAP_PERCENT_ABS_TOLERANCE,
     WINDOW_OVERLAP_PERCENT_REL_TOLERANCE,
 )
+from mania.preprocessing.temporal_policy import (
+    INCLUSIVE_BOUNDARY_PROFILE,
+    LEGACY_BOUNDARY_PROFILE,
+    BoundaryProfile,
+    require_boundary_profile,
+)
 
 REPLICA_AGGREGATION_CANONICAL_REFERENCE_ID = CANONICAL_RESIDUE_MAPPING_REFERENCE_ID
 REPLICA_AGGREGATION_CANONICAL_REFERENCE_SHA256 = (
@@ -30,7 +36,7 @@ REPLICA_AGGREGATION_CANONICAL_REFERENCE_SHA256 = (
 ReplicaWindowAvailabilityStatus = Literal["available", "unavailable", "excluded"]
 
 _PhysicalWindowKey = tuple[
-    Decimal, Decimal, Decimal, Decimal, bool, Decimal, Decimal, Decimal
+    Decimal, Decimal, Decimal, Decimal, bool, Decimal, Decimal, Decimal, str
 ]
 _GroupKey = tuple[str, str, DatasetEngine, _PhysicalWindowKey]
 _PHYSICAL_NUMBER_FIELDS = (
@@ -119,8 +125,10 @@ class ReplicaAggregationWindowDefinition:
     window_length_ns: float
     window_step_ns: float
     overlap_percent: float
+    boundary_profile: BoundaryProfile = LEGACY_BOUNDARY_PROFILE
 
     def __post_init__(self) -> None:
+        require_boundary_profile(self.boundary_profile)
         object.__setattr__(self, "window_id", _text(self.window_id, "window_id"))
         if type(self.window_index) is not int or self.window_index < 0:
             raise ReplicaAggregationContractError(
@@ -129,6 +137,13 @@ class ReplicaAggregationWindowDefinition:
         if type(self.right_endpoint_inclusive) is not bool:
             raise ReplicaAggregationContractError(
                 "right_endpoint_inclusive must be an exact bool"
+            )
+        if (
+            self.boundary_profile == INCLUSIVE_BOUNDARY_PROFILE
+            and self.right_endpoint_inclusive is not True
+        ):
+            raise ReplicaAggregationContractError(
+                "Inclusive profile requires a right-inclusive full window"
             )
         values = tuple(
             _decimal(getattr(self, name), name) for name in _PHYSICAL_NUMBER_FIELDS
@@ -186,10 +201,14 @@ class ReplicaAggregationWindowDefinition:
             length,
             step,
             overlap,
+            self.boundary_profile,
         )
 
     def to_dict(self) -> dict[str, object]:
-        return asdict(self)
+        result = asdict(self)
+        if self.boundary_profile == LEGACY_BOUNDARY_PROFILE:
+            result.pop("boundary_profile")
+        return result
 
 
 @dataclass(frozen=True)
@@ -245,6 +264,7 @@ class ReplicaAggregationGroupSpec:
 
     def to_dict(self) -> dict[str, object]:
         result = asdict(self)
+        result["window"] = self.window.to_dict()
         result["expected_replica_ids"] = list(self.expected_replica_ids)
         return result
 
@@ -316,7 +336,7 @@ class ReplicaAggregationMember:
         return self.dataset_id, self.system_id, self.trajectory_id, self.replica_id
 
     def to_dict(self) -> dict[str, object]:
-        return asdict(self)
+        return {**asdict(self), "window": self.window.to_dict()}
 
 
 @dataclass(frozen=True)

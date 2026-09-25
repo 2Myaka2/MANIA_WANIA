@@ -11,7 +11,9 @@ from mania.replica_aggregation_workflow import execute_replica_aggregation_manif
 def test_exact_occupancy_only_columns(tmp_path):
     manifest, _ = make_manifest(tmp_path)
     for family, table in execute_replica_aggregation_manifest(manifest).items():
-        names = tuple(f.name for f in fields(table.rows[0]))
+        names = tuple(
+            f.name for f in fields(table.rows[0]) if f.name != "boundary_profile"
+        )
         assert names[:16] == (
             "dataset_id",
             "system_id",

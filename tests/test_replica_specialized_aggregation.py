@@ -955,4 +955,5 @@ def test_no_io_workflow_annotation_or_qc_imports():
         "mania.preprocessing.molecular_partner_entities",
         "mania.preprocessing.specialized_contact_window_tables",
         "mania.replica_aggregation_contract",
+        "mania.preprocessing.temporal_policy",
     }

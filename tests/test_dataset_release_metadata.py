@@ -63,6 +63,7 @@ from mania.preprocessing.protein_lipid_contacts import (
     PROTEIN_LIPID_DISTANCE_DEFINITION,
     PROTEIN_LIPID_DISTANCE_UNIT,
 )
+from mania.preprocessing.temporal_policy import LEGACY_BOUNDARY_PROFILE
 from mania.preprocessing.trajectory_contacts import PreprocessingContactDetectionOptions
 from mania.preprocessing.trajectory_preprocessing_manifests import (
     build_edge_semantics_manifest,
@@ -136,7 +137,9 @@ def decision(replica="1", status="pass", release="available"):
     )
 
 
-def temporal_evidence(replica="1", *, length=0.4, step=0.2):
+def temporal_evidence(
+    replica="1", *, length=0.4, step=0.2, boundary_profile=LEGACY_BOUNDARY_PROFILE
+):
     spec = DatasetTrajectorySpec.model_validate(
         {
             "identity": dict(
@@ -168,7 +171,9 @@ def temporal_evidence(replica="1", *, length=0.4, step=0.2):
         ),
         temporal=spec.temporal,
     )
-    windows = plan_physical_time_windows(samples, temporal=spec.temporal)
+    windows = plan_physical_time_windows(
+        samples, temporal=spec.temporal, boundary_profile=boundary_profile
+    )
     return PreprocessingConditionTemporalExecution(
         "execution-only", spec, samples, windows
     )

@@ -770,4 +770,5 @@ def test_module_has_no_io_workflow_qc_or_specialized_execution_imports():
         "mania.canonical_window_tables",
         "mania.preprocessing.protein_edge_window_table",
         "mania.replica_aggregation_contract",
+        "mania.preprocessing.temporal_policy",
     }

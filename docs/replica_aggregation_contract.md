@@ -268,3 +268,12 @@ provenance/inventory or unified-validation responsibilities; these belong to 31.
 Accepted Stage 27–30 science, source
 and canonical tables, annotations, PBC, analysis, dependencies, frozen Dataset
 scientific contract and WANIA remain unchanged.
+
+## Stage 34.D.4c temporal identity amendment
+
+The physical window key now appends the explicit versioned `boundary_profile`.
+See [inclusive-window contract](inclusive_window_contract.md) for both profile
+identifiers and strict legacy/new manifest and CSV dispatch. Every group member
+and matching canonical row must agree, including production-ending windows
+whose numeric bounds and right-inclusive flag are identical. Statistics,
+sparse-zero treatment and availability denominators are unchanged.

@@ -12,6 +12,11 @@ from mania.dataset_release_contract import (
 )
 from mania.dataset_release_csv import require_portable_publication_path
 from mania.dataset_release_metadata import ReplicaKey, SystemKey
+from mania.preprocessing.temporal_policy import (
+    LEGACY_BOUNDARY_PROFILE,
+    BoundaryProfile,
+    require_boundary_profile,
+)
 
 DATASET_RELEASE_EXPORT_MANIFEST_SCHEMA_VERSION = (
     "mania.dataset_release_export_manifest.v0.1"
@@ -228,6 +233,7 @@ class DatasetReleaseManifest:
     authoritative_stage32_decision_source: str
     authoritative_qc_derived_stage31_manifest_source: str
     authoritative_stage31_aggregation_source: str
+    boundary_profile: BoundaryProfile = LEGACY_BOUNDARY_PROFILE
     schema_version: str = field(
         init=False, default=DATASET_RELEASE_MANIFEST_SCHEMA_VERSION
     )
@@ -257,19 +263,30 @@ class DatasetReleaseManifest:
     )
 
     def __post_init__(self) -> None:
+        require_boundary_profile(self.boundary_profile)
+        version = (
+            DATASET_RELEASE_MANIFEST_SCHEMA_VERSION
+            if self.boundary_profile == LEGACY_BOUNDARY_PROFILE
+            else "mania.dataset_release_manifest.v0.2"
+        )
+        object.__setattr__(self, "schema_version", version)
         require_text(self.dataset_id)
         for item in fields(self):
             value = getattr(self, item.name)
             if item.name.endswith("_source"):
                 require_path(value)
             if not item.init and (
-                type(value) is not type(item.default) or value != item.default
+                type(value) is not type(item.default)
+                or value != (version if item.name == "schema_version" else item.default)
             ):
                 raise ValueError("Release manifest frozen contract mismatch")
 
     def to_dict(self) -> dict[str, object]:
+        values = asdict(self)
+        if self.boundary_profile == LEGACY_BOUNDARY_PROFILE:
+            values.pop("boundary_profile")
         return {
-            **asdict(self),
+            **values,
             "publication_artifacts": [
                 a.to_dict() for a in PUBLICATION_ARTIFACT_REGISTRY.artifacts
             ],

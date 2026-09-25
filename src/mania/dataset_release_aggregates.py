@@ -144,6 +144,10 @@ def _build_aggregates(
     }
     decisions = {d.replica_key: d for d in authority.decisions.records}
     for group in groups.values():
+        if group.spec.window.boundary_profile != metadata_tables.boundary_profile:
+            raise DatasetReleaseScienceError(
+                "Aggregate temporal boundary profile differs"
+            )
         for member in group.members:
             simulation = simulations.get(member.replica_key)
             if simulation is None:

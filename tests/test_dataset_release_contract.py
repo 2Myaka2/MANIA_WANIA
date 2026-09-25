@@ -64,6 +64,9 @@ def columns(table):
 
 def assert_projection(table, row_type, omitted=()):
     """Accepted scalar scientific values remain representable without type loss."""
+    # D.4c retains one release-wide profile in the versioned release manifest.
+    # The inclusive integration tests verify this authority without new CSV columns.
+    omitted = (*omitted, "boundary_profile")
     published = columns(table)
     for field in fields(row_type):
         if field.name in omitted:

@@ -42,7 +42,9 @@ def test_exact_header_round_trip_determinism_none_and_overwrite(tmp_path, kind, 
     assert tuple(next(csv.reader(paths[0].open()))) == columns
     assert len(list(csv.reader(paths[0].open()))) == (1 if empty else 2)
     if not empty:
-        assert columns == tuple(f.name for f in fields(table.rows[0]))
+        assert columns == tuple(
+            f.name for f in fields(table.rows[0]) if f.name != "boundary_profile"
+        )
 
 
 @pytest.mark.parametrize("kind", KINDS)

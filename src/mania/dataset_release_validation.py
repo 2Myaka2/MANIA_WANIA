@@ -35,6 +35,11 @@ def validate_dataset_release_tables(
     replace(science)
     replace(authority)
     replace(control)
+    if any(
+        g.spec.window.boundary_profile != metadata.boundary_profile
+        for g in authority.qc_derived_aggregation_manifest.groups
+    ):
+        raise ValueError("Release temporal boundary profile differs from authority")
     tables = (*metadata.tables, *science.tables)
     if {t.spec for t in tables} != set(PUBLICATION_TABLE_SPECS) or len(tables) != 17:
         raise ValueError(
@@ -141,7 +146,10 @@ def validate_dataset_release_tables(
                             "disulfide_state",
                         )
                     },
-                    **spec.window.to_dict(),
+                    **{
+                        k: v for k, v in spec.window.to_dict().items()
+                        if k != "boundary_profile"
+                    },
                 }
                 if all(
                     row[n] == (publication_number(v) if type(v) is float else v)

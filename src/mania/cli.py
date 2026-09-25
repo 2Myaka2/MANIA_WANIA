@@ -87,6 +87,7 @@ from mania.preprocessing.physical_time_execution import (
     PREPROCESSING_TEMPORAL_EXECUTION_FILENAME,
     PREPROCESSING_TEMPORAL_EXECUTION_ROLE,
     PreprocessingPhysicalTimeExecutionError,
+    PreprocessingTemporalExecution,
     build_preprocessing_temporal_execution,
 )
 from mania.preprocessing.physical_time_execution_io import (
@@ -1293,6 +1294,7 @@ def _export_stage30_tables(
     mapping_bindings: canonical_tables.DatasetCanonicalResidueMappingBindings,
     annotation_bindings: annotated_tables.DatasetBiologicalAnnotationBindings,
     *,
+    temporal_execution: PreprocessingTemporalExecution | None = None,
     overwrite: bool,
 ) -> tuple[tuple[tuple[str, Path], ...], PreprocessingRunFailureStage | None]:
     """Enrich only successful source exports; never access trajectory runtimes."""
@@ -1315,6 +1317,16 @@ def _export_stage30_tables(
             )(
                 reader(source_path),
                 mapping_bindings=mapping_bindings,
+                boundary_profiles=(
+                    {
+                        b.dataset_spec.identity.replica_key: (
+                            b.window_plan.boundary_profile
+                        )
+                        for b in temporal_execution.bindings
+                    }
+                    if temporal_execution is not None
+                    else None
+                ),
             )
             prefix = "Canonical table export write failed:"
             written = getattr(
@@ -1992,6 +2004,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             mapping_bindings,
             annotation_bindings,
             overwrite=options.overwrite,
+            temporal_execution=temporal_execution,
         )
         inventory_outputs["stage30_output_paths"] = stage30_paths
         technical_references.extend(

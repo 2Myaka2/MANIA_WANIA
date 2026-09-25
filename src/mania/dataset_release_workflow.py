@@ -398,6 +398,7 @@ def build_dataset_release(manifest_path: Path) -> DatasetReleaseBundle:
             control.decision_set_path,
             control.qc_derived_manifest_path,
             control.stage31_run.provenance_path,
+            boundary_profile=metadata.boundary_profile,
         )
         bundle = DatasetReleaseBundle(control, metadata, science, manifest, authority)
         for table in bundle.tables:

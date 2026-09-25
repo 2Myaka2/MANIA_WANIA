@@ -57,6 +57,10 @@ PREPARED = {
     "3": "9fe19cfb9a8de59afd613b6d4c3eaef166a17e925611671c984974edfab4cf55",
 }
 COVERAGE_SHA = "63dced08b8547970f5404b02833619e790205a3a24520cbeda63cdbdacc1f7be"
+# D.4c adds release-profile propagation after the unchanged coverage block.
+PROFILE_COVERAGE_SHA = (
+    "82b07a3486e2ae19268109fb5b344b4f5ccce63d24fa627b80a4703cfb582096"
+)
 ALLOWED_FILES = (
     "tools/stage34c_r2r3_specialized.py",
     "tests/test_stage34c_r2r3_specialized.py",
@@ -322,7 +326,10 @@ def frozen_coverage_gate(control, base, candidates):
     source = (
         Path(__file__).resolve().parents[1] / "src/mania/dataset_release_workflow.py"
     )
-    b3.require_hash(source, COVERAGE_SHA, "frozen Stage 33 coverage validator")
+    require(
+        file_record(source)["sha256"] in (COVERAGE_SHA, PROFILE_COVERAGE_SHA),
+        "Wrong frozen Stage 33 coverage validator SHA256",
+    )
     tree = ast.parse(source.read_text())
     function = next(
         n
@@ -400,7 +407,10 @@ def coverage_readiness(control, base, candidates, freezes):
         frozen_validator_error=gate_error,
         sources=records,
         policy_source="src/mania/dataset_release_workflow.py:312",
-        policy_sha256=COVERAGE_SHA,
+        policy_sha256=file_record(
+            Path(__file__).resolve().parents[1]
+            / "src/mania/dataset_release_workflow.py"
+        )["sha256"],
         publication_executed=False,
         scope="Exact frozen input coverage block only; no publication/F1/F2",
     )

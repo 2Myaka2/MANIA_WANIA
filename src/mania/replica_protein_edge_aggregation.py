@@ -18,6 +18,7 @@ from mania.canonical_window_tables import (
     CanonicalProteinEdgeWindowTable,
 )
 from mania.preprocessing.protein_edge_window_table import DatasetProteinEdgeWindowRow
+from mania.preprocessing.temporal_policy import LEGACY_BOUNDARY_PROFILE
 from mania.replica_aggregation_contract import (
     REPLICA_AGGREGATION_CANONICAL_REFERENCE_ID,
     REPLICA_AGGREGATION_CANONICAL_REFERENCE_SHA256,
@@ -363,7 +364,14 @@ def aggregate_canonical_protein_edges_across_replicas(
         )
     _require_reference(table)
     for item in fields(table):
-        if not item.init and getattr(table, item.name) != item.default:
+        expected = item.default
+        if item.name == "schema_version" and any(
+            getattr(r, "boundary_profile", LEGACY_BOUNDARY_PROFILE)
+            != LEGACY_BOUNDARY_PROFILE
+            for r in table.rows
+        ):
+            expected = str(expected).replace(".v0.1", ".v0.2")
+        if not item.init and getattr(table, item.name) != expected:
             raise ReplicaProteinEdgeAggregationError(
                 "fixed canonical table metadata must match"
             )
@@ -412,6 +420,10 @@ def aggregate_canonical_protein_edges_across_replicas(
                 raise ReplicaProteinEdgeAggregationError(
                     f"row {name} must match group window"
                 )
+        if row.boundary_profile != window.boundary_profile:
+            raise ReplicaProteinEdgeAggregationError(
+                "row boundary_profile must match group window"
+            )
         if row.right_endpoint_inclusive != window.right_endpoint_inclusive:
             raise ReplicaProteinEdgeAggregationError(
                 "row right_endpoint_inclusive must match group window"

@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 
+from mania.preprocessing.temporal_policy import LEGACY_BOUNDARY_PROFILE
 from mania.replica_aggregation_contract import (
     REPLICA_AGGREGATION_CANONICAL_REFERENCE_ID,
     REPLICA_AGGREGATION_CANONICAL_REFERENCE_SHA256,
@@ -24,7 +25,20 @@ REPLICA_AGGREGATION_MANIFEST_FILENAME = "replica_aggregation_manifest.json"
 def require_fixed_metadata(model: object) -> None:
     """Reject modified frozen contract fields, including reference identity."""
     for item in fields(model):  # type: ignore[arg-type]
-        if not item.init and getattr(model, item.name) != item.default:
+        expected = item.default
+        if item.name == "schema_version" and (
+            any(
+                getattr(r, "boundary_profile", LEGACY_BOUNDARY_PROFILE)
+                != LEGACY_BOUNDARY_PROFILE
+                for r in getattr(model, "rows", ())
+            )
+            or any(
+                g.spec.window.boundary_profile != LEGACY_BOUNDARY_PROFILE
+                for g in getattr(model, "groups", ())
+            )
+        ):
+            expected = str(expected).replace(".v0.1", ".v0.2")
+        if not item.init and getattr(model, item.name) != expected:
             raise ValueError("Fixed canonical contract metadata must match")
 
 
@@ -84,6 +98,23 @@ class ReplicaAggregationManifest:
     )
 
     def __post_init__(self) -> None:
+        if type(self.groups) is not tuple or any(
+            type(g) is not ReplicaAggregationWorkflowGroup for g in self.groups
+        ):
+            raise ValueError("Expected tuple of exact workflow groups")
+        # Version is derived only from explicit window contracts, never bounds.
+        profiles = {g.spec.window.boundary_profile for g in self.groups}
+        if len(profiles) > 1:
+            raise ValueError("Aggregation manifest cannot mix boundary profiles")
+        object.__setattr__(
+            self,
+            "schema_version",
+            (
+                REPLICA_AGGREGATION_MANIFEST_SCHEMA_VERSION
+                if profiles <= {LEGACY_BOUNDARY_PROFILE}
+                else "mania.replica_aggregation_manifest.v0.2"
+            ),
+        )
         require_fixed_metadata(self)
         for family in ("protein", "lipid", "glycan"):
             name = f"{family}_canonical_table_paths"

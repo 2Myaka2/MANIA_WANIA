@@ -4,6 +4,7 @@ Only protein identities are enriched. Source evidence and accepted scientific
 metrics remain intact; Dataset workflow and biological annotations are 30.D.
 """
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
 from typing import Any, ClassVar, Generic, TypeVar
 
@@ -27,6 +28,12 @@ from mania.preprocessing.specialized_contact_window_tables import (
     ProteinGlycanWindowTable,
     ProteinLipidWindowRow,
     ProteinLipidWindowTable,
+)
+from mania.preprocessing.temporal_policy import (
+    INCLUSIVE_BOUNDARY_PROFILE,
+    LEGACY_BOUNDARY_PROFILE,
+    BoundaryProfile,
+    require_boundary_profile,
 )
 
 CANONICAL_PROTEIN_EDGE_WINDOW_TABLE_SCHEMA_VERSION = (
@@ -183,6 +190,9 @@ class _CanonicalWindowRow:
     resolved_frame_count: int
     missing_sample_count: int
     coverage_fraction: float
+    boundary_profile: BoundaryProfile = field(
+        default=LEGACY_BOUNDARY_PROFILE, kw_only=True
+    )
 
     @property
     def replica_key(self) -> _ReplicaKey:
@@ -192,6 +202,7 @@ class _CanonicalWindowRow:
         return {
             name: list(value) if type(value) is tuple else value
             for name, value in _values(self).items()
+            if name != "boundary_profile" or value != LEGACY_BOUNDARY_PROFILE
         }
 
 
@@ -199,6 +210,12 @@ def _validate_row(
     row: _CanonicalWindowRow, source_type: type[Any], prefixes: tuple[str, ...]
 ) -> None:
     try:
+        require_boundary_profile(row.boundary_profile)
+        if (
+            row.boundary_profile == INCLUSIVE_BOUNDARY_PROFILE
+            and row.right_endpoint_inclusive is not True
+        ):
+            raise ValueError("Inclusive profile requires a right-inclusive full window")
         source = {item.name: getattr(row, item.name) for item in fields(source_type)}
         if source_type is DatasetProteinEdgeWindowRow and (
             source["source_residue_index"] > source["target_residue_index"]
@@ -395,7 +412,13 @@ class _CanonicalWindowTable(Generic[_Row]):
                 "rows must follow deterministic canonical order"
             )
         for item in fields(self):
-            if not item.init and getattr(self, item.name) != item.default:
+            expected = item.default
+            if item.name == "schema_version" and any(
+                r.boundary_profile != LEGACY_BOUNDARY_PROFILE for r in self.rows
+            ):
+                expected = str(expected).replace(".v0.1", ".v0.2")
+                object.__setattr__(self, "schema_version", expected)
+            if not item.init and getattr(self, item.name) != expected:
                 raise CanonicalWindowTableError(
                     "Fixed canonical table metadata must match"
                 )
@@ -455,6 +478,7 @@ def _build_rows(
     source_type: type[Any],
     row_type: type[_Row],
     mapping_bindings: DatasetCanonicalResidueMappingBindings,
+    boundary_profiles: Mapping[_ReplicaKey, BoundaryProfile] | None,
 ) -> tuple[_Row, ...]:
     if type(source_table) is not source_type:
         raise CanonicalWindowTableError(
@@ -478,6 +502,8 @@ def _build_rows(
             )
             mapping = mapping_bindings.lookup(replica_key)
             values = _values(source)
+            if boundary_profiles is not None:
+                values["boundary_profile"] = boundary_profiles[replica_key]
             prefixes = (
                 ("source_", "target_")
                 if source_type is DatasetProteinEdgeWindowTable
@@ -526,6 +552,7 @@ def build_canonical_protein_edge_window_table(
     source_table: DatasetProteinEdgeWindowTable,
     *,
     mapping_bindings: DatasetCanonicalResidueMappingBindings,
+    boundary_profiles: Mapping[_ReplicaKey, BoundaryProfile] | None = None,
 ) -> CanonicalProteinEdgeWindowTable:
     return CanonicalProteinEdgeWindowTable(
         _build_rows(
@@ -533,6 +560,7 @@ def build_canonical_protein_edge_window_table(
             DatasetProteinEdgeWindowTable,
             CanonicalProteinEdgeWindowRow,
             mapping_bindings,
+            boundary_profiles,
         )
     )
 
@@ -541,6 +569,7 @@ def build_canonical_protein_lipid_window_table(
     source_table: ProteinLipidWindowTable,
     *,
     mapping_bindings: DatasetCanonicalResidueMappingBindings,
+    boundary_profiles: Mapping[_ReplicaKey, BoundaryProfile] | None = None,
 ) -> CanonicalProteinLipidWindowTable:
     return CanonicalProteinLipidWindowTable(
         _build_rows(
@@ -548,6 +577,7 @@ def build_canonical_protein_lipid_window_table(
             ProteinLipidWindowTable,
             CanonicalProteinLipidWindowRow,
             mapping_bindings,
+            boundary_profiles,
         )
     )
 
@@ -556,6 +586,7 @@ def build_canonical_protein_glycan_window_table(
     source_table: ProteinGlycanWindowTable,
     *,
     mapping_bindings: DatasetCanonicalResidueMappingBindings,
+    boundary_profiles: Mapping[_ReplicaKey, BoundaryProfile] | None = None,
 ) -> CanonicalProteinGlycanWindowTable:
     return CanonicalProteinGlycanWindowTable(
         _build_rows(
@@ -563,6 +594,7 @@ def build_canonical_protein_glycan_window_table(
             ProteinGlycanWindowTable,
             CanonicalProteinGlycanWindowRow,
             mapping_bindings,
+            boundary_profiles,
         )
     )
 

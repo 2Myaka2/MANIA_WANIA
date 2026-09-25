@@ -171,6 +171,10 @@ def _build_science(
     simulations = publication_metadata_index(metadata_tables, "simulations")
     included = []
     for row in source.rows:
+        if row.boundary_profile != metadata_tables.boundary_profile:
+            raise DatasetReleaseScienceError(
+                "Science temporal boundary profile differs"
+            )
         simulation = simulations.get(row.replica_key)
         if simulation is None:
             raise DatasetReleaseScienceError("Unknown full replica key in science")

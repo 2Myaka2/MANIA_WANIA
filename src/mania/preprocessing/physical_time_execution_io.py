@@ -16,6 +16,7 @@ from mania.dataset_identity import (
 from mania.preprocessing.physical_time_execution import (
     PREPROCESSING_TEMPORAL_EXECUTION_FILENAME,
     PREPROCESSING_TEMPORAL_EXECUTION_KIND,
+    PREPROCESSING_TEMPORAL_EXECUTION_PROFILE_SCHEMA_VERSION,
     PREPROCESSING_TEMPORAL_EXECUTION_SCHEMA_VERSION,
     PreprocessingConditionTemporalExecution,
     PreprocessingTemporalExecution,
@@ -27,9 +28,15 @@ from mania.preprocessing.physical_time_sampling import (
     ResolvedPhysicalTimeSamplingPlan,
 )
 from mania.preprocessing.physical_time_windows import (
+    PHYSICAL_TIME_WINDOW_PROFILE_SCHEMA_VERSION,
+    PHYSICAL_TIME_WINDOW_SCHEMA_VERSION,
     PhysicalTimeWindowPlanningIssue,
     ResolvedPhysicalTimeWindow,
     ResolvedPhysicalTimeWindowPlan,
+)
+from mania.preprocessing.temporal_policy import (
+    INCLUSIVE_BOUNDARY_PROFILE,
+    LEGACY_BOUNDARY_PROFILE,
 )
 
 
@@ -65,10 +72,29 @@ def _array(value: Any) -> list[Any]:
 
 
 def _model(value: Any, model: type[Any]) -> Any:
+    if model is ResolvedPhysicalTimeWindowPlan:
+        if not isinstance(value, dict):
+            raise ValueError("Invalid window plan")
+        value = value.copy()
+        version = value.get("schema_version")
+        if version == PHYSICAL_TIME_WINDOW_SCHEMA_VERSION:
+            if "boundary_profile" in value:
+                raise ValueError("Legacy schema cannot contain a profile field")
+            value["boundary_profile"] = LEGACY_BOUNDARY_PROFILE
+        elif version == PHYSICAL_TIME_WINDOW_PROFILE_SCHEMA_VERSION:
+            if value.get("boundary_profile") != INCLUSIVE_BOUNDARY_PROFILE:
+                raise ValueError("Invalid explicit window profile")
+        else:
+            raise ValueError("Unknown window plan version")
     values = _fields(value, model)
     for item in fields(model):
         if not item.init:
             actual = values.pop(item.name)
+            if (
+                model is ResolvedPhysicalTimeWindowPlan
+                and item.name == "schema_version"
+            ):
+                continue  # Exact version/profile pair checked above.
             if type(actual) is not type(item.default) or actual != item.default:
                 raise ValueError("Invalid fixed contract field.")
     nested: dict[str, type[Any]] = {}
@@ -143,7 +169,11 @@ def read_preprocessing_temporal_execution(
         }:
             raise ValueError("Invalid root fields.")
         if (
-            data["schema_version"] != PREPROCESSING_TEMPORAL_EXECUTION_SCHEMA_VERSION
+            data["schema_version"]
+            not in (
+                PREPROCESSING_TEMPORAL_EXECUTION_SCHEMA_VERSION,
+                PREPROCESSING_TEMPORAL_EXECUTION_PROFILE_SCHEMA_VERSION,
+            )
             or data["kind"] != PREPROCESSING_TEMPORAL_EXECUTION_KIND
         ):
             raise ValueError("Unsupported temporal execution contract.")

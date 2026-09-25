@@ -21,6 +21,7 @@ from pydantic import (
 )
 
 from mania.dataset_identity import DatasetTrajectorySpec
+from mania.preprocessing.temporal_policy import PreprocessingTemporalPolicy
 
 
 class DatasetTrajectoryReference(BaseModel):
@@ -200,6 +201,16 @@ class PreprocessingInputManifest(BaseModel):
     )
     frame_time_ps: float | None = None
     dataset_parameter_table_path: Path | None = None
+    temporal_policy: PreprocessingTemporalPolicy | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_temporal_policy(
+        self, handler: SerializerFunctionWrapHandler
+    ) -> dict[str, Any]:
+        values: dict[str, Any] = handler(self)
+        if self.temporal_policy is None:
+            values.pop("temporal_policy", None)
+        return values
 
     @field_validator("output_root", "dataset_parameter_table_path", mode="before")
     @classmethod
@@ -265,6 +276,11 @@ class PreprocessingInputManifest(BaseModel):
     @model_validator(mode="after")
     def validate_dataset_table_usage(self) -> Self:
         """References require a table; declared tables require Dataset-aware entries."""
+        if self.temporal_policy is not None and not any(
+            c.dataset_spec is not None or c.dataset_ref is not None
+            for c in self.conditions
+        ):
+            raise ValueError("Temporal policy requires Dataset context")
         if self.dataset_parameter_table_path is None:
             if any(config.dataset_ref is not None for config in self.conditions):
                 raise ValueError("dataset_ref requires dataset_parameter_table_path")

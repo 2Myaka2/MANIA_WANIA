@@ -1,11 +1,14 @@
 catalog_schema: mania.production_catalog
-catalog_version: "1.0"
+catalog_version: "1.1"
 dataset_id: napi2b-dataset-v1
 dataset_version: "1.0"
 data_root_environment_variable: MANIA_DATA_ROOT
 trajectories_csv: trajectories.csv
 expected_systems: 19
 expected_trajectories: 33
+temporal_policy:
+  schema_version: mania.preprocessing_temporal_policy.v0.1
+  boundary_profile: mania.window_boundaries.inclusive.v1
 population_groups:
   gromacs:
     engine: gromacs
@@ -33,5 +36,5 @@ readiness_precedence:
   - NEEDS_AUTHORITY
 source_head: 5dff662bb1a0a09d6909ddf568919c10fe8a5abf
 catalog_basis_head: 5dff662bb1a0a09d6909ddf568919c10fe8a5abf
-generation_note: "Stage 34.D.4b production-intake reconciliation and approved timing; inclusive-window contract implementation pending; no science executed."
+generation_note: "Stage 34.D.4b production-intake reconciliation and approved timing; Stage 34.D.4c explicit inclusive-window policy; readiness gates remain; no science executed."
 stage35_authorized: false

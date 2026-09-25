@@ -33,6 +33,14 @@ if TYPE_CHECKING:
         PreprocessingGraphWorkflowRuntimeLoadingResult,
     )
 
+from mania.preprocessing.temporal_policy import (
+    INCLUSIVE_BOUNDARY_PROFILE,
+    LEGACY_BOUNDARY_PROFILE,
+)
+
+PREPROCESSING_TEMPORAL_EXECUTION_PROFILE_SCHEMA_VERSION = (
+    "mania.preprocessing_temporal_execution.v0.2"
+)
 PREPROCESSING_TEMPORAL_EXECUTION_SCHEMA_VERSION = (
     "mania.preprocessing_temporal_execution.v0.1"
 )
@@ -144,7 +152,10 @@ class PreprocessingConditionTemporalExecution:
         for window in self.window_plan.windows:
             lower = start + window.window_index * step
             upper = lower + length
-            inclusive = upper == end
+            inclusive = (
+                self.window_plan.boundary_profile == INCLUSIVE_BOUNDARY_PROFILE
+                or upper == end
+            )
             if (
                 window.requested_start_ns != float(lower)
                 or window.requested_end_ns != float(upper)
@@ -215,6 +226,18 @@ class PreprocessingTemporalExecution:
             raise ValueError(
                 "bindings must be a non-empty tuple of temporal executions"
             )
+        profiles = {b.window_plan.boundary_profile for b in self.bindings}
+        if len(profiles) != 1:
+            raise ValueError("Temporal execution must use one boundary profile")
+        object.__setattr__(
+            self,
+            "schema_version",
+            (
+                PREPROCESSING_TEMPORAL_EXECUTION_SCHEMA_VERSION
+                if profiles == {LEGACY_BOUNDARY_PROFILE}
+                else PREPROCESSING_TEMPORAL_EXECUTION_PROFILE_SCHEMA_VERSION
+            ),
+        )
         conditions = {b.execution_condition for b in self.bindings}
         keys = {b.dataset_spec.identity.replica_key for b in self.bindings}
         if len(conditions) != len(self.bindings) or len(keys) != len(self.bindings):
@@ -313,7 +336,13 @@ def build_preprocessing_temporal_execution(
                     "Physical sampling plan failed."
                 )
             windows = plan_physical_time_windows(
-                sampling, temporal=binding.dataset_spec.temporal
+                sampling,
+                temporal=binding.dataset_spec.temporal,
+                boundary_profile=(
+                    dataset_context.temporal_policy.boundary_profile
+                    if dataset_context.temporal_policy is not None
+                    else LEGACY_BOUNDARY_PROFILE
+                ),
             )
             if windows.status == "failed":
                 raise PreprocessingPhysicalTimeExecutionError(

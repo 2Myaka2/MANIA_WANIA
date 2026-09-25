@@ -13,7 +13,14 @@ from mania.preprocessing.physical_time_sampling import (
     ResolvedPhysicalTimeSample,
     ResolvedPhysicalTimeSamplingPlan,
 )
+from mania.preprocessing.temporal_policy import (
+    INCLUSIVE_BOUNDARY_PROFILE,
+    LEGACY_BOUNDARY_PROFILE,
+    BoundaryProfile,
+    require_boundary_profile,
+)
 
+PHYSICAL_TIME_WINDOW_PROFILE_SCHEMA_VERSION = "mania.physical_time_windows.v0.2"
 PHYSICAL_TIME_WINDOW_SCHEMA_VERSION = "mania.physical_time_windows.v0.1"
 PHYSICAL_TIME_WINDOW_KIND = "mania_physical_time_windows"
 WINDOW_OVERLAP_PERCENT_ABS_TOLERANCE = 1e-6
@@ -220,7 +227,19 @@ class ResolvedPhysicalTimeWindowPlan:
     windows: tuple[ResolvedPhysicalTimeWindow, ...]
     issues: tuple[PhysicalTimeWindowPlanningIssue, ...]
 
+    boundary_profile: BoundaryProfile = LEGACY_BOUNDARY_PROFILE
+
     def __post_init__(self) -> None:
+        require_boundary_profile(self.boundary_profile)
+        object.__setattr__(
+            self,
+            "schema_version",
+            (
+                PHYSICAL_TIME_WINDOW_SCHEMA_VERSION
+                if self.boundary_profile == LEGACY_BOUNDARY_PROFILE
+                else PHYSICAL_TIME_WINDOW_PROFILE_SCHEMA_VERSION
+            ),
+        )
         for name in (
             "requested_production_start_ns",
             "requested_production_end_ns",
@@ -304,6 +323,8 @@ class ResolvedPhysicalTimeWindowPlan:
 
     def to_dict(self) -> dict[str, object]:
         result = asdict(self)
+        if self.boundary_profile == LEGACY_BOUNDARY_PROFILE:
+            result.pop("boundary_profile")
         result["windows"] = [window.to_dict() for window in self.windows]
         result["issues"] = [issue.to_dict() for issue in self.issues]
         return result
@@ -325,8 +346,10 @@ def _make_plan(
     implied: float | None,
     windows: tuple[ResolvedPhysicalTimeWindow, ...],
     issues: tuple[PhysicalTimeWindowPlanningIssue, ...],
+    boundary_profile: BoundaryProfile,
 ) -> ResolvedPhysicalTimeWindowPlan:
     return ResolvedPhysicalTimeWindowPlan(
+        boundary_profile=boundary_profile,
         status=_plan_status(windows, issues),
         requested_production_start_ns=temporal.production_start_ns,
         requested_production_end_ns=temporal.production_end_ns,
@@ -386,12 +409,14 @@ def plan_physical_time_windows(
     sampling_plan: ResolvedPhysicalTimeSamplingPlan,
     *,
     temporal: DatasetTemporalParameters,
+    boundary_profile: BoundaryProfile = LEGACY_BOUNDARY_PROFILE,
 ) -> ResolvedPhysicalTimeWindowPlan:
     """Assign 27.A records by requested time, without re-resolving source frames.
 
-    Only full Decimal windows exist. Ordinary right endpoints are exclusive;
-    exact production-ending windows include the endpoint. No QC policy applies.
+    Only full Decimal windows exist. The versioned profile controls the right
+    endpoint; requested sampling and full-window positions are unchanged.
     """
+    require_boundary_profile(boundary_profile)
     if type(sampling_plan) is not ResolvedPhysicalTimeSamplingPlan:
         raise ValueError("sampling_plan must be exact ResolvedPhysicalTimeSamplingPlan")
     if type(temporal) is not DatasetTemporalParameters:
@@ -435,7 +460,7 @@ def plan_physical_time_windows(
             )
         )
     if issues:
-        return _make_plan(temporal, implied, (), tuple(issues))
+        return _make_plan(temporal, implied, (), tuple(issues), boundary_profile)
 
     values = tuple(
         Decimal(str(value))
@@ -465,7 +490,9 @@ def plan_physical_time_windows(
             end = start + length
             if end > production_end:
                 break
-            inclusive = end == production_end
+            inclusive = (
+                boundary_profile == INCLUSIVE_BOUNDARY_PROFILE or end == production_end
+            )
             lower = bisect_left(target_ns, start)
             upper = (bisect_right if inclusive else bisect_left)(target_ns, end)
             windows.append(
@@ -502,7 +529,9 @@ def plan_physical_time_windows(
                     "No generated window contains a resolved source sample.",
                 )
             )
-    return _make_plan(temporal, implied, tuple(windows), tuple(issues))
+    return _make_plan(
+        temporal, implied, tuple(windows), tuple(issues), boundary_profile
+    )
 
 
 __all__ = [

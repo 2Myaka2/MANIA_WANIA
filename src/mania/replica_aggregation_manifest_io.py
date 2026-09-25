@@ -11,6 +11,10 @@ from mania.preprocessing.molecular_partner_metadata_io import (
     SpecializedArtifactWriteResult,
     write_atomic_text,
 )
+from mania.preprocessing.temporal_policy import (
+    INCLUSIVE_BOUNDARY_PROFILE,
+    LEGACY_BOUNDARY_PROFILE,
+)
 from mania.replica_aggregation_contract import (
     ReplicaAggregationGroupSpec,
     ReplicaAggregationMember,
@@ -32,9 +36,20 @@ class ReplicaAggregationManifestReadError(ValueError):
 
 
 def _keys(value: Any, model: type[Any]) -> dict[str, Any]:
+    if model is ReplicaAggregationWindowDefinition and type(value) is dict:
+        value = value.copy()
+        if "boundary_profile" not in value:
+            value["boundary_profile"] = LEGACY_BOUNDARY_PROFILE
     if type(value) is not dict or set(value) != {f.name for f in fields(model)}:
         raise ValueError("Invalid exact JSON object fields")
     for item in fields(model):
+        if model is ReplicaAggregationManifest and item.name == "schema_version":
+            if value[item.name] not in (
+                item.default,
+                "mania.replica_aggregation_manifest.v0.2",
+            ):
+                raise ValueError("Unknown aggregation manifest version")
+            continue
         if not item.init and (
             type(value[item.name]) is not type(item.default)
             or value[item.name] != item.default
@@ -64,31 +79,41 @@ def _correspondences(value: Any) -> SpecializedPartnerCorrespondences:
     return SpecializedPartnerCorrespondences(tuple(items))
 
 
+def _window(value: Any, explicit: bool) -> ReplicaAggregationWindowDefinition:
+    names = {f.name for f in fields(ReplicaAggregationWindowDefinition)}
+    if not explicit:
+        names.remove("boundary_profile")
+    if type(value) is not dict or set(value) != names or (
+        explicit and value["boundary_profile"] != INCLUSIVE_BOUNDARY_PROFILE
+    ):
+        raise ValueError("Invalid manifest version/profile combination")
+    return ReplicaAggregationWindowDefinition(
+        **_keys(value, ReplicaAggregationWindowDefinition)
+    )
+
+
 def read_replica_aggregation_manifest(path: str | Path) -> ReplicaAggregationManifest:
     try:
         target = Path(path)
-        data = _keys(
-            json.loads(
-                target.read_text(encoding="utf-8"),
-                object_pairs_hook=_object,
-                parse_constant=_constant,
-            ),
-            ReplicaAggregationManifest,
+        payload = json.loads(
+            target.read_text(encoding="utf-8"),
+            object_pairs_hook=_object,
+            parse_constant=_constant,
+        )
+        data = _keys(payload, ReplicaAggregationManifest)
+        explicit = (
+            payload["schema_version"] == "mania.replica_aggregation_manifest.v0.2"
         )
         groups = []
         for group in _array(data["groups"]):
             group = _keys(group, ReplicaAggregationWorkflowGroup)
             spec = _keys(group["spec"], ReplicaAggregationGroupSpec)
-            spec["window"] = ReplicaAggregationWindowDefinition(
-                **_keys(spec["window"], ReplicaAggregationWindowDefinition)
-            )
+            spec["window"] = _window(spec["window"], explicit)
             spec["expected_replica_ids"] = tuple(_array(spec["expected_replica_ids"]))
             members = []
             for member in _array(group["members"]):
                 member = _keys(member, ReplicaAggregationMember)
-                member["window"] = ReplicaAggregationWindowDefinition(
-                    **_keys(member["window"], ReplicaAggregationWindowDefinition)
-                )
+                member["window"] = _window(member["window"], explicit)
                 members.append(ReplicaAggregationMember(**member))
             groups.append(
                 ReplicaAggregationWorkflowGroup(
@@ -105,7 +130,10 @@ def read_replica_aggregation_manifest(path: str | Path) -> ReplicaAggregationMan
             if any(type(p) is not str or not p or p != p.strip() for p in paths):
                 raise ValueError("Expected non-empty path strings")
             data[key] = tuple(target.parent / p for p in paths)
-        return ReplicaAggregationManifest(**data)
+        result = ReplicaAggregationManifest(**data)
+        if result.schema_version != payload["schema_version"]:
+            raise ValueError("Manifest version does not match window profiles")
+        return result
     except (OSError, ValueError, TypeError, OverflowError, RecursionError):
         raise ReplicaAggregationManifestReadError(
             "Invalid or unreadable replica aggregation manifest."

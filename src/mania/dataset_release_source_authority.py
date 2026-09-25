@@ -122,6 +122,8 @@ def validate_publication_metric_sources(
         if len(records) != 1:
             raise ValueError("Metric source key must resolve to exactly one record")
         row = records[0]
+        if row.boundary_profile != metadata.boundary_profile:
+            raise ValueError("Metric source temporal boundary profile differs")
         replica_key = tuple(getattr(metric, name) for name in REPLICA_KEY)
         if (
             row.replica_key != replica_key

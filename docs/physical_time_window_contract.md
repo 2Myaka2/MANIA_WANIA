@@ -1,5 +1,12 @@
 # Physical-time window contract — Stage 27.B
 
+Stage 34.D.4c amendment: the explicit
+[versioned inclusive-window contract](inclusive_window_contract.md) applies to
+Dataset v1 production. Existing/default inputs and historical acceptance
+records below retain legacy semantics. The six numeric Dataset parameters and
+raw requested sampling remain unchanged.
+
+
 ## Status and scope
 
 Stage 26 is complete. Stage 27.A is accepted at checkpoint

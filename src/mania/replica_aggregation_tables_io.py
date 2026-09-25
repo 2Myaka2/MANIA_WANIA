@@ -22,15 +22,22 @@ from mania.preprocessing.protein_edge_window_table_io import (
 from mania.preprocessing.protein_edge_window_table_io import (
     DatasetProteinEdgeWindowCsvWriteResult as ReplicaAggregationCsvWriteResult,
 )
+from mania.preprocessing.temporal_policy import LEGACY_BOUNDARY_PROFILE
 
 CANONICAL_PROTEIN_EDGE_REPLICA_AGGREGATION_CSV_COLUMNS = tuple(
-    f.name for f in fields(tables.CanonicalProteinEdgeReplicaAggregationRow)
+    f.name
+    for f in fields(tables.CanonicalProteinEdgeReplicaAggregationRow)
+    if f.name != "boundary_profile"
 )
 CANONICAL_PROTEIN_LIPID_REPLICA_AGGREGATION_CSV_COLUMNS = tuple(
-    f.name for f in fields(tables.CanonicalProteinLipidReplicaAggregationRow)
+    f.name
+    for f in fields(tables.CanonicalProteinLipidReplicaAggregationRow)
+    if f.name != "boundary_profile"
 )
 CANONICAL_PROTEIN_GLYCAN_REPLICA_AGGREGATION_CSV_COLUMNS = tuple(
-    f.name for f in fields(tables.CanonicalProteinGlycanReplicaAggregationRow)
+    f.name
+    for f in fields(tables.CanonicalProteinGlycanReplicaAggregationRow)
+    if f.name != "boundary_profile"
 )
 
 _Table = TypeVar(
@@ -87,11 +94,15 @@ def _parse(name: str, value: str) -> Any:
 def _read(path: str | Path, table_type: type[_Table]) -> _Table:
     try:
         row_type = table_type._row_type
-        columns = tuple(f.name for f in fields(row_type))
+        columns: tuple[str, ...] = tuple(
+            f.name for f in fields(row_type) if f.name != "boundary_profile"
+        )
         with Path(path).open(encoding="utf-8", newline="") as stream:
             reader = csv.reader(stream, strict=True)
-            if tuple(next(reader, ())) != columns:
+            header = tuple(next(reader, ()))
+            if header not in (columns, (*columns, "boundary_profile")):
                 raise ValueError("Invalid exact CSV header")
+            columns = header
             rows = tuple(
                 row_type(
                     **{
@@ -116,7 +127,11 @@ def replica_aggregation_csv_bytes(table: _Table) -> bytes:
     ):
         raise ValueError("Expected exact aggregate table")
     table.__post_init__()
-    columns = tuple(f.name for f in fields(table._row_type))
+    columns: tuple[str, ...] = tuple(
+        f.name for f in fields(table._row_type) if f.name != "boundary_profile"
+    )
+    if any(r.boundary_profile != LEGACY_BOUNDARY_PROFILE for r in table.rows):
+        columns = (*columns, "boundary_profile")
     stream = io.StringIO(newline="")
     writer = csv.writer(stream, lineterminator="\n")
     writer.writerow(columns)

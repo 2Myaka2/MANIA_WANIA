@@ -38,6 +38,7 @@ from mania.dataset_release_metadata import (
     build_dataset_release_metadata_tables,
 )
 from mania.dataset_release_metrics import AuthoritativePublicationMetric
+from mania.preprocessing.temporal_policy import LEGACY_BOUNDARY_PROFILE
 from mania.replica_aggregation_contract import (
     REPLICA_AGGREGATION_CANONICAL_REFERENCE_ID,
     REPLICA_AGGREGATION_CANONICAL_REFERENCE_SHA256,
@@ -121,6 +122,7 @@ def make_science_case(
     outcomes=("available", "excluded", "available"),
     unavailable=(),
     selected=None,
+    boundary_profile=LEGACY_BOUNDARY_PROFILE,
 ):
     """Small accepted models; no trajectory, evaluator or release assembly."""
     decisions = DatasetQCDecisionSet(
@@ -129,7 +131,8 @@ def make_science_case(
             for i, outcome in enumerate(outcomes, 1)
         )
     )
-    executions = tuple(temporal_evidence(str(i)) for i in range(1, len(outcomes) + 1))
+    executions = tuple(temporal_evidence(str(i), boundary_profile=boundary_profile)
+        for i in range(1, len(outcomes) + 1))
     windows = executions[0].window_plan.windows[-2:]
     groups = []
     for w in windows:
@@ -144,6 +147,7 @@ def make_science_case(
             0.4,
             0.2,
             50,
+            boundary_profile=boundary_profile,
         )
         spec = ReplicaAggregationGroupSpec(
             "synthetic-33b",
@@ -253,6 +257,7 @@ def make_science_case(
                     requested_window_start_ns=w.requested_start_ns,
                     requested_window_end_ns=w.requested_end_ns,
                     right_endpoint_inclusive=w.right_endpoint_inclusive,
+                    boundary_profile=boundary_profile,
                     effective_window_start_ns=w.effective_start_time_ps / 1000,
                     effective_window_end_ns=w.effective_end_time_ps / 1000,
                     requested_sample_count=w.requested_sample_count,

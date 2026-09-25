@@ -362,6 +362,7 @@ def _cross_check_stage30(
     dataset_context: Any,
     models: dict[str, Any],
     sources: dict[str, Any],
+    temporal_execution: Any = None,
 ) -> None:
     """Reconstruct using the production pure APIs and explicit portable bindings."""
     from mania import annotated_window_tables as annotations_api
@@ -557,6 +558,16 @@ def _cross_check_stage30(
             )(
                 source,
                 mapping_bindings=mappings,
+                boundary_profiles=(
+                    {
+                        b.dataset_spec.identity.replica_key: (
+                            b.window_plan.boundary_profile
+                        )
+                        for b in temporal_execution.bindings
+                    }
+                    if temporal_execution is not None
+                    else None
+                ),
             )
             if expected != canonical:
                 raise ValueError(
@@ -1282,6 +1293,20 @@ def validate_run_artifacts(
             raise PreprocessingTemporalExecutionReadError(
                 "Temporal execution must match requested Dataset bindings."
             )
+        from mania.preprocessing.temporal_policy import LEGACY_BOUNDARY_PROFILE
+
+        requested_profile = (
+            dataset_context.temporal_policy.boundary_profile
+            if dataset_context.temporal_policy is not None
+            else LEGACY_BOUNDARY_PROFILE
+        )
+        if any(
+            b.window_plan.boundary_profile != requested_profile
+            for b in execution.bindings
+        ):
+            raise PreprocessingTemporalExecutionReadError(
+                "Temporal execution must match requested boundary profile."
+            )
         temporal_execution = execution
         return execution
 
@@ -1602,6 +1627,7 @@ def validate_run_artifacts(
                 dataset_context,
                 stage30_models,
                 {source_role: source_table, **specialized_artifacts},
+                temporal_execution=temporal_execution,
             )
         except (ValueError, TypeError):
             records[:] = [

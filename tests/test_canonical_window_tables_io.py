@@ -150,7 +150,9 @@ def test_exact_headers_counts_roundtrips_and_deterministic_bytes(tmp_path, kind,
     )
     columns = getattr(io, f"CANONICAL_PROTEIN_{kind.upper()}_WINDOW_CSV_COLUMNS")
     assert columns == EXPECTED_COLUMNS[kind]
-    assert columns == tuple(f.name for f in fields(base.rows[0]))
+    assert columns == tuple(
+        f.name for f in fields(base.rows[0]) if f.name != "boundary_profile"
+    )
     assert tuple(csv_rows(first.output_path)[0]) == columns
     assert len(columns) == {"edge": 38, "lipid": 35, "glycan": 40}[kind]
     original = {

@@ -6,7 +6,7 @@ directories are created. CSV writing is a separate operation.
 """
 
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, fields, replace
+from dataclasses import dataclass, field, replace
 from decimal import Decimal
 from typing import TypeAlias
 
@@ -35,6 +35,11 @@ from mania.dataset_release_qc import (
 )
 from mania.preprocessing.physical_time_execution import (
     PreprocessingConditionTemporalExecution,
+)
+from mania.preprocessing.temporal_policy import (
+    LEGACY_BOUNDARY_PROFILE,
+    BoundaryProfile,
+    require_boundary_profile,
 )
 from mania.replica_aggregation_contract import ReplicaAggregationMember
 from mania.replica_aggregation_manifest import (
@@ -386,11 +391,15 @@ class DatasetReleaseMetadataTables:
     quality_control_evidence: DatasetReleaseTable
     nodes: DatasetReleaseTable
     residue_annotations: DatasetReleaseTable
+    boundary_profile: BoundaryProfile = field(
+        default=LEGACY_BOUNDARY_PROFILE, kw_only=True
+    )
 
     def __post_init__(self) -> None:
-        for item in fields(self):
-            table = getattr(self, item.name)
-            if type(table) is not DatasetReleaseTable or table.table_id != item.name:
+        require_boundary_profile(self.boundary_profile)
+        for name in METADATA_TABLE_IDS:
+            table = getattr(self, name)
+            if type(table) is not DatasetReleaseTable or table.table_id != name:
                 raise DatasetReleaseMetadataError(
                     "Bundle table identity must match its slot"
                 )
@@ -446,6 +455,15 @@ def build_dataset_release_metadata_tables(
     software_version_records: Iterable[Mapping[str, object]],
 ) -> DatasetReleaseMetadataTables:
     """Build exactly ten publication tables without executing the production DAG."""
+    profiles = {b.window_plan.boundary_profile for b in temporal_evidence}
+    profiles.update(
+        g.spec.window.boundary_profile for g in aggregation_authority.manifest.groups
+    )
+    if len(profiles) != 1:
+        raise DatasetReleaseMetadataError(
+            "Release cannot mix temporal boundary profiles"
+        )
+    boundary_profile = next(iter(profiles))
     qc = build_dataset_release_qc_tables(decisions, summary)
     members = _candidate_members(decisions, aggregation_authority)
     systems = build_dataset_release_systems(members)
@@ -496,4 +514,5 @@ def build_dataset_release_metadata_tables(
         qc.quality_control_evidence,
         build_dataset_release_nodes(),
         annotations,
+        boundary_profile=boundary_profile,
     )

@@ -16,6 +16,11 @@ from mania.dataset_parameter_table import (
     read_dataset_parameter_table_csv,
 )
 from mania.preprocessing.input_manifest import PreprocessingInputManifest
+from mania.preprocessing.temporal_policy import PreprocessingTemporalPolicy
+
+PREPROCESSING_DATASET_CONTEXT_PROFILE_SCHEMA_VERSION = (
+    "mania.preprocessing_dataset_context.v0.2"
+)
 
 PREPROCESSING_DATASET_CONTEXT_SCHEMA_VERSION = (
     "mania.preprocessing_dataset_context.v0.1"
@@ -74,6 +79,7 @@ class PreprocessingDatasetContext(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     bindings: tuple[PreprocessingDatasetBinding, ...] = Field(min_length=1)
+    temporal_policy: PreprocessingTemporalPolicy | None = None
 
     @field_validator("bindings")
     @classmethod
@@ -90,7 +96,11 @@ class PreprocessingDatasetContext(BaseModel):
 
     @property
     def schema_version(self) -> str:
-        return PREPROCESSING_DATASET_CONTEXT_SCHEMA_VERSION
+        return (
+            PREPROCESSING_DATASET_CONTEXT_SCHEMA_VERSION
+            if self.temporal_policy is None
+            else PREPROCESSING_DATASET_CONTEXT_PROFILE_SCHEMA_VERSION
+        )
 
     @property
     def kind(self) -> str:
@@ -101,20 +111,37 @@ class PreprocessingDatasetContext(BaseModel):
             "schema_version": self.schema_version,
             "kind": self.kind,
             "bindings": [binding.to_dict() for binding in self.bindings],
+            **(
+                {"temporal_policy": self.temporal_policy.model_dump(mode="json")}
+                if self.temporal_policy is not None
+                else {}
+            ),
         }
 
     @classmethod
     def from_dict(cls, value: object) -> Self:
         """Strictly reconstruct the versioned portable serialization."""
         try:
-            if not isinstance(value, dict) or set(value) != {
-                "schema_version",
-                "kind",
-                "bindings",
-            }:
+            if not isinstance(value, dict):
+                raise ValueError
+            explicit = value.get("schema_version") == (
+                PREPROCESSING_DATASET_CONTEXT_PROFILE_SCHEMA_VERSION
+            )
+            if set(value) != (
+                {
+                    "schema_version",
+                    "kind",
+                    "bindings",
+                }
+                | ({"temporal_policy"} if explicit else set())
+            ):
                 raise ValueError
             if (
-                value["schema_version"] != PREPROCESSING_DATASET_CONTEXT_SCHEMA_VERSION
+                value["schema_version"]
+                not in (
+                    PREPROCESSING_DATASET_CONTEXT_SCHEMA_VERSION,
+                    PREPROCESSING_DATASET_CONTEXT_PROFILE_SCHEMA_VERSION,
+                )
                 or value["kind"] != PREPROCESSING_DATASET_CONTEXT_KIND
                 or not isinstance(value["bindings"], list)
             ):
@@ -151,7 +178,14 @@ class PreprocessingDatasetContext(BaseModel):
                         }
                     )
                 )
-            context = cls(bindings=tuple(bindings))
+            context = cls(
+                bindings=tuple(bindings),
+                temporal_policy=(
+                    PreprocessingTemporalPolicy.model_validate(value["temporal_policy"])
+                    if explicit
+                    else None
+                ),
+            )
             if context.to_dict() != value:
                 raise ValueError
             return context
@@ -261,7 +295,11 @@ def resolve_preprocessing_dataset_context(
             )
         )
     context = (
-        PreprocessingDatasetContext(bindings=tuple(bindings)) if bindings else None
+        PreprocessingDatasetContext(
+            bindings=tuple(bindings), temporal_policy=manifest.temporal_policy
+        )
+        if bindings
+        else None
     )
     return PreprocessingDatasetResolution(context, table_path)
 

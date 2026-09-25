@@ -449,6 +449,7 @@ def test_physical_signature_exact_order_and_decimal_equivalence():
         Decimal("5"),
         Decimal("2.5"),
         Decimal("50"),
+        "mania.window_boundaries.legacy.v1",
     )
     assert window(requested_production_start_ns=20).physical_window_key == (
         window().physical_window_key
@@ -615,6 +616,7 @@ def test_fields_exclude_source_identity_effective_coverage_annotations_and_stati
         "window_length_ns",
         "window_step_ns",
         "overlap_percent",
+        "boundary_profile",
     )
     forbidden = {
         "source_resid",
@@ -707,4 +709,5 @@ def test_no_filesystem_network_process_git_clock_or_environment(monkeypatch):
         "mania.canonical_residue_mapping",
         "mania.dataset_identity",
         "mania.preprocessing.physical_time_windows",
+        "mania.preprocessing.temporal_policy",
     }

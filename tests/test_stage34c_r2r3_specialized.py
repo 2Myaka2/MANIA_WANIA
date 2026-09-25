@@ -515,3 +515,9 @@ def test_replica_orchestration_exports_real_science_and_freezes(
         tmp_path / f"r{replica}_partner_catalog.json"
     )
     pilot.compare_catalogs(accepted, rebound, replica)
+
+
+def test_frozen_coverage_rejects_unrecognized_source_digest(monkeypatch, tmp_path):
+    monkeypatch.setattr(pilot, "file_record", lambda path: {"sha256": "0" * 64})
+    with pytest.raises(ValueError, match="coverage validator SHA256"):
+        pilot.frozen_coverage_gate(None, tmp_path, set())

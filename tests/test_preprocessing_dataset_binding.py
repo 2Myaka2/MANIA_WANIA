@@ -312,4 +312,5 @@ def test_binding_module_imports_only_input_contracts():
         "mania.dataset_identity",
         "mania.dataset_parameter_table",
         "mania.preprocessing.input_manifest",
+        "mania.preprocessing.temporal_policy",
     }

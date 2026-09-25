@@ -3,9 +3,10 @@
 This Stage 34.D.4b reconciliation retains **19 systems / 33 trajectories** from
 the [frozen scientific contract](../../docs/dataset_v1_scientific_contract.md).
 The supervisor's D.4b decisions supply production timing, Egor PMm, Alina POPC
-and variant names, current GROMACS collections, and a future inclusive-window
-rule. These supplement historical unresolved-input statements; they do not
-change the Dataset scientific schema. Dataset v1 remains unreleased.
+and variant names, current GROMACS collections, and the inclusive-window
+rule implemented by Stage 34.D.4c. These supplement historical unresolved-input
+statements; they do not change the Dataset scientific schema. Dataset v1 remains
+unreleased.
 
 `dataset.yaml` is an operational descriptor, not an executable manifest.
 **This catalog does not authorize Stage 35.** No launcher, PBC preparation,
@@ -172,7 +173,7 @@ CONF/OUT/toppar/time controls are absent from this intake.
 `replica_id=1` retains frozen one-trajectory cardinality only; **`_2` is never
 interpreted as an independent replica without separate authority**.
 
-## Approved requested timing and pending inclusive windows
+## Approved requested timing and explicit inclusive profile
 
 | Group | Start (ns) | End (ns) | Stride (ps) | Length (ns) | Step (ns) | Overlap |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -188,25 +189,39 @@ The first 5 ns remain stabilization/QC source data and are not deleted.
 Raw write cadence does not redefine the approved 200 ps requested stride.
 No five-frame 0.1–0.5 ns pilot interval or 50/100 ps pilot stride is reused.
 
-The new future rule includes **both start and end boundaries**:
+The explicit production profile includes **both start and end boundaries**:
 `[5,7]` and `[6,8]` each contain 11 requested samples at 200 ps.
 They share six samples (6.0–7.0 ns); 50% duration overlap is not 50% of the
 discrete sample count.
 
-Audit expectations, not current executable-contract claims:
+Implemented planner results under `mania.window_boundaries.inclusive.v1`:
 
 | Inclusive interval | Selected samples | Full windows | Last full window | Samples/window |
 | --- | ---: | ---: | --- | ---: |
 | 5–100 ns | 476 | 94 | [98,100] ns | 11 |
 | 5–30 ns | 126 | 24 | [28,30] ns | 11 |
 
-**inclusive-window contract implementation pending**. No final contract/profile
-identifier is invented. Current Stage 27 code uses `[start,end)` except a window
-ending exactly at production end, which uses `[start,end]`. It already selects
-production endpoints when they lie on the requested grid; ordinary windows
-currently contain ten targets in these schedules, and the last contains eleven.
-No shortened trailing window is generated. Historical outputs must retain
-their recorded semantics and remain readable/verifiable in the future change.
+Catalog v1.1 requests one policy for all 33 rows in `dataset.yaml`:
+
+```yaml
+temporal_policy:
+  schema_version: mania.preprocessing_temporal_policy.v0.1
+  boundary_profile: mania.window_boundaries.inclusive.v1
+```
+
+Copy this carrier unchanged to the top level of a Dataset preprocessing manifest.
+The descriptor remains operational metadata; no launcher consumes it here.
+The [versioned contract](../../docs/inclusive_window_contract.md) documents strict
+persistence, offline reconstruction and mixed-profile rejection. Existing inputs
+without a policy retain `mania.window_boundaries.legacy.v1`: ordinary windows
+have ten targets, and a production-ending window has eleven. Historical pilots
+retain that profile. Both profiles use the same requested sampling and generate
+only full windows.
+
+`trajectories.csv` remains byte-for-byte unchanged from D.4b. Its historical
+notes saying "inclusive-window contract implementation pending" are superseded
+by this descriptor policy and D.4c implementation; all other blockers and all
+readiness statuses remain in force.
 
 ## Strict readiness and independent group preparation
 
@@ -216,9 +231,9 @@ metadata, then missing authority. Notes retain all known blockers.
 
 READY requires all applicable raw/source files, scientific and replica identity,
 the approved requested timing/window contract, and exact accepted controls with
-valid production bindings. Timing-approval blockers are removed. The pending
-inclusive implementation and launcher interface are separate execution gates,
-not raw-data blockers. Full trajectory QC/PBC execution remains a later gate.
+valid production bindings. Timing approval and inclusive-window implementation
+are complete. The launcher interface, per-frame persistence/replay and full
+trajectory QC/PBC execution remain separate later gates.
 
 | Scope | READY | MISSING_FILES | MISSING_METADATA | NEEDS_AUTHORITY |
 | --- | ---: | ---: | ---: | ---: |
@@ -237,5 +252,5 @@ The ignored D.4b evidence contains all nine Egor bindings/ambiguities, separate
 availability levels, source metadata preservation checks, machine-readable
 source guards, readiness, the read-only inclusive-window impact audit, future
 acceptance cases, per-frame export readiness, exact commands and verification.
-It contains no raw MD bytes. No launcher, inclusive-window implementation,
-Stage 35 or production run is performed by this checkpoint.
+The D.4b evidence contains no raw MD bytes. D.4c implements the explicit window
+contract only; it performs no launcher work, Stage 35 or production run.

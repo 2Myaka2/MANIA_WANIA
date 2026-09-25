@@ -653,7 +653,9 @@ def test_frozen_models_json_roundtrip_independence_and_explicit_field_order() ->
     for record in (result, result.windows[0], issue):
         with pytest.raises(FrozenInstanceError):
             setattr(record, fields(record)[0].name, None)
-        assert list(record.to_dict()) == [f.name for f in fields(record)]
+        assert list(record.to_dict()) == [
+            f.name for f in fields(record) if f.name != "boundary_profile"
+        ]
     assert list(result.to_dict()) == [
         "schema_version",
         "kind",
@@ -763,6 +765,7 @@ def test_purity_no_second_matching_or_scientific_metrics(monkeypatch) -> None:
         "typing",
         "mania.dataset_identity",
         "mania.preprocessing.physical_time_sampling",
+        "mania.preprocessing.temporal_policy",
     }
     assert not any(isinstance(node, ast.Import) for node in ast.walk(source_ast))
     accepted_import = next(

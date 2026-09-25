@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, field, fields, replace
 from typing import Any, ClassVar, Generic, TypeVar
 
 from mania.dataset_identity import DatasetEngine
+from mania.preprocessing.temporal_policy import LEGACY_BOUNDARY_PROFILE, BoundaryProfile
 from mania.replica_aggregation_contract import (
     REPLICA_AGGREGATION_CANONICAL_REFERENCE_ID,
     REPLICA_AGGREGATION_CANONICAL_REFERENCE_SHA256,
@@ -54,6 +55,9 @@ class _AggregateGroupColumns:
     window_length_ns: float
     window_step_ns: float
     overlap_percent: float
+    boundary_profile: BoundaryProfile = field(
+        default=LEGACY_BOUNDARY_PROFILE, kw_only=True
+    )
 
     _aggregate_type: ClassVar[type[Any]]
 
@@ -123,7 +127,10 @@ class _AggregateGroupColumns:
         )
 
     def to_dict(self) -> dict[str, object]:
-        return asdict(self)
+        result = asdict(self)
+        if self.boundary_profile == LEGACY_BOUNDARY_PROFILE:
+            result.pop("boundary_profile")
+        return result
 
 
 @dataclass(frozen=True)
