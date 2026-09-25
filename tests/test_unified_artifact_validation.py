@@ -319,6 +319,14 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
             (role, root / f"{role}.csv")
             for role in preprocessing_adapter.STAGE30_OUTPUT_ROLES
         ),
+        perframe_output_paths=tuple(
+            (role, root / f"{role}.json")
+            for role in (
+                "perframe_completion",
+                "protein_lipid_perframe",
+                "protein_glycan_perframe",
+            )
+        ),
         **stages,
     )
     prep += preprocessing_adapter.collect_stage30_input_file_specs(
@@ -335,7 +343,7 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
     )
     assert {e.role for e in prep} == unified._PREPROCESSING_POLICY.keys()
     assert {e.role for e in analysis} == unified._ANALYSIS_POLICY.keys()
-    assert len({e.role for e in prep}) == 38
+    assert len({e.role for e in prep}) == 41
     assert len({e.role for e in analysis}) == 17
 
 

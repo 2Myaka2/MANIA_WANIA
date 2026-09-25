@@ -83,6 +83,7 @@ from mania.preprocessing.molecular_partner_catalog_io import (
 )
 from mania.preprocessing.pbc_audit import PBC_AUDIT_FILENAME, build_pbc_audit
 from mania.preprocessing.pbc_audit_io import write_pbc_audit
+from mania.preprocessing.perframe_observations import write_perframe_observations
 from mania.preprocessing.physical_time_execution import (
     PREPROCESSING_TEMPORAL_EXECUTION_FILENAME,
     PREPROCESSING_TEMPORAL_EXECUTION_ROLE,
@@ -528,6 +529,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--export-contact-edges",
         action="store_true",
         help="Export optional contacts/contact_edges.csv after graph export.",
+    )
+    graph_export_parser.add_argument(
+        "--persist-perframe-observations",
+        action="store_true",
+        help="Persist complete Dataset per-frame evidence for offline window replay.",
     )
     graph_export_parser.add_argument(
         "--export-contacts-perframe",
@@ -1628,6 +1634,19 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
             emit_failure("computation", runtime_loading=runtime_loading)
             return 1
 
+    if args.persist_perframe_observations and (
+        temporal_execution is None
+        or len(temporal_execution.bindings) != len(manifest.conditions)
+        or not options.include_contacts
+        or options.contact_detection_options.contact_selection != "protein"
+    ):
+        print(
+            "Per-frame persistence requires Dataset binding for every condition "
+            "and enabled protein contacts.", file=sys.stderr,
+        )
+        emit_failure("computation", runtime_loading=runtime_loading)
+        return 1
+
     _print_preprocessing_graph_export_progress(args, 3)
     computation_kwargs: dict[str, Any] = {
         "include_rg": options.include_rg,
@@ -1919,6 +1938,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 )
                 protein_edge_export_failed = True
     specialized_export_failed = False
+    specialized = None
     if (
         temporal_execution is not None
         and metadata_passed
@@ -1989,6 +2009,42 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
             specialized_export_failed = True
+    if (
+        args.persist_perframe_observations
+        and temporal_execution is not None
+        and metadata_passed
+        and not protein_edge_export_failed
+        and not specialized_export_failed
+        and options.include_contacts
+        and options.contact_detection_options.contact_selection == "protein"
+    ):
+        try:
+            perframe_paths = write_perframe_observations(
+                plan.output_layout.output_dir,
+                temporal_execution,
+                cast(PreprocessingManifestContactsResult, computation.contacts_result),
+                specialized,
+                overwrite=options.overwrite,
+            )
+            inventory_outputs["perframe_output_paths"] = perframe_paths
+            existing = {ref.role for ref in (
+                *technical_references,
+                *_completed_preprocessing_artifact_references(
+                    args, options, plan.output_layout
+                ),
+            )}
+            technical_references.extend(
+                PortableArtifactReference(
+                    role, path.relative_to(plan.output_layout.output_dir).as_posix()
+                )
+                for role, path in perframe_paths if role not in existing
+            )
+        except Exception:
+            print(
+                "Per-frame observation export failed: "
+                "Incomplete evidence or write failure.", file=sys.stderr,
+            )
+            protein_edge_export_failed = True
     stage30_failure: PreprocessingRunFailureStage | None = None
     if (
         mapping_bindings is not None

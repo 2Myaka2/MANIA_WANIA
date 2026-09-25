@@ -240,7 +240,12 @@ class UnifiedArtifactValidationReport:
 
 # These are contract identifiers selected only by this fixed policy, never imports
 # or callable names supplied by metadata. Analysis reuses a Stage 20 role alias.
+_PERFRAME_ROLES = (
+    "perframe_completion", "protein_lipid_perframe", "protein_glycan_perframe",
+)
+
 _PREPROCESSING_POLICY: dict[str, str | None] = {
+    **{role: role for role in _PERFRAME_ROLES},
     "input_manifest": None,
     "dataset_parameter_table": "dataset_parameter_table",
     "condition_topology": None,
@@ -302,6 +307,7 @@ _PAIR_ROLES = {
     "reference_edges": ("reference_nodes", "reference_edges"),
 }
 _VALIDATORS = {
+    **{role: "read_perframe_observations" for role in _PERFRAME_ROLES},
     "dataset_parameter_table": "read_dataset_parameter_table_csv",
     "graph_pair": "validate_preprocessing_graph_csvs",
     "graph": "validate_graph_json",
@@ -639,6 +645,10 @@ def _invoke(
     condition: str | None,
     peer: Path | None = None,
 ) -> object:
+    if contract in _PERFRAME_ROLES:
+        from mania.preprocessing.molecular_partner_metadata_io import read_strict_json
+
+        return read_strict_json(path)
     if contract in _STAGE30_ROLES:
         return _read_stage30(contract, path)
     if contract in ("preprocessing_runtime_metadata", "analysis_runtime_metadata"):
@@ -1618,6 +1628,75 @@ def validate_run_artifacts(
                     path="molecular_partner_catalog.json",
                 )
             )
+    if scope == "preprocessing" and (
+        (provenance is not None and provenance.status == "completed"
+         and "--persist-perframe-observations" in provenance.command)
+        or any(e.role in _PERFRAME_ROLES for e in entries)
+        or (provenance is not None and any(
+            r.role in _PERFRAME_ROLES for r in provenance.artifact_references
+        ))
+    ):
+        try:
+            from mania.preprocessing.window_replay import replay_window_tables
+
+            if temporal_execution is None or provenance is None:
+                raise ValueError("Per-frame replay needs temporal/provenance authority")
+            replay_required = {
+                "perframe_completion": "perframe_completion.json",
+                "contacts_perframe": "contacts/contacts_perframe.csv",
+            }
+            if metadata_entries:
+                replay_required.update(
+                    {role: f"{role}.json" for role in _PERFRAME_ROLES[1:]}
+                )
+            for role in {*replay_required, *_PERFRAME_ROLES}:
+                matched = tuple(e for e in entries if e.role == role)
+                refs = tuple(
+                    r for r in provenance.artifact_references if r.role == role
+                )
+                expected_count = int(role in replay_required)
+                if len(matched) != expected_count or len(refs) != expected_count:
+                    raise ValueError("Incomplete per-frame artifact lineage")
+                if expected_count and (
+                    matched[0].path != replay_required[role]
+                    or matched[0].direction != "output"
+                    or matched[0].condition is not None
+                    or matched[0].format != Path(replay_required[role]).suffix[1:]
+                    or matched[0].artifact_id != f"output:{role}"
+                    or refs[0].path != replay_required[role]
+                ):
+                    raise ValueError("Invalid per-frame artifact identity/path")
+            from mania.preprocessing.molecular_partner_metadata_io import (
+                read_strict_json,
+            )
+
+            completion = read_strict_json(run_root / "perframe_completion.json")
+            expected_specialized = [
+                b.execution_condition for b in temporal_execution.bindings
+                if b.execution_condition in {e.condition for e in metadata_entries}
+            ]
+            if completion["specialized_conditions"] != expected_specialized:
+                raise ValueError("Per-frame specialized authority roster mismatch")
+            replayed = replay_window_tables(run_root, temporal_execution)
+            if source_table != replayed.protein:
+                raise ValueError("Protein source table differs from per-frame replay")
+            if metadata_entries and (
+                specialized_artifacts.get(specialized_roles[1]) != replayed.lipid
+                or specialized_artifacts.get(specialized_roles[2]) != replayed.glycan
+            ):
+                raise ValueError("Specialized source tables differ from replay")
+        except (OSError, ValueError, TypeError, KeyError):
+            replay_roles = {*_PERFRAME_ROLES, source_role, *specialized_roles[1:]}
+            records[:] = [
+                replace(r, status="failed", issue_count=r.issue_count + 1)
+                if r.role in replay_roles and r.status == "passed" else r
+                for r in records
+            ]
+            issues.append(UnifiedArtifactValidationIssue(
+                "error", "perframe_replay_mismatch",
+                "Per-frame evidence and lineage must reconstruct every source row.",
+                path="perframe_completion.json",
+            ))
     if scope == "preprocessing":
         try:
             _cross_check_stage30(

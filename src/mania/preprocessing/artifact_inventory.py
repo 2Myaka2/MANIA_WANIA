@@ -264,6 +264,7 @@ def collect_preprocessing_output_file_specs(
     runtime_metadata_path: Path | None = None,
     pbc_audit_path: Path | None = None,
     stage30_output_paths: tuple[tuple[str, Path], ...] = (),
+    perframe_output_paths: tuple[tuple[str, Path], ...] = (),
 ) -> tuple[ArtifactInventoryFileSpec, ...]:
     """Describe supplied successful stages in execution order, without discovery.
 
@@ -406,6 +407,17 @@ def collect_preprocessing_output_file_specs(
                     "Specialized output must use its exact preprocessing path."
                 )
             add(role, specialized_path)
+    perframe_files = {
+        "perframe_completion": "perframe_completion.json",
+        "contacts_perframe": "contacts/contacts_perframe.csv",
+        "protein_lipid_perframe": "protein_lipid_perframe.json",
+        "protein_glycan_perframe": "protein_glycan_perframe.json",
+    }
+    for role, path in perframe_output_paths:
+        if role not in perframe_files or path != output_root / perframe_files[role]:
+            raise PreprocessingArtifactInventoryError("Invalid per-frame output path.")
+        if not any(spec.role == role for spec in specs):
+            add(role, path)
     for role, path in stage30_output_paths:
         if role not in STAGE30_OUTPUT_ROLES or path != output_root / f"{role}.csv":
             raise PreprocessingArtifactInventoryError("Invalid Stage 30 output path.")
@@ -453,6 +465,7 @@ def build_preprocessing_artifact_inventory(
     pbc_audit_path: Path | None = None,
     stage30_input_specs: tuple[ArtifactInventoryFileSpec, ...] = (),
     stage30_output_paths: tuple[tuple[str, Path], ...] = (),
+    perframe_output_paths: tuple[tuple[str, Path], ...] = (),
 ) -> ArtifactInventory:
     """Inspect authoritative files through the generic builder; never write."""
     inputs = collect_preprocessing_input_file_specs(
@@ -479,6 +492,7 @@ def build_preprocessing_artifact_inventory(
         runtime_metadata_path=runtime_metadata_path,
         pbc_audit_path=pbc_audit_path,
         stage30_output_paths=stage30_output_paths,
+        perframe_output_paths=perframe_output_paths,
     )
     return build_artifact_inventory(
         run_id=run_id,
