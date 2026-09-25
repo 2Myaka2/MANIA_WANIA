@@ -31,7 +31,7 @@ readiness_precedence:
   - MISSING_FILES
   - MISSING_METADATA
   - NEEDS_AUTHORITY
-source_head: 9f8a31bdaef1ef8f764a25827a9e8fbfcf23f450
-catalog_basis_head: 9f8a31bdaef1ef8f764a25827a9e8fbfcf23f450
-generation_note: "Catalog readiness only; no science executed."
+source_head: 5dff662bb1a0a09d6909ddf568919c10fe8a5abf
+catalog_basis_head: 5dff662bb1a0a09d6909ddf568919c10fe8a5abf
+generation_note: "Stage 34.D.4b production-intake reconciliation and approved timing; inclusive-window contract implementation pending; no science executed."
 stage35_authorized: false
