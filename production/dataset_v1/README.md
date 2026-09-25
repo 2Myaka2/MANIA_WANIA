@@ -9,6 +9,10 @@ statements; they do not change the Dataset scientific schema. Dataset v1 remains
 unreleased.
 
 `dataset.yaml` is an operational descriptor, not an executable manifest.
+Stage 34.D.4e.2 adds the [supported Egor production interface](../../docs/egor_production_interface.md),
+which projects an explicitly selected row into existing MANIA workflows. It
+requires independently supplied prepared-input bindings and production controls.
+The interface does not change this catalog's rows, readiness or Stage 35 authority.
 **This catalog does not authorize Stage 35.** No launcher, PBC preparation,
 MD calculation, or Stage 27–33 implementation change belongs to D.4b.
 
@@ -254,3 +258,9 @@ source guards, readiness, the read-only inclusive-window impact audit, future
 acceptance cases, per-frame export readiness, exact commands and verification.
 The D.4b evidence contains no raw MD bytes. D.4c implements the explicit window
 contract only; it performs no launcher work, Stage 35 or production run.
+
+Historical statements above that persistence/replay and the launcher are later
+software gates describe D.4b/D.4c. D.4d provides all-layer per-frame persistence
+and offline replay; D.4e.2 provides the narrow catalog interface linked above.
+Full source/control authority, external preparation and real QC remain separate
+data gates. No production calculation or readiness promotion is implied.

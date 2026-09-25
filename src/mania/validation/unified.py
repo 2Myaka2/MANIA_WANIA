@@ -244,6 +244,13 @@ _PERFRAME_ROLES = (
     "perframe_completion", "protein_lipid_perframe", "protein_glycan_perframe",
 )
 
+_NAMD_CONTROL_POLICY: dict[str, str | None] = {
+    "namd_element_control": "namd_element_control",
+    "namd_time_control": "namd_time_control",
+    "production_input_binding": "production_input_binding",
+}
+
+# Keep the established role contract intact; NAMD controls are an opt-in extension.
 _PREPROCESSING_POLICY: dict[str, str | None] = {
     **{role: role for role in _PERFRAME_ROLES},
     "input_manifest": None,
@@ -307,6 +314,9 @@ _PAIR_ROLES = {
     "reference_edges": ("reference_nodes", "reference_edges"),
 }
 _VALIDATORS = {
+    "namd_element_control": "read_namd_element_control",
+    "namd_time_control": "read_namd_time_control",
+    "production_input_binding": "read_production_input_binding",
     **{role: "read_perframe_observations" for role in _PERFRAME_ROLES},
     "dataset_parameter_table": "read_dataset_parameter_table_csv",
     "graph_pair": "validate_preprocessing_graph_csvs",
@@ -645,6 +655,24 @@ def _invoke(
     condition: str | None,
     peer: Path | None = None,
 ) -> object:
+    if contract in (
+        "namd_element_control", "namd_time_control", "production_input_binding",
+    ):
+        from mania.preprocessing.namd_authority import (
+            ElementControl,
+            TimeControl,
+            read_control,
+        )
+        from mania.production_run import read_production_input_binding
+
+        try:
+            if contract == "production_input_binding":
+                return read_production_input_binding(path)
+            if contract == "namd_element_control":
+                return read_control(path, ElementControl)
+            return read_control(path, TimeControl)
+        except ValueError as exc:
+            raise artifacts.ArtifactValidationError(str(exc)) from exc
     if contract in _PERFRAME_ROLES:
         from mania.preprocessing.molecular_partner_metadata_io import read_strict_json
 
@@ -733,6 +761,54 @@ def _invoke(
     return artifacts.validate_csv_artifact_schema(
         path, contract, expected_columns=_csv_contracts()[contract]
     )
+
+
+def _validate_namd_control_lineage(
+    entries: tuple[ArtifactInventoryEntry, ...],
+    mappings: Mapping[str, Path],
+    configuration: Any,
+) -> None:
+    """Bind controls to the manifest without reading topology/trajectory data."""
+    from mania.preprocessing.input_manifest import load_preprocessing_input_manifest
+
+    fields = {
+        "namd_element_control": "namd_element_control_path",
+        "namd_time_control": "namd_time_control_path",
+        "production_input_binding": "production_input_binding_path",
+    }
+    controls = tuple(e for e in entries if e.role in fields)
+    declared_configuration = configuration.get("namd_control_bindings", [])
+    manifest_path = mappings.get("input:manifest")
+    if manifest_path is None:
+        return  # The generic external-input gate correctly reports partial validation.
+    try:
+        manifest = load_preprocessing_input_manifest(manifest_path)
+    except (ValueError, OSError):
+        if controls or declared_configuration:
+            raise ValueError(
+                "NAMD controls require a readable execution manifest"
+            ) from None
+        return  # Preserve historical non-contract manifest inventory inputs.
+    expected = []
+    for ordinal, condition in enumerate(manifest.conditions, 1):
+        for role, field_name in fields.items():
+            path = getattr(condition, field_name)
+            if path is None:
+                continue
+            expected.append({"condition": condition.condition, "role": role})
+            identity = f"input:condition:{ordinal:04d}:{role}"
+            matching = [e for e in controls if e.artifact_id == identity]
+            if len(matching) != 1 or (
+                matching[0].direction != "input" or matching[0].format != "json"
+                or matching[0].role != role
+                or matching[0].condition != condition.condition
+                or matching[0].path != (
+                    f"inputs/conditions/{ordinal:04d}/{role}/{path.name}"
+                )
+            ):
+                raise ValueError("Manifest NAMD control lineage mismatch")
+    if expected != declared_configuration or len(expected) != len(controls):
+        raise ValueError("NAMD control provenance/inventory mismatch")
 
 
 def _failure_count(call: Callable[[], object]) -> int:
@@ -1050,7 +1126,10 @@ def validate_run_artifacts(
         )
         return report()
     observations = {r.artifact_id: r for r in integrity.artifact_records}
-    policy = _PREPROCESSING_POLICY if scope == "preprocessing" else _ANALYSIS_POLICY
+    policy = (
+        _PREPROCESSING_POLICY | _NAMD_CONTROL_POLICY
+        if scope == "preprocessing" else _ANALYSIS_POLICY
+    )
     mappings = {} if input_artifact_paths is None else input_artifact_paths
     completed: set[str] = set()
     # Keep imports local to preserve the validation/preprocessing import boundary.
@@ -1573,6 +1652,18 @@ def validate_run_artifacts(
                             entry.condition,
                         ),
                     )
+    if scope == "preprocessing":
+        try:
+            _validate_namd_control_lineage(
+                entries, mappings,
+                provenance.to_dict()["resolved_configuration"] if provenance else {},
+            )
+        except (ValueError, OSError):
+            issues.append(UnifiedArtifactValidationIssue(
+                "error", "namd_control_lineage_mismatch",
+                "Manifest, inventory and provenance NAMD control bindings must agree.",
+                path=integrity.inventory_path,
+            ))
     if source_table is not None and _failure_count(cross_check_source):
         records[:] = [
             replace(r, status="failed", issue_count=r.issue_count + 1)

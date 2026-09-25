@@ -113,6 +113,7 @@ def collect_preprocessing_input_file_specs(
     include_reference_inputs: bool = False,
     parameter_table_local_path: Path | None = None,
     molecular_partner_metadata_paths: tuple[tuple[str, Path], ...] = (),
+    namd_control_paths: tuple[tuple[str, str, Path], ...] = (),
 ) -> tuple[ArtifactInventoryFileSpec, ...]:
     """Describe all intended conditions, even when their runtime load failed."""
     if not isinstance(runtime_loading, PreprocessingGraphWorkflowRuntimeLoadingResult):
@@ -242,6 +243,18 @@ def collect_preprocessing_input_file_specs(
                     reference_path,
                     f"inputs/reference/{name}",
                 )
+    allowed_roles = {
+        "namd_element_control", "namd_time_control", "production_input_binding",
+    }
+    seen_controls = set()
+    for condition, role, path in namd_control_paths:
+        if (condition not in intended or role not in allowed_roles
+                or (condition, role) in seen_controls):
+            raise PreprocessingArtifactInventoryError("Invalid NAMD control routing")
+        seen_controls.add((condition, role))
+        ordinal = intended.index(condition) + 1
+        add(f"input:condition:{ordinal:04d}:{role}", role, path,
+            f"inputs/conditions/{ordinal:04d}/{role}", condition)
     return tuple(specs)
 
 
@@ -448,6 +461,7 @@ def build_preprocessing_artifact_inventory(
     include_reference_inputs: bool = False,
     parameter_table_local_path: Path | None = None,
     molecular_partner_metadata_paths: tuple[tuple[str, Path], ...] = (),
+    namd_control_paths: tuple[tuple[str, str, Path], ...] = (),
     graph_export: PreprocessingGraphWorkflowGraphExportResult | None = None,
     analysis_input_export: PreprocessingGraphWorkflowAnalysisInputExportResult
     | None = None,
@@ -476,6 +490,7 @@ def build_preprocessing_artifact_inventory(
         include_reference_inputs=include_reference_inputs,
         parameter_table_local_path=parameter_table_local_path,
         molecular_partner_metadata_paths=molecular_partner_metadata_paths,
+        namd_control_paths=namd_control_paths,
     )
     outputs = collect_preprocessing_output_file_specs(
         output_root=output_root,

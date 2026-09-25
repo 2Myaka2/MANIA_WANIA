@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import json
 import sys
 from collections.abc import Sequence
@@ -246,6 +248,18 @@ class _InputArtifactPathAction(argparse.Action):
         setattr(namespace, self.dest, mappings)
 
 
+class _ProductionSelectionAction(argparse.Action):
+    """An explicit selection cannot be replaced by a repeated CLI option."""
+
+    def __call__(
+        self, parser: argparse.ArgumentParser, namespace: argparse.Namespace,
+        values: str | Sequence[Any] | None, option_string: str | None = None,
+    ) -> None:
+        if getattr(namespace, self.dest, None) is not None:
+            raise argparse.ArgumentError(self, "Select exactly once")
+        setattr(namespace, self.dest, values)
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the MANIA command-line parser."""
     parser = argparse.ArgumentParser(
@@ -259,6 +273,30 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     subparsers = parser.add_subparsers(dest="command")
+
+    production_parser = subparsers.add_parser(
+        "production", help="Explicit catalog-driven Egor production operations.",
+    )
+    production_commands = production_parser.add_subparsers(
+        dest="production_command", required=True,
+    )
+    for name in ("validate", "run", "assemble-group"):
+        command_parser = production_commands.add_parser(name)
+        command_parser.add_argument("--catalog", type=Path, required=True)
+        command_parser.add_argument("--output-root", type=Path, required=True)
+        command_parser.add_argument("--min-free-bytes", type=int)
+        if name == "assemble-group":
+            command_parser.add_argument(
+                "--replica-group-id", required=True, action=_ProductionSelectionAction,
+            )
+            command_parser.add_argument("--qc-manifest", type=Path)
+        else:
+            command_parser.add_argument(
+                "--trajectory-id", required=True, action=_ProductionSelectionAction,
+            )
+            command_parser.add_argument("--input-binding", type=Path)
+            if name == "run":
+                command_parser.add_argument("--resume", action="store_true")
 
     dataset_parser = subparsers.add_parser("dataset", help="Dataset postprocessing.")
     dataset_commands = dataset_parser.add_subparsers(
@@ -1397,7 +1435,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         return 2
     started_at_utc = _utc_now()
     software_identity = get_software_identity()
-    command = tuple(sys.argv)
+    command = tuple(getattr(args, "_command", sys.argv))
     inventory_runtime_loading: (
         PreprocessingGraphWorkflowRuntimeLoadingResult | None
     ) = None
@@ -1551,6 +1589,24 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     except (ValueError, OSError):
         pass
     else:
+        namd_controls = []
+        for config in manifest.conditions:
+            for role, field in (
+                ("namd_element_control", "namd_element_control_path"),
+                ("namd_time_control", "namd_time_control_path"),
+                ("production_input_binding", "production_input_binding_path"),
+            ):
+                path = getattr(config, field)
+                if path is not None:
+                    namd_controls.append((
+                        config.condition, role, options.manifest_path.parent / path,
+                    ))
+        if namd_controls:
+            inventory_outputs["namd_control_paths"] = tuple(namd_controls)
+            stage30_configuration["namd_control_bindings"] = [
+                {"condition": condition, "role": role}
+                for condition, role, _ in namd_controls
+            ]
         try:
             dataset_resolution = resolve_preprocessing_dataset_context(
                 manifest, base_dir=options.manifest_path.parent,
@@ -1565,13 +1621,14 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 (
                     mapping_bindings,
                     annotation_bindings,
-                    stage30_configuration,
+                    canonical_configuration,
                     stage30_inputs,
                 ) = _preflight_stage30_controls(
                     manifest,
                     dataset_resolution,
                     options.manifest_path.parent,
                 )
+                stage30_configuration.update(canonical_configuration)
             except (
                 CanonicalResidueMappingReadError,
                 canonical_tables.CanonicalWindowTableError,
@@ -2025,6 +2082,11 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 cast(PreprocessingManifestContactsResult, computation.contacts_result),
                 specialized,
                 overwrite=options.overwrite,
+                prepared_frame_indexes=(
+                    temporal_execution.selected_source_frame_indexes_by_condition()
+                    if getattr(args, "_prepared_frame_order_preserved", False)
+                    else None
+                ),
             )
             inventory_outputs["perframe_output_paths"] = perframe_paths
             existing = {ref.role for ref in (
@@ -2222,6 +2284,29 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
         )
     )
     return 0
+
+
+def run_production_preprocessing(
+    manifest: Path, output: Path, condition: str,
+) -> None:
+    """Use the established workflow with production's explicit, preflighted inputs."""
+    from mania.production_catalog import ProductionError
+
+    argv = [
+        "preprocessing", "run-graph-export", "--manifest", str(manifest),
+        "--output", str(output), "--expected-condition", condition,
+        "--contact-selection", "protein", "--skip-rg",
+        "--persist-perframe-observations", "--artifact-checksum-mode", "sha256",
+    ]
+    args = build_parser().parse_args(argv)
+    args._command = ("mania", *argv)
+    args._prepared_frame_order_preserved = True
+    with contextlib.redirect_stdout(io.StringIO()):
+        result = _run_preprocessing_graph_export_command(args)
+    if result:
+        raise ProductionError(
+            "Preprocessing failed; preserved outputs must not be overwritten"
+        )
 
 
 def _run_wania_build_payload_command(args: argparse.Namespace) -> int:
@@ -2552,6 +2637,46 @@ def main() -> None:
     """Run the MANIA command-line interface."""
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.command == "production":
+        from mania.production_catalog import ProductionError
+        from mania.production_run import (
+            assemble_production_group,
+            preflight_trajectory,
+            run_production_trajectory,
+        )
+
+        try:
+            if args.production_command == "assemble-group":
+                production_result = assemble_production_group(
+                    args.catalog, args.replica_group_id, args.output_root,
+                    qc_manifest=args.qc_manifest,
+                    min_free_bytes=args.min_free_bytes or 0,
+                )
+            elif args.production_command == "validate":
+                production_result = preflight_trajectory(
+                    args.catalog, args.trajectory_id, args.output_root,
+                    input_binding=args.input_binding,
+                    min_free_bytes=args.min_free_bytes or 0,
+                ).to_dict()
+            else:
+                if args.min_free_bytes is None or args.min_free_bytes <= 0:
+                    raise ProductionError(
+                        "production run requires positive --min-free-bytes"
+                    )
+                production_result = run_production_trajectory(
+                    args.catalog, args.trajectory_id, args.output_root,
+                    input_binding=args.input_binding,
+                    min_free_bytes=args.min_free_bytes,
+                    resume=args.resume,
+                )
+        except (OSError, ValueError) as exc:
+            print(json.dumps({"status": "blocked", "reason": str(exc)}))
+            raise SystemExit(1) from None
+        print(json.dumps(production_result, sort_keys=True))
+        if production_result["status"] in ("blocked_qc", "pending_review"):
+            raise SystemExit(1)
+        return
 
     if args.command == "dataset" and args.dataset_command == "publish":
         from mania.dataset_release_run import run_dataset_release

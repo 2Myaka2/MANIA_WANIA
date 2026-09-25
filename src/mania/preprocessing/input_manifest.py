@@ -62,6 +62,9 @@ class TrajectoryInputConfig(BaseModel):
     molecular_partner_metadata_path: Path | None = None
     canonical_residue_mapping_path: Path | None = None
     biological_annotation_metadata_path: Path | None = None
+    namd_element_control_path: Path | None = None
+    namd_time_control_path: Path | None = None
+    production_input_binding_path: Path | None = None
 
     @model_serializer(mode="wrap")
     def serialize_execution_metadata(
@@ -74,6 +77,8 @@ class TrajectoryInputConfig(BaseModel):
         for name in (
             "canonical_residue_mapping_path",
             "biological_annotation_metadata_path",
+            "namd_element_control_path", "namd_time_control_path",
+            "production_input_binding_path",
         ):
             if getattr(self, name) is None:
                 values.pop(name, None)
@@ -82,6 +87,20 @@ class TrajectoryInputConfig(BaseModel):
     @model_validator(mode="after")
     def validate_dataset_condition(self) -> Self:
         """Match supplied scientific labels without inferring unresolved labels."""
+        if (self.namd_element_control_path is None) != (
+            self.namd_time_control_path is None
+        ):
+            raise ValueError("NAMD element/time controls must be supplied together")
+        if (self.namd_element_control_path is not None
+                and self.dataset_spec is not None
+                and self.dataset_spec.identity.engine != "namd"):
+            raise ValueError("NAMD controls require NAMD Dataset identity")
+        if self.production_input_binding_path is not None and (
+            self.namd_element_control_path is None or self.dataset_spec is None
+        ):
+            raise ValueError(
+                "Production binding requires NAMD controls and Dataset spec"
+            )
         if (
             self.biological_annotation_metadata_path is not None
             and self.canonical_residue_mapping_path is None
@@ -130,6 +149,8 @@ class TrajectoryInputConfig(BaseModel):
         "molecular_partner_metadata_path",
         "canonical_residue_mapping_path",
         "biological_annotation_metadata_path",
+        "namd_element_control_path", "namd_time_control_path",
+        "production_input_binding_path",
         mode="before",
     )
     @classmethod
@@ -276,6 +297,10 @@ class PreprocessingInputManifest(BaseModel):
     @model_validator(mode="after")
     def validate_dataset_table_usage(self) -> Self:
         """References require a table; declared tables require Dataset-aware entries."""
+        if self.frame_time_ps is not None and any(
+            c.namd_time_control_path is not None for c in self.conditions
+        ):
+            raise ValueError("NAMD time authority conflicts with legacy frame_time_ps")
         if self.temporal_policy is not None and not any(
             c.dataset_spec is not None or c.dataset_ref is not None
             for c in self.conditions

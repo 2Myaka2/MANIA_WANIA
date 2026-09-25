@@ -145,7 +145,20 @@ def load_manifest_condition_runtimes(
             continue
 
         try:
-            condition_result = load_single_condition_runtime(runtime_input)
+            if condition.namd_element_control_path is not None:
+                from mania.preprocessing.namd_runtime import NAMDControlPaths
+
+                assert condition.namd_time_control_path is not None
+                control_base = Path(base_dir) if base_dir is not None else Path.cwd()
+                condition_result = load_single_condition_runtime(
+                    runtime_input,
+                    namd_authority=NAMDControlPaths(
+                        control_base / condition.namd_element_control_path,
+                        control_base / condition.namd_time_control_path,
+                    ),
+                )
+            else:
+                condition_result = load_single_condition_runtime(runtime_input)
         except Exception:
             issues.append(
                 PreprocessingManifestLoadIssue(

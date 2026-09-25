@@ -24,6 +24,67 @@ from mania.preprocessing.window_replay import replay_window_tables
 from mania.validation import validate_run_artifacts
 
 
+@pytest.mark.parametrize("damage", [None, "missing_control", "wrong_control"])
+def test_production_control_lineage_and_offline_perframe_validation(
+    tmp_path, monkeypatch, damage,
+):
+    from test_production_run import install_runtime, make_case, run_case
+
+    import mania.production_run as production
+
+    case = make_case(tmp_path, monkeypatch)
+    install_runtime(monkeypatch)
+    run_case(case)
+    preflight = production.preflight_trajectory(
+        case.catalog, case.selected.trajectory_id, case.output,
+        input_binding=case.binding, resume=True,
+    )
+    root = preflight.trajectory_root / "preprocessing"
+    inventory_path = root / "artifact_inventory.json"
+    inventory = json.loads(inventory_path.read_text())
+    from mania.validation import unified
+
+    emitted = {e["role"] for e in inventory["artifacts"]}
+    assert emitted - unified._PREPROCESSING_POLICY.keys() == (
+        unified._NAMD_CONTROL_POLICY.keys()
+    )
+    if damage == "missing_control":
+        inventory["artifacts"] = [
+            e for e in inventory["artifacts"] if e["role"] != "namd_time_control"
+        ]
+        inventory_path.write_text(json.dumps(inventory))
+    elif damage == "wrong_control":
+        path = case.paths["prepared_time_control"]
+        data = json.loads(path.read_text())
+        data["schema_version"] = "unknown"
+        path.write_text(json.dumps(data))
+        for entry in inventory["artifacts"]:
+            if entry["role"] == "namd_time_control":
+                entry["byte_size"] = path.stat().st_size
+                entry["sha256"] = production.file_digest(path)
+        inventory_path.write_text(json.dumps(inventory))
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Offline validation must not compute geometry")
+
+    monkeypatch.setattr(
+        "mania.preprocessing.trajectory_contacts.compute_condition_contacts", forbidden,
+    )
+    result = validate_run_artifacts(
+        root, scope="preprocessing",
+        input_artifact_paths=production._preprocessing_mappings(preflight),
+    )
+    assert (result.status == "passed" and result.complete) is (damage is None)
+    if damage is None:
+        assert result.unsupported_count == 0
+        saved = json.loads((root / "perframe_completion.json").read_text())
+        samples = saved["bindings"][0]["samples"]
+        assert len(samples) == 476
+        assert all(
+            s["prepared_frame_index"] == s["source_frame_index"] for s in samples
+        )
+
+
 @pytest.mark.parametrize(
     "profile", [LEGACY_BOUNDARY_PROFILE, INCLUSIVE_BOUNDARY_PROFILE]
 )
