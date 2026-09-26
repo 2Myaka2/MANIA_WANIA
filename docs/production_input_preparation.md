@@ -7,17 +7,31 @@ MDAnalysis dependency and the two adjacent tool files from this checkout.
 No new dependency, catalog edit or manual JSON editing is needed.
 
 The supported selections are `namd_egor_wt_{0,1,2}ss_r{1,2,3}` (choose one literal
-ID). This implementation is verified with synthetic fixtures only. Real 0SS/r1
-clean-environment preparation and real 1SS applicability remain the next task.
+ID). The recipient workflow at commit
+`aa24f04900767b04f1303be18fe867e879feea93` has completed real 0SS/r1 preparation
+in a fresh clone/venv, explicit human confirmation and production validation.
+The subsequent 5–8 ns technical run, complete strict artifact validation,
+zero-mismatch offline replay and completed-result resume passed. Full 5–100 ns
+production was not run by that validation. For 1SS/r1, the same path selected the
+correct system topology/controls and passed its first-frame applicability check;
+full 1SS preparation and reopening were not validated, and no contacts were run.
+
+Start with the supplied [Russian quick-start](egor_handoff_quickstart_ru.md).
+Install from the exact checkout using its `[md]` extra and the delivery's local
+wheelhouse; the online pip path failed in the recipient test. That wheelhouse is
+specific to CPython 3.12 on Linux x86_64 (glibc >= 2.28), contains dependency/build
+wheels only, and is not a MANIA runtime authority. See the
+[interface reference](egor_production_interface.md#delivery-and-installation).
 
 ## Inputs and roots
 
-Extract the reviewed nine-trajectory handoff as `DATA_ROOT/egor_handoff/` and
+Extract the final delivery below `DATA_ROOT` and select its nested `egor_handoff/`;
 supply the selected replica's raw bundle and shared reviewed toppar at their
 explicit package paths. Supply PSF, CONF, OUT, XSC and DCD; do not substitute a
 different replica's files. The package's `HANDOFF_FILES.sha256` is verified,
 including catalog, source inventory, templates and each system's own controls.
-The package must be complete and immutable. Its Python helpers are never executed.
+The package must be complete and immutable. The preparation tool never executes
+the packaged Python helpers; the recipient runs the strict package checker separately.
 Checksums establish consistency with the supplied package; obtain that authority
 package through the reviewed handoff, since checksums are not signatures.
 
@@ -168,7 +182,7 @@ preparation requires a fresh preparation/binding at the final site paths.
 
 ## Verification
 
-The new tests use tiny synthetic DCDs with four complete frames, distinct system
+The focused software tests use tiny synthetic DCDs with four complete frames, distinct system
 atom counts and partner indexes, and all nine selections. They exercise actual
 fragment preparation and reopened reading, explicit confirmation, strict binding,
 public `production validate`, and a standalone copy of only the two tool files.
@@ -177,3 +191,12 @@ hooks. Failure tests cover changed identity, missing approval, partial writes,
 output protection, disk/path guards and clock order. Existing NAMD and production
 binding tests remain the contract reference. No full pytest run is required for
 this scoped task.
+
+The real recipient check complements those synthetic tests: 0SS/r1 retained all
+1000 frames and 409865 atoms, with 12 automatic checks passing and no failures.
+It stopped at `pending_review` until Andrey explicitly approved that exact report.
+This earlier approval is not transferable to another site's newly generated report.
+The 1SS applicability attempt was deliberately interrupted after its first audited
+frame to avoid duplicating a large trajectory; remaining frames, full reopening,
+completion and confirmation remain untested. Packaging/documentation verification
+performs no MD and does not repeat those calculations.

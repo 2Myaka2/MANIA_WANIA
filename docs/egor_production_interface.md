@@ -1,10 +1,10 @@
-# Egor production interface — Stage 34.D.4e.2 / D.4e.3
+# Egor production interface
 
 The supported `mania production` commands select a single catalog trajectory or
 replica group. They reuse existing MANIA preprocessing, inclusive temporal
 planning, D.4d persistence/replay, Stage 32 QC and Stage 31 aggregation. They do
 not prepare coordinates or publish a Dataset. Dataset v1 remains unreleased;
-this implementation does not authorize Stage 35 or supply real scientific authority.
+each execution still requires the reviewed input authority and separate final QC.
 
 The external [production input preparation tool](production_input_preparation.md)
 now provides the raw-to-binding handoff step. Its `prepare` operation takes one
@@ -13,8 +13,18 @@ the full-axis derivative, actual observations, strict time controls and an
 automatic report pending review. Its separate `confirm` operation requires a
 named reviewer and the exact report SHA256, rechecks integrity, and materializes
 the existing binding models. It prints the concrete production validate/run
-commands without running them. Verification for this tool is synthetic only;
-real 0SS/r1 clean-environment preparation and 1SS applicability remain pending.
+commands without running them. The recipient entry point is the supplied
+[Russian quick-start](egor_handoff_quickstart_ru.md); this document is a reference.
+The clean recipient validation at commit
+`aa24f04900767b04f1303be18fe867e879feea93` completed real 0SS/r1 preparation,
+explicit human confirmation, production preflight and the 5–8 ns technical run.
+Strict artifact validation was complete and passed; direct/replay scientific
+mismatches were zero, offline replay needed no trajectory/geometry access, and
+identical resume reused the completed result with no geometry recomputation.
+Full 5–100 ns execution is the recipient's next calculation, not a completed test.
+For 1SS/r1, the same preparation path selected its own topology/controls and
+passed the first-frame applicability check. Full preparation, reopening,
+confirmation and contact calculation for 1SS were not validated.
 
 ## Commands and roots
 
@@ -35,7 +45,7 @@ mania production run --catalog production/dataset_v1/dataset.yaml \
 
 mania production run --catalog production/dataset_v1/dataset.yaml \
   --trajectory-id "$TRAJECTORY_ID" --output-root "$OUTPUT_ROOT" \
-  --min-free-bytes "$FREE_SPACE_BUDGET" --resume
+  --input-binding "$INPUT_BINDING" --min-free-bytes "$FREE_SPACE_BUDGET" --resume
 
 mania production assemble-group --catalog production/dataset_v1/dataset.yaml \
   --replica-group-id "$REPLICA_GROUP_ID" --output-root "$OUTPUT_ROOT" \
@@ -218,7 +228,7 @@ mania production run --catalog production/dataset_v1/dataset.yaml \
 mania production run --catalog production/dataset_v1/dataset.yaml \
   --trajectory-id namd_egor_wt_0ss_r1 --output-root "$OUTPUT_ROOT" \
   --technical-manifest "$TECHNICAL_MANIFEST" \
-  --min-free-bytes "$FREE_SPACE_BUDGET" --resume
+  --input-binding "$INPUT_BINDING" --min-free-bytes "$FREE_SPACE_BUDGET" --resume
 ```
 
 The technical manifest is metadata and may live outside `MANIA_DATA_ROOT`, like
@@ -272,168 +282,76 @@ resolution creates a different digest-named group attempt; earlier evidence is
 preserved. An identical completed group attempt is validated and reused. Partial
 stage outputs are never overwritten. `mania dataset publish` remains separate.
 
-## Current data boundary
+## Delivery and installation
 
-Software tests use synthetic controls/runtimes, all nine real catalog selections,
-and existing QC/aggregation APIs. They are not Egor scientific acceptance.
-The catalog records seven locally missing Egor DCDs, one 1SS/r1 row awaiting
-DCD runtime verification and external preparation/lineage, and one 0SS/r1 row
-with accepted local prepared-input readiness. All nine now have topology-bound
-system authority and portable templates. Missing local DCDs do not imply missing
-scientific system authority. Real QC and specialized correspondence remain
-separate gates; historical pilot acceptance cannot supply them by analogy.
+Check out exactly `aa24f04900767b04f1303be18fe867e879feea93` and use the final
+`egor_delivery_aa24f0490076/` package. Its root `COMMIT.txt` identifies the runtime
+code; the supplied quick-start and reference documents are delivery supplements,
+not a claim that these uncommitted documentation revisions exist at that SHA.
+The nested reviewed handoff's older repository/catalog identities describe the
+preserved authority snapshot, not the runtime checkout to install.
 
-## Nine-trajectory handoff
-
-The final delivery is bound to committed repository HEAD
-`e3f69331f95a42d1da5d0cf7d6a60646421b8079`:
-`local_md/egor_FINAL_e3f69331f95a.zip`, with persistent verification evidence in
-`local_md/egor_FINAL_e3f69331f95a/`. Send that commit, the final ZIP, and the
-[Russian quick-start](egor_handoff_quickstart_ru.md). Extract the ZIP's
-`egor_handoff/` directly under `MANIA_DATA_ROOT`; no tracked-file overlay is
-required. The original 79 package files are retained, with deterministic
-packaging/provenance updates and one added quick-start (80 files total).
-
-The packaged catalog and reference interface document are read directly from
-the recorded commit. This working-tree documentation update is not substituted
-for that committed reference. The new quick-start is an explicitly identified
-delivery supplement, also present in the ZIP; it is not claimed to exist at
-the recorded commit. The package README and manifest record this distinction.
-Historical catalog `source_head`/`catalog_basis_head` fields retain their original
-meaning; `repository_head` in the handoff manifest identifies the required
-checkout. `HANDOFF_FILES.sha256` covers every other package file, and the sibling
-ZIP checksum covers the complete archive. Helpers, controls, templates and
-scientific authority remain unchanged. Final checks read controls and templates,
-verify checksums and HEAD identity, and exercise synthetic helper guards only.
-No MD, QC or aggregation is run during packaging.
-
-The earlier authority-build evidence remains at
-`local_md/egor_9_trajectory_handoff_20260926/handoff/`; the evidence ZIP is
-`local_md/egor_9_trajectory_handoff_20260926.zip`.
-That historical ZIP includes `handoff/handoff_manifest.json`, `handoff/README.md`,
-`handoff/catalog/`, `handoff/controls/`, `handoff/authority/`, `handoff/templates/`
-and the strict verification/materialization helpers. The archive inventory lists
-every exact file and checksum. Raw inputs, toppar and prepared DCDs are referenced
-by identity and are not included. No DCD was downloaded or copied for this task.
-
-All three replica PSFs within each system have the same complete SHA256:
-
-| System | PSF SHA256 | Actual topology bonds |
-| --- | --- | --- |
-| 0SS | `89d521cf033bf1a0e01ec80d5ee5f74037ad46a68167297e1e4950a56e794417` | none |
-| 1SS | `c81688aaff64bd7342a19896581f14b90a22e4b8b1dbe4f2157392685a4846f9` | C303–C350 |
-| 2SS | `04b7bee588edf61bde25dfded24216ed4e0727d75d1e144356b500ecc89004bb` | C303–C350 and C322–C328 |
-
-Each system shares its own 690-residue canonical mapping, element definitions,
-complete annotations and molecular partner metadata across its replicas.
-Partner membership was independently enumerated from each system's PSF and
-checked against exact shared toppar definitions; 2SS indices were not copied
-into 0SS/1SS. Nine element templates bind the individual replica PSF paths,
-because the runtime reader requires exact path identity even for identical bytes.
-Time and preparation attestations remain replica-specific.
-
-0SS/1SS annotations have source/verifier `Egor`, glycosylation sites `[295,308]`
-with FA2G2S2 at both, design sites `[303,322,328,350]`, and empty cysteine variant
-sites. These design annotations do not encode S–S bond pairs. Accepted complete
-2SS annotations are rebound to the production identity with provenance retained.
-
-Install `handoff/` as `MANIA_DATA_ROOT/egor_handoff/`. Supply each row's own
-PSF/CONF/OUT/XSC under `MANIA_DATA_ROOT/egor/`, and the reviewed shared `toppar/`
-there. Preserve declared filenames and verify source hashes using the manifest.
-The seven absent DCD paths retain the exact non-NPT CONF/OUT declarations;
-the two observed DCDs retain their NPT delivery names. If the execution-site
-delivery name differs, record the explicit path and verify its linkage to the
-selected CONF/OUT. Never substitute a historical pilot trajectory.
-
-Before `mania production validate`, Egor must complete each row's checklist:
-
-The new preparation tool carries out the automatic preparation/control steps
-below and records explicit human confirmation separately. These historical
-handoff requirements still define the required authority; manual JSON editing
-is no longer needed for supported package paths.
-
-1. Verify the supplied small-source identities and shared toppar hashes. Supply
-   the exact raw DCD; check its bytes/hash, header, full frame/cell integrity,
-   physical atom order and CONF/OUT linkage. Missing DCD templates contain no
-   invented bytes, header observations or validated runtime time control.
-2. Complete raw and prepared time controls from actual local observations. Each
-   CONF/OUT independently supplies 1000 writes, 2 fs steps, 50000-step cadence,
-   and the 100–100000 ps axis. XSC supplies the final 50000000-step cell only.
-3. Supply a distinct full-axis derivative prepared with the approved external
-   fragment protocol, reviewed PBC audit and named atom/frame-order attestation.
-   The accepted 0SS/r1 derivative may be reused only when its exact bytes and
-   evidence are available and verified. The other eight have no intake-bound
-   prepared-input acceptance in this package.
-4. Materialize embedded absolute paths and final file hashes, retain the exact
-   catalog row, then strict-read the final existing-schema input binding. Follow
-   the package README/helpers; `.template.json` files intentionally fail the
-   production binding reader until completed. No template grants a PBC PASS.
-5. Check **stable UTC/NTP before unattended runs**, storage budget and disjoint
-   input/output roots. Run the supported `production validate` command with the
-   completed binding. No host UTC fix is included in code.
-
-The catalog's `READY` remains local prepared-input readiness for 0SS/r1;
-`NEEDS_AUTHORITY` for 1SS/r1 now means execution verification/preparation is
-pending, and seven `MISSING_FILES` rows mean local DCD absence. All three groups
-remain incomplete. This handoff runs no MD, contact science, QC or aggregation
-and does not authorize Stage 35.
-
-## Real 0SS/r1 prepared-input checkpoint
-
-Stage 34.D.4e.3 evidence is retained under the ignored directory
-`local_md/stage34d4e3_egor_0ss_r1_20260926T061309Z_49d690e736a84bb7a5b58f4825e787c1/`
-with a sibling ZIP. Operational inputs are under
-`local_md/production_intake/prepared_inputs/` followed by the same checkpoint name.
-The ZIP contains controls, scripts, inventories, lineage, audit and verification
-records; large raw/prepared DCDs remain local and are referenced by path/hash.
-
-Both new system annotation controls bind `napi2b-dataset-v1`, respectively
-`namd_egor_wt_0ss` and `namd_egor_wt_1ss`, with source/verifier `Egor` and
-`annotation_scope=complete_for_system`. Each lists Asn295/Asn308 with FA2G2S2
-present, design sites C303/C322/C328/C350, and no cysteine variant sites.
-Design-site annotation does not encode actual bond pairs. Separate PSF evidence
-records no SG–SG bonds for 0SS and C303–C350 for 1SS.
-
-0SS/r1 has an exact 96-type element control, 690-residue canonical relation with
-its own PSF binding, and topology-specific metadata for 828 membrane partners
-and two glycans. No 2SS atom/partner indices were copied. All shared CHARMM
-definitions were revalidated against the actual source bytes and membership.
-
-The prepared DCD preserves all 1000 frames and 409865 atoms. External preparation
-uses the approved fragment protocol, with protein geometry centering and
-complete-fragment COG wrapping. A batched implementation of the installed
-MDAnalysis operations was checked bitwise against the standard protocol at
-source frames 0, 49, 79 and 999. Four workers feed one ordered writer. Every
-frame passes bond/image/cell/centering checks; every persisted coordinate array
-matches its indexed writer hash. Both time controls bind the original CONF/OUT
-and retain exact scientific times of 100–100000 ps. Internal MIC stays false.
-
-The following public preflight passed with exit 0 and created no science output:
+The primary installation is editable source plus the supplied local dependency
+and build wheels. From the exact checkout, in a new CPython 3.12 venv:
 
 ```bash
-CHECKPOINT=stage34d4e3_egor_0ss_r1_20260926T061309Z_49d690e736a84bb7a5b58f4825e787c1
-export MANIA_DATA_ROOT="$(pwd)/local_md/production_intake"
-.venv/bin/mania production validate \
-  --catalog production/dataset_v1/dataset.yaml \
-  --trajectory-id namd_egor_wt_0ss_r1 \
-  --output-root "local_md/$CHECKPOINT/preflight_output" \
-  --input-binding "$MANIA_DATA_ROOT/prepared_inputs/$CHECKPOINT/production_input_binding.json"
+export PIP_NO_INDEX=1 PIP_FIND_LINKS="$DELIVERY/wheelhouse"
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -e '.[md]'
+python -m pip check
 ```
 
-Its historical result is `preflight_passed`, with `trajectory_pbc_qc_certified=false`.
-The binding selects the complete derivative; diagnostic partial files are never
-production inputs. No contacts, Stage 32, aggregation or publication were run.
+These are the installation commands verified in the recipient test and rechecked
+against the final wheelhouse. Online pip installation failed in that test.
+The wheelhouse targets CPython 3.12, Linux x86_64 with glibc >= 2.28; it is not a
+cross-platform dependency bundle. Python/venv and Git must already be available.
+It includes no MANIA project wheel: MANIA imports from the exact checked-out
+source, MDAnalysis and the other dependencies from the new venv. Do not use a
+PYTHONPATH hook or an old project wheel to supply missing source files.
 
-The nine-row handoff updates the catalog, so the historical command above needs
-the refreshed binding
-`$MANIA_DATA_ROOT/egor_handoff/local_0ss_r1/production_input_binding.json`.
-The original binding remains valid only with its frozen historical catalog row.
-The refreshed local binding reuses accepted input identities; it is not a new
-DCD audit. Portable execution sites must complete their own handoff template.
+`DELIVERY_FILES.sha256` covers every other delivery file, including wheels and
+the nested `HANDOFF_FILES.sha256`. The latter covers every other handoff file.
+Check both before preparation, then run the unchanged `check_package.py` with
+`python -B`. It strict-reads all nine selections and their controls/templates;
+it does not certify local coordinates. Keep the package immutable after prepare.
+The retained `materialize_binding.py` is a legacy compatibility asset, not a
+recipient step: the checkout's `confirm` now creates the site review and binding.
+Do not fill templates or edit generated observations, hashes, lineage or flags.
 
-At this checkpoint, a **5–8 ns-only** real contact test was blocked by software
-selection. The explicit technical-subset interface documented above now supplies
-that selection while catalog v1.1 still requires Egor 5–100 ns. Cropping the
-prepared file or changing the catalog end to 8 ns remains invalid. The interface
-was verified with synthetic runtimes only; no real MD, QC, aggregation or
-publication run is authorized or performed by this software change.
+## Nine-trajectory authority and remaining work
+
+The existing authority, three sets of system controls and all nine trajectory
+templates are preserved. Each system's replicas share its byte-identical PSF,
+690-residue mapping, element definitions, annotations and partner metadata.
+Partner indices remain specific to each system. Element and time templates remain
+replica-specific. Templates are intentionally incomplete and non-executable.
+Their recorded intake readiness does not replace preparation at the execution site.
+
+The delivery includes no DCD, PSF, CONF/OUT/XSC or toppar payload. The recipient
+supplies their own files at the explicit paths listed in `SOURCE_PATHS.tsv`,
+with source identities in `authority/source_inventory.json` and shared definitions
+in `authority/shared_toppar.json`. Seven DCDs were absent at intake; their bytes
+and observations are not claimed verified. No trajectory is substituted by filename
+search. A source mismatch or an unlisted delivery path requires clarification of
+the authority, not a JSON edit to force acceptance.
+
+For each selected trajectory: prepare a fresh full-axis derivative, read the
+summary, perform and record human review, confirm, then execute the generated
+validate and full production run. Do not reuse a historical prepared trajectory,
+runtime time control, binding, output or approval. DCD does not contain atom labels;
+the reviewer must attest source/run correspondence on the available provenance,
+not claim an independent DCD atom-label proof. A technical PASS is not human approval.
+
+The quick-start records stdout/stderr and numeric exit status for prepare, confirm,
+validate and run in a separate log directory. The first two also retain
+`operation.log`, `phases.jsonl` and `operation.json` below their respective attempt
+directories. Early failures may precede those internal logs, so preserve the shell
+logs too. Every nonzero exit stops the documented flow. Check stable UTC/NTP and
+free space before long work; the byte budget is not a disk reservation.
+
+Return complete production, preparation/confirmation and log directories to
+Andrey. Preserve failed attempts and use new paths for fresh attempts. Existing
+`--resume` verifies/reuses completed stages; it does not resume a partial contact
+pass. Full 5–100 ns runs, the remaining trajectory preparations, final QC,
+replica availability/exclusions, specialized correspondence, aggregation and
+publication remain separate work. Do not aggregate replicas in this handoff.

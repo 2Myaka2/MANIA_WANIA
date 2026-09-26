@@ -1,157 +1,128 @@
-# Егор: запуск MANIA для девяти траекторий
+# MANIA: запуск одной траектории Егора
 
-**Версия кода: `e3f69331f95a42d1da5d0cf7d6a60646421b8079`.**
-Нужны этот commit, `egor_FINAL_e3f69331f95a.zip` и эта памятка.
-ZIP содержит `egor_handoff/`, controls, authority, templates и каталог;
-исходных и подготовленных DCD в нём нет. Ничего из ZIP поверх checkout
-копировать не нужно. Каталог и справочный `egor_production_interface.md`
-взяты из указанного commit; эта новая памятка поставляется отдельно и в ZIP.
+**CPython 3.12 · Linux x86_64 · glibc ≥ 2.28.** Нужны Bash, Git с доступом к
+репозиторию, Python с `venv`, свободный диск и стабильные UTC/NTP. Wheelhouse не
+подходит для Windows/macOS/ARM/другого Python. Распакуйте ZIP в `$HOME/mania-input/`.
+Свои raw DCD, PSF/CONF/OUT/XSC и общий `egor/toppar/` разместите относительно этого
+каталога по `SOURCE_PATHS.tsv`. Их нет в ZIP. При необходимости замените пути ниже.
+Блоки выполняются по порядку в одной Bash-сессии; **при ошибке остановитесь**.
 
-## 1. Установка и размещение
-
-В локальном клоне репозитория, с Python ≥3.11:
-
+**1. Получить точный код.** MANIA будет установлена из этого checkout.
 ```bash
-cd MANIA_WANIA
-git fetch origin
-git checkout --detach e3f69331f95a42d1da5d0cf7d6a60646421b8079
-git rev-parse HEAD
-python3 -m venv .venv
+set -euo pipefail
+unset PYTHONPATH
+git clone git@github.com:2Myaka2/MANIA_WANIA.git "$HOME/mania-code"
+cd "$HOME/mania-code"
+git checkout --detach aa24f04900767b04f1303be18fe867e879feea93
+test "$(git rev-parse HEAD)" = aa24f04900767b04f1303be18fe867e879feea93
+```
+**2. Новое окружение; установка только из локальных wheels.** Онлайн-путь pip
+при проверке не сработал. Успех: все команды — код 0, MANIA `0.1.0` из
+`mania-code/src/mania`, MDAnalysis `2.10.0` из новой `.venv`.
+```bash
+DELIVERY="$HOME/mania-input/egor_delivery_aa24f0490076"
+python3.12 -m venv .venv
 source .venv/bin/activate
+export PIP_NO_INDEX=1 PIP_FIND_LINKS="$DELIVERY/wheelhouse"
 python -m pip install --upgrade pip setuptools wheel
-python -m pip install -e ".[md]"
+python -m pip install -e '.[md]'
+python -m pip check
 mania --version
-export MANIA_DATA_ROOT=/absolute/path/to/mania_inputs
-OUTPUT_ROOT=/absolute/path/to/mania_results/attempt_01
-mkdir -p "$MANIA_DATA_ROOT" "$OUTPUT_ROOT"
-unzip /absolute/path/to/egor_FINAL_e3f69331f95a.zip -d "$MANIA_DATA_ROOT"
+python -c 'import mania, MDAnalysis as m; print(mania.__file__); print(m.__version__,m.__file__)'
 ```
-
-Заменить три абсолютных пути своими; входной и выходной корни не должны
-содержать друг друга. Распаковывать в новое место, без перезаписи.
-Логически есть **0SS/1SS/2SS × r1/r2/r3**; ID:
-`namd_egor_wt_0ss_r1` … `namd_egor_wt_2ss_r3`. Каждой строке нужны
-её собственные **DCD, PSF, CONF, OUT, XSC** и общий проверенный toppar.
-Физические пути сохраняют исходные имена из `authority/source_inventory.json`:
-
-```text
-mania_inputs/
-  egor_handoff/                 распакованный пакет, helpers и templates
-  egor/                        PSF/CONF/OUT/XSC всех девяти строк
-    *.dcd                      два известных NPT DCD: 0SS/r1, 1SS/r1
-    dcd/*.dcd                  семь остальных объявленных DCD
-    toppar/                    общие 57 файлов источников
-  prepared/TRAJECTORY_ID/       отдельный полный подготовленный DCD
-  reviewed/TRAJECTORY_ID/       raw_time.json, prepared_time.json,
-                               pbc_evidence.json, site_review.json
-```
-
-0SS соответствует `MD_no_bonds_*`, 1SS — `MD_303_350_*`, 2SS —
-`MD_2_bonds_*`; r1 без суффикса, r2/r3 с `_2`/`_3`.
-Точные имена брать из manifest, включая различия `NPT` и `dcd/`.
-PSF/CONF/OUT/XSC и toppar должны лежать по указанным путям; иной путь DCD
-разрешён только через явно проверенный `site_review`, без правки каталога.
-
+**3. Одна траектория, новые пути попытки.** Для другой реплики возьмите её ID из
+`SOURCE_PATHS.tsv`. `RESULT_ROOT` внутри data root, `OUTPUT_ROOT` вне него.
+Не создавайте `RESULT_ROOT` заранее; для новой попытки меняйте суффикс.
 ```bash
-(cd "$MANIA_DATA_ROOT/egor_handoff" && sha256sum -c HANDOFF_FILES.sha256)
-python "$MANIA_DATA_ROOT/egor_handoff/check_package.py"
-```
-
-Ожидается `PASS`, 9 строк, 3 системы. Проверка пакета не подтверждает
-локальные DCD или качество PBC. При ошибке остановиться и передать лог Андрею.
-
-## 2. Подготовить одну строку
-
-Выбрать, например, `TRAJECTORY_ID=namd_egor_wt_0ss_r1`; для каждой следующей
-строки повторить весь review независимо. Подробности и схемы — в `README.md`
-пакета, `templates/$TRAJECTORY_ID/` и `authority/pbc_protocol.json`.
-
-1. Сверить SHA256/размеры своих PSF/CONF/OUT/XSC и всех toppar с authority.
-   Проверить raw DCD: SHA256, связь с CONF/OUT, заголовок, все кадры/ячейки,
-   физический порядок атомов и кадров. Один заголовок порядка атомов не доказывает.
-2. Внешне подготовить отдельный DCD: unwrap связанных фрагментов → центрирование
-   по белку → wrap целых фрагментов. Сохранить все 1000 кадров, атомный порядок,
-   ячейки и полную ось 100–100000 ps; получить PBC audit с именем проверяющего.
-   Старое принятие 0SS/r1 применимо только к его точным проверенным байтам.
-3. Завершить два runtime time-control JSON по схеме
-   `mania.namd_time_authority.v1`: абсолютные пути внутри data root, собственные
-   CONF/OUT, реальные `observe_dcd` наблюдения и исходная временная ось.
-   Шаблоны не являются готовыми controls; нельзя придумать `observed_times`
-   или просто сменить `status`. Наблюдения первых/последнего кадров не заменяют
-   проверку всех кадров/PBC; финальный XSC также её не заменяет.
-4. Создать `reviewed/$TRAJECTORY_ID/site_review.json` с ровно восемью полями:
-   `schema_version="egor.handoff.site_review.v1"`, `trajectory_id`,
-   `raw_trajectory`, `prepared_trajectory`, `raw_time_control`,
-   `prepared_time_control`, `pbc_evidence`, `prepared_lineage`.
-   Пять файловых путей — относительно data root. `prepared_lineage` взять
-   из `input_binding.template.json` → `payload.prepared_lineage`; заполнить
-   реальные hashes, подтверждения порядка, reviewer и note после review.
-   `internal_mic=false`; MANIA не исправляет PBC автоматически.
-
-```bash
+export MANIA_DATA_ROOT="$HOME/mania-input"
+HANDOFF="$DELIVERY/egor_handoff"
 TRAJECTORY_ID=namd_egor_wt_0ss_r1
-SITE_REVIEW="$MANIA_DATA_ROOT/reviewed/$TRAJECTORY_ID/site_review.json"
-python "$MANIA_DATA_ROOT/egor_handoff/materialize_binding.py" \
-  --data-root "$MANIA_DATA_ROOT" --trajectory-id "$TRAJECTORY_ID" \
-  --site-review "$SITE_REVIEW"
-INPUT_BINDING="$MANIA_DATA_ROOT/egor_handoff/site/$TRAJECTORY_ID/production_input_binding.json"
-```
-
-Ожидается `binding_materialized`. Helper не готовит DCD и не выдаёт PBC PASS;
-повторную запись существующего `site/$TRAJECTORY_ID/` запрещает.
-
-## 3. Проверить площадку и запустить 5–100 ns
-
-Перед unattended job проверить стабильный UTC и синхронизацию NTP
-(`NTPSynchronized=yes`; если systemd нет — `chronyc tracking` или проверка
-администратора). При скачках часов запуск отложить. Проверить также квоту
-и место для внешней подготовки. Ниже 100 GiB — пример минимального резерва,
-**не оценка размера результатов**; выбрать положительный бюджет площадки.
-
-```bash
-FREE_SPACE_BUDGET=107374182400
-mkdir -p "$OUTPUT_ROOT/evidence"
-LOG_DIR="$OUTPUT_ROOT/evidence/$TRAJECTORY_ID"
+RESULT_ROOT="$MANIA_DATA_ROOT/prepared/${TRAJECTORY_ID}_attempt_001"
+OUTPUT_ROOT="$HOME/mania-results/${TRAJECTORY_ID}_attempt_001"
+LOG_DIR="$HOME/mania-logs/${TRAJECTORY_ID}_attempt_001"
+mkdir -p "$(dirname "$LOG_DIR")"
 mkdir "$LOG_DIR"
-date -u > "$LOG_DIR/utc.txt"
-timedatectl show -p NTP -p NTPSynchronized > "$LOG_DIR/ntp.txt"
-df -B1 "$MANIA_DATA_ROOT" "$OUTPUT_ROOT" > "$LOG_DIR/disk.txt"
-mania production validate \
-  --catalog "$MANIA_DATA_ROOT/egor_handoff/catalog/dataset.yaml" \
-  --trajectory-id "$TRAJECTORY_ID" --output-root "$OUTPUT_ROOT" \
-  --input-binding "$INPUT_BINDING" --min-free-bytes "$FREE_SPACE_BUDGET" \
-  > "$LOG_DIR/validate.json" 2> "$LOG_DIR/validate.stderr.log"
 ```
-
-Просмотреть сохранённые UTC/NTP/disk логи. Продолжать только после exit 0 и
-`preflight_passed`. `trajectory_pbc_qc_certified=false` ожидаемо: preflight
-не заменяет внешний review. Затем полная production-команда:
-
+**4. Проверить пакет.** Успех: все checksums — `OK`; checker — `PASS`, `rows=9`,
+`systems=3`. Это проверка пакета; исходные координаты проверит prepare.
 ```bash
-mania production run \
-  --catalog "$MANIA_DATA_ROOT/egor_handoff/catalog/dataset.yaml" \
-  --trajectory-id "$TRAJECTORY_ID" --output-root "$OUTPUT_ROOT" \
-  --input-binding "$INPUT_BINDING" --min-free-bytes "$FREE_SPACE_BUDGET" \
-  > "$LOG_DIR/run.json" 2> "$LOG_DIR/run.stderr.log"
+(cd "$DELIVERY" && sha256sum -c DELIVERY_FILES.sha256)
+(cd "$HANDOFF" && sha256sum -c HANDOFF_FILES.sha256)
+python -B "$HANDOFF/check_package.py"
 ```
+**5. Подготовить одну полную траекторию.** 12 GB — порог свободного места,
+не резервирование и не оценка размера всех результатов. Успех: `pending_review`.
+```bash
+python tools/prepare_production_inputs.py prepare \
+  --data-root "$MANIA_DATA_ROOT" --result-root "$RESULT_ROOT" \
+  --authority-package "$HANDOFF" --trajectory-id "$TRAJECTORY_ID" \
+  --min-free-bytes 12000000000 --workers 1 --threads 1 >"$LOG_DIR/prepare.log" 2>&1 \
+  && echo 0 >"$LOG_DIR/prepare.exit" || { echo $? >"$LOG_DIR/prepare.exit"; exit 1; }
+cat "$LOG_DIR/prepare.log"
+cat "$RESULT_ROOT/summary.txt"
+```
+**6. СТОП: человеческое ревью.** Нужны все 12 автоматических `PASS`, без failures.
+Прочитайте `summary.txt` и отчёт. Проверьте raw DCD ↔ PSF ↔ выбранный запуск по
+происхождению и CONF/OUT/сопутствующим файлам. DCD не содержит меток атомов:
+совпадение числа атомов само по себе не доказывает их физический порядок.
+Без ревью дальше не идти; старое одобрение не переносить.
 
-**Одна траектория за раз / один отдельный job**, остальные строки запускать
-независимо с их ID, review и binding. Расчёт: **5–100 ns / 200 ps / окно 2 ns /
-шаг 1 ns**, inclusive; 476 целей, 94 полных окна, 11 целей на окно.
+**7. Только после ревью подтвердить.** Введите настоящее имя, основание одобрения
+и SHA256 из вывода **этой** подготовки. JSON, наблюдения и hashes не редактировать.
+```bash
+read -r -p 'Имя проверившего: ' REVIEWER
+read -r -p 'Что проверено, основание одобрения: ' REVIEW_NOTE
+read -r -p 'SHA256 проверенного отчёта: ' REPORT_SHA256
+python tools/prepare_production_inputs.py confirm \
+  --data-root "$MANIA_DATA_ROOT" --result-root "$RESULT_ROOT" \
+  --authority-package "$HANDOFF" --trajectory-id "$TRAJECTORY_ID" \
+  --report-sha256 "$REPORT_SHA256" --reviewer "$REVIEWER" --review-note "$REVIEW_NOTE" \
+  --approve --production-output-root "$OUTPUT_ROOT" --min-free-bytes 12000000000 \
+  >"$LOG_DIR/confirm.log" 2>&1 \
+  && echo 0 >"$LOG_DIR/confirm.exit" || { echo $? >"$LOG_DIR/confirm.exit"; exit 1; }
+cat "$LOG_DIR/confirm.log"
+```
+Успех: `binding_materialized`. Вывод и `confirmation/commands.json` содержат две
+готовые команды. Ниже те же команды через переменные сессии, с записью логов.
 
-## 4. Вернуть Андрею и ограничения
+**8. Сгенерированный validate.** Успех: `preflight_passed`, `READY`, код 0.
+```bash
+env MANIA_DATA_ROOT="$MANIA_DATA_ROOT" mania production validate \
+  --catalog "$HANDOFF/catalog/dataset.yaml" --trajectory-id "$TRAJECTORY_ID" \
+  --output-root "$OUTPUT_ROOT" \
+  --input-binding "$RESULT_ROOT/confirmation/production_input_binding.json" \
+  --min-free-bytes 12000000000 >"$LOG_DIR/validate.log" 2>&1 \
+  && echo 0 >"$LOG_DIR/validate.exit" || { echo $? >"$LOG_DIR/validate.exit"; exit 1; }
+cat "$LOG_DIR/validate.log"
+```
+**9. Сгенерированный ПОЛНЫЙ run: 5–100 ns.** Шаг 200 ps, окна 2 ns через 1 ns:
+476 отсчётов, 94 окна по 11 при полной доступности. Technical manifest не добавлять.
+```bash
+env MANIA_DATA_ROOT="$MANIA_DATA_ROOT" mania production run \
+  --catalog "$HANDOFF/catalog/dataset.yaml" --trajectory-id "$TRAJECTORY_ID" \
+  --output-root "$OUTPUT_ROOT" \
+  --input-binding "$RESULT_ROOT/confirmation/production_input_binding.json" \
+  --min-free-bytes 12000000000 >"$LOG_DIR/run.log" 2>&1 \
+  && echo 0 >"$LOG_DIR/run.exit" || { echo $? >"$LOG_DIR/run.exit"; exit 1; }
+cat "$LOG_DIR/run.log"
+```
+Успех: `science_complete`, код 0 и `science_complete.json` в
+`$OUTPUT_ROOT/trajectories/$TRAJECTORY_ID/`.
 
-Вернуть целиком `OUTPUT_ROOT/trajectories/$TRAJECTORY_ID/`, включая
-`science_complete.json`, `request.json`, `inputs/`, весь `preprocessing/`
-(per-frame, canonical/annotated, provenance, inventory, validation).
-Приложить stdout/stderr, exit codes, UTC/NTP/disk логи, commit и версию MANIA,
-binding, оба time controls, site review, PBC audit/lineage и входные hashes.
-Сохранить raw/prepared DCD для воспроизведения; их передачу согласовать отдельно.
-При сбое вернуть также незавершённый output и логи.
+**10. Передать Андрею целиком `$OUTPUT_ROOT`, `$RESULT_ROOT`, `$LOG_DIR`.** Сохранить
+структуру, подготовленный DCD, подтверждение и артефакты, не только CSV. Логи команд
+и exit status: `$LOG_DIR/*.log`, `*.exit`. Подробные журналы подготовки/подтверждения:
+`operation.log`, `phases.jsonl`, `operation.json` в `$RESULT_ROOT` и `confirmation/`
+(в JSON — время и код выхода). При ранней ошибке смотрите `$LOG_DIR`;
+после сбоя сохраните попытку и сообщите Андрею.
 
-**Нельзя:** менять 5–100 ns / 200 ps / 2 ns / 1 ns; переносить controls между
-системами по аналогии; пропускать PBC review; перезаписывать готовые или
-незавершённые outputs; запускать агрегацию до реальных QC decisions.
-Для новой попытки нужен новый output root; старые результаты сохранить.
-Реальные QC и соответствие специализированных partners остаются отдельными
-условиями последующей агрегации и публикации.
+> Автоматический PASS не заменяет человеческое одобрение. `science_complete` не
+> означает финальный QC/публикацию. Реплики пока не агрегировать. Не перезаписывать
+> неудачные/неполные попытки. `--resume` использует завершённые стадии, но не
+> продолжает незаконченный расчёт контактов с середины. После prepare входы не перемещать.
+
+Ранее проверены полный prepare 0SS/r1, технический run 5–8 ns, replay без геометрии
+и resume. Полный run 5–100 ns ещё предстоит. Для 1SS/r1 доказаны только выбор своих
+topology/controls и applicability первого кадра; полная подготовка 1SS не проверена.
+Справка: [production interface](egor_production_interface.md),
+[подготовка и подтверждение](production_input_preparation.md).
