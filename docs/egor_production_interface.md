@@ -1,4 +1,4 @@
-# Egor production interface — Stage 34.D.4e.2
+# Egor production interface — Stage 34.D.4e.2 / D.4e.3
 
 The supported `mania production` commands select a single catalog trajectory or
 replica group. They reuse existing MANIA preprocessing, inclusive temporal
@@ -186,8 +186,60 @@ stage outputs are never overwritten. `mania dataset publish` remains separate.
 
 Software tests use synthetic controls/runtimes, all nine real catalog selections,
 and existing QC/aggregation APIs. They are not Egor scientific acceptance.
-The catalog still records seven missing DCD deliveries and two authority-blocked
-rows. Production-bound element/time/mapping controls, complete annotations and
-partners, external PBC/atom-order evidence, real QC and specialized correspondence
-must be supplied by the data owners. Existing pilot acceptance cannot supply them
-by analogy. No real MD is run by this implementation task.
+The catalog records seven missing Egor DCD deliveries, one authority-blocked
+1SS/r1 row, and one 0SS/r1 row with verified prepared-input readiness. Egor has
+now supplied separate complete 0SS and 1SS annotation decisions. Other input
+controls, real QC and specialized correspondence remain separate gates;
+historical pilot acceptance cannot supply them by analogy.
+
+## Real 0SS/r1 prepared-input checkpoint
+
+Stage 34.D.4e.3 evidence is retained under the ignored directory
+`local_md/stage34d4e3_egor_0ss_r1_20260926T061309Z_49d690e736a84bb7a5b58f4825e787c1/`
+with a sibling ZIP. Operational inputs are under
+`local_md/production_intake/prepared_inputs/` followed by the same checkpoint name.
+The ZIP contains controls, scripts, inventories, lineage, audit and verification
+records; large raw/prepared DCDs remain local and are referenced by path/hash.
+
+Both new system annotation controls bind `napi2b-dataset-v1`, respectively
+`namd_egor_wt_0ss` and `namd_egor_wt_1ss`, with source/verifier `Egor` and
+`annotation_scope=complete_for_system`. Each lists Asn295/Asn308 with FA2G2S2
+present, design sites C303/C322/C328/C350, and no cysteine variant sites.
+Design-site annotation does not encode actual bond pairs. Separate PSF evidence
+records no SG–SG bonds for 0SS and C303–C350 for 1SS.
+
+0SS/r1 has an exact 96-type element control, 690-residue canonical relation with
+its own PSF binding, and topology-specific metadata for 828 membrane partners
+and two glycans. No 2SS atom/partner indices were copied. All shared CHARMM
+definitions were revalidated against the actual source bytes and membership.
+
+The prepared DCD preserves all 1000 frames and 409865 atoms. External preparation
+uses the approved fragment protocol, with protein geometry centering and
+complete-fragment COG wrapping. A batched implementation of the installed
+MDAnalysis operations was checked bitwise against the standard protocol at
+source frames 0, 49, 79 and 999. Four workers feed one ordered writer. Every
+frame passes bond/image/cell/centering checks; every persisted coordinate array
+matches its indexed writer hash. Both time controls bind the original CONF/OUT
+and retain exact scientific times of 100–100000 ps. Internal MIC stays false.
+
+The following public preflight passed with exit 0 and created no science output:
+
+```bash
+CHECKPOINT=stage34d4e3_egor_0ss_r1_20260926T061309Z_49d690e736a84bb7a5b58f4825e787c1
+export MANIA_DATA_ROOT="$(pwd)/local_md/production_intake"
+.venv/bin/mania production validate \
+  --catalog production/dataset_v1/dataset.yaml \
+  --trajectory-id namd_egor_wt_0ss_r1 \
+  --output-root "local_md/$CHECKPOINT/preflight_output" \
+  --input-binding "$MANIA_DATA_ROOT/prepared_inputs/$CHECKPOINT/production_input_binding.json"
+```
+
+Its result is `preflight_passed`, with `trajectory_pbc_qc_certified=false`.
+The binding selects the complete derivative; diagnostic partial files are never
+production inputs. No contacts, Stage 32, aggregation or publication were run.
+
+The remaining gate for a **5–8 ns-only** real contact test is software selection:
+catalog v1.1 requires Egor 5–100 ns and the public `run` command exposes no interval
+override. Cropping the prepared file or changing the catalog end to 8 ns would
+violate the current contract. A separate approved interface change is required;
+this checkpoint changes no production Python and does not authorize a full run.

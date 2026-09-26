@@ -12,7 +12,9 @@ unreleased.
 Stage 34.D.4e.2 adds the [supported Egor production interface](../../docs/egor_production_interface.md),
 which projects an explicitly selected row into existing MANIA workflows. It
 requires independently supplied prepared-input bindings and production controls.
-The interface does not change this catalog's rows, readiness or Stage 35 authority.
+The D.4e.2 interface alone does not change readiness or Stage 35 authority.
+D.4e.3 supplies complete Egor 0SS/1SS annotations and verified prepared-input
+readiness for `namd_egor_wt_0ss_r1`, as recorded below.
 **This catalog does not authorize Stage 35.** No launcher, PBC preparation,
 MD calculation, or Stage 27–33 implementation change belongs to D.4b.
 
@@ -33,7 +35,7 @@ The authoritative local intake is `local_md/production_intake/`, with flat
 are not required. Files retain their original preserved names and locations.
 No source file is copied, moved, renamed or linked by this reconciliation.
 
-All nonblank CSV data/control paths are relative POSIX paths below future
+All nonblank CSV data/control paths are relative POSIX paths below the configured
 `MANIA_DATA_ROOT`, without expansion, absolute paths or parent escapes.
 `trajectories_csv` in the descriptor is relative to this catalog directory.
 The ignored source-to-portable audit map records actual locations, declarations,
@@ -47,6 +49,12 @@ Egor's exact CONF/OUT-declared DCD names remain in the audit.
 **No Dataset v1 Egor raw binding is sourced from `Other_files/` or a historical
 pilot raw directory.** Historical controls remain evidence, not replacement
 production coordinates.
+
+D.4e.3 binds 0SS/r1 directly to `egor/<preserved filename>` with
+`MANIA_DATA_ROOT=local_md/production_intake` (resolved to an absolute path).
+Its new controls and prepared DCD are under that root's `prepared_inputs/`
+checkpoint directory. Other raw rows retain their future layout; the explicit
+input binding supports source relocation. Raw intake files remain unchanged.
 
 ## Egor: nine explicit source records
 
@@ -116,16 +124,38 @@ the controls. A historical pilot PASS is not production readiness.
 0SS/1SS have different PSF hashes and atom counts. Their exact ordered
 690-residue identities match the accepted mapping relation, and their used
 types/masses match reviewed definitions (0SS omits SM; 1SS uses all 97).
-These are proven reusable *relations/definitions*, not ready-to-use controls:
-new exact PSF/type-count and mapping bindings are required. No 2SS topology,
+At D.4b these were reusable *relations/definitions*, not ready-to-use controls:
+new exact PSF/type-count and mapping bindings were required. No 2SS topology,
 system annotations, partner atom indices or per-DCD time control is transferred
-to 0SS/1SS. Their complete annotations and partner authority remain unresolved.
-Production specialized aggregation requires authoritative partner correspondence.
+to 0SS/1SS by analogy. D.4e.3 supplies separately bound complete annotations
+from Egor for both systems: glycosylation sites 295 and 308, each with FA2G2S2
+present; disulfide design sites 303, 322, 328 and 350; and no cysteine variant
+sites. Both `source` and `verifier` are `Egor`. The design-site list is independent
+of actual SG–SG bonds: none for 0SS, C303–C350 for 1SS, and C303–C350 plus
+C322–C328 for 2SS. No bond pairs are encoded through that annotation list.
+
+The 0SS/r1 continuation revalidates all 96 used element types against exact
+reviewed source definitions and binds all 690 canonical residues to its own PSF.
+Its independently enumerated partner metadata contains 828 membrane partners
+and two protein-linked FA2G2S2 glycans. Every 0SS atom is accounted for, including
+101225 waters, 339 sodium ions and 277 chloride ions excluded from the partner
+layers. No 2SS atom or partner indices are reused. Outside 0SS/r1, element/time,
+mapping and partner controls remain unbound. Production specialized aggregation still requires authoritative
+partner correspondence.
 
 The approved external PBC protocol remains **unwrap bonded fragments → center
-on protein → wrap complete bonded fragments**. Its authority is distinct from
-future per-trajectory execution/audit. MANIA still applies no internal
-minimum-image correction. No trajectory-level PBC audit is claimed here.
+on protein → wrap complete bonded fragments**. D.4e.3 executes and technically
+audits it for 0SS/r1 only. The new DCD preserves all 1000 frames, 409865 atoms,
+source order, per-frame cells and the 100–100000 ps scientific time axis.
+All persisted coordinate arrays match their indexed writer hashes. All
+409655000 bond observations pass the established 0.001 angstrom representation
+tolerance. MANIA still applies no internal minimum-image correction.
+
+The public preflight returns `preflight_passed` with
+`trajectory_pbc_qc_certified=false`; this is prepared-input readiness, not
+contact/QC acceptance. No contacts, Stage 32, aggregation or publication were
+run. The [interface guide](../../docs/egor_production_interface.md#real-0ssr1-prepared-input-checkpoint)
+identifies the persistent checkpoint and replay command.
 
 ## GROMACS production collections
 
@@ -235,21 +265,22 @@ metadata, then missing authority. Notes retain all known blockers.
 
 READY requires all applicable raw/source files, scientific and replica identity,
 the approved requested timing/window contract, and exact accepted controls with
-valid production bindings. Timing approval and inclusive-window implementation
-are complete. The launcher interface, per-frame persistence/replay and full
-trajectory QC/PBC execution remain separate later gates.
+valid production bindings. Timing approval, inclusive windows, the launcher and
+per-frame persistence/replay are implemented. D.4e.3 closes external preparation
+for 0SS/r1; real contact execution and QC remain separate gates.
 
 | Scope | READY | MISSING_FILES | MISSING_METADATA | NEEDS_AUTHORITY |
 | --- | ---: | ---: | ---: | ---: |
-| ALL DATASET | 0 | 31 | 0 | 2 |
-| EGOR ONLY | 0 | 7 | 0 | 2 |
+| ALL DATASET | 1 | 31 | 0 | 1 |
+| EGOR ONLY | 1 | 7 | 0 | 1 |
 | GROMACS | 0 | 12 | 0 | 0 |
 | ALINA | 0 | 12 | 0 | 0 |
 
-All 19 systems remain non-READY. Egor has two locally complete raw bundles at
-header-inspection level, seven missing local DCDs, zero rows with complete
-production scientific controls, and zero launcher-ready rows. The two present
-bundles are `NEEDS_AUTHORITY`; the seven others are `MISSING_FILES`.
+All 19 systems remain non-READY because no expected replica group is complete.
+Egor 0SS/r1 is now READY for the technical preflight with its exact controls and
+prepared binding. Egor 1SS/r1 remains `NEEDS_AUTHORITY` for its other controls
+and preparation; the seven missing-DCD rows remain `MISSING_FILES`. Complete
+0SS/1SS system annotations are bound across their respective three rows.
 Incomplete Alina/GROMACS groups do not block preparing Egor independently.
 
 The ignored D.4b evidence contains all nine Egor bindings/ambiguities, separate
@@ -263,4 +294,8 @@ Historical statements above that persistence/replay and the launcher are later
 software gates describe D.4b/D.4c. D.4d provides all-layer per-frame persistence
 and offline replay; D.4e.2 provides the narrow catalog interface linked above.
 Full source/control authority, external preparation and real QC remain separate
-data gates. No production calculation or readiness promotion is implied.
+data gates. D.4e.3 promotes only 0SS/r1 prepared-input readiness. A future
+**5–8 ns-only** contact run remains blocked by the public interface's fixed
+**5–100 ns** Egor selection: no interval override exists, and cropped/reindexed
+prepared inputs are unsupported. A separate approved interface change is needed;
+the current full-range command must not be treated as a short technical test.
