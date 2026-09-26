@@ -15,6 +15,8 @@ requires independently supplied prepared-input bindings and production controls.
 The D.4e.2 interface alone does not change readiness or Stage 35 authority.
 D.4e.3 supplies complete Egor 0SS/1SS annotations and verified prepared-input
 readiness for `namd_egor_wt_0ss_r1`, as recorded below.
+The nine-trajectory handoff now supplies topology-bound controls and portable
+execution-site templates for all Egor rows. It performs no MD or contact science.
 **This catalog does not authorize Stage 35.** No launcher, PBC preparation,
 MD calculation, or Stage 27–33 implementation change belongs to D.4b.
 
@@ -41,20 +43,20 @@ All nonblank CSV data/control paths are relative POSIX paths below the configure
 The ignored source-to-portable audit map records actual locations, declarations,
 size, inspection level, binding evidence and control dependencies.
 
-Egor's future portable layout is `namd/egor/raw/<preserved filename>`, with
-shared `namd/egor/raw/toppar/`. This follows the authoritative storage identity
-without requiring physical rearrangement. Alina uses `namd/alina/raw/`.
-Missing DCD delivery basenames are not invented: their CSV paths remain blank;
-Egor's exact CONF/OUT-declared DCD names remain in the audit.
+Egor's portable layout is `egor/<preserved filename>`, with shared `egor/toppar/`,
+relative to `MANIA_DATA_ROOT`. Controls/templates are under `egor_handoff/`.
+This matches the local intake without moving source files. Alina retains
+`namd/alina/raw/`. Seven Egor DCD paths are **expected CONF/OUT declarations**,
+not observed deliveries; their `MISSING_FILES` status and notes preserve that
+distinction. The two observed DCDs retain their delivered NPT filenames.
 **No Dataset v1 Egor raw binding is sourced from `Other_files/` or a historical
 pilot raw directory.** Historical controls remain evidence, not replacement
 production coordinates.
 
-D.4e.3 binds 0SS/r1 directly to `egor/<preserved filename>` with
-`MANIA_DATA_ROOT=local_md/production_intake` (resolved to an absolute path).
-Its new controls and prepared DCD are under that root's `prepared_inputs/`
-checkpoint directory. Other raw rows retain their future layout; the explicit
-input binding supports source relocation. Raw intake files remain unchanged.
+D.4e.3's accepted 0SS/r1 controls and prepared DCD remain under the intake's
+`prepared_inputs/` checkpoint directory. The handoff supplies a refreshed local
+binding for the updated catalog row; the historical binding and all original
+inputs remain unchanged. Portable templates require execution-site completion.
 
 ## Egor: nine explicit source records
 
@@ -62,7 +64,7 @@ The three WT systems are 0SS, 1SS and 2SS, each with three replicas, **PMm** and
 a supervisor-declared 100 ns duration. PMm occurs only on these nine rows.
 The audit supplies nine PSF, nine CONF, nine OUT and nine XSC bindings, plus nine
 DCD source references: two observed delivery files and seven declared-only
-references with unresolved preserved delivery names/bytes.
+expected filenames/paths with unverified delivery bytes and headers.
 
 The preserved PSF/CONF/OUT/XSC stems are
 `MD_no_bonds_NPT_W_I_PMm_100_ns`, `MD_303_350_NPT_W_I_PMm_100_ns`, and
@@ -101,7 +103,7 @@ references exist; all 57 previously reviewed toppar source hashes match.
 
 | Input/control | Requirement |
 | --- | --- |
-| `topology_path`, `trajectory_path` | Explicit observed source binding; missing delivery files remain blank. A bound partial file is not a complete production trajectory. |
+| `topology_path`, `trajectory_path` | Explicit source binding; seven Egor DCD paths are declared expected paths, with availability recorded separately. A bound partial file is not a complete production trajectory. |
 | `config_path`, `log_path` | Exact run evidence; declarations and preserved delivery names are distinguished. |
 | `box_path` | Egor final XSC endpoint evidence; per-frame cells still require verification. No separate GROMACS box file is invented. Alina cell/time authority remains unresolved. |
 | `element_control` | Exact NAMD PSF/type-count binding to reviewed definitions. NAMD-style control is not applicable to the GROMACS TPR route. |
@@ -113,13 +115,11 @@ references exist; all 57 previously reviewed toppar source hashes match.
 All three intake 2SS PSFs match accepted SHA256
 `04b7bee588edf61bde25dfded24216ed4e0727d75d1e144356b500ecc89004bb`.
 Their CONF/OUT/XSC files also match the accepted per-replica hashes despite
-preserved filename differences. The 97-type element definitions, 690/690
-canonical mapping relation and 830-partner input metadata therefore have
-exact topology compatibility. Existing controls under future
-`controls/namd/egor_wt_2ss/` still need portable path rebinding; annotations
-need production identity binding; time controls need actual intake DCD
-verification. Binding/review/annotation/classification provenance must accompany
-the controls. A historical pilot PASS is not production readiness.
+preserved filename differences. The handoff revalidates the 97-type element
+definitions, 690/690 canonical relation and topology-specific partner metadata,
+and rebinds accepted complete 2SS annotations to the production Dataset/system.
+Time controls still need actual intake DCD verification. A historical pilot
+PASS is not production readiness.
 
 0SS/1SS have different PSF hashes and atom counts. Their exact ordered
 690-residue identities match the accepted mapping relation, and their used
@@ -139,9 +139,28 @@ reviewed source definitions and binds all 690 canonical residues to its own PSF.
 Its independently enumerated partner metadata contains 828 membrane partners
 and two protein-linked FA2G2S2 glycans. Every 0SS atom is accounted for, including
 101225 waters, 339 sodium ions and 277 chloride ions excluded from the partner
-layers. No 2SS atom or partner indices are reused. Outside 0SS/r1, element/time,
-mapping and partner controls remain unbound. Production specialized aggregation still requires authoritative
-partner correspondence.
+layers. No 2SS atom or partner indices are reused. The handoff independently
+enumerates partners from each system's own PSF and verifies every atom's
+classification against the reviewed shared CHARMM definitions and connectivity.
+Production specialized aggregation still requires authoritative partner
+correspondence; shared topology alone does not issue that authority.
+
+All three PSFs within **each** of 0SS, 1SS and 2SS are byte-identical. Each
+system therefore shares its own mapping, element definitions, annotations and
+partner authority across r1/r2/r3. Controls are never shared across systems by
+atom-index analogy. The existing element reader compares the exact PSF path as
+well as bytes, so nine replica-path element templates are supplied. Each replica
+also has its own CONF/OUT-derived time template and raw/prepared input-binding
+template. Portable element templates require absolute-path materialization;
+time/binding templates are explicitly incomplete and are not executable controls.
+
+The complete ignored package and sibling ZIP are
+`local_md/egor_9_trajectory_handoff_20260926/handoff/` and
+`local_md/egor_9_trajectory_handoff_20260926.zip`.
+`handoff_manifest.json` records all nine rows, source identity, shared controls,
+expected DCD paths and every execution-site prerequisite. See the
+[handoff instructions](../../docs/egor_production_interface.md#nine-trajectory-handoff)
+for installation, strict readers and final binding requirements.
 
 The approved external PBC protocol remains **unwrap bonded fragments → center
 on protein → wrap complete bonded fragments**. D.4e.3 executes and technically
@@ -252,10 +271,10 @@ have ten targets, and a production-ending window has eleven. Historical pilots
 retain that profile. Both profiles use the same requested sampling and generate
 only full windows.
 
-`trajectories.csv` remains byte-for-byte unchanged from D.4b. Its historical
-notes saying "inclusive-window contract implementation pending" are superseded
-by this descriptor policy and D.4c implementation; all other blockers and all
-readiness statuses remain in force.
+The Egor handoff updates only the nine Egor CSV rows. Identity and timing cells
+are unchanged. Historical Alina/GROMACS notes saying "inclusive-window contract
+implementation pending" are superseded by this descriptor policy and D.4c;
+their source/authority blockers remain in force.
 
 ## Strict readiness and independent group preparation
 
@@ -278,9 +297,11 @@ for 0SS/r1; real contact execution and QC remain separate gates.
 
 All 19 systems remain non-READY because no expected replica group is complete.
 Egor 0SS/r1 is now READY for the technical preflight with its exact controls and
-prepared binding. Egor 1SS/r1 remains `NEEDS_AUTHORITY` for its other controls
-and preparation; the seven missing-DCD rows remain `MISSING_FILES`. Complete
-0SS/1SS system annotations are bound across their respective three rows.
+prepared binding. Egor 1SS/r1 remains `NEEDS_AUTHORITY` for DCD runtime time
+verification and external preparation/lineage, with system controls supplied.
+The seven locally missing-DCD rows remain `MISSING_FILES`, with scientific
+system authority supplied separately. Complete system annotations are bound
+across each system's three rows. No complete replica group is ready.
 Incomplete Alina/GROMACS groups do not block preparing Egor independently.
 
 The ignored D.4b evidence contains all nine Egor bindings/ambiguities, separate
@@ -293,9 +314,9 @@ contract only; it performs no launcher work, Stage 35 or production run.
 Historical statements above that persistence/replay and the launcher are later
 software gates describe D.4b/D.4c. D.4d provides all-layer per-frame persistence
 and offline replay; D.4e.2 provides the narrow catalog interface linked above.
-Full source/control authority, external preparation and real QC remain separate
-data gates. D.4e.3 promotes only 0SS/r1 prepared-input readiness. A future
-**5–8 ns-only** contact run remains blocked by the public interface's fixed
-**5–100 ns** Egor selection: no interval override exists, and cropped/reindexed
-prepared inputs are unsupported. A separate approved interface change is needed;
-the current full-range command must not be treated as a short technical test.
+External preparation and real QC remain separate data gates. D.4e.3 promotes
+only 0SS/r1 prepared-input readiness. The supported technical-manifest interface
+can now select **5–8 ns** without changing the **5–100 ns** production catalog;
+cropped/reindexed prepared inputs remain unsupported. The handoff does not run
+either selection. **Stable UTC/NTP must be checked before unattended runs**;
+this is an operational prerequisite, with no host-clock code change.

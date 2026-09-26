@@ -266,11 +266,80 @@ stage outputs are never overwritten. `mania dataset publish` remains separate.
 
 Software tests use synthetic controls/runtimes, all nine real catalog selections,
 and existing QC/aggregation APIs. They are not Egor scientific acceptance.
-The catalog records seven missing Egor DCD deliveries, one authority-blocked
-1SS/r1 row, and one 0SS/r1 row with verified prepared-input readiness. Egor has
-now supplied separate complete 0SS and 1SS annotation decisions. Other input
-controls, real QC and specialized correspondence remain separate gates;
-historical pilot acceptance cannot supply them by analogy.
+The catalog records seven locally missing Egor DCDs, one 1SS/r1 row awaiting
+DCD runtime verification and external preparation/lineage, and one 0SS/r1 row
+with accepted local prepared-input readiness. All nine now have topology-bound
+system authority and portable templates. Missing local DCDs do not imply missing
+scientific system authority. Real QC and specialized correspondence remain
+separate gates; historical pilot acceptance cannot supply them by analogy.
+
+## Nine-trajectory handoff
+
+The complete package is
+`local_md/egor_9_trajectory_handoff_20260926/handoff/`; the evidence ZIP is
+`local_md/egor_9_trajectory_handoff_20260926.zip`.
+Send the ZIP, including `handoff/handoff_manifest.json`, `handoff/README.md`,
+`handoff/catalog/`, `handoff/controls/`, `handoff/authority/`, `handoff/templates/`
+and the strict verification/materialization helpers. The archive inventory lists
+every exact file and checksum. Raw inputs, toppar and prepared DCDs are referenced
+by identity and are not included. No DCD was downloaded or copied for this task.
+
+All three replica PSFs within each system have the same complete SHA256:
+
+| System | PSF SHA256 | Actual topology bonds |
+| --- | --- | --- |
+| 0SS | `89d521cf033bf1a0e01ec80d5ee5f74037ad46a68167297e1e4950a56e794417` | none |
+| 1SS | `c81688aaff64bd7342a19896581f14b90a22e4b8b1dbe4f2157392685a4846f9` | C303–C350 |
+| 2SS | `04b7bee588edf61bde25dfded24216ed4e0727d75d1e144356b500ecc89004bb` | C303–C350 and C322–C328 |
+
+Each system shares its own 690-residue canonical mapping, element definitions,
+complete annotations and molecular partner metadata across its replicas.
+Partner membership was independently enumerated from each system's PSF and
+checked against exact shared toppar definitions; 2SS indices were not copied
+into 0SS/1SS. Nine element templates bind the individual replica PSF paths,
+because the runtime reader requires exact path identity even for identical bytes.
+Time and preparation attestations remain replica-specific.
+
+0SS/1SS annotations have source/verifier `Egor`, glycosylation sites `[295,308]`
+with FA2G2S2 at both, design sites `[303,322,328,350]`, and empty cysteine variant
+sites. These design annotations do not encode S–S bond pairs. Accepted complete
+2SS annotations are rebound to the production identity with provenance retained.
+
+Install `handoff/` as `MANIA_DATA_ROOT/egor_handoff/`. Supply each row's own
+PSF/CONF/OUT/XSC under `MANIA_DATA_ROOT/egor/`, and the reviewed shared `toppar/`
+there. Preserve declared filenames and verify source hashes using the manifest.
+The seven absent DCD paths retain the exact non-NPT CONF/OUT declarations;
+the two observed DCDs retain their NPT delivery names. If the execution-site
+delivery name differs, record the explicit path and verify its linkage to the
+selected CONF/OUT. Never substitute a historical pilot trajectory.
+
+Before `mania production validate`, Egor must complete each row's checklist:
+
+1. Verify the supplied small-source identities and shared toppar hashes. Supply
+   the exact raw DCD; check its bytes/hash, header, full frame/cell integrity,
+   physical atom order and CONF/OUT linkage. Missing DCD templates contain no
+   invented bytes, header observations or validated runtime time control.
+2. Complete raw and prepared time controls from actual local observations. Each
+   CONF/OUT independently supplies 1000 writes, 2 fs steps, 50000-step cadence,
+   and the 100–100000 ps axis. XSC supplies the final 50000000-step cell only.
+3. Supply a distinct full-axis derivative prepared with the approved external
+   fragment protocol, reviewed PBC audit and named atom/frame-order attestation.
+   The accepted 0SS/r1 derivative may be reused only when its exact bytes and
+   evidence are available and verified. The other eight have no intake-bound
+   prepared-input acceptance in this package.
+4. Materialize embedded absolute paths and final file hashes, retain the exact
+   catalog row, then strict-read the final existing-schema input binding. Follow
+   the package README/helpers; `.template.json` files intentionally fail the
+   production binding reader until completed. No template grants a PBC PASS.
+5. Check **stable UTC/NTP before unattended runs**, storage budget and disjoint
+   input/output roots. Run the supported `production validate` command with the
+   completed binding. No host UTC fix is included in code.
+
+The catalog's `READY` remains local prepared-input readiness for 0SS/r1;
+`NEEDS_AUTHORITY` for 1SS/r1 now means execution verification/preparation is
+pending, and seven `MISSING_FILES` rows mean local DCD absence. All three groups
+remain incomplete. This handoff runs no MD, contact science, QC or aggregation
+and does not authorize Stage 35.
 
 ## Real 0SS/r1 prepared-input checkpoint
 
@@ -314,9 +383,16 @@ export MANIA_DATA_ROOT="$(pwd)/local_md/production_intake"
   --input-binding "$MANIA_DATA_ROOT/prepared_inputs/$CHECKPOINT/production_input_binding.json"
 ```
 
-Its result is `preflight_passed`, with `trajectory_pbc_qc_certified=false`.
+Its historical result is `preflight_passed`, with `trajectory_pbc_qc_certified=false`.
 The binding selects the complete derivative; diagnostic partial files are never
 production inputs. No contacts, Stage 32, aggregation or publication were run.
+
+The nine-row handoff updates the catalog, so the historical command above needs
+the refreshed binding
+`$MANIA_DATA_ROOT/egor_handoff/local_0ss_r1/production_input_binding.json`.
+The original binding remains valid only with its frozen historical catalog row.
+The refreshed local binding reuses accepted input identities; it is not a new
+DCD audit. Portable execution sites must complete their own handoff template.
 
 At this checkpoint, a **5–8 ns-only** real contact test was blocked by software
 selection. The explicit technical-subset interface documented above now supplies
