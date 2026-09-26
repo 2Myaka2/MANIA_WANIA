@@ -1,6 +1,7 @@
 """Operational catalog validation never opens trajectory inputs."""
 
 import csv
+import json
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,7 @@ from mania.production_catalog import (
     ProductionError,
     contained_path,
     load_production_catalog,
+    read_technical_run_manifest,
 )
 
 CATALOG = Path(__file__).parents[1] / "production/dataset_v1/dataset.yaml"
@@ -121,3 +123,109 @@ def test_unknown_selection_and_symlink_escape(tmp_path):
     (root / "escape").symlink_to(tmp_path, target_is_directory=True)
     with pytest.raises(ProductionError, match="escapes"):
         contained_path(root, "escape/file")
+
+
+def technical_payload(**changes):
+    return {
+        "schema_version": "mania.production_technical_run.v0.1",
+        "purpose": "technical_validation",
+        "trajectory_id": EGOR_IDS[0],
+        "start_ns": 5,
+        "end_ns": 8,
+        **changes,
+    }
+
+
+def technical_file(root, **changes):
+    path = root / "technical.json"
+    path.write_text(json.dumps(technical_payload(**changes)))
+    return path
+
+
+@pytest.mark.parametrize("start,end", [(5, 8), (6, 100), (6, 9)])
+def test_technical_interval_inherits_without_mutating_catalog(tmp_path, start, end):
+    selected = load_production_catalog(CATALOG).trajectory(EGOR_IDS[0])
+    before = selected.spec.model_dump()
+    manifest = read_technical_run_manifest(
+        technical_file(tmp_path, start_ns=start, end_ns=end)
+    )
+    effective = manifest.execution_spec(selected)
+    assert effective.identity == selected.spec.identity
+    assert effective.temporal.model_dump() == {
+        **before["temporal"],
+        "production_start_ns": start,
+        "production_end_ns": end,
+    }
+    assert selected.spec.model_dump() == before
+    assert selected.row["production_end_ns"] == "100"
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"start_ns": 4},
+        {"end_ns": 101},
+        {"end_ns": 100},
+        {"end_ns": 5},
+        {"start_ns": 9},
+        {"end_ns": 6},
+        {"start_ns": True},
+        {"end_ns": "8"},
+        {"end_ns": float("nan")},
+        {"end_ns": float("inf")},
+        {"start_ns": None},
+        {"purpose": "production"},
+        {"schema_version": "mania.production_technical_run.v9"},
+        {"trajectory_id": EGOR_IDS[1]},
+        {"trajectory_id": "unknown"},
+        {"trajectory_id": list(EGOR_IDS[:2])},
+        {"trajectory_id": EGOR_IDS[0] + " "},
+        {"frame_stride_ps": 100},
+        {"window_length_ns": 1},
+        {"window_step_ns": 0.5},
+        {"overlap_percent": 0},
+        {"boundary_profile": "mania.window_boundaries.legacy.v1"},
+        {
+            "temporal_policy": {
+                "boundary_profile": "mania.window_boundaries.inclusive.v1"
+            }
+        },
+        {"frame_stride_ps": 200},
+        {"trajectory_ids": list(EGOR_IDS[:2])},
+    ],
+)
+def test_technical_manifest_rejects_invalid_or_extra_controls(tmp_path, changes):
+    selected = load_production_catalog(CATALOG).trajectory(EGOR_IDS[0])
+    with pytest.raises(ValueError):
+        read_technical_run_manifest(technical_file(tmp_path, **changes)).execution_spec(
+            selected
+        )
+
+
+@pytest.mark.parametrize("damage", ["duplicate", "missing", "array"])
+def test_technical_manifest_strict_json(tmp_path, damage):
+    path = technical_file(tmp_path)
+    if damage == "duplicate":
+        path.write_text(path.read_text()[:-1] + ', "end_ns": 9}')
+    elif damage == "missing":
+        payload = technical_payload()
+        del payload["purpose"]
+        path.write_text(json.dumps(payload))
+    else:
+        path.write_text(json.dumps([technical_payload()]))
+    with pytest.raises(ValueError):
+        read_technical_run_manifest(path)
+
+
+def test_technical_interval_cannot_replace_catalog_production(tmp_path):
+    path = catalog_copy(tmp_path)
+
+    def edit(rows):
+        for row in rows:
+            if row["source_group"] == "egor_namd":
+                row["production_end_ns"] = "8"
+                row["nominal_duration_ns"] = "8"
+
+    change_rows(path, edit)
+    with pytest.raises(ProductionError, match="production timing mismatch"):
+        load_production_catalog(path)

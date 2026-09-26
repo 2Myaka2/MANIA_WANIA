@@ -48,6 +48,7 @@ from mania.preprocessing.temporal_policy import (
 )
 from mania.preprocessing.temporal_policy import LEGACY_BOUNDARY_PROFILE as LEGACY
 from mania.preprocessing.temporal_policy import PreprocessingTemporalPolicy
+from mania.production_catalog import TechnicalRunManifest, load_production_catalog
 from mania.replica_aggregation_contract import (
     ReplicaAggregationWindowDefinition,
     build_compatible_replica_aggregation_group,
@@ -437,10 +438,18 @@ def test_f1_and_f2_reject_terminal_profile_substitution(tmp_path, family_name):
 def test_dataset_catalog_explicit_policy_and_unchanged_timing():
     root = Path(__file__).resolve().parents[1] / "production/dataset_v1"
     catalog = yaml.safe_load((root / "dataset.yaml").read_text())
+    assert catalog["dataset_version"] == "1.0"
+    assert catalog["temporal_policy"] == {
+        "schema_version": "mania.preprocessing_temporal_policy.v0.1",
+        "boundary_profile": INCLUSIVE,
+    }
     policy = PreprocessingTemporalPolicy.model_validate(catalog["temporal_policy"])
     assert policy.boundary_profile == INCLUSIVE
     rows = list(csv.DictReader((root / "trajectories.csv").open()))
-    assert len(rows) == 33 and all(r["readiness_status"] != "READY" for r in rows)
+    assert len(rows) == 33
+    assert {r["trajectory_id"] for r in rows if r["readiness_status"] == "READY"} == {
+        "namd_egor_wt_0ss_r1"
+    }
     assert {
         (
             r["production_start_ns"],
@@ -454,6 +463,23 @@ def test_dataset_catalog_explicit_policy_and_unchanged_timing():
         ("5", "100", "200", "2", "1"),
         ("5", "30", "200", "2", "1"),
     }
+    loaded = load_production_catalog(root / "dataset.yaml")
+    selected = loaded.trajectory("namd_egor_wt_0ss_r1")
+    original_spec = selected.spec.model_dump()
+    technical = TechnicalRunManifest(
+        schema_version="mania.production_technical_run.v0.1",
+        purpose="technical_validation",
+        trajectory_id=selected.trajectory_id,
+        start_ns=5,
+        end_ns=8,
+    ).execution_spec(selected)
+    assert technical.temporal.production_start_ns == 5
+    assert technical.temporal.production_end_ns == 8
+    assert selected.spec.model_dump() == original_spec
+    assert selected.spec.temporal.production_start_ns == 5
+    assert selected.spec.temporal.production_end_ns == 100
+    assert [trajectory.row for trajectory in loaded.trajectories] == rows
+    assert loaded.temporal_policy == policy
 
 
 def test_cli_policy_reaches_all_canonical_layers_and_offline_validation(

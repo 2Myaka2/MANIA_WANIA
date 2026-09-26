@@ -21,6 +21,7 @@ from mania.artifact_inventory_io import read_artifact_inventory
 from mania.biological_annotations_io import read_dataset_system_biological_annotations
 from mania.canonical_residue_mapping_io import read_canonical_residue_mapping
 from mania.canonical_window_tables import DatasetCanonicalResidueMappingBinding
+from mania.dataset_identity import DatasetTrajectorySpec
 from mania.dataset_qc_evidence_io import read_replica_hard_qc_evidence
 from mania.dataset_qc_manifest_io import read_dataset_qc_manifest
 from mania.dataset_qc_run import collect_dataset_qc_input_specs, run_dataset_qc
@@ -54,10 +55,12 @@ from mania.production_catalog import (
     CatalogTrajectory,
     ProductionCatalog,
     ProductionError,
+    TechnicalRunManifest,
     contained_path,
     data_root_from_environment,
     load_production_catalog,
     portable_path,
+    read_technical_run_manifest,
 )
 from mania.replica_aggregation_contract import ReplicaAggregationWindowDefinition
 from mania.replica_aggregation_manifest import ReplicaAggregationManifest
@@ -252,19 +255,56 @@ class ProductionPreflight:
     binding: ProductionInputBinding
     paths: dict[str, Path]
     free_bytes: int
+    technical_manifest: TechnicalRunManifest | None = None
+    technical_manifest_sha256: str | None = None
+
+    @property
+    def execution_spec(self) -> DatasetTrajectorySpec:
+        if self.technical_manifest is None:
+            return self.selected.spec
+        return self.technical_manifest.execution_spec(self.selected)
+
+    def technical_context(self) -> dict[str, Any]:
+        if self.technical_manifest is None:
+            return {}
+        return {
+            "purpose": "technical_validation",
+            "production_eligible": False,
+            "technical_manifest": self.technical_manifest.model_dump(mode="json"),
+            "technical_manifest_sha256": self.technical_manifest_sha256,
+            "catalog_spec": self.selected.spec.model_dump(mode="json"),
+            "execution_spec": self.execution_spec.model_dump(mode="json"),
+        }
 
     @property
     def trajectory_root(self) -> Path:
-        return self.output_root / "trajectories" / self.selected.trajectory_id
+        base = self.output_root
+        if self.technical_manifest is not None:
+            base = base / "technical_validation"
+        return base / "trajectories" / self.selected.trajectory_id
+
+    @property
+    def completion_path(self) -> Path:
+        name = (
+            "technical_complete.json"
+            if self.technical_manifest
+            else "science_complete.json"
+        )
+        return self.trajectory_root / name
 
     def request(self) -> dict[str, Any]:
         return {
-            "schema_version": "mania.production_request.v0.1",
+            "schema_version": (
+                "mania.production_technical_request.v0.1"
+                if self.technical_manifest
+                else "mania.production_request.v0.1"
+            ),
             "catalog_version": self.catalog.descriptor["catalog_version"],
             "dataset_version": self.catalog.descriptor["dataset_version"],
             "binding_path": self.binding_path.relative_to(self.data_root).as_posix(),
             "binding_sha256": file_digest(self.binding_path),
             "binding": self.binding.model_dump(mode="json"),
+            **self.technical_context(),
         }
 
     def to_dict(self) -> dict[str, Any]:
@@ -277,6 +317,7 @@ class ProductionPreflight:
             "catalog_readiness": self.selected.row["readiness_status"],
             "temporal_policy": self.catalog.temporal_policy.model_dump(mode="json"),
             "trajectory_pbc_qc_certified": False,
+            **self.technical_context(),
         }
 
 
@@ -341,19 +382,41 @@ def preflight_trajectory(
     output_root: Path,
     *,
     input_binding: Path | None = None,
+    technical_manifest: Path | None = None,
     min_free_bytes: int = 0,
     resume: bool = False,
 ) -> ProductionPreflight:
     catalog = load_production_catalog(catalog_path)
     selected = catalog.trajectory(trajectory_id)
+    technical = None
+    technical_digest = None
+    if technical_manifest is not None:
+        technical_digest = file_digest(technical_manifest)
+        technical = read_technical_run_manifest(technical_manifest)
+        technical.execution_spec(selected)
+        if file_digest(technical_manifest) != technical_digest:
+            raise ProductionError("Technical manifest changed while reading")
     if selected.row["source_group"] != "egor_namd":
         raise ProductionError("This interface currently supports Egor NAMD selections")
     data_root = data_root_from_environment()
     output, free = _output_root(output_root, data_root, min_free_bytes)
     target = output / "trajectories" / selected.trajectory_id
+    if technical is not None:
+        target = (
+            output / "technical_validation" / "trajectories" / selected.trajectory_id
+        )
     _no_symlinks(target)
     if target.exists() and not resume:
         raise ProductionError("Existing trajectory output is protected; use --resume")
+    if technical is None and resume:
+        if target.exists():
+            require_production_science(target)
+        elif (
+            output / "technical_validation" / "trajectories" / trajectory_id
+        ).exists():
+            raise ProductionError(
+                "Technical resume requires the exact same --technical-manifest"
+            )
     if input_binding is None:
         if not resume or not (target / "request.json").is_file():
             raise ProductionError(
@@ -387,14 +450,25 @@ def preflight_trajectory(
             raise ProductionError(f"Stale/wrong bound input: {role}")
         paths[role] = path
     result = ProductionPreflight(
-        catalog, selected, data_root, output, binding_path, binding, paths, free
+        catalog,
+        selected,
+        data_root,
+        output,
+        binding_path,
+        binding,
+        paths,
+        free,
+        technical,
+        technical_digest,
     )
     _validate_controls(result)
     if (
         target.exists()
         and read_strict_json(target / "request.json") != result.request()
     ):
-        raise ProductionError("Changed inputs/catalog/control lineage forbid resume")
+        raise ProductionError(
+            "Changed inputs/catalog/control/technical manifest forbid resume"
+        )
     return result
 
 
@@ -408,7 +482,7 @@ def _manifest(preflight: ProductionPreflight) -> PreprocessingInputManifest:
                 condition=preflight.selected.spec.identity.condition or "",
                 topology_path=p["topology_path"],
                 trajectory_paths=(p["prepared_trajectory"],),
-                dataset_spec=preflight.selected.spec,
+                dataset_spec=preflight.execution_spec,
                 canonical_residue_mapping_path=p["canonical_mapping"],
                 biological_annotation_metadata_path=p["biological_annotations"],
                 molecular_partner_metadata_path=p["partner_metadata"],
@@ -465,9 +539,16 @@ def _science(preflight: ProductionPreflight) -> PreprocessingTemporalExecution:
     if read_strict_json(manifest_path) != _manifest(preflight).model_dump(mode="json"):
         raise ProductionError("Saved execution manifest differs from catalog controls")
     _validate_stage(root, "preprocessing", _preprocessing_mappings(preflight))
+    if preflight.technical_manifest is not None:
+        provenance = read_run_provenance(root / "run_provenance.json")
+        if (
+            provenance.resolved_configuration.get("technical_run")
+            != preflight.technical_context()
+        ):
+            raise ProductionError("Missing or changed technical run provenance")
     temporal = read_preprocessing_temporal_execution(root / "temporal_execution.json")
     if len(temporal.bindings) != 1 or (
-        temporal.bindings[0].dataset_spec != preflight.selected.spec
+        temporal.bindings[0].dataset_spec != preflight.execution_spec
         or temporal.bindings[0].window_plan.boundary_profile
         != preflight.catalog.temporal_policy.boundary_profile
     ):
@@ -494,6 +575,7 @@ def run_production_trajectory(
     output_root: Path,
     *,
     input_binding: Path | None = None,
+    technical_manifest: Path | None = None,
     min_free_bytes: int,
     resume: bool = False,
 ) -> dict[str, Any]:
@@ -504,6 +586,7 @@ def run_production_trajectory(
         trajectory_id,
         output_root,
         input_binding=input_binding,
+        technical_manifest=technical_manifest,
         min_free_bytes=min_free_bytes,
         resume=resume,
     )
@@ -517,10 +600,16 @@ def run_production_trajectory(
         _write_json(manifest_path, _manifest(preflight).model_dump(mode="json"))
         from mania.cli import run_production_preprocessing
 
+        kwargs = (
+            {"technical_context": preflight.technical_context()}
+            if technical_manifest
+            else {}
+        )
         run_production_preprocessing(
             manifest_path,
             root / "preprocessing",
             preflight.selected.spec.identity.condition or "",
+            **kwargs,
         )
         # A source/control change during computation cannot receive a completion claim.
         preflight = preflight_trajectory(
@@ -528,6 +617,7 @@ def run_production_trajectory(
             trajectory_id,
             output_root,
             input_binding=input_binding,
+            technical_manifest=technical_manifest,
             min_free_bytes=0,
             resume=True,
         )
@@ -535,20 +625,76 @@ def run_production_trajectory(
     completion = {
         "request_sha256": _hash_json(preflight.request()),
         "artifacts": _tree_digests(root / "preprocessing"),
+        **(
+            {"purpose": "technical_validation", "production_eligible": False}
+            if technical_manifest
+            else {}
+        ),
     }
-    marker = root / "science_complete.json"
+    marker = preflight.completion_path
     if marker.exists():
         if read_strict_json(marker) != completion:
             raise ProductionError("Changed completed artifacts forbid resume")
     else:
         _write_json(marker, completion)
     return {
-        "status": "science_complete",
+        "status": "technical_complete" if technical_manifest else "science_complete",
         "trajectory_id": trajectory_id,
         "reused": reused,
         "output": str(root),
         "qc_status": "not_evaluated",
+        **preflight.technical_context(),
     }
+
+
+def require_production_science(path: Path) -> None:
+    """Reject technical trees, including relocated preprocessing provenance."""
+    resolved = path.resolve()
+    for root in (resolved, *resolved.parents):
+        if not root.is_dir():
+            continue
+        request = root / "request.json"
+        if (
+            request.is_file()
+            and read_strict_json(request).get("purpose") == "technical_validation"
+        ):
+            raise ProductionError(
+                "Technical validation outputs cannot be production science"
+            )
+        provenance = root / "run_provenance.json"
+        if (
+            provenance.is_file()
+            and read_strict_json(provenance)
+            .get("resolved_configuration", {})
+            .get("technical_run")
+            is not None
+        ):
+            raise ProductionError(
+                "Technical validation outputs cannot be production science"
+            )
+
+
+def validate_production_publication_inputs(manifest_path: Path) -> None:
+    """Apply the technical-run exclusion at the public publication boundary."""
+    from mania.dataset_release_manifest_io import read_dataset_release_export_manifest
+    from mania.dataset_release_workflow import DatasetReleaseError
+
+    def check(value: Any, key: str = "") -> None:
+        if isinstance(value, dict):
+            for name, item in value.items():
+                check(item, name)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                check(item, key.removesuffix("s"))
+        elif isinstance(value, str) and (key == "path" or key.endswith("_path")):
+            require_production_science(manifest_path.parent / value)
+
+    try:
+        require_production_science(manifest_path)
+        control = read_dataset_release_export_manifest(manifest_path)
+        check(control.to_dict())
+    except (OSError, ValueError) as exc:
+        raise DatasetReleaseError(f"Dataset release manifest failed: {exc}") from exc
 
 
 def _accepted_trajectory(

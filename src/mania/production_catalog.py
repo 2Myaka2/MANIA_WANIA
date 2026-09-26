@@ -8,15 +8,17 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, Literal
 
 import yaml
+from pydantic import BaseModel, ConfigDict, Field
 
 from mania.dataset_identity import (
     DatasetTemporalParameters,
     DatasetTrajectoryIdentity,
     DatasetTrajectorySpec,
 )
+from mania.preprocessing.molecular_partner_metadata_io import read_strict_json
 from mania.preprocessing.temporal_policy import (
     INCLUSIVE_BOUNDARY_PROFILE,
     PreprocessingTemporalPolicy,
@@ -53,6 +55,49 @@ _POPULATIONS = {
 
 class ProductionError(ValueError):
     """A production binding, preflight, or completed-stage gate failed."""
+
+
+class TechnicalRunManifest(BaseModel):
+    """Only the interval may differ from the authoritative catalog request."""
+
+    model_config = ConfigDict(extra="forbid", strict=True, frozen=True)
+
+    schema_version: Literal["mania.production_technical_run.v0.1"]
+    purpose: Literal["technical_validation"]
+    trajectory_id: str
+    start_ns: float = Field(ge=0, allow_inf_nan=False)
+    end_ns: float = Field(gt=0, allow_inf_nan=False)
+
+    def execution_spec(self, selected: CatalogTrajectory) -> DatasetTrajectorySpec:
+        if self.trajectory_id != selected.trajectory_id:
+            raise ProductionError(
+                "Technical manifest must reference the selected trajectory_id"
+            )
+        original = selected.spec.temporal
+        if not (
+            original.production_start_ns
+            <= self.start_ns
+            < self.end_ns
+            <= original.production_end_ns
+        ) or (self.start_ns, self.end_ns) == (
+            original.production_start_ns,
+            original.production_end_ns,
+        ):
+            raise ProductionError(
+                "Technical interval must be a strict subset of catalog production"
+            )
+        temporal = DatasetTemporalParameters.model_validate(
+            {
+                **original.model_dump(),
+                "production_start_ns": self.start_ns,
+                "production_end_ns": self.end_ns,
+            }
+        )
+        return DatasetTrajectorySpec(identity=selected.spec.identity, temporal=temporal)
+
+
+def read_technical_run_manifest(path: Path) -> TechnicalRunManifest:
+    return TechnicalRunManifest.model_validate(read_strict_json(path))
 
 
 def portable_path(value: str) -> Path:

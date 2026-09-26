@@ -295,6 +295,10 @@ def build_parser() -> argparse.ArgumentParser:
                 "--trajectory-id", required=True, action=_ProductionSelectionAction,
             )
             command_parser.add_argument("--input-binding", type=Path)
+            command_parser.add_argument(
+                "--technical-manifest", type=Path, action=_ProductionSelectionAction,
+                help="Technical-validation subset manifest; never production science.",
+            )
             if name == "run":
                 command_parser.add_argument("--resume", action="store_true")
 
@@ -1095,6 +1099,8 @@ def _preprocessing_resolved_configuration(
     options: PreprocessingGraphWorkflowOptions,
 ) -> dict[str, object]:
     return {
+        **({"technical_run": args._technical_run_context}
+           if getattr(args, "_technical_run_context", None) is not None else {}),
         "manifest_name": _portable_input_name(options.manifest_path),
         "output_root": ".",
         "run_name": options.run_name,
@@ -2288,6 +2294,7 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
 
 def run_production_preprocessing(
     manifest: Path, output: Path, condition: str,
+    *, technical_context: dict[str, Any] | None = None,
 ) -> None:
     """Use the established workflow with production's explicit, preflighted inputs."""
     from mania.production_catalog import ProductionError
@@ -2301,6 +2308,7 @@ def run_production_preprocessing(
     args = build_parser().parse_args(argv)
     args._command = ("mania", *argv)
     args._prepared_frame_order_preserved = True
+    args._technical_run_context = technical_context
     with contextlib.redirect_stdout(io.StringIO()):
         result = _run_preprocessing_graph_export_command(args)
     if result:
@@ -2657,6 +2665,7 @@ def main() -> None:
                 production_result = preflight_trajectory(
                     args.catalog, args.trajectory_id, args.output_root,
                     input_binding=args.input_binding,
+                    technical_manifest=args.technical_manifest,
                     min_free_bytes=args.min_free_bytes or 0,
                 ).to_dict()
             else:
@@ -2667,6 +2676,7 @@ def main() -> None:
                 production_result = run_production_trajectory(
                     args.catalog, args.trajectory_id, args.output_root,
                     input_binding=args.input_binding,
+                    technical_manifest=args.technical_manifest,
                     min_free_bytes=args.min_free_bytes,
                     resume=args.resume,
                 )
@@ -2681,8 +2691,10 @@ def main() -> None:
     if args.command == "dataset" and args.dataset_command == "publish":
         from mania.dataset_release_run import run_dataset_release
         from mania.dataset_release_workflow import DatasetReleaseError
+        from mania.production_run import validate_production_publication_inputs
 
         try:
+            validate_production_publication_inputs(args.manifest)
             release_result = run_dataset_release(
                 args.manifest, args.output,
                 checksum_mode=args.artifact_checksum_mode, overwrite=args.overwrite,

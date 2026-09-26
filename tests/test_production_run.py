@@ -2,6 +2,7 @@
 
 import csv
 import json
+import shutil
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
@@ -19,7 +20,7 @@ from test_preprocessing_trajectory_contacts_compute_condition import (
     FakeAtom,
     FakeResidue,
 )
-from test_production_catalog import CATALOG, EGOR_IDS
+from test_production_catalog import CATALOG, EGOR_IDS, technical_file
 
 import mania.cli as cli
 import mania.production_run as production
@@ -319,7 +320,8 @@ def test_all_nine_preflight_explicit_rebinding(tmp_path, monkeypatch, trajectory
         "existing",
     ],
 )
-def test_preflight_rejects_before_any_runtime(tmp_path, monkeypatch, damage):
+@pytest.mark.parametrize("technical", [False, True])
+def test_preflight_rejects_before_any_runtime(tmp_path, monkeypatch, damage, technical):
     case = make_case(tmp_path, monkeypatch)
     payload = case.payload
     output = case.output
@@ -364,7 +366,8 @@ def test_preflight_rejects_before_any_runtime(tmp_path, monkeypatch, damage):
     elif damage == "missing":
         case.paths["pbc_evidence"].unlink()
     elif damage == "existing":
-        (output / "trajectories" / case.selected.trajectory_id).mkdir(parents=True)
+        base = output / "technical_validation" if technical else output
+        (base / "trajectories" / case.selected.trajectory_id).mkdir(parents=True)
     case.binding.write_text(json.dumps(payload))
     monkeypatch.setattr(
         cli, "run_production_preprocessing", Mock(side_effect=AssertionError)
@@ -375,9 +378,133 @@ def test_preflight_rejects_before_any_runtime(tmp_path, monkeypatch, damage):
             case.selected.trajectory_id,
             output,
             input_binding=case.binding,
+            technical_manifest=technical_file(tmp_path) if technical else None,
             min_free_bytes=1,
         )
     cli.run_production_preprocessing.assert_not_called()
+
+
+def test_egor_technical_subset_and_identical_resume(tmp_path, monkeypatch):
+    case = make_case(tmp_path, monkeypatch)
+    manifest = technical_file(tmp_path)
+    original_binding = case.binding.read_bytes()
+    runtimes = install_runtime(monkeypatch)
+    result = run_case(case, technical_manifest=manifest)
+    assert result["status"] == "technical_complete"
+    assert result["purpose"] == "technical_validation"
+    assert result["production_eligible"] is False
+    root = Path(result["output"])
+    assert root == case.output / "technical_validation/trajectories" / EGOR_IDS[0]
+    assert (root / "technical_complete.json").is_file()
+    assert not (root / "science_complete.json").exists()
+    assert not (case.output / "trajectories").exists()
+    temporal = read_preprocessing_temporal_execution(
+        root / "preprocessing/temporal_execution.json"
+    )
+    binding = temporal.bindings[0]
+    assert binding.sampling_plan.sampled_frame_count == 16
+    windows = binding.window_plan.windows
+    assert [(w.requested_start_ns, w.requested_end_ns) for w in windows] == [
+        (5, 7),
+        (6, 8),
+    ]
+    assert [w.requested_sample_count for w in windows] == [11, 11]
+    assert [w.sampled_frame_count for w in windows] == [11, 11]
+    assert all(w.right_endpoint_inclusive for w in windows)
+    assert (
+        len(set(windows[0].source_frame_indexes) & set(windows[1].source_frame_indexes))
+        == 6
+    )
+    assert (
+        binding.window_plan.boundary_profile == "mania.window_boundaries.inclusive.v1"
+    )
+    assert binding.dataset_spec.temporal.frame_stride_ps == 200
+    request = json.loads((root / "request.json").read_text())
+    assert request["binding"]["catalog_row"]["production_end_ns"] == "100"
+    assert request["catalog_spec"]["temporal"]["production_end_ns"] == 100
+    assert request["execution_spec"]["temporal"]["production_end_ns"] == 8
+    assert request["technical_manifest_sha256"] == production.file_digest(manifest)
+    assert case.binding.read_bytes() == original_binding
+    before = production._tree_digests(root)
+    assert run_case(case, technical_manifest=manifest, resume=True)["reused"]
+    assert production._tree_digests(root) == before
+    assert len(runtimes) == 1
+    # A normal run still requests all 476 samples in its independent tree.
+    normal = run_case(case)
+    assert normal["status"] == "science_complete"
+    full = read_preprocessing_temporal_execution(
+        Path(normal["output"]) / "preprocessing/temporal_execution.json"
+    )
+    assert full.bindings[0].sampling_plan.sampled_frame_count == 476
+    assert len(full.bindings[0].window_plan.windows) == 94
+    assert production._tree_digests(root) == before
+
+
+@pytest.mark.parametrize(
+    "damage", ["interval", "bytes", "omitted", "saved_request", "provenance"]
+)
+def test_changed_technical_manifest_or_label_forbids_resume(
+    tmp_path, monkeypatch, damage
+):
+    case = make_case(tmp_path, monkeypatch)
+    manifest = technical_file(tmp_path)
+    install_runtime(monkeypatch)
+    root = Path(run_case(case, technical_manifest=manifest)["output"])
+    if damage == "interval":
+        technical_file(tmp_path, end_ns=9)
+    elif damage == "bytes":
+        manifest.write_text(manifest.read_text() + "\n")
+    elif damage == "saved_request":
+        path = root / "request.json"
+        payload = json.loads(path.read_text())
+        payload["technical_manifest"]["end_ns"] = 9
+        path.write_text(json.dumps(payload))
+    elif damage == "provenance":
+        path = root / "preprocessing/run_provenance.json"
+        payload = json.loads(path.read_text())
+        del payload["resolved_configuration"]["technical_run"]
+        path.write_text(json.dumps(payload))
+    before = production._tree_digests(root)
+    monkeypatch.setattr(
+        cli, "run_production_preprocessing", Mock(side_effect=AssertionError)
+    )
+    with pytest.raises(ProductionError, match="[Tt]echnical"):
+        run_case(
+            case,
+            technical_manifest=None if damage == "omitted" else manifest,
+            resume=True,
+        )
+    cli.run_production_preprocessing.assert_not_called()
+    assert production._tree_digests(root) == before
+
+
+@pytest.mark.parametrize(
+    "placement", ["isolated", "output_root", "copied", "preprocessing_only"]
+)
+def test_technical_outputs_cannot_assemble_as_production(
+    tmp_path, monkeypatch, placement
+):
+    case = make_case(tmp_path, monkeypatch)
+    install_runtime(monkeypatch)
+    root = Path(run_case(case, technical_manifest=technical_file(tmp_path))["output"])
+    output = case.output
+    if placement == "output_root":
+        output /= "technical_validation"
+    elif placement in ("copied", "preprocessing_only"):
+        target = output / "trajectories" / case.selected.trajectory_id
+        shutil.copytree(root, target)
+        if placement == "preprocessing_only":
+            (target / "request.json").unlink()
+            # A copied preprocessing tree must also be rejected at publication.
+            with pytest.raises(ProductionError, match="Technical validation"):
+                production.require_production_science(
+                    target / "preprocessing/temporal_execution.json"
+                )
+    with pytest.raises((ProductionError, OSError)):
+        production.assemble_production_group(
+            case.catalog, case.selected.group_id, output
+        )
+    assert not (output / "groups").exists()
 
 
 def test_completed_science_resume_and_manual_qc_independence(tmp_path, monkeypatch):

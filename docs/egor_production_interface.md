@@ -161,6 +161,86 @@ An incomplete/failed preprocessing run cannot be resumed midway or overwritten;
 retain it and use a new output root for a fresh attempt. Changed inputs require
 a new root. No stage completion is inferred from sparse CSV rows.
 
+## Explicit technical subsets
+
+`production validate` and `production run` accept `--technical-manifest FILE`.
+This optional strict JSON control narrows only the selected catalog trajectory's
+execution interval. It does not replace the catalog or its input binding.
+Without the option, production behavior and output layout are unchanged.
+
+The complete v0.1 manifest for the Egor 0SS/r1 5–8 ns technical validation is:
+
+```json
+{
+  "schema_version": "mania.production_technical_run.v0.1",
+  "purpose": "technical_validation",
+  "trajectory_id": "namd_egor_wt_0ss_r1",
+  "start_ns": 5,
+  "end_ns": 8
+}
+```
+
+All five fields are required. Unknown fields, duplicate JSON keys, other schema
+versions/purposes, multiple or mismatched trajectory IDs, booleans, numeric
+strings and nonfinite times are rejected. Start/end must form a positive proper
+subset of the catalog interval: either endpoint may equal its catalog endpoint,
+but the full unchanged interval is forbidden. At least one inherited full window
+must fit. Only `start_ns` and `end_ns` are execution overrides; even redundant
+stride, window, overlap or boundary-policy fields are rejected.
+
+The catalog and binding retain 5–100 ns. Execution inherits 200 ps stride,
+2 ns window length, 1 ns step, 50% duration overlap, and
+`mania.window_boundaries.inclusive.v1`. With all requested source times available,
+5–8 ns selects **16 samples**, with **two inclusive windows [5,7] and [6,8]**,
+**11 expected samples per window**, and **six shared samples**. Missing samples
+retain the existing temporal semantics; the subset option does not synthesize them.
+
+```bash
+mania production validate --catalog production/dataset_v1/dataset.yaml \
+  --trajectory-id namd_egor_wt_0ss_r1 --output-root "$OUTPUT_ROOT" \
+  --input-binding "$INPUT_BINDING" --technical-manifest "$TECHNICAL_MANIFEST"
+
+mania production run --catalog production/dataset_v1/dataset.yaml \
+  --trajectory-id namd_egor_wt_0ss_r1 --output-root "$OUTPUT_ROOT" \
+  --input-binding "$INPUT_BINDING" --technical-manifest "$TECHNICAL_MANIFEST" \
+  --min-free-bytes "$FREE_SPACE_BUDGET"
+
+mania production run --catalog production/dataset_v1/dataset.yaml \
+  --trajectory-id namd_egor_wt_0ss_r1 --output-root "$OUTPUT_ROOT" \
+  --technical-manifest "$TECHNICAL_MANIFEST" \
+  --min-free-bytes "$FREE_SPACE_BUDGET" --resume
+```
+
+The technical manifest is metadata and may live outside `MANIA_DATA_ROOT`, like
+the catalog. Every original input-binding, full-axis time, element, mapping,
+annotation, partner and prepared-input authority check remains mandatory. The
+prepared trajectory must still retain its complete frame/atom order and time axis.
+
+Technical outputs reside at
+`OUTPUT_ROOT/technical_validation/trajectories/TRAJECTORY_ID/`. Their request uses
+`mania.production_technical_request.v0.1` and retains both the catalog spec and
+effective execution spec, the manifest payload, and its original-byte SHA256.
+The request, result, completion marker and preprocessing provenance identify
+`purpose=technical_validation` and `production_eligible=false`. Completion is
+`technical_complete.json`, with result status `technical_complete`; no production
+`science_complete.json` is issued. The preprocessing provenance's `technical_run`
+record preserves the same context when that directory is relocated.
+
+Resume requires the explicit manifest again with identical bytes, including
+whitespace. An identical copy at a different path is acceptable. Changed intervals,
+changed bytes, changed saved controls or changed technical provenance fail without
+rerunning geometry or overwriting evidence. A different technical request requires
+a new output root. A normal production run can coexist in its separate original
+`trajectories/` tree.
+
+`assemble-group` accepts only completed catalog production science and rejects
+technical results, including a technical tree supplied as the output root or
+copied into the production layout. `mania dataset publish` rejects input paths
+inside technical requests or preprocessing trees bearing technical provenance,
+including relocated preprocessing directories. Preserve the complete technical
+provenance with artifacts; isolated CSV rows are not production authority.
+Technical completion supplies no Stage 32 QC decision or publication eligibility.
+
 ## Replica group and QC boundary
 
 Assembly requires all expected catalog replicas to have validated completed
@@ -238,8 +318,9 @@ Its result is `preflight_passed`, with `trajectory_pbc_qc_certified=false`.
 The binding selects the complete derivative; diagnostic partial files are never
 production inputs. No contacts, Stage 32, aggregation or publication were run.
 
-The remaining gate for a **5–8 ns-only** real contact test is software selection:
-catalog v1.1 requires Egor 5–100 ns and the public `run` command exposes no interval
-override. Cropping the prepared file or changing the catalog end to 8 ns would
-violate the current contract. A separate approved interface change is required;
-this checkpoint changes no production Python and does not authorize a full run.
+At this checkpoint, a **5–8 ns-only** real contact test was blocked by software
+selection. The explicit technical-subset interface documented above now supplies
+that selection while catalog v1.1 still requires Egor 5–100 ns. Cropping the
+prepared file or changing the catalog end to 8 ns remains invalid. The interface
+was verified with synthetic runtimes only; no real MD, QC, aggregation or
+publication run is authorized or performed by this software change.
