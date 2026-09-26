@@ -23,12 +23,20 @@ def main(argv: list[str] | None = None) -> int:
             p.add_argument("--threads", required=True, type=int, choices=(1,))
         else:
             p.add_argument("--report-sha256", required=True)
-            p.add_argument("--reviewer", required=True)
-            p.add_argument("--review-note", required=True)
-            p.add_argument("--approve", required=True, action="store_true")
+            p.add_argument("--reviewer")
+            p.add_argument("--review-note")
+            mode = p.add_mutually_exclusive_group(required=True)
+            mode.add_argument("--approve", action="store_true")
+            mode.add_argument("--source-attestation", type=Path)
             p.add_argument("--production-output-root", required=True, type=Path)
     args = vars(parser.parse_args(argv))
     operation = args.pop("operation")
+    if operation == "confirm":
+        if args["source_attestation"] is not None:
+            if args["reviewer"] is not None or args["review_note"] is not None:
+                parser.error("--source-attestation uses only the saved reviewer/note")
+        elif args["reviewer"] is None or args["review_note"] is None:
+            parser.error("--approve requires --reviewer and --review-note")
     # Pin library threads before the optional scientific modules are imported.
     for name in (
         "OMP_NUM_THREADS",

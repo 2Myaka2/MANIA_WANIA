@@ -996,14 +996,35 @@ def confirm(
     authority_package: Path,
     trajectory_id: str,
     report_sha256: str,
-    reviewer: str,
-    review_note: str,
-    approve: bool,
+    reviewer: str | None = None,
+    review_note: str | None = None,
+    approve: bool = False,
+    source_attestation: Path | None = None,
     production_output_root: Path,
     min_free_bytes: int,
     command: list[str] | None = None,
 ) -> dict[str, Any]:
-    require(approve is True, "Explicit --approve confirmation required")
+    attested = None
+    if source_attestation is not None:
+        # Lazy import preserves the standalone legacy two-tool confirmation path.
+        if __package__:
+            from . import production_source_attestation as attestation
+        else:
+            import production_source_attestation as attestation
+        require(
+            approve is False and reviewer is None and review_note is None,
+            "Source attestation uses only the saved reviewer/note, not --approve",
+        )
+        attested = attestation.verify(
+            source_attestation, authority_inventory=package_inventory(authority_package)
+        )
+        reviewer, review_note = attested["reviewer"], attested["review_note"]
+    else:
+        require(approve is True, "Explicit --approve confirmation required")
+    require(
+        isinstance(reviewer, str) and isinstance(review_note, str),
+        "Named reviewer and review note required",
+    )
     require(reviewer.strip() == reviewer and bool(reviewer), "Named reviewer required")
     require(
         review_note.strip() == review_note and bool(review_note), "Review note required"
@@ -1075,6 +1096,8 @@ def confirm(
             and authority["inputs"] == report["inputs"],
             "Package/input authority changed",
         )
+        if attested is not None:
+            attestation.match_report(attested, report, root)
         operation = read_strict_json(out / "operation.json")
         require(
             operation["status"] == "completed" and operation["exit_code"] == 0,
@@ -1117,6 +1140,17 @@ def confirm(
             ("pbc_evidence", "report.json"),
         ):
             files[role] = record(out / name, root)
+        lineage_note = (
+            f"{review_note} Report SHA256: {report_sha256}. "
+            "Explicit external preparation/atom-order review; no final QC decision."
+        )
+        if attested is not None:
+            lineage_note = (
+                f"Source/run correspondence only: {review_note} "
+                f"Source attestation SHA256: {attested['payload_sha256']}. "
+                f"Automatic preparation evidence: report SHA256 {report_sha256}. "
+                "No human review of PBC checks, prepared frames, contacts or QC."
+            )
         lineage = PreparedLineage(
             protocol=PROTOCOL,
             internal_mic=False,
@@ -1128,8 +1162,7 @@ def confirm(
             frame_count=raw_time.dcd.frame_count,
             atom_count=raw_time.dcd.atom_count,
             reviewer=reviewer,
-            note=f"{review_note} Report SHA256: {report_sha256}. "
-            "Explicit external preparation/atom-order review; no final QC decision.",
+            note=lineage_note,
         )
         site = SiteReview(
             schema_version="egor.handoff.site_review.v1",
@@ -1162,6 +1195,13 @@ def confirm(
             confirmed_utc=utc_now(),
             final_qc_decision=None,
         )
+        if attested is not None:
+            confirmation.update(
+                mode="source_attestation",
+                human_approval_scope="source_run_correspondence_only",
+                automatic_preparation_report_sha256=report_sha256,
+                source_attestation=attested,
+            )
         dump(attempt.directory / "confirmation.json", confirmation)
         dump(attempt.directory / "site_review.json", site.model_dump(mode="json"))
         binding_path = attempt.directory / "production_input_binding.json"
@@ -1180,6 +1220,14 @@ def confirm(
             source_identity(out / "report.json").sha256 == report_sha256,
             "Report changed during confirmation",
         )
+        if attested is not None:
+            require(
+                attestation.verify(
+                    source_attestation, authority_inventory=authority["inventory"]
+                )
+                == attested,
+                "Source attestation changed during confirmation",
+            )
     # Materialize the successful binding only after all guards, including clock order.
     attempt.publish(binding_path, binding.model_dump(mode="json"))
     return dict(

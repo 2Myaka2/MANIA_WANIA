@@ -33,28 +33,51 @@ The existing preparation and production containment rules remain unchanged.
 Original source identities are checked again before confirmation and execution,
 including sources replaced after their hard links were created.
 
-Preparation is serial. Any failed check stops the batch before new production.
-After all preparations pass, the launcher shows each result, source/run/PSF paths
-and summary/report locations. It asks once for a nonblank reviewer name, review
-note and explicit `y` approval. No default reviewer or automatic approval exists.
-Each separate existing `confirm` receives its own actual report hash. All
+Before preparation, the launcher displays exactly nine compact source mappings
+(DCD / PSF / CONF / OUT / XSC) and asks once for a nonblank reviewer name,
+review note and explicit `y`. No default reviewer is supplied. The approval says:
+“I confirm that these raw DCD files belong to the listed PSF/run source sets.”
+It covers source/run correspondence only, not PBC checks, prepared frames,
+contacts or QC. `N` or an empty answer stops before preparation.
+
+`OUTPUT_DIR/production/source_attestation.json` persists the exact approval using
+`mania.production_source_attestation.v0.1`. It records the source root, each
+trajectory ID and its five relative source paths, preparation binding paths,
+byte sizes and SHA256 identities, reviewer, note, UTC approval time, repository
+HEAD and authority inventory. A canonical payload SHA256 detects corruption,
+including changed reviewer metadata; it is not a digital signature or identity
+authentication. The launcher computes all hashes. The original approval HEAD
+remains provenance; each later invocation records its actual execution HEAD.
+
+Preparation is serial and retains its existing automatic evidence. Any failed
+check stops the batch before new production. Once every preparation passes,
+`confirm --source-attestation` verifies the saved source bytes and report mapping,
+all required automatic checks, absence of failures, generated controls and lineage.
+It materializes bindings without another prompt. Source approval and automatic
+preparation evidence remain separate in confirmation and lineage records. All
 confirmations and public production preflights must pass before new contacts run.
-DCD has no atom labels; the human still reviews source/run/PSF correspondence.
+The explicit post-preparation `confirm --approve` path remains supported.
 
 Each trajectory has its own `OUTPUT_DIR/production/trajectories/<id>/attempt_NNNN/`
 with a separate production root. Each invocation has a unique directory under
 `OUTPUT_DIR/production/launcher/`, retaining Git SHA, Python/MANIA/MDAnalysis
 versions, source binding, authority inventory, commands, stdout/stderr, exit codes,
-review and final completed count. Preparation logs and full source/prepared
+source-attestation identity and final completed count. Preparation logs and full source/prepared
 identity evidence stay under `.mania_egor/`; retain both trees and raw sources.
 
 Repeating the same two-argument command verifies/reuses completed results via
 `production run --resume`, including strict validation/replay. Corruption or
 changed sources fails; it is never silently accepted. A partial contact run is
 preserved and a fresh numbered attempt is selected. No mid-frame resume exists.
-An unchanged completed preparation declined with `N` can be reviewed again.
-If a later trajectory fails, earlier completed results remain intact and the
-launcher reports N/9 completed. All-completed reruns need no new human approval.
+Every repeat first verifies the saved nine-source attestation; identical inputs
+need no prompt even when preparation or production remains unfinished. A completed
+preparation without a confirmation can continue automatically. If a later
+trajectory fails, earlier completed results remain intact and the launcher
+reports N/9 completed. A source mismatch, missing source, corrupted attestation or
+changed authority stops before preparation and requires new explicit approval.
+The launcher never overwrites an attestation: preserve the old evidence and use
+a fresh OUTPUT_DIR for a revised approved set. Revised non-DCD inputs must also
+satisfy the runtime authority. Declining the first approval saves no attestation.
 
 Disk preflight budgets the pending prepared DCD estimates plus 12 GB on input
 storage, and checks a 12 GB floor on output storage. This is a threshold, not a
@@ -357,7 +380,7 @@ nine-trajectory scientific execution is claimed by the software handoff.
 For acceptance testing only, the advanced launcher option
 `--TEST-0ss-r1-5-8ns` selects raw 0SS/r1 with the existing technical manifest in
 `production/egor_runtime/technical_0ss_r1.json`. It still performs fresh full-axis
-preparation and requires explicit human review. Its output/preparation namespaces
+preparation and requires an early source approval. Its output/preparation namespaces
 are separate (`test_0ss_r1`), and the existing production interface labels its
 16-sample, two-window output ineligible for production aggregation/publication.
 This option is absent from the normal recipient quick-start.

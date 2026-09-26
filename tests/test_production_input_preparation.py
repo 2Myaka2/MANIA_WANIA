@@ -32,6 +32,12 @@ from mania.production_catalog import CATALOG_COLUMNS, load_production_catalog
 from mania.production_run import read_production_input_binding
 
 REPO = Path(__file__).resolve().parents[1]
+ATTESTATION_SPEC = importlib.util.spec_from_file_location(
+    "production_source_attestation", REPO / "tools/production_source_attestation.py"
+)
+attestation = importlib.util.module_from_spec(ATTESTATION_SPEC)
+sys.modules[ATTESTATION_SPEC.name] = attestation
+ATTESTATION_SPEC.loader.exec_module(attestation)
 SPEC = importlib.util.spec_from_file_location(
     "production_input_preparation", REPO / "tools/production_input_preparation.py"
 )

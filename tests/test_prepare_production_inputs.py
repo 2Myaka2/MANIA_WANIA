@@ -7,16 +7,44 @@ import subprocess
 import sys
 import time
 
-from test_production_input_preparation import REPO, build_bundle
+import pytest
+from test_production_input_preparation import REPO, attestation, build_bundle, prep
 
 
-def test_clean_external_prepare_confirm_validate(tmp_path):
+@pytest.mark.parametrize("source_approval", [False, True])
+def test_clean_external_prepare_confirm_validate(tmp_path, source_approval):
     bundle = build_bundle(tmp_path)
     # Copy only the two new tools. No old evidence, prepared artifacts, or helpers.
     tools = tmp_path / "standalone"
     tools.mkdir()
     for name in ("prepare_production_inputs.py", "production_input_preparation.py"):
         shutil.copyfile(REPO / "tools" / name, tools / name)
+    attestation_path = tmp_path / "source_attestation.json"
+    if source_approval:
+        shutil.copyfile(
+            REPO / "tools/production_source_attestation.py",
+            tools / "production_source_attestation.py",
+        )
+        mapping = {}
+        for row in prep.read_strict_json(
+            bundle.package / "authority/source_inventory.json"
+        ):
+            files = dict(
+                row["files"], trajectory_path=dict(path=row["expected_dcd_path"])
+            )
+            mapping[row["trajectory_id"]] = {
+                role: dict(path=files[role]["path"], binding_path=files[role]["path"])
+                for role in attestation.ROLES
+            }
+        attestation.save(
+            attestation_path,
+            source=bundle.root,
+            trajectories=attestation.capture(bundle.root, mapping),
+            reviewer="Synthetic reviewer",
+            review_note="Synthetic sources only",
+            repository_head="a" * 40,
+            authority_inventory=prep.package_inventory(bundle.package),
+        )
     script = tools / "prepare_production_inputs.py"
     common = [
         "--data-root",
@@ -52,10 +80,6 @@ def test_clean_external_prepare_confirm_validate(tmp_path):
         *common,
         "--report-sha256",
         result["report_sha256"],
-        "--reviewer",
-        "Synthetic reviewer",
-        "--review-note",
-        "Synthetic review only",
         "--production-output-root",
         str(bundle.output),
     ]
@@ -64,7 +88,19 @@ def test_clean_external_prepare_confirm_validate(tmp_path):
     # A separate review interval also accommodates this host's observed short
     # cross-process UTC regression. Production clock guards remain unchanged.
     time.sleep(1)
-    confirmed = call([*args, "--approve"])
+    if source_approval:
+        approval = ["--source-attestation", str(attestation_path)]
+        wrong = call([*args, *approval, "--reviewer", "Wrong reviewer"])
+        assert wrong.returncode == 2 and "saved reviewer/note" in wrong.stderr
+    else:
+        approval = [
+            "--approve",
+            "--reviewer",
+            "Synthetic reviewer",
+            "--review-note",
+            "Synthetic review only",
+        ]
+    confirmed = call([*args, *approval])
     assert confirmed.returncode == 0, confirmed.stderr
     outcome = json.loads(confirmed.stdout)
     assert outcome["status"] == "binding_materialized"

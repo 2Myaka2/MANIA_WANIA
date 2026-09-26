@@ -151,9 +151,7 @@ def inline(monkeypatch):
             return prep.confirm(
                 **common,
                 report_sha256=options["report_sha256"],
-                reviewer=options["reviewer"],
-                review_note=options["review_note"],
-                approve=True,
+                source_attestation=Path(options["source_attestation"]),
                 production_output_root=Path(options["production_output_root"]),
             )
         monkeypatch.setenv("MANIA_DATA_ROOT", str(self.data))
@@ -189,25 +187,45 @@ def run_site(site):
 
 
 @pytest.mark.parametrize("reply", ["N", "", "y"])
-def test_one_review_after_nine_preparations(site, inline, monkeypatch, reply, capsys):
-    answer(
-        monkeypatch, ["Synthetic named reviewer", "Reviewed synthetic set only", reply]
+def test_one_source_review_before_nine_preparations(
+    site, inline, monkeypatch, reply, capsys
+):
+    prompts = []
+    replies = iter(
+        ["Synthetic named reviewer", "Reviewed synthetic sources only", reply]
     )
+
+    def respond(prompt):
+        assert inline == []  # No preparation/production before explicit approval.
+        prompts.append(prompt)
+        return next(replies)
+
+    monkeypatch.setattr("builtins.input", respond)
     assert run_site(site) == (0 if reply == "y" else 1)
     labels = [label.split(".")[-1] for label, _ in inline]
-    assert labels[:9] == ["prepare"] * 9
     if reply == "y":
         assert (
             labels == ["prepare"] * 9 + ["confirm"] * 9 + ["validate"] * 9 + ["run"] * 9
         )
     else:
-        assert labels == ["prepare"] * 9
+        assert labels == []
+        assert not list(site.source.rglob("prepared.dcd"))
+    assert prompts == [
+        "Reviewer name (required): ",
+        "Review note (required): ",
+        "Approve these 9 source/run mappings? [y/N]: ",
+    ]
     captured = capsys.readouterr()
     assert all(tid in captured.out for tid in launcher.SELECTIONS)
-    assert "12/12 automatic PASS" in captured.out
+    assert len([line for line in captured.out.splitlines() if " → " in line]) == 9
+    assert launcher.attestation.STATEMENT in captured.out
+    assert "SHA256" not in "".join(prompts)
 
 
-def test_preparation_failure_preserves_evidence_and_stops_batch(site, inline, capsys):
+def test_preparation_failure_preserves_evidence_and_stops_batch(
+    site, inline, monkeypatch, capsys
+):
+    answer(monkeypatch, ["Synthetic reviewer", "Sources only", "y"])
     tid = launcher.SELECTIONS[1]
     path = site.source / "raw/namd_egor_wt_0ss/2/explicit_delivery.dcd"
     # Wrong replica header has a valid DCD with the same atom population.
@@ -221,10 +239,11 @@ def test_preparation_failure_preserves_evidence_and_stops_batch(site, inline, ca
     operations = [launcher.read(p) for p in site.source.rglob("operation.json")]
     assert {o["status"] for o in operations} == {"completed", "failed"}
     assert not list(site.source.rglob("production_input_binding.json"))
+    assert (site.output / "production/source_attestation.json").is_file()
 
 
 @pytest.mark.parametrize("replacement", [False, True])
-def test_input_changed_after_preparation_cannot_be_approved(
+def test_input_changed_during_source_review_cannot_be_approved(
     site, inline, monkeypatch, replacement
 ):
     calls = 0
@@ -242,7 +261,7 @@ def test_input_changed_after_preparation_cannot_be_approved(
 
     monkeypatch.setattr("builtins.input", reply)
     assert run_site(site) == 1
-    assert len(inline) == 9
+    assert len(inline) == 0
     assert not list(site.source.rglob("production_input_binding.json"))
 
 
@@ -268,7 +287,7 @@ def test_completed_reused_and_later_incomplete_attempt_preserved(
     before = {p: p.read_bytes() for p in site.output.rglob("science_complete.json")}
     monkeypatch.setattr(launcher.Commands, "run", original_run)
     inline.clear()
-    answer(monkeypatch, ["Synthetic reviewer", "Fresh attempts reviewed", "y"])
+    monkeypatch.setattr("builtins.input", lambda _: pytest.fail("second prompt"))
     assert run_site(site) == 0
     assert partial.read_text() == "preserve these bytes"
     assert all(p.read_bytes() == value for p, value in before.items())
@@ -279,7 +298,7 @@ def test_completed_reused_and_later_incomplete_attempt_preserved(
     assert "attempt_0002" in new_run[new_run.index("--output-root") + 1]
 
 
-def test_declined_preparation_reused_but_requires_new_explicit_approval(
+def test_declined_source_review_requires_new_explicit_approval(
     site, inline, monkeypatch
 ):
     answer(monkeypatch, ["Synthetic reviewer", "Not approved", "N"])
@@ -287,14 +306,14 @@ def test_declined_preparation_reused_but_requires_new_explicit_approval(
     inline.clear()
     answer(monkeypatch, ["Synthetic reviewer", "Reviewed all unchanged reports", "y"])
     assert run_site(site) == 0
-    assert not any(label.endswith(".prepare") for label, _ in inline)
+    assert sum(label.endswith(".prepare") for label, _ in inline) == 9
     assert sum(label.endswith(".confirm") for label, _ in inline) == 9
 
 
 def test_no_default_reviewer(site, inline, monkeypatch):
     answer(monkeypatch, ["", "Synthetic note", "y"])
     assert run_site(site) == 1
-    assert len(inline) == 9
+    assert len(inline) == 0
 
 
 def test_completed_reuse_dispatches_actual_strict_validator(tmp_path, monkeypatch):

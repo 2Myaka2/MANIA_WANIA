@@ -1,4 +1,4 @@
-"""Run the nine reviewed Egor trajectories with one explicit batch review."""
+"""Run the nine reviewed Egor trajectories with one early source/run attestation."""
 
 from __future__ import annotations
 
@@ -26,8 +26,10 @@ for _name in (
 
 if __package__:
     from . import production_input_preparation as prep
+    from . import production_source_attestation as attestation
 else:
     import production_input_preparation as prep
+    import production_source_attestation as attestation
 
 REPO = Path(__file__).resolve().parents[1]
 RUNTIME = REPO / "production/egor_runtime"
@@ -57,10 +59,22 @@ def discover(source: Path, runtime: Path, selections: tuple[str, ...]) -> dict:
     rows = {r["trajectory_id"]: r for r in inventory}
     paths: dict[str, dict | None] = {}
     by_trajectory = {}
+    mapping = {}
     errors = []
     shared = read(runtime / "authority/shared_toppar.json")["sources"]
     for tid in selections:
         row = rows[tid]
+        selected = dict(row["files"])
+        selected["trajectory_path"] = dict(path=row["expected_dcd_path"])
+        mapping[tid] = {
+            role: dict(
+                path=Path(
+                    *prep.portable_path(selected[role]["path"]).parts[1:]
+                ).as_posix(),
+                binding_path=selected[role]["path"],
+            )
+            for role in attestation.ROLES
+        }
         records = [
             *row["files"].values(),
             *row.get("parameter_references", []),
@@ -82,7 +96,7 @@ def discover(source: Path, runtime: Path, selections: tuple[str, ...]) -> dict:
                     f" {path} (authority: {name}; run: {row['declared_dcd_filename']})"
                 )
     prep.require(not errors, "Source discovery failed:\n" + "\n".join(errors))
-    return dict(paths=paths, by_trajectory=by_trajectory)
+    return dict(paths=paths, by_trajectory=by_trajectory, mapping=mapping)
 
 
 def bind_sources(source: Path, data: Path, runtime: Path, discovery: dict) -> dict:
@@ -239,7 +253,7 @@ def plan_attempt(output: Path, data: Path, tid: str, technical: bool) -> dict:
     for path in (plan["result"], plan["marker"], plan["binding"]):
         prep.no_symlinks(path)
     if attempts and not plan["marker"].is_file():
-        # A completed preparation declined before confirmation can be reviewed again.
+        # A completed preparation can continue through automatic confirmation.
         pending = (
             (plan["result"] / "complete.json").is_file()
             and not (plan["result"] / "confirmation").exists()
@@ -264,13 +278,17 @@ def report_for(plan: dict, data: Path) -> dict:
     complete = read(result / "complete.json")
     prep.check_records(complete, data)
     report = read(result / "report.json")
+    failed_checks = sorted(
+        name for name in prep.AUTOMATIC_CHECKS if report["checks"].get(name) is not True
+    )
     prep.require(
         report["trajectory_id"] == plan["tid"]
         and report["status"] == "pending_review"
         and report["failures"] == []
         and set(report["checks"]) == prep.AUTOMATIC_CHECKS
         and all(value is True for value in report["checks"].values()),
-        f"{plan['tid']}: automatic preparation checks failed",
+        f"{plan['tid']}: automatic preparation checks failed: {failed_checks}; "
+        f"failures: {report['failures']}; status: {report['status']}",
     )
     prep.check_records(report["inputs"], data)
     prep.check_records(report["outputs"], data)
@@ -372,7 +390,22 @@ def locked_batch(
     try:
         meta = environment(REPO)
         prep.dump(invocation / "environment.json", meta)
-        discovery = discover(source, runtime, selections)
+        phase = "source_attestation"
+        attestation_path = output / "source_attestation.json"
+        prep.no_symlinks(attestation_path)
+        try:
+            discovery = discover(source, runtime, selections)
+        except ValueError as exc:
+            raise ValueError(f"{exc}; new explicit source approval required") from exc
+        authority_inventory = prep.package_inventory(runtime)
+        if attestation_path.exists():
+            attestation.verify(
+                attestation_path,
+                authority_inventory=authority_inventory,
+                source=source,
+                mapping=discovery["mapping"],
+            )
+            print("Saved source attestation verified; no human prompt.", flush=True)
         plans = [plan_attempt(output, data, tid, technical) for tid in selections]
         estimate = 0
         for plan in plans:
@@ -406,9 +439,75 @@ def locked_batch(
             f"Preflight PASS: {len(selections)} source sets; Git {meta['git_sha']}.",
             flush=True,
         )
+        if not attestation_path.exists():
+            print(
+                "\nSource/run correspondence (DCD / PSF / CONF / OUT / XSC):",
+                flush=True,
+            )
+            for tid, roles in discovery["mapping"].items():
+                system, replica = tid.split("_")[-2:]
+                print(
+                    f"{system.upper()} {replica} ({tid}) → "
+                    + " / ".join(roles[role]["path"] for role in attestation.ROLES),
+                    flush=True,
+                )
+            print("Computing exact source identities before approval...", flush=True)
+            identities = attestation.capture(source, discovery["mapping"])
+            print(attestation.STATEMENT, flush=True)
+            print(
+                "This approves source/run correspondence only. It does not certify "
+                "PBC checks, prepared frames, contacts or QC.",
+                flush=True,
+            )
+            reviewer = input("Reviewer name (required): ").strip()
+            note = input("Review note (required): ").strip()
+            answer = input(
+                f"Approve these {len(selections)} source/run mappings? [y/N]: "
+            ).strip()
+            prep.dump(
+                invocation / "source_review.json",
+                dict(
+                    reviewer=reviewer,
+                    review_note=note,
+                    answer=answer,
+                    scope="source_run_correspondence_only",
+                    utc=prep.utc_now(),
+                ),
+            )
+            prep.require(
+                answer.lower() == "y", "Approval declined; no preparation started"
+            )
+            prep.require(
+                bool(reviewer) and bool(note), "Named reviewer and review note required"
+            )
+            prep.require(
+                attestation.capture(source, discovery["mapping"]) == identities,
+                "Sources changed during review; new explicit source approval required",
+            )
+            attestation.save(
+                attestation_path,
+                source=source,
+                trajectories=identities,
+                reviewer=reviewer,
+                review_note=note,
+                repository_head=meta["git_sha"],
+                authority_inventory=authority_inventory,
+            )
+        attestation_record = prep.source_identity(attestation_path).model_dump()
+        prep.dump(invocation / "source_attestation_identity.json", attestation_record)
+
+        def verify_approval() -> None:
+            prep.require(
+                prep.source_identity(attestation_path).model_dump()
+                == attestation_record,
+                "Source attestation changed during batch; "
+                "new explicit approval required",
+            )
+
         pending = []
         for plan in plans:
             current, phase = plan["tid"], "prepare"
+            verify_approval()
             if plan["reuse"]:
                 verify_sources(source, snapshot, discovery["by_trajectory"][current])
                 outcome = commands.run(
@@ -451,73 +550,19 @@ def locked_batch(
             plan.update(report_for(plan, data))
             pending.append(plan)
         if pending:
-            phase, current = "human_review", "batch"
-            print("\nReview the entire selected set before approving:", flush=True)
-            for plan in plans:
-                tid = plan["tid"]
-                if plan["reuse"]:
-                    print(f"{tid}: validated completed result reused.", flush=True)
-                    continue
-                report = plan["report"]
-                e = report["evidence"]
-                print(
-                    f"{tid}: 12/12 automatic PASS; {e['frame_count']} frames; "
-                    f"{e['atom_count']} atoms; {e['scientific_time_bounds_ps']} ps.\n"
-                    f"  Summary: {plan['result'] / 'summary.txt'}\n"
-                    f"  Report: {plan['result'] / 'report.json'}\n"
-                    f"  Raw: {report['inputs']['trajectory_path']['path']}\n"
-                    f"  PSF: {report['inputs']['topology_path']['path']}\n"
-                    f"  CONF/OUT: {report['inputs']['config_path']['path']} / "
-                    f"{report['inputs']['log_path']['path']}",
-                    flush=True,
-                )
-            print(
-                "Automatic checks: " + ", ".join(sorted(prep.AUTOMATIC_CHECKS)),
-                flush=True,
-            )
-            print(
-                "DCD has no atom labels. Review source/run/PSF correspondence and "
-                "each summary/report. Automatic PASS is not human review or final QC.",
-                flush=True,
-            )
-            reviewer = input("Reviewer name (required): ").strip()
-            note = input("Review note (required): ").strip()
-            answer = input(
-                f"Approve this displayed {len(plans)}-trajectory set? [y/N]: "
-            ).strip()
-            prep.dump(
-                invocation / "review.json",
-                dict(
-                    reviewer=reviewer,
-                    note=note,
-                    answer=answer,
-                    selections=list(selections),
-                    reports={p["tid"]: p["sha256"] for p in pending},
-                    reused=completed,
-                    utc=prep.utc_now(),
-                ),
-            )
-            prep.require(
-                answer.lower() == "y", "Approval declined; no new production started"
-            )
-            prep.require(
-                bool(reviewer) and bool(note), "Named reviewer and review note required"
-            )
             phase = "confirm"
             verify_sources(source, snapshot, list(discovery["paths"]))
             for plan in pending:
                 current = plan["tid"]
+                verify_approval()
                 commands.run(
                     f"{current}.confirm",
                     [
                         *preparation_command(plan, data, "confirm", minimum),
                         "--report-sha256",
                         plan["sha256"],
-                        "--reviewer",
-                        reviewer,
-                        "--review-note",
-                        note,
-                        "--approve",
+                        "--source-attestation",
+                        str(attestation_path),
                         "--production-output-root",
                         str(plan["production"]),
                     ],
@@ -537,6 +582,7 @@ def locked_batch(
             phase = "run"
             for plan in pending:
                 current = plan["tid"]
+                verify_approval()
                 verify_sources(source, snapshot, discovery["by_trajectory"][current])
                 print(
                     f"{current}: production running; "

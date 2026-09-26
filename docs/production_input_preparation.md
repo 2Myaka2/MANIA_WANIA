@@ -3,13 +3,16 @@
 `tools/prepare_production_inputs.py` prepares **one explicitly selected** Egor
 trajectory and, in a separate operation, materializes its reviewed production
 binding. Use the installed MANIA environment with its existing optional
-MDAnalysis dependency and the two adjacent tool files from this checkout.
+MDAnalysis dependency and the adjacent tool files from this checkout.
 No new dependency, catalog edit or manual JSON editing is needed.
 
 The normal recipient uses the [Russian quick-start](egor_handoff_quickstart_ru.md):
 `./run_egor_all.sh EGOR_DATA_DIR OUTPUT_DIR` selects all nine Egor trajectories,
-invokes this tool independently for each, displays all summaries, collects one
-named explicit approval, and supplies each report's actual hash automatically.
+displays the nine exact source mappings and collects one named explicit approval
+before preparing any trajectory. It persists their exact source attestation,
+invokes preparation independently for each, then supplies each report's actual
+hash and the saved source attestation for automatic binding. Identical repeat
+launches verify the attestation and require no prompt, including unfinished batches.
 The commands below document the lower-level interface for technical inspection;
 they are not extra recipient steps.
 
@@ -100,13 +103,31 @@ the referenced per-frame evidence. No production binding exists yet.
 
 ## Confirm and materialize the binding
 
-A reviewer must check the raw DCD's correspondence to the PSF and selected run,
-the report, and the limitations. DCD has no atom labels: indexed raw-to-prepared
+The normal launcher obtains source/run correspondence approval before preparation.
+It passes `--source-attestation PATH` instead of `--approve`, `--reviewer` and
+`--review-note`. These modes are mutually exclusive; an attestation-mode caller
+cannot substitute a different reviewer or note. The versioned manifest records
+all five raw source identities per trajectory, exact relative source and binding
+paths, reviewer/note/time, repository HEAD and authority inventory, plus a
+canonical payload digest. It is an external attestation, not authentication.
+
+Automatic binding rechecks every attested source and the selected report mapping,
+all required automatic preparation checks, absence of failures, successful
+operation, generated controls, artifact hashes and existing lineage integrity.
+Confirmation embeds the immutable source approval separately from the automatic
+report digest. Lineage explicitly identifies source-only review and automatic
+preparation evidence; it never claims human inspection of PBC or prepared frames.
+Changed or missing sources require a fresh explicit approval in a new output
+namespace, preserving the original evidence. No failed check can be overridden.
+
+For compatibility, explicit post-preparation confirmation remains available.
+In that mode a reviewer checks the raw DCD's correspondence to the PSF and selected
+run, the report, and the limitations. DCD has no atom labels: indexed raw-to-prepared
 lineage cannot independently prove the original raw atom order matches the PSF.
 Automatic technical checks never claim that a human performed this review.
 
-The launcher supplies the SHA256 of **that** displayed preparation automatically.
-For a deliberate lower-level invocation only, after inspecting its report:
+The launcher supplies each actual report SHA256 automatically, with no second
+human prompt. For the legacy lower-level invocation, after inspecting the report:
 
 ```bash
 python tools/prepare_production_inputs.py confirm \
@@ -159,7 +180,7 @@ RESULT_ROOT/
   operation.json            exact command, timestamps, elapsed duration, exit code
   complete.json             hashes of the completed report and operation evidence
   confirmation/
-    confirmation.json       named explicit approval bound to all hashes
+    confirmation.json       approval scope and automatic evidence bound to hashes
     site_review.json        existing strict site-review contract
     production_input_binding.json
     commands.json           concrete existing production validate/run commands
@@ -183,7 +204,8 @@ preparation requires a fresh preparation/binding at the final site paths.
 The focused software tests use tiny synthetic DCDs with four complete frames, distinct system
 atom counts and partner indexes, and all nine selections. They exercise actual
 fragment preparation and reopened reading, explicit confirmation, strict binding,
-public `production validate`, and a standalone copy of only the two tool files.
+public `production validate`, and standalone tool copies (two for legacy review,
+three for source attestation).
 They do not use real trajectories, historical directories or runtime developer
 hooks. Failure tests cover changed identity, missing approval, partial writes,
 output protection, disk/path guards and clock order. Existing NAMD and production
@@ -193,5 +215,7 @@ this scoped task.
 The earlier real recipient check at `aa24f04900767b04f1303be18fe867e879feea93`
 retained all 1000 frames and 409865 atoms of 0SS/r1, with all 12 automatic checks
 passing. Its human approval applies only to that earlier report. New preparation
-always needs a new named review. Full 1SS preparation/contact execution and full
+requires either the legacy named review or an exact matching
+source attestation plus all automatic checks; the earlier report review cannot
+substitute for source attestation. Full 1SS preparation/contact execution and full
 5–100 ns nine-run production are not established by the short 0SS acceptance test.
