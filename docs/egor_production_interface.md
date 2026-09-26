@@ -275,10 +275,32 @@ separate gates; historical pilot acceptance cannot supply them by analogy.
 
 ## Nine-trajectory handoff
 
-The complete package is
+The final delivery is bound to committed repository HEAD
+`e3f69331f95a42d1da5d0cf7d6a60646421b8079`:
+`local_md/egor_FINAL_e3f69331f95a.zip`, with persistent verification evidence in
+`local_md/egor_FINAL_e3f69331f95a/`. Send that commit, the final ZIP, and the
+[Russian quick-start](egor_handoff_quickstart_ru.md). Extract the ZIP's
+`egor_handoff/` directly under `MANIA_DATA_ROOT`; no tracked-file overlay is
+required. The original 79 package files are retained, with deterministic
+packaging/provenance updates and one added quick-start (80 files total).
+
+The packaged catalog and reference interface document are read directly from
+the recorded commit. This working-tree documentation update is not substituted
+for that committed reference. The new quick-start is an explicitly identified
+delivery supplement, also present in the ZIP; it is not claimed to exist at
+the recorded commit. The package README and manifest record this distinction.
+Historical catalog `source_head`/`catalog_basis_head` fields retain their original
+meaning; `repository_head` in the handoff manifest identifies the required
+checkout. `HANDOFF_FILES.sha256` covers every other package file, and the sibling
+ZIP checksum covers the complete archive. Helpers, controls, templates and
+scientific authority remain unchanged. Final checks read controls and templates,
+verify checksums and HEAD identity, and exercise synthetic helper guards only.
+No MD, QC or aggregation is run during packaging.
+
+The earlier authority-build evidence remains at
 `local_md/egor_9_trajectory_handoff_20260926/handoff/`; the evidence ZIP is
 `local_md/egor_9_trajectory_handoff_20260926.zip`.
-Send the ZIP, including `handoff/handoff_manifest.json`, `handoff/README.md`,
+That historical ZIP includes `handoff/handoff_manifest.json`, `handoff/README.md`,
 `handoff/catalog/`, `handoff/controls/`, `handoff/authority/`, `handoff/templates/`
 and the strict verification/materialization helpers. The archive inventory lists
 every exact file and checksum. Raw inputs, toppar and prepared DCDs are referenced
