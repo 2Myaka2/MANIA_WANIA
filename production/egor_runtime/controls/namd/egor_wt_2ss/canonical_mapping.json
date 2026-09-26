@@ -1,0 +1,6219 @@
+{
+  "schema_version": "mania.canonical_residue_mapping.v0.1",
+  "kind": "mania_canonical_residue_mapping",
+  "canonical_reference_id": "uniprotkb:O95436-1:sequence-v3",
+  "canonical_reference_sequence_sha256": "33ce6c59e28a7373fce51debe32cec8d891ef691c2e77a0655a74040da25eef9",
+  "mapping_count": 690,
+  "mappings": [
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "1",
+      "source_resname": "MET",
+      "canonical_residue_number": 1,
+      "canonical_resname": "MET",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "10",
+      "source_resname": "ALA",
+      "canonical_residue_number": 10,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "100",
+      "source_resname": "ARG",
+      "canonical_residue_number": 100,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "101",
+      "source_resname": "LEU",
+      "canonical_residue_number": 101,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "102",
+      "source_resname": "ILE",
+      "canonical_residue_number": 102,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "103",
+      "source_resname": "LEU",
+      "canonical_residue_number": 103,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "104",
+      "source_resname": "LEU",
+      "canonical_residue_number": 104,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "105",
+      "source_resname": "LEU",
+      "canonical_residue_number": 105,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "106",
+      "source_resname": "GLY",
+      "canonical_residue_number": 106,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "107",
+      "source_resname": "PHE",
+      "canonical_residue_number": 107,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "108",
+      "source_resname": "LEU",
+      "canonical_residue_number": 108,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "109",
+      "source_resname": "TYR",
+      "canonical_residue_number": 109,
+      "canonical_resname": "TYR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "11",
+      "source_resname": "GLN",
+      "canonical_residue_number": 11,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "110",
+      "source_resname": "PHE",
+      "canonical_residue_number": 110,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "111",
+      "source_resname": "PHE",
+      "canonical_residue_number": 111,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "112",
+      "source_resname": "VAL",
+      "canonical_residue_number": 112,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "113",
+      "source_resname": "CYS",
+      "canonical_residue_number": 113,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "114",
+      "source_resname": "SER",
+      "canonical_residue_number": 114,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "115",
+      "source_resname": "LEU",
+      "canonical_residue_number": 115,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "116",
+      "source_resname": "ASP",
+      "canonical_residue_number": 116,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "117",
+      "source_resname": "ILE",
+      "canonical_residue_number": 117,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "118",
+      "source_resname": "LEU",
+      "canonical_residue_number": 118,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "119",
+      "source_resname": "SER",
+      "canonical_residue_number": 119,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "12",
+      "source_resname": "PRO",
+      "canonical_residue_number": 12,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "120",
+      "source_resname": "SER",
+      "canonical_residue_number": 120,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "121",
+      "source_resname": "ALA",
+      "canonical_residue_number": 121,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "122",
+      "source_resname": "PHE",
+      "canonical_residue_number": 122,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "123",
+      "source_resname": "GLN",
+      "canonical_residue_number": 123,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "124",
+      "source_resname": "LEU",
+      "canonical_residue_number": 124,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "125",
+      "source_resname": "VAL",
+      "canonical_residue_number": 125,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "126",
+      "source_resname": "GLY",
+      "canonical_residue_number": 126,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "127",
+      "source_resname": "GLY",
+      "canonical_residue_number": 127,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "128",
+      "source_resname": "LYS",
+      "canonical_residue_number": 128,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "129",
+      "source_resname": "MET",
+      "canonical_residue_number": 129,
+      "canonical_resname": "MET",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "13",
+      "source_resname": "ASN",
+      "canonical_residue_number": 13,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "130",
+      "source_resname": "ALA",
+      "canonical_residue_number": 130,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "131",
+      "source_resname": "GLY",
+      "canonical_residue_number": 131,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "132",
+      "source_resname": "GLN",
+      "canonical_residue_number": 132,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "133",
+      "source_resname": "PHE",
+      "canonical_residue_number": 133,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "134",
+      "source_resname": "PHE",
+      "canonical_residue_number": 134,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "135",
+      "source_resname": "SER",
+      "canonical_residue_number": 135,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "136",
+      "source_resname": "ASN",
+      "canonical_residue_number": 136,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "137",
+      "source_resname": "SER",
+      "canonical_residue_number": 137,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "138",
+      "source_resname": "SER",
+      "canonical_residue_number": 138,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "139",
+      "source_resname": "ILE",
+      "canonical_residue_number": 139,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "14",
+      "source_resname": "PRO",
+      "canonical_residue_number": 14,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "140",
+      "source_resname": "MET",
+      "canonical_residue_number": 140,
+      "canonical_resname": "MET",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "141",
+      "source_resname": "SER",
+      "canonical_residue_number": 141,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "142",
+      "source_resname": "ASN",
+      "canonical_residue_number": 142,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "143",
+      "source_resname": "PRO",
+      "canonical_residue_number": 143,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "144",
+      "source_resname": "LEU",
+      "canonical_residue_number": 144,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "145",
+      "source_resname": "LEU",
+      "canonical_residue_number": 145,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "146",
+      "source_resname": "GLY",
+      "canonical_residue_number": 146,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "147",
+      "source_resname": "LEU",
+      "canonical_residue_number": 147,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "148",
+      "source_resname": "VAL",
+      "canonical_residue_number": 148,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "149",
+      "source_resname": "ILE",
+      "canonical_residue_number": 149,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "15",
+      "source_resname": "ASP",
+      "canonical_residue_number": 15,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "150",
+      "source_resname": "GLY",
+      "canonical_residue_number": 150,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "151",
+      "source_resname": "VAL",
+      "canonical_residue_number": 151,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "152",
+      "source_resname": "LEU",
+      "canonical_residue_number": 152,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "153",
+      "source_resname": "VAL",
+      "canonical_residue_number": 153,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "154",
+      "source_resname": "THR",
+      "canonical_residue_number": 154,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "155",
+      "source_resname": "VAL",
+      "canonical_residue_number": 155,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "156",
+      "source_resname": "LEU",
+      "canonical_residue_number": 156,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "157",
+      "source_resname": "VAL",
+      "canonical_residue_number": 157,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "158",
+      "source_resname": "GLN",
+      "canonical_residue_number": 158,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "159",
+      "source_resname": "SER",
+      "canonical_residue_number": 159,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "16",
+      "source_resname": "LYS",
+      "canonical_residue_number": 16,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "160",
+      "source_resname": "SER",
+      "canonical_residue_number": 160,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "161",
+      "source_resname": "SER",
+      "canonical_residue_number": 161,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "162",
+      "source_resname": "THR",
+      "canonical_residue_number": 162,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "163",
+      "source_resname": "SER",
+      "canonical_residue_number": 163,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "164",
+      "source_resname": "THR",
+      "canonical_residue_number": 164,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "165",
+      "source_resname": "SER",
+      "canonical_residue_number": 165,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "166",
+      "source_resname": "ILE",
+      "canonical_residue_number": 166,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "167",
+      "source_resname": "VAL",
+      "canonical_residue_number": 167,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "168",
+      "source_resname": "VAL",
+      "canonical_residue_number": 168,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "169",
+      "source_resname": "SER",
+      "canonical_residue_number": 169,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "17",
+      "source_resname": "TYR",
+      "canonical_residue_number": 17,
+      "canonical_resname": "TYR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "170",
+      "source_resname": "MET",
+      "canonical_residue_number": 170,
+      "canonical_resname": "MET",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "171",
+      "source_resname": "VAL",
+      "canonical_residue_number": 171,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "172",
+      "source_resname": "SER",
+      "canonical_residue_number": 172,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "173",
+      "source_resname": "SER",
+      "canonical_residue_number": 173,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "174",
+      "source_resname": "SER",
+      "canonical_residue_number": 174,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "175",
+      "source_resname": "LEU",
+      "canonical_residue_number": 175,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "176",
+      "source_resname": "LEU",
+      "canonical_residue_number": 176,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "177",
+      "source_resname": "THR",
+      "canonical_residue_number": 177,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "178",
+      "source_resname": "VAL",
+      "canonical_residue_number": 178,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "179",
+      "source_resname": "ARG",
+      "canonical_residue_number": 179,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "18",
+      "source_resname": "LEU",
+      "canonical_residue_number": 18,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "180",
+      "source_resname": "ALA",
+      "canonical_residue_number": 180,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "181",
+      "source_resname": "ALA",
+      "canonical_residue_number": 181,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "182",
+      "source_resname": "ILE",
+      "canonical_residue_number": 182,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "183",
+      "source_resname": "PRO",
+      "canonical_residue_number": 183,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "184",
+      "source_resname": "ILE",
+      "canonical_residue_number": 184,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "185",
+      "source_resname": "ILE",
+      "canonical_residue_number": 185,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "186",
+      "source_resname": "MET",
+      "canonical_residue_number": 186,
+      "canonical_resname": "MET",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "187",
+      "source_resname": "GLY",
+      "canonical_residue_number": 187,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "188",
+      "source_resname": "ALA",
+      "canonical_residue_number": 188,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "189",
+      "source_resname": "ASN",
+      "canonical_residue_number": 189,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "19",
+      "source_resname": "GLU",
+      "canonical_residue_number": 19,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "190",
+      "source_resname": "ILE",
+      "canonical_residue_number": 190,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "191",
+      "source_resname": "GLY",
+      "canonical_residue_number": 191,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "192",
+      "source_resname": "THR",
+      "canonical_residue_number": 192,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "193",
+      "source_resname": "SER",
+      "canonical_residue_number": 193,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "194",
+      "source_resname": "ILE",
+      "canonical_residue_number": 194,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "195",
+      "source_resname": "THR",
+      "canonical_residue_number": 195,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "196",
+      "source_resname": "ASN",
+      "canonical_residue_number": 196,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "197",
+      "source_resname": "THR",
+      "canonical_residue_number": 197,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "198",
+      "source_resname": "ILE",
+      "canonical_residue_number": 198,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "199",
+      "source_resname": "VAL",
+      "canonical_residue_number": 199,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "2",
+      "source_resname": "ALA",
+      "canonical_residue_number": 2,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "20",
+      "source_resname": "GLY",
+      "canonical_residue_number": 20,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "200",
+      "source_resname": "ALA",
+      "canonical_residue_number": 200,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "201",
+      "source_resname": "LEU",
+      "canonical_residue_number": 201,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "202",
+      "source_resname": "MET",
+      "canonical_residue_number": 202,
+      "canonical_resname": "MET",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "203",
+      "source_resname": "GLN",
+      "canonical_residue_number": 203,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "204",
+      "source_resname": "VAL",
+      "canonical_residue_number": 204,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "205",
+      "source_resname": "GLY",
+      "canonical_residue_number": 205,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "206",
+      "source_resname": "ASP",
+      "canonical_residue_number": 206,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "207",
+      "source_resname": "ARG",
+      "canonical_residue_number": 207,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "208",
+      "source_resname": "SER",
+      "canonical_residue_number": 208,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "209",
+      "source_resname": "GLU",
+      "canonical_residue_number": 209,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "21",
+      "source_resname": "ALA",
+      "canonical_residue_number": 21,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "210",
+      "source_resname": "PHE",
+      "canonical_residue_number": 210,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "211",
+      "source_resname": "ARG",
+      "canonical_residue_number": 211,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "212",
+      "source_resname": "ARG",
+      "canonical_residue_number": 212,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "213",
+      "source_resname": "ALA",
+      "canonical_residue_number": 213,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "214",
+      "source_resname": "PHE",
+      "canonical_residue_number": 214,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "215",
+      "source_resname": "ALA",
+      "canonical_residue_number": 215,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "216",
+      "source_resname": "GLY",
+      "canonical_residue_number": 216,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "217",
+      "source_resname": "ALA",
+      "canonical_residue_number": 217,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "218",
+      "source_resname": "THR",
+      "canonical_residue_number": 218,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "219",
+      "source_resname": "VAL",
+      "canonical_residue_number": 219,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "22",
+      "source_resname": "ALA",
+      "canonical_residue_number": 22,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "220",
+      "source_resname": "HSD",
+      "canonical_residue_number": 220,
+      "canonical_resname": "HIS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "221",
+      "source_resname": "ASP",
+      "canonical_residue_number": 221,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "222",
+      "source_resname": "PHE",
+      "canonical_residue_number": 222,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "223",
+      "source_resname": "PHE",
+      "canonical_residue_number": 223,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "224",
+      "source_resname": "ASN",
+      "canonical_residue_number": 224,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "225",
+      "source_resname": "TRP",
+      "canonical_residue_number": 225,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "226",
+      "source_resname": "LEU",
+      "canonical_residue_number": 226,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "227",
+      "source_resname": "SER",
+      "canonical_residue_number": 227,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "228",
+      "source_resname": "VAL",
+      "canonical_residue_number": 228,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "229",
+      "source_resname": "LEU",
+      "canonical_residue_number": 229,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "23",
+      "source_resname": "GLY",
+      "canonical_residue_number": 23,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "230",
+      "source_resname": "VAL",
+      "canonical_residue_number": 230,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "231",
+      "source_resname": "LEU",
+      "canonical_residue_number": 231,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "232",
+      "source_resname": "LEU",
+      "canonical_residue_number": 232,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "233",
+      "source_resname": "PRO",
+      "canonical_residue_number": 233,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "234",
+      "source_resname": "VAL",
+      "canonical_residue_number": 234,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "235",
+      "source_resname": "GLU",
+      "canonical_residue_number": 235,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "236",
+      "source_resname": "VAL",
+      "canonical_residue_number": 236,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "237",
+      "source_resname": "ALA",
+      "canonical_residue_number": 237,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "238",
+      "source_resname": "THR",
+      "canonical_residue_number": 238,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "239",
+      "source_resname": "HSD",
+      "canonical_residue_number": 239,
+      "canonical_resname": "HIS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "24",
+      "source_resname": "GLN",
+      "canonical_residue_number": 24,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "240",
+      "source_resname": "TYR",
+      "canonical_residue_number": 240,
+      "canonical_resname": "TYR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "241",
+      "source_resname": "LEU",
+      "canonical_residue_number": 241,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "242",
+      "source_resname": "GLU",
+      "canonical_residue_number": 242,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "243",
+      "source_resname": "ILE",
+      "canonical_residue_number": 243,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "244",
+      "source_resname": "ILE",
+      "canonical_residue_number": 244,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "245",
+      "source_resname": "THR",
+      "canonical_residue_number": 245,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "246",
+      "source_resname": "GLN",
+      "canonical_residue_number": 246,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "247",
+      "source_resname": "LEU",
+      "canonical_residue_number": 247,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "248",
+      "source_resname": "ILE",
+      "canonical_residue_number": 248,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "249",
+      "source_resname": "VAL",
+      "canonical_residue_number": 249,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "25",
+      "source_resname": "GLN",
+      "canonical_residue_number": 25,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "250",
+      "source_resname": "GLU",
+      "canonical_residue_number": 250,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "251",
+      "source_resname": "SER",
+      "canonical_residue_number": 251,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "252",
+      "source_resname": "PHE",
+      "canonical_residue_number": 252,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "253",
+      "source_resname": "HSD",
+      "canonical_residue_number": 253,
+      "canonical_resname": "HIS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "254",
+      "source_resname": "PHE",
+      "canonical_residue_number": 254,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "255",
+      "source_resname": "LYS",
+      "canonical_residue_number": 255,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "256",
+      "source_resname": "ASN",
+      "canonical_residue_number": 256,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "257",
+      "source_resname": "GLY",
+      "canonical_residue_number": 257,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "258",
+      "source_resname": "GLU",
+      "canonical_residue_number": 258,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "259",
+      "source_resname": "ASP",
+      "canonical_residue_number": 259,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "26",
+      "source_resname": "PRO",
+      "canonical_residue_number": 26,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "260",
+      "source_resname": "ALA",
+      "canonical_residue_number": 260,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "261",
+      "source_resname": "PRO",
+      "canonical_residue_number": 261,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "262",
+      "source_resname": "ASP",
+      "canonical_residue_number": 262,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "263",
+      "source_resname": "LEU",
+      "canonical_residue_number": 263,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "264",
+      "source_resname": "LEU",
+      "canonical_residue_number": 264,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "265",
+      "source_resname": "LYS",
+      "canonical_residue_number": 265,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "266",
+      "source_resname": "VAL",
+      "canonical_residue_number": 266,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "267",
+      "source_resname": "ILE",
+      "canonical_residue_number": 267,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "268",
+      "source_resname": "THR",
+      "canonical_residue_number": 268,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "269",
+      "source_resname": "LYS",
+      "canonical_residue_number": 269,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "27",
+      "source_resname": "THR",
+      "canonical_residue_number": 27,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "270",
+      "source_resname": "PRO",
+      "canonical_residue_number": 270,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "271",
+      "source_resname": "PHE",
+      "canonical_residue_number": 271,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "272",
+      "source_resname": "THR",
+      "canonical_residue_number": 272,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "273",
+      "source_resname": "LYS",
+      "canonical_residue_number": 273,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "274",
+      "source_resname": "LEU",
+      "canonical_residue_number": 274,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "275",
+      "source_resname": "ILE",
+      "canonical_residue_number": 275,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "276",
+      "source_resname": "VAL",
+      "canonical_residue_number": 276,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "277",
+      "source_resname": "GLN",
+      "canonical_residue_number": 277,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "278",
+      "source_resname": "LEU",
+      "canonical_residue_number": 278,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "279",
+      "source_resname": "ASP",
+      "canonical_residue_number": 279,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "28",
+      "source_resname": "ALA",
+      "canonical_residue_number": 28,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "280",
+      "source_resname": "LYS",
+      "canonical_residue_number": 280,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "281",
+      "source_resname": "LYS",
+      "canonical_residue_number": 281,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "282",
+      "source_resname": "VAL",
+      "canonical_residue_number": 282,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "283",
+      "source_resname": "ILE",
+      "canonical_residue_number": 283,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "284",
+      "source_resname": "SER",
+      "canonical_residue_number": 284,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "285",
+      "source_resname": "GLN",
+      "canonical_residue_number": 285,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "286",
+      "source_resname": "ILE",
+      "canonical_residue_number": 286,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "287",
+      "source_resname": "ALA",
+      "canonical_residue_number": 287,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "288",
+      "source_resname": "MET",
+      "canonical_residue_number": 288,
+      "canonical_resname": "MET",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "289",
+      "source_resname": "ASN",
+      "canonical_residue_number": 289,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "29",
+      "source_resname": "PRO",
+      "canonical_residue_number": 29,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "290",
+      "source_resname": "ASP",
+      "canonical_residue_number": 290,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "291",
+      "source_resname": "GLU",
+      "canonical_residue_number": 291,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "292",
+      "source_resname": "LYS",
+      "canonical_residue_number": 292,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "293",
+      "source_resname": "ALA",
+      "canonical_residue_number": 293,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "294",
+      "source_resname": "LYS",
+      "canonical_residue_number": 294,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "295",
+      "source_resname": "ASN",
+      "canonical_residue_number": 295,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "296",
+      "source_resname": "LYS",
+      "canonical_residue_number": 296,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "297",
+      "source_resname": "SER",
+      "canonical_residue_number": 297,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "298",
+      "source_resname": "LEU",
+      "canonical_residue_number": 298,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "299",
+      "source_resname": "VAL",
+      "canonical_residue_number": 299,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "3",
+      "source_resname": "PRO",
+      "canonical_residue_number": 3,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "30",
+      "source_resname": "ASP",
+      "canonical_residue_number": 30,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "300",
+      "source_resname": "LYS",
+      "canonical_residue_number": 300,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "301",
+      "source_resname": "ILE",
+      "canonical_residue_number": 301,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "302",
+      "source_resname": "TRP",
+      "canonical_residue_number": 302,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "303",
+      "source_resname": "CYS",
+      "canonical_residue_number": 303,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "304",
+      "source_resname": "LYS",
+      "canonical_residue_number": 304,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "305",
+      "source_resname": "THR",
+      "canonical_residue_number": 305,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "306",
+      "source_resname": "PHE",
+      "canonical_residue_number": 306,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "307",
+      "source_resname": "THR",
+      "canonical_residue_number": 307,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "308",
+      "source_resname": "ASN",
+      "canonical_residue_number": 308,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "309",
+      "source_resname": "LYS",
+      "canonical_residue_number": 309,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "31",
+      "source_resname": "LYS",
+      "canonical_residue_number": 31,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "310",
+      "source_resname": "THR",
+      "canonical_residue_number": 310,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "311",
+      "source_resname": "GLN",
+      "canonical_residue_number": 311,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "312",
+      "source_resname": "ILE",
+      "canonical_residue_number": 312,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "313",
+      "source_resname": "ASN",
+      "canonical_residue_number": 313,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "314",
+      "source_resname": "VAL",
+      "canonical_residue_number": 314,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "315",
+      "source_resname": "THR",
+      "canonical_residue_number": 315,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "316",
+      "source_resname": "VAL",
+      "canonical_residue_number": 316,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "317",
+      "source_resname": "PRO",
+      "canonical_residue_number": 317,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "318",
+      "source_resname": "SER",
+      "canonical_residue_number": 318,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "319",
+      "source_resname": "THR",
+      "canonical_residue_number": 319,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "32",
+      "source_resname": "SER",
+      "canonical_residue_number": 32,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "320",
+      "source_resname": "ALA",
+      "canonical_residue_number": 320,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "321",
+      "source_resname": "ASN",
+      "canonical_residue_number": 321,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "322",
+      "source_resname": "CYS",
+      "canonical_residue_number": 322,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "323",
+      "source_resname": "THR",
+      "canonical_residue_number": 323,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "324",
+      "source_resname": "SER",
+      "canonical_residue_number": 324,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "325",
+      "source_resname": "PRO",
+      "canonical_residue_number": 325,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "326",
+      "source_resname": "SER",
+      "canonical_residue_number": 326,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "327",
+      "source_resname": "LEU",
+      "canonical_residue_number": 327,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "328",
+      "source_resname": "CYS",
+      "canonical_residue_number": 328,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "329",
+      "source_resname": "TRP",
+      "canonical_residue_number": 329,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "33",
+      "source_resname": "LYS",
+      "canonical_residue_number": 33,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "330",
+      "source_resname": "THR",
+      "canonical_residue_number": 330,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "331",
+      "source_resname": "ASP",
+      "canonical_residue_number": 331,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "332",
+      "source_resname": "GLY",
+      "canonical_residue_number": 332,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "333",
+      "source_resname": "ILE",
+      "canonical_residue_number": 333,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "334",
+      "source_resname": "GLN",
+      "canonical_residue_number": 334,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "335",
+      "source_resname": "ASN",
+      "canonical_residue_number": 335,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "336",
+      "source_resname": "TRP",
+      "canonical_residue_number": 336,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "337",
+      "source_resname": "THR",
+      "canonical_residue_number": 337,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "338",
+      "source_resname": "MET",
+      "canonical_residue_number": 338,
+      "canonical_resname": "MET",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "339",
+      "source_resname": "LYS",
+      "canonical_residue_number": 339,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "34",
+      "source_resname": "GLU",
+      "canonical_residue_number": 34,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "340",
+      "source_resname": "ASN",
+      "canonical_residue_number": 340,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "341",
+      "source_resname": "VAL",
+      "canonical_residue_number": 341,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "342",
+      "source_resname": "THR",
+      "canonical_residue_number": 342,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "343",
+      "source_resname": "TYR",
+      "canonical_residue_number": 343,
+      "canonical_resname": "TYR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "344",
+      "source_resname": "LYS",
+      "canonical_residue_number": 344,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "345",
+      "source_resname": "GLU",
+      "canonical_residue_number": 345,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "346",
+      "source_resname": "ASN",
+      "canonical_residue_number": 346,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "347",
+      "source_resname": "ILE",
+      "canonical_residue_number": 347,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "348",
+      "source_resname": "ALA",
+      "canonical_residue_number": 348,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "349",
+      "source_resname": "LYS",
+      "canonical_residue_number": 349,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "35",
+      "source_resname": "THR",
+      "canonical_residue_number": 35,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "350",
+      "source_resname": "CYS",
+      "canonical_residue_number": 350,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "351",
+      "source_resname": "GLN",
+      "canonical_residue_number": 351,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "352",
+      "source_resname": "HSD",
+      "canonical_residue_number": 352,
+      "canonical_resname": "HIS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "353",
+      "source_resname": "ILE",
+      "canonical_residue_number": 353,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "354",
+      "source_resname": "PHE",
+      "canonical_residue_number": 354,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "355",
+      "source_resname": "VAL",
+      "canonical_residue_number": 355,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "356",
+      "source_resname": "ASN",
+      "canonical_residue_number": 356,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "357",
+      "source_resname": "PHE",
+      "canonical_residue_number": 357,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "358",
+      "source_resname": "HSD",
+      "canonical_residue_number": 358,
+      "canonical_resname": "HIS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "359",
+      "source_resname": "LEU",
+      "canonical_residue_number": 359,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "36",
+      "source_resname": "ASN",
+      "canonical_residue_number": 36,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "360",
+      "source_resname": "PRO",
+      "canonical_residue_number": 360,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "361",
+      "source_resname": "ASP",
+      "canonical_residue_number": 361,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "362",
+      "source_resname": "LEU",
+      "canonical_residue_number": 362,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "363",
+      "source_resname": "ALA",
+      "canonical_residue_number": 363,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "364",
+      "source_resname": "VAL",
+      "canonical_residue_number": 364,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "365",
+      "source_resname": "GLY",
+      "canonical_residue_number": 365,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "366",
+      "source_resname": "THR",
+      "canonical_residue_number": 366,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "367",
+      "source_resname": "ILE",
+      "canonical_residue_number": 367,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "368",
+      "source_resname": "LEU",
+      "canonical_residue_number": 368,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "369",
+      "source_resname": "LEU",
+      "canonical_residue_number": 369,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "37",
+      "source_resname": "LYS",
+      "canonical_residue_number": 37,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "370",
+      "source_resname": "ILE",
+      "canonical_residue_number": 370,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "371",
+      "source_resname": "LEU",
+      "canonical_residue_number": 371,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "372",
+      "source_resname": "SER",
+      "canonical_residue_number": 372,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "373",
+      "source_resname": "LEU",
+      "canonical_residue_number": 373,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "374",
+      "source_resname": "LEU",
+      "canonical_residue_number": 374,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "375",
+      "source_resname": "VAL",
+      "canonical_residue_number": 375,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "376",
+      "source_resname": "LEU",
+      "canonical_residue_number": 376,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "377",
+      "source_resname": "CYS",
+      "canonical_residue_number": 377,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "378",
+      "source_resname": "GLY",
+      "canonical_residue_number": 378,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "379",
+      "source_resname": "CYS",
+      "canonical_residue_number": 379,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "38",
+      "source_resname": "THR",
+      "canonical_residue_number": 38,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "380",
+      "source_resname": "LEU",
+      "canonical_residue_number": 380,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "381",
+      "source_resname": "ILE",
+      "canonical_residue_number": 381,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "382",
+      "source_resname": "MET",
+      "canonical_residue_number": 382,
+      "canonical_resname": "MET",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "383",
+      "source_resname": "ILE",
+      "canonical_residue_number": 383,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "384",
+      "source_resname": "VAL",
+      "canonical_residue_number": 384,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "385",
+      "source_resname": "LYS",
+      "canonical_residue_number": 385,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "386",
+      "source_resname": "ILE",
+      "canonical_residue_number": 386,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "387",
+      "source_resname": "LEU",
+      "canonical_residue_number": 387,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "388",
+      "source_resname": "GLY",
+      "canonical_residue_number": 388,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "389",
+      "source_resname": "SER",
+      "canonical_residue_number": 389,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "39",
+      "source_resname": "ASP",
+      "canonical_residue_number": 39,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "390",
+      "source_resname": "VAL",
+      "canonical_residue_number": 390,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "391",
+      "source_resname": "LEU",
+      "canonical_residue_number": 391,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "392",
+      "source_resname": "LYS",
+      "canonical_residue_number": 392,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "393",
+      "source_resname": "GLY",
+      "canonical_residue_number": 393,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "394",
+      "source_resname": "GLN",
+      "canonical_residue_number": 394,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "395",
+      "source_resname": "VAL",
+      "canonical_residue_number": 395,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "396",
+      "source_resname": "ALA",
+      "canonical_residue_number": 396,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "397",
+      "source_resname": "THR",
+      "canonical_residue_number": 397,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "398",
+      "source_resname": "VAL",
+      "canonical_residue_number": 398,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "399",
+      "source_resname": "ILE",
+      "canonical_residue_number": 399,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "4",
+      "source_resname": "TRP",
+      "canonical_residue_number": 4,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "40",
+      "source_resname": "ASN",
+      "canonical_residue_number": 40,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "400",
+      "source_resname": "LYS",
+      "canonical_residue_number": 400,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "401",
+      "source_resname": "LYS",
+      "canonical_residue_number": 401,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "402",
+      "source_resname": "THR",
+      "canonical_residue_number": 402,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "403",
+      "source_resname": "ILE",
+      "canonical_residue_number": 403,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "404",
+      "source_resname": "ASN",
+      "canonical_residue_number": 404,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "405",
+      "source_resname": "THR",
+      "canonical_residue_number": 405,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "406",
+      "source_resname": "ASP",
+      "canonical_residue_number": 406,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "407",
+      "source_resname": "PHE",
+      "canonical_residue_number": 407,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "408",
+      "source_resname": "PRO",
+      "canonical_residue_number": 408,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "409",
+      "source_resname": "PHE",
+      "canonical_residue_number": 409,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "41",
+      "source_resname": "THR",
+      "canonical_residue_number": 41,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "410",
+      "source_resname": "PRO",
+      "canonical_residue_number": 410,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "411",
+      "source_resname": "PHE",
+      "canonical_residue_number": 411,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "412",
+      "source_resname": "ALA",
+      "canonical_residue_number": 412,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "413",
+      "source_resname": "TRP",
+      "canonical_residue_number": 413,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "414",
+      "source_resname": "LEU",
+      "canonical_residue_number": 414,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "415",
+      "source_resname": "THR",
+      "canonical_residue_number": 415,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "416",
+      "source_resname": "GLY",
+      "canonical_residue_number": 416,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "417",
+      "source_resname": "TYR",
+      "canonical_residue_number": 417,
+      "canonical_resname": "TYR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "418",
+      "source_resname": "LEU",
+      "canonical_residue_number": 418,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "419",
+      "source_resname": "ALA",
+      "canonical_residue_number": 419,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "42",
+      "source_resname": "GLU",
+      "canonical_residue_number": 42,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "420",
+      "source_resname": "ILE",
+      "canonical_residue_number": 420,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "421",
+      "source_resname": "LEU",
+      "canonical_residue_number": 421,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "422",
+      "source_resname": "VAL",
+      "canonical_residue_number": 422,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "423",
+      "source_resname": "GLY",
+      "canonical_residue_number": 423,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "424",
+      "source_resname": "ALA",
+      "canonical_residue_number": 424,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "425",
+      "source_resname": "GLY",
+      "canonical_residue_number": 425,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "426",
+      "source_resname": "MET",
+      "canonical_residue_number": 426,
+      "canonical_resname": "MET",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "427",
+      "source_resname": "THR",
+      "canonical_residue_number": 427,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "428",
+      "source_resname": "PHE",
+      "canonical_residue_number": 428,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "429",
+      "source_resname": "ILE",
+      "canonical_residue_number": 429,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "43",
+      "source_resname": "ALA",
+      "canonical_residue_number": 43,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "430",
+      "source_resname": "VAL",
+      "canonical_residue_number": 430,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "431",
+      "source_resname": "GLN",
+      "canonical_residue_number": 431,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "432",
+      "source_resname": "SER",
+      "canonical_residue_number": 432,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "433",
+      "source_resname": "SER",
+      "canonical_residue_number": 433,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "434",
+      "source_resname": "SER",
+      "canonical_residue_number": 434,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "435",
+      "source_resname": "VAL",
+      "canonical_residue_number": 435,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "436",
+      "source_resname": "PHE",
+      "canonical_residue_number": 436,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "437",
+      "source_resname": "THR",
+      "canonical_residue_number": 437,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "438",
+      "source_resname": "SER",
+      "canonical_residue_number": 438,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "439",
+      "source_resname": "ALA",
+      "canonical_residue_number": 439,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "44",
+      "source_resname": "PRO",
+      "canonical_residue_number": 44,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "440",
+      "source_resname": "LEU",
+      "canonical_residue_number": 440,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "441",
+      "source_resname": "THR",
+      "canonical_residue_number": 441,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "442",
+      "source_resname": "PRO",
+      "canonical_residue_number": 442,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "443",
+      "source_resname": "LEU",
+      "canonical_residue_number": 443,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "444",
+      "source_resname": "ILE",
+      "canonical_residue_number": 444,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "445",
+      "source_resname": "GLY",
+      "canonical_residue_number": 445,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "446",
+      "source_resname": "ILE",
+      "canonical_residue_number": 446,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "447",
+      "source_resname": "GLY",
+      "canonical_residue_number": 447,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "448",
+      "source_resname": "VAL",
+      "canonical_residue_number": 448,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "449",
+      "source_resname": "ILE",
+      "canonical_residue_number": 449,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "45",
+      "source_resname": "VAL",
+      "canonical_residue_number": 45,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "450",
+      "source_resname": "THR",
+      "canonical_residue_number": 450,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "451",
+      "source_resname": "ILE",
+      "canonical_residue_number": 451,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "452",
+      "source_resname": "GLU",
+      "canonical_residue_number": 452,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "453",
+      "source_resname": "ARG",
+      "canonical_residue_number": 453,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "454",
+      "source_resname": "ALA",
+      "canonical_residue_number": 454,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "455",
+      "source_resname": "TYR",
+      "canonical_residue_number": 455,
+      "canonical_resname": "TYR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "456",
+      "source_resname": "PRO",
+      "canonical_residue_number": 456,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "457",
+      "source_resname": "LEU",
+      "canonical_residue_number": 457,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "458",
+      "source_resname": "THR",
+      "canonical_residue_number": 458,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "459",
+      "source_resname": "LEU",
+      "canonical_residue_number": 459,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "46",
+      "source_resname": "THR",
+      "canonical_residue_number": 46,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "460",
+      "source_resname": "GLY",
+      "canonical_residue_number": 460,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "461",
+      "source_resname": "SER",
+      "canonical_residue_number": 461,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "462",
+      "source_resname": "ASN",
+      "canonical_residue_number": 462,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "463",
+      "source_resname": "ILE",
+      "canonical_residue_number": 463,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "464",
+      "source_resname": "GLY",
+      "canonical_residue_number": 464,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "465",
+      "source_resname": "THR",
+      "canonical_residue_number": 465,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "466",
+      "source_resname": "THR",
+      "canonical_residue_number": 466,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "467",
+      "source_resname": "THR",
+      "canonical_residue_number": 467,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "468",
+      "source_resname": "THR",
+      "canonical_residue_number": 468,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "469",
+      "source_resname": "ALA",
+      "canonical_residue_number": 469,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "47",
+      "source_resname": "LYS",
+      "canonical_residue_number": 47,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "470",
+      "source_resname": "ILE",
+      "canonical_residue_number": 470,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "471",
+      "source_resname": "LEU",
+      "canonical_residue_number": 471,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "472",
+      "source_resname": "ALA",
+      "canonical_residue_number": 472,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "473",
+      "source_resname": "ALA",
+      "canonical_residue_number": 473,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "474",
+      "source_resname": "LEU",
+      "canonical_residue_number": 474,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "475",
+      "source_resname": "ALA",
+      "canonical_residue_number": 475,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "476",
+      "source_resname": "SER",
+      "canonical_residue_number": 476,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "477",
+      "source_resname": "PRO",
+      "canonical_residue_number": 477,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "478",
+      "source_resname": "GLY",
+      "canonical_residue_number": 478,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "479",
+      "source_resname": "ASN",
+      "canonical_residue_number": 479,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "48",
+      "source_resname": "ILE",
+      "canonical_residue_number": 48,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "480",
+      "source_resname": "ALA",
+      "canonical_residue_number": 480,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "481",
+      "source_resname": "LEU",
+      "canonical_residue_number": 481,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "482",
+      "source_resname": "ARG",
+      "canonical_residue_number": 482,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "483",
+      "source_resname": "SER",
+      "canonical_residue_number": 483,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "484",
+      "source_resname": "SER",
+      "canonical_residue_number": 484,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "485",
+      "source_resname": "LEU",
+      "canonical_residue_number": 485,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "486",
+      "source_resname": "GLN",
+      "canonical_residue_number": 486,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "487",
+      "source_resname": "ILE",
+      "canonical_residue_number": 487,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "488",
+      "source_resname": "ALA",
+      "canonical_residue_number": 488,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "489",
+      "source_resname": "LEU",
+      "canonical_residue_number": 489,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "49",
+      "source_resname": "GLU",
+      "canonical_residue_number": 49,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "490",
+      "source_resname": "CYS",
+      "canonical_residue_number": 490,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "491",
+      "source_resname": "HSD",
+      "canonical_residue_number": 491,
+      "canonical_resname": "HIS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "492",
+      "source_resname": "PHE",
+      "canonical_residue_number": 492,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "493",
+      "source_resname": "PHE",
+      "canonical_residue_number": 493,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "494",
+      "source_resname": "PHE",
+      "canonical_residue_number": 494,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "495",
+      "source_resname": "ASN",
+      "canonical_residue_number": 495,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "496",
+      "source_resname": "ILE",
+      "canonical_residue_number": 496,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "497",
+      "source_resname": "SER",
+      "canonical_residue_number": 497,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "498",
+      "source_resname": "GLY",
+      "canonical_residue_number": 498,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "499",
+      "source_resname": "ILE",
+      "canonical_residue_number": 499,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "5",
+      "source_resname": "PRO",
+      "canonical_residue_number": 5,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "50",
+      "source_resname": "LEU",
+      "canonical_residue_number": 50,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "500",
+      "source_resname": "LEU",
+      "canonical_residue_number": 500,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "501",
+      "source_resname": "LEU",
+      "canonical_residue_number": 501,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "502",
+      "source_resname": "TRP",
+      "canonical_residue_number": 502,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "503",
+      "source_resname": "TYR",
+      "canonical_residue_number": 503,
+      "canonical_resname": "TYR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "504",
+      "source_resname": "PRO",
+      "canonical_residue_number": 504,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "505",
+      "source_resname": "ILE",
+      "canonical_residue_number": 505,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "506",
+      "source_resname": "PRO",
+      "canonical_residue_number": 506,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "507",
+      "source_resname": "PHE",
+      "canonical_residue_number": 507,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "508",
+      "source_resname": "THR",
+      "canonical_residue_number": 508,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "509",
+      "source_resname": "ARG",
+      "canonical_residue_number": 509,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "51",
+      "source_resname": "LEU",
+      "canonical_residue_number": 51,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "510",
+      "source_resname": "LEU",
+      "canonical_residue_number": 510,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "511",
+      "source_resname": "PRO",
+      "canonical_residue_number": 511,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "512",
+      "source_resname": "ILE",
+      "canonical_residue_number": 512,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "513",
+      "source_resname": "ARG",
+      "canonical_residue_number": 513,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "514",
+      "source_resname": "MET",
+      "canonical_residue_number": 514,
+      "canonical_resname": "MET",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "515",
+      "source_resname": "ALA",
+      "canonical_residue_number": 515,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "516",
+      "source_resname": "LYS",
+      "canonical_residue_number": 516,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "517",
+      "source_resname": "GLY",
+      "canonical_residue_number": 517,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "518",
+      "source_resname": "LEU",
+      "canonical_residue_number": 518,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "519",
+      "source_resname": "GLY",
+      "canonical_residue_number": 519,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "52",
+      "source_resname": "PRO",
+      "canonical_residue_number": 52,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "520",
+      "source_resname": "ASN",
+      "canonical_residue_number": 520,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "521",
+      "source_resname": "ILE",
+      "canonical_residue_number": 521,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "522",
+      "source_resname": "SER",
+      "canonical_residue_number": 522,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "523",
+      "source_resname": "ALA",
+      "canonical_residue_number": 523,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "524",
+      "source_resname": "LYS",
+      "canonical_residue_number": 524,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "525",
+      "source_resname": "TYR",
+      "canonical_residue_number": 525,
+      "canonical_resname": "TYR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "526",
+      "source_resname": "ARG",
+      "canonical_residue_number": 526,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "527",
+      "source_resname": "TRP",
+      "canonical_residue_number": 527,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "528",
+      "source_resname": "PHE",
+      "canonical_residue_number": 528,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "529",
+      "source_resname": "ALA",
+      "canonical_residue_number": 529,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "53",
+      "source_resname": "SER",
+      "canonical_residue_number": 53,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "530",
+      "source_resname": "VAL",
+      "canonical_residue_number": 530,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "531",
+      "source_resname": "PHE",
+      "canonical_residue_number": 531,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "532",
+      "source_resname": "TYR",
+      "canonical_residue_number": 532,
+      "canonical_resname": "TYR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "533",
+      "source_resname": "LEU",
+      "canonical_residue_number": 533,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "534",
+      "source_resname": "ILE",
+      "canonical_residue_number": 534,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "535",
+      "source_resname": "ILE",
+      "canonical_residue_number": 535,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "536",
+      "source_resname": "PHE",
+      "canonical_residue_number": 536,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "537",
+      "source_resname": "PHE",
+      "canonical_residue_number": 537,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "538",
+      "source_resname": "PHE",
+      "canonical_residue_number": 538,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "539",
+      "source_resname": "LEU",
+      "canonical_residue_number": 539,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "54",
+      "source_resname": "TYR",
+      "canonical_residue_number": 54,
+      "canonical_resname": "TYR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "540",
+      "source_resname": "ILE",
+      "canonical_residue_number": 540,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "541",
+      "source_resname": "PRO",
+      "canonical_residue_number": 541,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "542",
+      "source_resname": "LEU",
+      "canonical_residue_number": 542,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "543",
+      "source_resname": "THR",
+      "canonical_residue_number": 543,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "544",
+      "source_resname": "VAL",
+      "canonical_residue_number": 544,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "545",
+      "source_resname": "PHE",
+      "canonical_residue_number": 545,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "546",
+      "source_resname": "GLY",
+      "canonical_residue_number": 546,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "547",
+      "source_resname": "LEU",
+      "canonical_residue_number": 547,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "548",
+      "source_resname": "SER",
+      "canonical_residue_number": 548,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "549",
+      "source_resname": "LEU",
+      "canonical_residue_number": 549,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "55",
+      "source_resname": "SER",
+      "canonical_residue_number": 55,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "550",
+      "source_resname": "ALA",
+      "canonical_residue_number": 550,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "551",
+      "source_resname": "GLY",
+      "canonical_residue_number": 551,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "552",
+      "source_resname": "TRP",
+      "canonical_residue_number": 552,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "553",
+      "source_resname": "ARG",
+      "canonical_residue_number": 553,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "554",
+      "source_resname": "VAL",
+      "canonical_residue_number": 554,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "555",
+      "source_resname": "LEU",
+      "canonical_residue_number": 555,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "556",
+      "source_resname": "VAL",
+      "canonical_residue_number": 556,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "557",
+      "source_resname": "GLY",
+      "canonical_residue_number": 557,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "558",
+      "source_resname": "VAL",
+      "canonical_residue_number": 558,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "559",
+      "source_resname": "GLY",
+      "canonical_residue_number": 559,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "56",
+      "source_resname": "THR",
+      "canonical_residue_number": 56,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "560",
+      "source_resname": "VAL",
+      "canonical_residue_number": 560,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "561",
+      "source_resname": "PRO",
+      "canonical_residue_number": 561,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "562",
+      "source_resname": "VAL",
+      "canonical_residue_number": 562,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "563",
+      "source_resname": "VAL",
+      "canonical_residue_number": 563,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "564",
+      "source_resname": "PHE",
+      "canonical_residue_number": 564,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "565",
+      "source_resname": "ILE",
+      "canonical_residue_number": 565,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "566",
+      "source_resname": "ILE",
+      "canonical_residue_number": 566,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "567",
+      "source_resname": "ILE",
+      "canonical_residue_number": 567,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "568",
+      "source_resname": "LEU",
+      "canonical_residue_number": 568,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "569",
+      "source_resname": "VAL",
+      "canonical_residue_number": 569,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "57",
+      "source_resname": "ALA",
+      "canonical_residue_number": 57,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "570",
+      "source_resname": "LEU",
+      "canonical_residue_number": 570,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "571",
+      "source_resname": "CYS",
+      "canonical_residue_number": 571,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "572",
+      "source_resname": "LEU",
+      "canonical_residue_number": 572,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "573",
+      "source_resname": "ARG",
+      "canonical_residue_number": 573,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "574",
+      "source_resname": "LEU",
+      "canonical_residue_number": 574,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "575",
+      "source_resname": "LEU",
+      "canonical_residue_number": 575,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "576",
+      "source_resname": "GLN",
+      "canonical_residue_number": 576,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "577",
+      "source_resname": "SER",
+      "canonical_residue_number": 577,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "578",
+      "source_resname": "ARG",
+      "canonical_residue_number": 578,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "579",
+      "source_resname": "CYS",
+      "canonical_residue_number": 579,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "58",
+      "source_resname": "THR",
+      "canonical_residue_number": 58,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "580",
+      "source_resname": "PRO",
+      "canonical_residue_number": 580,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "581",
+      "source_resname": "ARG",
+      "canonical_residue_number": 581,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "582",
+      "source_resname": "VAL",
+      "canonical_residue_number": 582,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "583",
+      "source_resname": "LEU",
+      "canonical_residue_number": 583,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "584",
+      "source_resname": "PRO",
+      "canonical_residue_number": 584,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "585",
+      "source_resname": "LYS",
+      "canonical_residue_number": 585,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "586",
+      "source_resname": "LYS",
+      "canonical_residue_number": 586,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "587",
+      "source_resname": "LEU",
+      "canonical_residue_number": 587,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "588",
+      "source_resname": "GLN",
+      "canonical_residue_number": 588,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "589",
+      "source_resname": "ASN",
+      "canonical_residue_number": 589,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "59",
+      "source_resname": "LEU",
+      "canonical_residue_number": 59,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "590",
+      "source_resname": "TRP",
+      "canonical_residue_number": 590,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "591",
+      "source_resname": "ASN",
+      "canonical_residue_number": 591,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "592",
+      "source_resname": "PHE",
+      "canonical_residue_number": 592,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "593",
+      "source_resname": "LEU",
+      "canonical_residue_number": 593,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "594",
+      "source_resname": "PRO",
+      "canonical_residue_number": 594,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "595",
+      "source_resname": "LEU",
+      "canonical_residue_number": 595,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "596",
+      "source_resname": "TRP",
+      "canonical_residue_number": 596,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "597",
+      "source_resname": "MET",
+      "canonical_residue_number": 597,
+      "canonical_resname": "MET",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "598",
+      "source_resname": "ARG",
+      "canonical_residue_number": 598,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "599",
+      "source_resname": "SER",
+      "canonical_residue_number": 599,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "6",
+      "source_resname": "GLU",
+      "canonical_residue_number": 6,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "60",
+      "source_resname": "ILE",
+      "canonical_residue_number": 60,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "600",
+      "source_resname": "LEU",
+      "canonical_residue_number": 600,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "601",
+      "source_resname": "LYS",
+      "canonical_residue_number": 601,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "602",
+      "source_resname": "PRO",
+      "canonical_residue_number": 602,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "603",
+      "source_resname": "TRP",
+      "canonical_residue_number": 603,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "604",
+      "source_resname": "ASP",
+      "canonical_residue_number": 604,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "605",
+      "source_resname": "ALA",
+      "canonical_residue_number": 605,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "606",
+      "source_resname": "VAL",
+      "canonical_residue_number": 606,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "607",
+      "source_resname": "VAL",
+      "canonical_residue_number": 607,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "608",
+      "source_resname": "SER",
+      "canonical_residue_number": 608,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "609",
+      "source_resname": "LYS",
+      "canonical_residue_number": 609,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "61",
+      "source_resname": "ASP",
+      "canonical_residue_number": 61,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "610",
+      "source_resname": "PHE",
+      "canonical_residue_number": 610,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "611",
+      "source_resname": "THR",
+      "canonical_residue_number": 611,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "612",
+      "source_resname": "GLY",
+      "canonical_residue_number": 612,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "613",
+      "source_resname": "CYS",
+      "canonical_residue_number": 613,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "614",
+      "source_resname": "PHE",
+      "canonical_residue_number": 614,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "615",
+      "source_resname": "GLN",
+      "canonical_residue_number": 615,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "616",
+      "source_resname": "MET",
+      "canonical_residue_number": 616,
+      "canonical_resname": "MET",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "617",
+      "source_resname": "ARG",
+      "canonical_residue_number": 617,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "618",
+      "source_resname": "CYS",
+      "canonical_residue_number": 618,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "619",
+      "source_resname": "CYS",
+      "canonical_residue_number": 619,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "62",
+      "source_resname": "GLU",
+      "canonical_residue_number": 62,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "620",
+      "source_resname": "CYS",
+      "canonical_residue_number": 620,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "621",
+      "source_resname": "CYS",
+      "canonical_residue_number": 621,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "622",
+      "source_resname": "CYS",
+      "canonical_residue_number": 622,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "623",
+      "source_resname": "ARG",
+      "canonical_residue_number": 623,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "624",
+      "source_resname": "VAL",
+      "canonical_residue_number": 624,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "625",
+      "source_resname": "CYS",
+      "canonical_residue_number": 625,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "626",
+      "source_resname": "CYS",
+      "canonical_residue_number": 626,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "627",
+      "source_resname": "ARG",
+      "canonical_residue_number": 627,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "628",
+      "source_resname": "ALA",
+      "canonical_residue_number": 628,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "629",
+      "source_resname": "CYS",
+      "canonical_residue_number": 629,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "63",
+      "source_resname": "PRO",
+      "canonical_residue_number": 63,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "630",
+      "source_resname": "CYS",
+      "canonical_residue_number": 630,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "631",
+      "source_resname": "LEU",
+      "canonical_residue_number": 631,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "632",
+      "source_resname": "LEU",
+      "canonical_residue_number": 632,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "633",
+      "source_resname": "CYS",
+      "canonical_residue_number": 633,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "634",
+      "source_resname": "ASP",
+      "canonical_residue_number": 634,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "635",
+      "source_resname": "CYS",
+      "canonical_residue_number": 635,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "636",
+      "source_resname": "PRO",
+      "canonical_residue_number": 636,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "637",
+      "source_resname": "LYS",
+      "canonical_residue_number": 637,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "638",
+      "source_resname": "CYS",
+      "canonical_residue_number": 638,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "639",
+      "source_resname": "CYS",
+      "canonical_residue_number": 639,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "64",
+      "source_resname": "THR",
+      "canonical_residue_number": 64,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "640",
+      "source_resname": "ARG",
+      "canonical_residue_number": 640,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "641",
+      "source_resname": "CYS",
+      "canonical_residue_number": 641,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "642",
+      "source_resname": "SER",
+      "canonical_residue_number": 642,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "643",
+      "source_resname": "LYS",
+      "canonical_residue_number": 643,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "644",
+      "source_resname": "CYS",
+      "canonical_residue_number": 644,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "645",
+      "source_resname": "CYS",
+      "canonical_residue_number": 645,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "646",
+      "source_resname": "GLU",
+      "canonical_residue_number": 646,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "647",
+      "source_resname": "ASP",
+      "canonical_residue_number": 647,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "648",
+      "source_resname": "LEU",
+      "canonical_residue_number": 648,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "649",
+      "source_resname": "GLU",
+      "canonical_residue_number": 649,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "65",
+      "source_resname": "GLU",
+      "canonical_residue_number": 65,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "650",
+      "source_resname": "GLU",
+      "canonical_residue_number": 650,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "651",
+      "source_resname": "ALA",
+      "canonical_residue_number": 651,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "652",
+      "source_resname": "GLN",
+      "canonical_residue_number": 652,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "653",
+      "source_resname": "GLU",
+      "canonical_residue_number": 653,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "654",
+      "source_resname": "GLY",
+      "canonical_residue_number": 654,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "655",
+      "source_resname": "GLN",
+      "canonical_residue_number": 655,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "656",
+      "source_resname": "ASP",
+      "canonical_residue_number": 656,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "657",
+      "source_resname": "VAL",
+      "canonical_residue_number": 657,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "658",
+      "source_resname": "PRO",
+      "canonical_residue_number": 658,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "659",
+      "source_resname": "VAL",
+      "canonical_residue_number": 659,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "66",
+      "source_resname": "VAL",
+      "canonical_residue_number": 66,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "660",
+      "source_resname": "LYS",
+      "canonical_residue_number": 660,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "661",
+      "source_resname": "ALA",
+      "canonical_residue_number": 661,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "662",
+      "source_resname": "PRO",
+      "canonical_residue_number": 662,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "663",
+      "source_resname": "GLU",
+      "canonical_residue_number": 663,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "664",
+      "source_resname": "THR",
+      "canonical_residue_number": 664,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "665",
+      "source_resname": "PHE",
+      "canonical_residue_number": 665,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "666",
+      "source_resname": "ASP",
+      "canonical_residue_number": 666,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "667",
+      "source_resname": "ASN",
+      "canonical_residue_number": 667,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "668",
+      "source_resname": "ILE",
+      "canonical_residue_number": 668,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "669",
+      "source_resname": "THR",
+      "canonical_residue_number": 669,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "67",
+      "source_resname": "ASP",
+      "canonical_residue_number": 67,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "670",
+      "source_resname": "ILE",
+      "canonical_residue_number": 670,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "671",
+      "source_resname": "SER",
+      "canonical_residue_number": 671,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "672",
+      "source_resname": "ARG",
+      "canonical_residue_number": 672,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "673",
+      "source_resname": "GLU",
+      "canonical_residue_number": 673,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "674",
+      "source_resname": "ALA",
+      "canonical_residue_number": 674,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "675",
+      "source_resname": "GLN",
+      "canonical_residue_number": 675,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "676",
+      "source_resname": "GLY",
+      "canonical_residue_number": 676,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "677",
+      "source_resname": "GLU",
+      "canonical_residue_number": 677,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "678",
+      "source_resname": "VAL",
+      "canonical_residue_number": 678,
+      "canonical_resname": "VAL",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "679",
+      "source_resname": "PRO",
+      "canonical_residue_number": 679,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "68",
+      "source_resname": "ASP",
+      "canonical_residue_number": 68,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "680",
+      "source_resname": "ALA",
+      "canonical_residue_number": 680,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "681",
+      "source_resname": "SER",
+      "canonical_residue_number": 681,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "682",
+      "source_resname": "ASP",
+      "canonical_residue_number": 682,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "683",
+      "source_resname": "SER",
+      "canonical_residue_number": 683,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "684",
+      "source_resname": "LYS",
+      "canonical_residue_number": 684,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "685",
+      "source_resname": "THR",
+      "canonical_residue_number": 685,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "686",
+      "source_resname": "GLU",
+      "canonical_residue_number": 686,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "687",
+      "source_resname": "CYS",
+      "canonical_residue_number": 687,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "688",
+      "source_resname": "THR",
+      "canonical_residue_number": 688,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "689",
+      "source_resname": "ALA",
+      "canonical_residue_number": 689,
+      "canonical_resname": "ALA",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "69",
+      "source_resname": "PRO",
+      "canonical_residue_number": 69,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "690",
+      "source_resname": "LEU",
+      "canonical_residue_number": 690,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "7",
+      "source_resname": "LEU",
+      "canonical_residue_number": 7,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "70",
+      "source_resname": "TRP",
+      "canonical_residue_number": 70,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "71",
+      "source_resname": "ASN",
+      "canonical_residue_number": 71,
+      "canonical_resname": "ASN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "72",
+      "source_resname": "LEU",
+      "canonical_residue_number": 72,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "73",
+      "source_resname": "PRO",
+      "canonical_residue_number": 73,
+      "canonical_resname": "PRO",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "74",
+      "source_resname": "THR",
+      "canonical_residue_number": 74,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "75",
+      "source_resname": "LEU",
+      "canonical_residue_number": 75,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "76",
+      "source_resname": "GLN",
+      "canonical_residue_number": 76,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "77",
+      "source_resname": "ASP",
+      "canonical_residue_number": 77,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "78",
+      "source_resname": "SER",
+      "canonical_residue_number": 78,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "79",
+      "source_resname": "GLY",
+      "canonical_residue_number": 79,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "8",
+      "source_resname": "GLY",
+      "canonical_residue_number": 8,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "80",
+      "source_resname": "ILE",
+      "canonical_residue_number": 80,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "81",
+      "source_resname": "LYS",
+      "canonical_residue_number": 81,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "82",
+      "source_resname": "TRP",
+      "canonical_residue_number": 82,
+      "canonical_resname": "TRP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "83",
+      "source_resname": "SER",
+      "canonical_residue_number": 83,
+      "canonical_resname": "SER",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "84",
+      "source_resname": "GLU",
+      "canonical_residue_number": 84,
+      "canonical_resname": "GLU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "85",
+      "source_resname": "ARG",
+      "canonical_residue_number": 85,
+      "canonical_resname": "ARG",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "86",
+      "source_resname": "ASP",
+      "canonical_residue_number": 86,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "87",
+      "source_resname": "THR",
+      "canonical_residue_number": 87,
+      "canonical_resname": "THR",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "88",
+      "source_resname": "LYS",
+      "canonical_residue_number": 88,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "89",
+      "source_resname": "GLY",
+      "canonical_residue_number": 89,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "9",
+      "source_resname": "ASP",
+      "canonical_residue_number": 9,
+      "canonical_resname": "ASP",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "90",
+      "source_resname": "LYS",
+      "canonical_residue_number": 90,
+      "canonical_resname": "LYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "91",
+      "source_resname": "ILE",
+      "canonical_residue_number": 91,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "92",
+      "source_resname": "LEU",
+      "canonical_residue_number": 92,
+      "canonical_resname": "LEU",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "93",
+      "source_resname": "CYS",
+      "canonical_residue_number": 93,
+      "canonical_resname": "CYS",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "94",
+      "source_resname": "PHE",
+      "canonical_residue_number": 94,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "95",
+      "source_resname": "PHE",
+      "canonical_residue_number": 95,
+      "canonical_resname": "PHE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "96",
+      "source_resname": "GLN",
+      "canonical_residue_number": 96,
+      "canonical_resname": "GLN",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "97",
+      "source_resname": "GLY",
+      "canonical_residue_number": 97,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "98",
+      "source_resname": "ILE",
+      "canonical_residue_number": 98,
+      "canonical_resname": "ILE",
+      "mapping_status": "mapped"
+    },
+    {
+      "source_engine": "namd",
+      "source_chain_id": "PROA",
+      "source_resid": "99",
+      "source_resname": "GLY",
+      "canonical_residue_number": 99,
+      "canonical_resname": "GLY",
+      "mapping_status": "mapped"
+    }
+  ]
+}

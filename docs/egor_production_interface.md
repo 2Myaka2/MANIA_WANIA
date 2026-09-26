@@ -6,25 +6,61 @@ planning, D.4d persistence/replay, Stage 32 QC and Stage 31 aggregation. They do
 not prepare coordinates or publish a Dataset. Dataset v1 remains unreleased;
 each execution still requires the reviewed input authority and separate final QC.
 
-The external [production input preparation tool](production_input_preparation.md)
-now provides the raw-to-binding handoff step. Its `prepare` operation takes one
-explicit trajectory, the reviewed authority package and site roots; it generates
-the full-axis derivative, actual observations, strict time controls and an
-automatic report pending review. Its separate `confirm` operation requires a
-named reviewer and the exact report SHA256, rechecks integrity, and materializes
-the existing binding models. It prints the concrete production validate/run
-commands without running them. The recipient entry point is the supplied
-[Russian quick-start](egor_handoff_quickstart_ru.md); this document is a reference.
-The clean recipient validation at commit
-`aa24f04900767b04f1303be18fe867e879feea93` completed real 0SS/r1 preparation,
-explicit human confirmation, production preflight and the 5–8 ns technical run.
-Strict artifact validation was complete and passed; direct/replay scientific
-mismatches were zero, offline replay needed no trajectory/geometry access, and
-identical resume reused the completed result with no geometry recomputation.
-Full 5–100 ns execution is the recipient's next calculation, not a completed test.
-For 1SS/r1, the same preparation path selected its own topology/controls and
-passed the first-frame applicability check. Full preparation, reopening,
-confirmation and contact calculation for 1SS were not validated.
+The recipient entry point is now `./run_egor_all.sh EGOR_DATA_DIR OUTPUT_DIR`;
+see the [Russian quick-start](egor_handoff_quickstart_ru.md). A normal FAIR
+checkout contains the reviewed runtime authority in `production/egor_runtime/`.
+No delivery archive, manual JSON, entered hashes or trajectory selection is
+required. The launcher records the actual Git HEAD and installed versions.
+It orchestrates existing source binding, preparation, confirmation, production
+validation and execution without adding scientific implementations.
+
+## Batch preparation, review and retry
+
+Normal operation selects exactly 0SS/1SS/2SS × r1/r2/r3. The source inventory
+maps its logical `egor/` mount to the first argument; paths below that mount
+are literal. All nine source sets must exist and pass exact system/run/control
+checks before any preparation. PSF/CONF/OUT/XSC and toppar hashes are checked;
+DCD/header/full-axis correspondence is verified by the existing preparation tool.
+A missing DCD error names its trajectory, expected path and run declaration.
+
+The launcher creates a private hard-link view beneath
+`EGOR_DATA_DIR/.mania_egor/<output-key>/production/`, copies only the small tracked
+runtime authority, and prepares each trajectory there. It never copies raw DCD
+payloads. Input storage must be writable and support hard links for every selected
+source file. Cross-filesystem links fail explicitly. Neither input nor output
+may contain the other, and source symlinks may not escape the input directory.
+The existing preparation and production containment rules remain unchanged.
+Original source identities are checked again before confirmation and execution,
+including sources replaced after their hard links were created.
+
+Preparation is serial. Any failed check stops the batch before new production.
+After all preparations pass, the launcher shows each result, source/run/PSF paths
+and summary/report locations. It asks once for a nonblank reviewer name, review
+note and explicit `y` approval. No default reviewer or automatic approval exists.
+Each separate existing `confirm` receives its own actual report hash. All
+confirmations and public production preflights must pass before new contacts run.
+DCD has no atom labels; the human still reviews source/run/PSF correspondence.
+
+Each trajectory has its own `OUTPUT_DIR/production/trajectories/<id>/attempt_NNNN/`
+with a separate production root. Each invocation has a unique directory under
+`OUTPUT_DIR/production/launcher/`, retaining Git SHA, Python/MANIA/MDAnalysis
+versions, source binding, authority inventory, commands, stdout/stderr, exit codes,
+review and final completed count. Preparation logs and full source/prepared
+identity evidence stay under `.mania_egor/`; retain both trees and raw sources.
+
+Repeating the same two-argument command verifies/reuses completed results via
+`production run --resume`, including strict validation/replay. Corruption or
+changed sources fails; it is never silently accepted. A partial contact run is
+preserved and a fresh numbered attempt is selected. No mid-frame resume exists.
+An unchanged completed preparation declined with `N` can be reviewed again.
+If a later trajectory fails, earlier completed results remain intact and the
+launcher reports N/9 completed. All-completed reruns need no new human approval.
+
+Disk preflight budgets the pending prepared DCD estimates plus 12 GB on input
+storage, and checks a 12 GB floor on output storage. This is a threshold, not a
+reservation or contact-output size estimate. Preparation/production are heavy:
+on a cluster, run inside a compute allocation/node, never a login/management node.
+No scheduler submission or cluster resource values are supplied.
 
 ## Commands and roots
 
@@ -284,74 +320,48 @@ stage outputs are never overwritten. `mania dataset publish` remains separate.
 
 ## Delivery and installation
 
-Check out exactly `aa24f04900767b04f1303be18fe867e879feea93` and use the final
-`egor_delivery_aa24f0490076/` package. Its root `COMMIT.txt` identifies the runtime
-code; the supplied quick-start and reference documents are delivery supplements,
-not a claim that these uncommitted documentation revisions exist at that SHA.
-The nested reviewed handoff's older repository/catalog identities describe the
-preserved authority snapshot, not the runtime checkout to install.
-
-The primary installation is editable source plus the supplied local dependency
-and build wheels. From the exact checkout, in a new CPython 3.12 venv:
+Use the HTTPS clone and ordinary editable installation in the Russian quick-start:
 
 ```bash
-export PIP_NO_INDEX=1 PIP_FIND_LINKS="$DELIVERY/wheelhouse"
-python -m pip install --upgrade pip setuptools wheel
-python -m pip install -e '.[md]'
-python -m pip check
+git clone https://github.com/2Myaka2/MANIA_WANIA.git
+cd MANIA_WANIA && git checkout FAIR
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[md]"
+./run_egor_all.sh /path/to/Egor /path/to/results
 ```
 
-These are the installation commands verified in the recipient test and rechecked
-against the final wheelhouse. Online pip installation failed in that test.
-The wheelhouse targets CPython 3.12, Linux x86_64 with glibc >= 2.28; it is not a
-cross-platform dependency bundle. Python/venv and Git must already be available.
-It includes no MANIA project wheel: MANIA imports from the exact checked-out
-source, MDAnalysis and the other dependencies from the new venv. Do not use a
-PYTHONPATH hook or an old project wheel to supply missing source files.
+No detached commit, delivery ZIP, wheelhouse, overlay or PYTHONPATH hook is part
+of this workflow. Dependency installation needs access to the configured package
+index. An installation/network failure is a blocker, not permission to silently
+substitute a different installation procedure. Stable UTC/NTP is required by
+existing provenance checks; those checks are not weakened by the launcher.
 
-`DELIVERY_FILES.sha256` covers every other delivery file, including wheels and
-the nested `HANDOFF_FILES.sha256`. The latter covers every other handoff file.
-Check both before preparation, then run the unchanged `check_package.py` with
-`python -B`. It strict-reads all nine selections and their controls/templates;
-it does not certify local coordinates. Keep the package immutable after prepare.
-The retained `materialize_binding.py` is a legacy compatibility asset, not a
-recipient step: the checkout's `confirm` now creates the site review and binding.
-Do not fill templates or edit generated observations, hashes, lineage or flags.
+The [tracked runtime subset](../production/egor_runtime/README.md) preserves
+reviewed authority records byte-for-byte, including historical provenance fields.
+Those historical paths never become runtime dependencies. Its regenerated
+`HANDOFF_FILES.sha256` describes only the tracked subset; packaging fields inside
+the retained historical manifest are provenance. The launcher verifies/copies
+this subset automatically. Historical evidence and helper scripts are excluded.
 
 ## Nine-trajectory authority and remaining work
 
-The existing authority, three sets of system controls and all nine trajectory
-templates are preserved. Each system's replicas share its byte-identical PSF,
-690-residue mapping, element definitions, annotations and partner metadata.
-Partner indices remain specific to each system. Element and time templates remain
-replica-specific. Templates are intentionally incomplete and non-executable.
-Their recorded intake readiness does not replace preparation at the execution site.
+Each system's replicas share its byte-identical PSF, 690-residue mapping,
+element definitions, annotations and partner metadata. Partner indices remain
+specific to each system; element and time templates remain replica-specific.
+Their recorded intake readiness does not replace preparation at the execution
+site. The checkout includes no DCD, PSF, CONF/OUT/XSC or toppar payload: Egor
+supplies his own raw files. Seven DCDs were absent at local intake; no full
+nine-trajectory scientific execution is claimed by the software handoff.
 
-The delivery includes no DCD, PSF, CONF/OUT/XSC or toppar payload. The recipient
-supplies their own files at the explicit paths listed in `SOURCE_PATHS.tsv`,
-with source identities in `authority/source_inventory.json` and shared definitions
-in `authority/shared_toppar.json`. Seven DCDs were absent at intake; their bytes
-and observations are not claimed verified. No trajectory is substituted by filename
-search. A source mismatch or an unlisted delivery path requires clarification of
-the authority, not a JSON edit to force acceptance.
+For acceptance testing only, the advanced launcher option
+`--TEST-0ss-r1-5-8ns` selects raw 0SS/r1 with the existing technical manifest in
+`production/egor_runtime/technical_0ss_r1.json`. It still performs fresh full-axis
+preparation and requires explicit human review. Its output/preparation namespaces
+are separate (`test_0ss_r1`), and the existing production interface labels its
+16-sample, two-window output ineligible for production aggregation/publication.
+This option is absent from the normal recipient quick-start.
 
-For each selected trajectory: prepare a fresh full-axis derivative, read the
-summary, perform and record human review, confirm, then execute the generated
-validate and full production run. Do not reuse a historical prepared trajectory,
-runtime time control, binding, output or approval. DCD does not contain atom labels;
-the reviewer must attest source/run correspondence on the available provenance,
-not claim an independent DCD atom-label proof. A technical PASS is not human approval.
-
-The quick-start records stdout/stderr and numeric exit status for prepare, confirm,
-validate and run in a separate log directory. The first two also retain
-`operation.log`, `phases.jsonl` and `operation.json` below their respective attempt
-directories. Early failures may precede those internal logs, so preserve the shell
-logs too. Every nonzero exit stops the documented flow. Check stable UTC/NTP and
-free space before long work; the byte budget is not a disk reservation.
-
-Return complete production, preparation/confirmation and log directories to
-Andrey. Preserve failed attempts and use new paths for fresh attempts. Existing
-`--resume` verifies/reuses completed stages; it does not resume a partial contact
-pass. Full 5–100 ns runs, the remaining trajectory preparations, final QC,
-replica availability/exclusions, specialized correspondence, aggregation and
-publication remain separate work. Do not aggregate replicas in this handoff.
+Full 5–100 ns calculations, final QC, authoritative exclusions/availability,
+specialized partner correspondence, aggregation and publication remain distinct
+work. This launcher neither aggregates nor publishes.

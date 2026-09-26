@@ -1,0 +1,7 @@
+{
+  "schema_version": "mania.production_technical_run.v0.1",
+  "purpose": "technical_validation",
+  "trajectory_id": "namd_egor_wt_0ss_r1",
+  "start_ns": 5,
+  "end_ns": 8
+}

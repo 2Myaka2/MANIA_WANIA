@@ -1,0 +1,28 @@
+{
+  "schema_version": "egor.handoff.pbc_protocol.v1",
+  "authority": "Accepted external Egor fragment protocol",
+  "protocol": "unwrap_bonded_fragments_center_protein_wrap_complete_fragments",
+  "steps": [
+    "unwrap bonded fragments",
+    "center on protein",
+    "wrap complete bonded fragments"
+  ],
+  "internal_mic": false,
+  "required_atom_order_preserved": true,
+  "required_frame_order_preserved": true,
+  "required_full_axis_ps": [
+    100,
+    100000
+  ],
+  "required_frame_count": 1000,
+  "execution_in_this_task": false,
+  "automatic_scientific_certification": false,
+  "required_evidence": [
+    "exact PSF/raw/prepared hashes",
+    "per-frame cells",
+    "atom and frame order attestation",
+    "full-axis raw/prepared time controls",
+    "external preparation and audit report",
+    "named reviewer"
+  ]
+}

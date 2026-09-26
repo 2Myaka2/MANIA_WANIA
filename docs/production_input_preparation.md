@@ -6,39 +6,36 @@ binding. Use the installed MANIA environment with its existing optional
 MDAnalysis dependency and the two adjacent tool files from this checkout.
 No new dependency, catalog edit or manual JSON editing is needed.
 
-The supported selections are `namd_egor_wt_{0,1,2}ss_r{1,2,3}` (choose one literal
-ID). The recipient workflow at commit
-`aa24f04900767b04f1303be18fe867e879feea93` has completed real 0SS/r1 preparation
-in a fresh clone/venv, explicit human confirmation and production validation.
-The subsequent 5–8 ns technical run, complete strict artifact validation,
-zero-mismatch offline replay and completed-result resume passed. Full 5–100 ns
-production was not run by that validation. For 1SS/r1, the same path selected the
-correct system topology/controls and passed its first-frame applicability check;
-full 1SS preparation and reopening were not validated, and no contacts were run.
+The normal recipient uses the [Russian quick-start](egor_handoff_quickstart_ru.md):
+`./run_egor_all.sh EGOR_DATA_DIR OUTPUT_DIR` selects all nine Egor trajectories,
+invokes this tool independently for each, displays all summaries, collects one
+named explicit approval, and supplies each report's actual hash automatically.
+The commands below document the lower-level interface for technical inspection;
+they are not extra recipient steps.
 
-Start with the supplied [Russian quick-start](egor_handoff_quickstart_ru.md).
-Install from the exact checkout using its `[md]` extra and the delivery's local
-wheelhouse; the online pip path failed in the recipient test. That wheelhouse is
-specific to CPython 3.12 on Linux x86_64 (glibc >= 2.28), contains dependency/build
-wheels only, and is not a MANIA runtime authority. See the
-[interface reference](egor_production_interface.md#delivery-and-installation).
+Install from the FAIR checkout with `python -m pip install -e ".[md]"`.
+Runtime authority is tracked under `production/egor_runtime/`; no archive or
+external wheelhouse is required. See the
+[batch interface](egor_production_interface.md#batch-preparation-review-and-retry).
 
 ## Inputs and roots
 
-Extract the final delivery below `DATA_ROOT` and select its nested `egor_handoff/`;
-supply the selected replica's raw bundle and shared reviewed toppar at their
-explicit package paths. Supply PSF, CONF, OUT, XSC and DCD; do not substitute a
-different replica's files. The package's `HANDOFF_FILES.sha256` is verified,
-including catalog, source inventory, templates and each system's own controls.
-The package must be complete and immutable. The preparation tool never executes
-the packaged Python helpers; the recipient runs the strict package checker separately.
-Checksums establish consistency with the supplied package; obtain that authority
-package through the reviewed handoff, since checksums are not signatures.
+The batch launcher binds the reviewed source paths using a private hard-link
+view beneath `EGOR_DATA_DIR/.mania_egor/` and copies the small tracked runtime
+subset unchanged beside it. Raw bytes are not copied or rearranged. The source
+inventory supplies exact PSF, CONF, OUT, XSC, DCD and shared toppar selections.
+All nine sets are discovered and checked before preparation begins.
 
-`--authority-package` explicitly selects the extracted package. The established
+The runtime package's `HANDOFF_FILES.sha256` is verified, including catalog,
+source inventory, templates and each system's own controls. It must remain
+complete and immutable. Historical paths/packaging fields in the retained
+reviewed records are provenance only; no historical directory is opened.
+The preparation tool never executes packaged Python helpers.
+
+`--authority-package` explicitly selects the runtime package. The established
 `egor_handoff/` mount in its bindings is rebased to that directory, which must be
 below `--data-root`. Other file bindings remain relative to the data root.
-The supplied package already distinguishes a delivered filename from the literal
+The tracked package distinguishes a delivered filename from the literal
 CONF/OUT DCD declaration; both are checked. No suffix search or filename inference
 occurs. A new delivery path not present in the reviewed package requires a revised
 explicit authority binding; this tool does not infer one.
@@ -108,7 +105,8 @@ the report, and the limitations. DCD has no atom labels: indexed raw-to-prepared
 lineage cannot independently prove the original raw atom order matches the PSF.
 Automatic technical checks never claim that a human performed this review.
 
-Use the SHA256 printed by **that** preparation after inspecting its report:
+The launcher supplies the SHA256 of **that** displayed preparation automatically.
+For a deliberate lower-level invocation only, after inspecting its report:
 
 ```bash
 python tools/prepare_production_inputs.py confirm \
@@ -192,11 +190,8 @@ output protection, disk/path guards and clock order. Existing NAMD and productio
 binding tests remain the contract reference. No full pytest run is required for
 this scoped task.
 
-The real recipient check complements those synthetic tests: 0SS/r1 retained all
-1000 frames and 409865 atoms, with 12 automatic checks passing and no failures.
-It stopped at `pending_review` until Andrey explicitly approved that exact report.
-This earlier approval is not transferable to another site's newly generated report.
-The 1SS applicability attempt was deliberately interrupted after its first audited
-frame to avoid duplicating a large trajectory; remaining frames, full reopening,
-completion and confirmation remain untested. Packaging/documentation verification
-performs no MD and does not repeat those calculations.
+The earlier real recipient check at `aa24f04900767b04f1303be18fe867e879feea93`
+retained all 1000 frames and 409865 atoms of 0SS/r1, with all 12 automatic checks
+passing. Its human approval applies only to that earlier report. New preparation
+always needs a new named review. Full 1SS preparation/contact execution and full
+5–100 ns nine-run production are not established by the short 0SS acceptance test.

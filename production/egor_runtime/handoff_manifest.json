@@ -1,0 +1,498 @@
+{
+  "schema_version": "egor.handoff.manifest.v1",
+  "dataset_id": "napi2b-dataset-v1",
+  "trajectory_count": 9,
+  "systems": [
+    {
+      "system_id": "namd_egor_wt_0ss",
+      "psfs": [
+        {
+          "path": "egor/MD_no_bonds_NPT_W_I_PMm_100_ns.psf",
+          "size_bytes": 94856503,
+          "sha256": "89d521cf033bf1a0e01ec80d5ee5f74037ad46a68167297e1e4950a56e794417"
+        },
+        {
+          "path": "egor/MD_no_bonds_NPT_W_I_PMm_100_ns_2.psf",
+          "size_bytes": 94856503,
+          "sha256": "89d521cf033bf1a0e01ec80d5ee5f74037ad46a68167297e1e4950a56e794417"
+        },
+        {
+          "path": "egor/MD_no_bonds_NPT_W_I_PMm_100_ns_3.psf",
+          "size_bytes": 94856503,
+          "sha256": "89d521cf033bf1a0e01ec80d5ee5f74037ad46a68167297e1e4950a56e794417"
+        }
+      ],
+      "byte_identical": true,
+      "authority_scope": "one system; exact byte identity permits r1/r2/r3 reuse",
+      "runtime_element_path_rebinding": "replica-specific PSF path required by existing reader",
+      "atom_count": 409865,
+      "used_types": 96,
+      "protein_residues": 690,
+      "actual_ss_bonds": [],
+      "partner_count": 830,
+      "lipid_partners": 828,
+      "glycan_partners": 2,
+      "excluded": {
+        "TIP3": 101225,
+        "SOD": 339,
+        "CLA": 277
+      },
+      "every_atom_accounted_once": true,
+      "partner_indices_basis": "independently enumerated from this system PSF; no foreign indices copied",
+      "classification_authority": "exact shared CHARMM source atom/type membership and connectivity; Egor glycan decision",
+      "annotation_source": {
+        "path": "local_md/production_intake/prepared_inputs/stage34d4e3_egor_0ss_r1_20260926T061309Z_49d690e736a84bb7a5b58f4825e787c1/controls/annotations_0ss.json",
+        "size_bytes": 1291,
+        "sha256": "6ee48bdf605202398d2400939d070dadf41478be1933c09ecd3e19ad86c54547"
+      },
+      "controls": "controls/namd/egor_wt_0ss"
+    },
+    {
+      "system_id": "namd_egor_wt_1ss",
+      "psfs": [
+        {
+          "path": "egor/MD_303_350_NPT_W_I_PMm_100_ns.psf",
+          "size_bytes": 100579096,
+          "sha256": "c81688aaff64bd7342a19896581f14b90a22e4b8b1dbe4f2157392685a4846f9"
+        },
+        {
+          "path": "egor/MD_303_350_NPT_W_I_PMm_100_ns_2.psf",
+          "size_bytes": 100579096,
+          "sha256": "c81688aaff64bd7342a19896581f14b90a22e4b8b1dbe4f2157392685a4846f9"
+        },
+        {
+          "path": "egor/MD_303_350_NPT_W_I_PMm_100_ns_3.psf",
+          "size_bytes": 100579096,
+          "sha256": "c81688aaff64bd7342a19896581f14b90a22e4b8b1dbe4f2157392685a4846f9"
+        }
+      ],
+      "byte_identical": true,
+      "authority_scope": "one system; exact byte identity permits r1/r2/r3 reuse",
+      "runtime_element_path_rebinding": "replica-specific PSF path required by existing reader",
+      "atom_count": 438622,
+      "used_types": 97,
+      "protein_residues": 690,
+      "actual_ss_bonds": [
+        [
+          303,
+          350
+        ]
+      ],
+      "partner_count": 830,
+      "lipid_partners": 828,
+      "glycan_partners": 2,
+      "excluded": {
+        "TIP3": 110794,
+        "SOD": 365,
+        "CLA": 303
+      },
+      "every_atom_accounted_once": true,
+      "partner_indices_basis": "independently enumerated from this system PSF; no foreign indices copied",
+      "classification_authority": "exact shared CHARMM source atom/type membership and connectivity; Egor glycan decision",
+      "annotation_source": {
+        "path": "local_md/production_intake/prepared_inputs/stage34d4e3_egor_0ss_r1_20260926T061309Z_49d690e736a84bb7a5b58f4825e787c1/controls/annotations_1ss.json",
+        "size_bytes": 1291,
+        "sha256": "c1e15ab2ec6c41f9ea27dfc10b241c72ac6894369f6543a8012b8dc9183b462e"
+      },
+      "controls": "controls/namd/egor_wt_1ss"
+    },
+    {
+      "system_id": "namd_egor_wt_2ss",
+      "psfs": [
+        {
+          "path": "egor/MD_2_bonds_NPT_W_I_PMm_100_ns.psf",
+          "size_bytes": 100741304,
+          "sha256": "04b7bee588edf61bde25dfded24216ed4e0727d75d1e144356b500ecc89004bb"
+        },
+        {
+          "path": "egor/MD_2_bonds_NPT_W_I_PMm_100_ns_2.psf",
+          "size_bytes": 100741304,
+          "sha256": "04b7bee588edf61bde25dfded24216ed4e0727d75d1e144356b500ecc89004bb"
+        },
+        {
+          "path": "egor/MD_2_bonds_NPT_W_I_PMm_100_ns_3.psf",
+          "size_bytes": 100741304,
+          "sha256": "04b7bee588edf61bde25dfded24216ed4e0727d75d1e144356b500ecc89004bb"
+        }
+      ],
+      "byte_identical": true,
+      "authority_scope": "one system; exact byte identity permits r1/r2/r3 reuse",
+      "runtime_element_path_rebinding": "replica-specific PSF path required by existing reader",
+      "atom_count": 439436,
+      "used_types": 97,
+      "protein_residues": 690,
+      "actual_ss_bonds": [
+        [
+          303,
+          350
+        ],
+        [
+          322,
+          328
+        ]
+      ],
+      "partner_count": 830,
+      "lipid_partners": 828,
+      "glycan_partners": 2,
+      "excluded": {
+        "TIP3": 111066,
+        "SOD": 365,
+        "CLA": 303
+      },
+      "every_atom_accounted_once": true,
+      "partner_indices_basis": "independently enumerated from this system PSF; no foreign indices copied",
+      "classification_authority": "exact shared CHARMM source atom/type membership and connectivity; Egor glycan decision",
+      "annotation_source": {
+        "path": "local_md/stage34c_three_replica_downstream_20260923T162715Z_97cb0bc52b9347cfa0da2a09d7082f6c/biological_annotations_authority.json",
+        "size_bytes": 2436,
+        "sha256": "0b0c535cd0dc5d03163e1dd6314b31f3dbafe783653affad87c463e69861872b"
+      },
+      "controls": "controls/namd/egor_wt_2ss"
+    }
+  ],
+  "rows": [
+    {
+      "trajectory_id": "namd_egor_wt_0ss_r1",
+      "system_id": "namd_egor_wt_0ss",
+      "local_readiness": "READY",
+      "scientific_authority": "system controls and per-run CONF/OUT time derivation available",
+      "raw_DCD": "present_header_only",
+      "expected_dcd_path": "egor/MD_no_bonds_NPT_W_I_PMm_100_ns.dcd",
+      "declared_dcd_filename": "dcd/MD_no_bonds_W_I_PMm_100_ns.dcd",
+      "external_preparation": "accepted_local_checkpoint",
+      "input_binding_template": "templates/namd_egor_wt_0ss_r1/input_binding.template.json",
+      "raw_time_template": "templates/namd_egor_wt_0ss_r1/raw_time.template.json",
+      "prepared_time_template": "templates/namd_egor_wt_0ss_r1/prepared_time.template.json",
+      "remaining_before_validate": [
+        "accepted 0SS/r1 checkpoint may be reused only if its exact raw/prepared bytes and evidence are available and verified locally",
+        "verify all own PSF/CONF/OUT/XSC hashes and shared toppar hashes",
+        "supply raw DCD and verify filename linkage, SHA256, full frames/cells, atom and frame order",
+        "complete raw TimeControl from actual DCD observations and supplied CONF/OUT axis",
+        "supply a distinct externally prepared full-axis DCD and complete prepared TimeControl",
+        "supply reviewed PBC evidence and truthful named PreparedLineage attestation",
+        "materialize absolute embedded paths; hash final controls and inputs; strict-read final binding",
+        "check stable UTC/NTP and disjoint input/output roots and free space; run production validate"
+      ]
+    },
+    {
+      "trajectory_id": "namd_egor_wt_0ss_r2",
+      "system_id": "namd_egor_wt_0ss",
+      "local_readiness": "MISSING_FILES",
+      "scientific_authority": "system controls and per-run CONF/OUT time derivation available",
+      "raw_DCD": "absent_unverified",
+      "expected_dcd_path": "egor/dcd/MD_no_bonds_W_I_PMm_100_ns_2.dcd",
+      "declared_dcd_filename": "dcd/MD_no_bonds_W_I_PMm_100_ns_2.dcd",
+      "external_preparation": "pending",
+      "input_binding_template": "templates/namd_egor_wt_0ss_r2/input_binding.template.json",
+      "raw_time_template": "templates/namd_egor_wt_0ss_r2/raw_time.template.json",
+      "prepared_time_template": "templates/namd_egor_wt_0ss_r2/prepared_time.template.json",
+      "remaining_before_validate": [
+        "verify all own PSF/CONF/OUT/XSC hashes and shared toppar hashes",
+        "supply raw DCD and verify filename linkage, SHA256, full frames/cells, atom and frame order",
+        "complete raw TimeControl from actual DCD observations and supplied CONF/OUT axis",
+        "supply a distinct externally prepared full-axis DCD and complete prepared TimeControl",
+        "supply reviewed PBC evidence and truthful named PreparedLineage attestation",
+        "materialize absolute embedded paths; hash final controls and inputs; strict-read final binding",
+        "check stable UTC/NTP and disjoint input/output roots and free space; run production validate"
+      ]
+    },
+    {
+      "trajectory_id": "namd_egor_wt_0ss_r3",
+      "system_id": "namd_egor_wt_0ss",
+      "local_readiness": "MISSING_FILES",
+      "scientific_authority": "system controls and per-run CONF/OUT time derivation available",
+      "raw_DCD": "absent_unverified",
+      "expected_dcd_path": "egor/dcd/MD_no_bonds_W_I_PMm_100_ns_3.dcd",
+      "declared_dcd_filename": "dcd/MD_no_bonds_W_I_PMm_100_ns_3.dcd",
+      "external_preparation": "pending",
+      "input_binding_template": "templates/namd_egor_wt_0ss_r3/input_binding.template.json",
+      "raw_time_template": "templates/namd_egor_wt_0ss_r3/raw_time.template.json",
+      "prepared_time_template": "templates/namd_egor_wt_0ss_r3/prepared_time.template.json",
+      "remaining_before_validate": [
+        "verify all own PSF/CONF/OUT/XSC hashes and shared toppar hashes",
+        "supply raw DCD and verify filename linkage, SHA256, full frames/cells, atom and frame order",
+        "complete raw TimeControl from actual DCD observations and supplied CONF/OUT axis",
+        "supply a distinct externally prepared full-axis DCD and complete prepared TimeControl",
+        "supply reviewed PBC evidence and truthful named PreparedLineage attestation",
+        "materialize absolute embedded paths; hash final controls and inputs; strict-read final binding",
+        "check stable UTC/NTP and disjoint input/output roots and free space; run production validate"
+      ]
+    },
+    {
+      "trajectory_id": "namd_egor_wt_1ss_r1",
+      "system_id": "namd_egor_wt_1ss",
+      "local_readiness": "NEEDS_AUTHORITY",
+      "scientific_authority": "system controls and per-run CONF/OUT time derivation available",
+      "raw_DCD": "present_header_only",
+      "expected_dcd_path": "egor/MD_303_350_NPT_W_I_PMm_100_ns.dcd",
+      "declared_dcd_filename": "dcd/MD_303_350_W_I_PMm_100_ns.dcd",
+      "external_preparation": "pending",
+      "input_binding_template": "templates/namd_egor_wt_1ss_r1/input_binding.template.json",
+      "raw_time_template": "templates/namd_egor_wt_1ss_r1/raw_time.template.json",
+      "prepared_time_template": "templates/namd_egor_wt_1ss_r1/prepared_time.template.json",
+      "remaining_before_validate": [
+        "verify all own PSF/CONF/OUT/XSC hashes and shared toppar hashes",
+        "supply raw DCD and verify filename linkage, SHA256, full frames/cells, atom and frame order",
+        "complete raw TimeControl from actual DCD observations and supplied CONF/OUT axis",
+        "supply a distinct externally prepared full-axis DCD and complete prepared TimeControl",
+        "supply reviewed PBC evidence and truthful named PreparedLineage attestation",
+        "materialize absolute embedded paths; hash final controls and inputs; strict-read final binding",
+        "check stable UTC/NTP and disjoint input/output roots and free space; run production validate"
+      ]
+    },
+    {
+      "trajectory_id": "namd_egor_wt_1ss_r2",
+      "system_id": "namd_egor_wt_1ss",
+      "local_readiness": "MISSING_FILES",
+      "scientific_authority": "system controls and per-run CONF/OUT time derivation available",
+      "raw_DCD": "absent_unverified",
+      "expected_dcd_path": "egor/dcd/MD_303_350_W_I_PMm_100_ns_2.dcd",
+      "declared_dcd_filename": "dcd/MD_303_350_W_I_PMm_100_ns_2.dcd",
+      "external_preparation": "pending",
+      "input_binding_template": "templates/namd_egor_wt_1ss_r2/input_binding.template.json",
+      "raw_time_template": "templates/namd_egor_wt_1ss_r2/raw_time.template.json",
+      "prepared_time_template": "templates/namd_egor_wt_1ss_r2/prepared_time.template.json",
+      "remaining_before_validate": [
+        "verify all own PSF/CONF/OUT/XSC hashes and shared toppar hashes",
+        "supply raw DCD and verify filename linkage, SHA256, full frames/cells, atom and frame order",
+        "complete raw TimeControl from actual DCD observations and supplied CONF/OUT axis",
+        "supply a distinct externally prepared full-axis DCD and complete prepared TimeControl",
+        "supply reviewed PBC evidence and truthful named PreparedLineage attestation",
+        "materialize absolute embedded paths; hash final controls and inputs; strict-read final binding",
+        "check stable UTC/NTP and disjoint input/output roots and free space; run production validate"
+      ]
+    },
+    {
+      "trajectory_id": "namd_egor_wt_1ss_r3",
+      "system_id": "namd_egor_wt_1ss",
+      "local_readiness": "MISSING_FILES",
+      "scientific_authority": "system controls and per-run CONF/OUT time derivation available",
+      "raw_DCD": "absent_unverified",
+      "expected_dcd_path": "egor/dcd/MD_303_350_W_I_PMm_100_ns_3.dcd",
+      "declared_dcd_filename": "dcd/MD_303_350_W_I_PMm_100_ns_3.dcd",
+      "external_preparation": "pending",
+      "input_binding_template": "templates/namd_egor_wt_1ss_r3/input_binding.template.json",
+      "raw_time_template": "templates/namd_egor_wt_1ss_r3/raw_time.template.json",
+      "prepared_time_template": "templates/namd_egor_wt_1ss_r3/prepared_time.template.json",
+      "remaining_before_validate": [
+        "verify all own PSF/CONF/OUT/XSC hashes and shared toppar hashes",
+        "supply raw DCD and verify filename linkage, SHA256, full frames/cells, atom and frame order",
+        "complete raw TimeControl from actual DCD observations and supplied CONF/OUT axis",
+        "supply a distinct externally prepared full-axis DCD and complete prepared TimeControl",
+        "supply reviewed PBC evidence and truthful named PreparedLineage attestation",
+        "materialize absolute embedded paths; hash final controls and inputs; strict-read final binding",
+        "check stable UTC/NTP and disjoint input/output roots and free space; run production validate"
+      ]
+    },
+    {
+      "trajectory_id": "namd_egor_wt_2ss_r1",
+      "system_id": "namd_egor_wt_2ss",
+      "local_readiness": "MISSING_FILES",
+      "scientific_authority": "system controls and per-run CONF/OUT time derivation available",
+      "raw_DCD": "absent_unverified",
+      "expected_dcd_path": "egor/dcd/MD_2_bonds_W_I_PMm_100_ns.dcd",
+      "declared_dcd_filename": "dcd/MD_2_bonds_W_I_PMm_100_ns.dcd",
+      "external_preparation": "pending",
+      "input_binding_template": "templates/namd_egor_wt_2ss_r1/input_binding.template.json",
+      "raw_time_template": "templates/namd_egor_wt_2ss_r1/raw_time.template.json",
+      "prepared_time_template": "templates/namd_egor_wt_2ss_r1/prepared_time.template.json",
+      "remaining_before_validate": [
+        "verify all own PSF/CONF/OUT/XSC hashes and shared toppar hashes",
+        "supply raw DCD and verify filename linkage, SHA256, full frames/cells, atom and frame order",
+        "complete raw TimeControl from actual DCD observations and supplied CONF/OUT axis",
+        "supply a distinct externally prepared full-axis DCD and complete prepared TimeControl",
+        "supply reviewed PBC evidence and truthful named PreparedLineage attestation",
+        "materialize absolute embedded paths; hash final controls and inputs; strict-read final binding",
+        "check stable UTC/NTP and disjoint input/output roots and free space; run production validate"
+      ]
+    },
+    {
+      "trajectory_id": "namd_egor_wt_2ss_r2",
+      "system_id": "namd_egor_wt_2ss",
+      "local_readiness": "MISSING_FILES",
+      "scientific_authority": "system controls and per-run CONF/OUT time derivation available",
+      "raw_DCD": "absent_unverified",
+      "expected_dcd_path": "egor/dcd/MD_2_bonds_W_I_PMm_100_ns_2.dcd",
+      "declared_dcd_filename": "dcd/MD_2_bonds_W_I_PMm_100_ns_2.dcd",
+      "external_preparation": "pending",
+      "input_binding_template": "templates/namd_egor_wt_2ss_r2/input_binding.template.json",
+      "raw_time_template": "templates/namd_egor_wt_2ss_r2/raw_time.template.json",
+      "prepared_time_template": "templates/namd_egor_wt_2ss_r2/prepared_time.template.json",
+      "remaining_before_validate": [
+        "verify all own PSF/CONF/OUT/XSC hashes and shared toppar hashes",
+        "supply raw DCD and verify filename linkage, SHA256, full frames/cells, atom and frame order",
+        "complete raw TimeControl from actual DCD observations and supplied CONF/OUT axis",
+        "supply a distinct externally prepared full-axis DCD and complete prepared TimeControl",
+        "supply reviewed PBC evidence and truthful named PreparedLineage attestation",
+        "materialize absolute embedded paths; hash final controls and inputs; strict-read final binding",
+        "check stable UTC/NTP and disjoint input/output roots and free space; run production validate"
+      ]
+    },
+    {
+      "trajectory_id": "namd_egor_wt_2ss_r3",
+      "system_id": "namd_egor_wt_2ss",
+      "local_readiness": "MISSING_FILES",
+      "scientific_authority": "system controls and per-run CONF/OUT time derivation available",
+      "raw_DCD": "absent_unverified",
+      "expected_dcd_path": "egor/dcd/MD_2_bonds_W_I_PMm_100_ns_3.dcd",
+      "declared_dcd_filename": "dcd/MD_2_bonds_W_I_PMm_100_ns_3.dcd",
+      "external_preparation": "pending",
+      "input_binding_template": "templates/namd_egor_wt_2ss_r3/input_binding.template.json",
+      "raw_time_template": "templates/namd_egor_wt_2ss_r3/raw_time.template.json",
+      "prepared_time_template": "templates/namd_egor_wt_2ss_r3/prepared_time.template.json",
+      "remaining_before_validate": [
+        "verify all own PSF/CONF/OUT/XSC hashes and shared toppar hashes",
+        "supply raw DCD and verify filename linkage, SHA256, full frames/cells, atom and frame order",
+        "complete raw TimeControl from actual DCD observations and supplied CONF/OUT axis",
+        "supply a distinct externally prepared full-axis DCD and complete prepared TimeControl",
+        "supply reviewed PBC evidence and truthful named PreparedLineage attestation",
+        "materialize absolute embedded paths; hash final controls and inputs; strict-read final binding",
+        "check stable UTC/NTP and disjoint input/output roots and free space; run production validate"
+      ]
+    }
+  ],
+  "install": "Place this handoff directory at MANIA_DATA_ROOT/egor_handoff; supply raw inputs under MANIA_DATA_ROOT/egor.",
+  "UTC_NTP_prerequisite": "Check stable UTC and NTP synchronization before unattended runs; no host clock fix is included.",
+  "downstream_gates": [
+    "real Stage 32 QC",
+    "authoritative specialized partner correspondence",
+    "real aggregation"
+  ],
+  "stage35_authorized": false,
+  "science_executed": false,
+  "local_0ss_r1_refreshed_binding": "egor_handoff/local_0ss_r1/production_input_binding.json",
+  "source_data_included": false,
+  "missing_DCDs_downloaded_or_copied": false,
+  "exact_handoff_files": [
+    "HANDOFF_FILES.sha256",
+    "README.md",
+    "authority/accepted_0ss_r1/namd_time_authority.json",
+    "authority/accepted_0ss_r1/pbc_evidence.json",
+    "authority/accepted_0ss_r1/prepared_frame_audit.json",
+    "authority/accepted_0ss_r1/prepared_time_authority.json",
+    "authority/accepted_0ss_r1_checkpoint.json",
+    "authority/accepted_2ss_annotation_provenance.json",
+    "authority/accepted_2ss_annotations.json",
+    "authority/egor_0ss_1ss_annotation_decision.json",
+    "authority/egor_wt_0ss_partner_membership.json",
+    "authority/egor_wt_1ss_partner_membership.json",
+    "authority/egor_wt_2ss_partner_membership.json",
+    "authority/partner_classification_sources.json",
+    "authority/pbc_protocol.json",
+    "authority/shared_toppar.json",
+    "authority/source_inventory.json",
+    "authority/system_identity.json",
+    "catalog/README.md",
+    "catalog/dataset.yaml",
+    "catalog/trajectories.csv",
+    "check_package.py",
+    "controls/namd/egor_wt_0ss/annotations.json",
+    "controls/namd/egor_wt_0ss/canonical_mapping.json",
+    "controls/namd/egor_wt_0ss/elements.portable.json",
+    "controls/namd/egor_wt_0ss/mapping_binding.json",
+    "controls/namd/egor_wt_0ss/partner_metadata.json",
+    "controls/namd/egor_wt_0ss/topology_authority.json",
+    "controls/namd/egor_wt_1ss/annotations.json",
+    "controls/namd/egor_wt_1ss/canonical_mapping.json",
+    "controls/namd/egor_wt_1ss/elements.portable.json",
+    "controls/namd/egor_wt_1ss/mapping_binding.json",
+    "controls/namd/egor_wt_1ss/partner_metadata.json",
+    "controls/namd/egor_wt_1ss/topology_authority.json",
+    "controls/namd/egor_wt_2ss/annotations.json",
+    "controls/namd/egor_wt_2ss/canonical_mapping.json",
+    "controls/namd/egor_wt_2ss/elements.portable.json",
+    "controls/namd/egor_wt_2ss/mapping_binding.json",
+    "controls/namd/egor_wt_2ss/partner_metadata.json",
+    "controls/namd/egor_wt_2ss/topology_authority.json",
+    "egor_handoff_quickstart_ru.md",
+    "egor_production_interface.md",
+    "handoff_manifest.json",
+    "materialize_binding.py",
+    "templates/namd_egor_wt_0ss_r1/elements.portable.json",
+    "templates/namd_egor_wt_0ss_r1/input_binding.template.json",
+    "templates/namd_egor_wt_0ss_r1/prepared_time.template.json",
+    "templates/namd_egor_wt_0ss_r1/raw_time.template.json",
+    "templates/namd_egor_wt_0ss_r2/elements.portable.json",
+    "templates/namd_egor_wt_0ss_r2/input_binding.template.json",
+    "templates/namd_egor_wt_0ss_r2/prepared_time.template.json",
+    "templates/namd_egor_wt_0ss_r2/raw_time.template.json",
+    "templates/namd_egor_wt_0ss_r3/elements.portable.json",
+    "templates/namd_egor_wt_0ss_r3/input_binding.template.json",
+    "templates/namd_egor_wt_0ss_r3/prepared_time.template.json",
+    "templates/namd_egor_wt_0ss_r3/raw_time.template.json",
+    "templates/namd_egor_wt_1ss_r1/elements.portable.json",
+    "templates/namd_egor_wt_1ss_r1/input_binding.template.json",
+    "templates/namd_egor_wt_1ss_r1/prepared_time.template.json",
+    "templates/namd_egor_wt_1ss_r1/raw_time.template.json",
+    "templates/namd_egor_wt_1ss_r2/elements.portable.json",
+    "templates/namd_egor_wt_1ss_r2/input_binding.template.json",
+    "templates/namd_egor_wt_1ss_r2/prepared_time.template.json",
+    "templates/namd_egor_wt_1ss_r2/raw_time.template.json",
+    "templates/namd_egor_wt_1ss_r3/elements.portable.json",
+    "templates/namd_egor_wt_1ss_r3/input_binding.template.json",
+    "templates/namd_egor_wt_1ss_r3/prepared_time.template.json",
+    "templates/namd_egor_wt_1ss_r3/raw_time.template.json",
+    "templates/namd_egor_wt_2ss_r1/elements.portable.json",
+    "templates/namd_egor_wt_2ss_r1/input_binding.template.json",
+    "templates/namd_egor_wt_2ss_r1/prepared_time.template.json",
+    "templates/namd_egor_wt_2ss_r1/raw_time.template.json",
+    "templates/namd_egor_wt_2ss_r2/elements.portable.json",
+    "templates/namd_egor_wt_2ss_r2/input_binding.template.json",
+    "templates/namd_egor_wt_2ss_r2/prepared_time.template.json",
+    "templates/namd_egor_wt_2ss_r2/raw_time.template.json",
+    "templates/namd_egor_wt_2ss_r3/elements.portable.json",
+    "templates/namd_egor_wt_2ss_r3/input_binding.template.json",
+    "templates/namd_egor_wt_2ss_r3/prepared_time.template.json",
+    "templates/namd_egor_wt_2ss_r3/raw_time.template.json"
+  ],
+  "file_inventory_note": "HANDOFF_FILES.sha256 hashes all other 79 package files. The sibling ZIP SHA256 covers the entire archive, including HANDOFF_FILES.sha256. Verification evidence is retained separately by Andrey.",
+  "repository_head": "e3f69331f95a42d1da5d0cf7d6a60646421b8079",
+  "repository_files": [
+    {
+      "package_path": "catalog/dataset.yaml",
+      "repository_path": "production/dataset_v1/dataset.yaml",
+      "commit": "e3f69331f95a42d1da5d0cf7d6a60646421b8079",
+      "sha256": "da350f24bd0a2c5494768614cc989d4d69b8f0a8dedd0fb5ee6ca35f79d81371"
+    },
+    {
+      "package_path": "catalog/trajectories.csv",
+      "repository_path": "production/dataset_v1/trajectories.csv",
+      "commit": "e3f69331f95a42d1da5d0cf7d6a60646421b8079",
+      "sha256": "f97a79cd43394f4016e72e10d855718a84f0de268b05f836ac5975817e12de70"
+    },
+    {
+      "package_path": "catalog/README.md",
+      "repository_path": "production/dataset_v1/README.md",
+      "commit": "e3f69331f95a42d1da5d0cf7d6a60646421b8079",
+      "sha256": "f539cffe40040c4ac82455a3f3a2271e89fcf910a5ef71feb210ae49b92bfb71"
+    },
+    {
+      "package_path": "egor_production_interface.md",
+      "repository_path": "docs/egor_production_interface.md",
+      "commit": "e3f69331f95a42d1da5d0cf7d6a60646421b8079",
+      "sha256": "eb43511686d0478aa4a817621f5510b180e41d79a364b655935580cf1cba6b1f"
+    }
+  ],
+  "tracked_file_overlay_required": false,
+  "authority_package_origin": {
+    "archive_name": "egor_9_trajectory_handoff_20260926.zip",
+    "archive_sha256": "51f843a1a01849685bbebb52630d63e5d2b80f29e1ab33657aedab211802c121",
+    "checksum_manifest_sha256": "af4e953501faa57102c08e94081487e70335ff543e4e9601386b9b8a4dd234da",
+    "original_file_count": 79,
+    "authority_controls_templates_helpers": "byte_identical"
+  },
+  "delivery_supplements": [
+    {
+      "path": "egor_handoff_quickstart_ru.md",
+      "sha256": "88bea6d7fa6e257c7e6c0555e572db1f37e3aa30321b77dafe6e5eee80125660",
+      "origin": "new_document_authored_for_this_delivery",
+      "present_at_repository_head": false
+    }
+  ],
+  "packaging_updates": [
+    "README.md",
+    "handoff_manifest.json",
+    "HANDOFF_FILES.sha256"
+  ],
+  "local_0ss_r1_refreshed_binding_note": "Historical local-only binding; not included. Use site/TRAJECTORY_ID/production_input_binding.json after reviewed materialization."
+}

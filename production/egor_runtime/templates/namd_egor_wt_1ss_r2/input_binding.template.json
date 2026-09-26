@@ -1,0 +1,139 @@
+{
+  "schema_version": "egor.handoff.input_binding_template.v1",
+  "trajectory_id": "namd_egor_wt_1ss_r2",
+  "status": "requires_execution_site_verification",
+  "executable": false,
+  "local_readiness": "MISSING_FILES",
+  "dcd_present_at_intake": false,
+  "requires_DCD_verification_at_execution_site": true,
+  "declared_dcd_filename": "dcd/MD_303_350_W_I_PMm_100_ns_2.dcd",
+  "expected_dcd_path": "egor/dcd/MD_303_350_W_I_PMm_100_ns_2.dcd",
+  "payload": {
+    "schema_version": "mania.production_input_binding.v0.1",
+    "dataset_id": "napi2b-dataset-v1",
+    "catalog_row": {
+      "trajectory_id": "namd_egor_wt_1ss_r2",
+      "system_id": "namd_egor_wt_1ss",
+      "replica_id": "2",
+      "engine": "namd",
+      "variant_id": "WT",
+      "condition": "PMm",
+      "disulfide_state": "1SS",
+      "replica_group_id": "namd_egor_wt_1ss",
+      "expected_replicas": "3",
+      "topology_path": "egor/MD_303_350_NPT_W_I_PMm_100_ns_2.psf",
+      "trajectory_path": "egor/dcd/MD_303_350_W_I_PMm_100_ns_2.dcd",
+      "config_path": "egor/MD_303_350_NPT_W_I_PMm_100_ns_2.conf",
+      "log_path": "egor/MD_303_350_NPT_W_I_PMm_100_ns_2.out",
+      "box_path": "egor/MD_303_350_NPT_W_I_PMm_100_ns_2.xsc",
+      "production_start_ns": "5",
+      "production_end_ns": "100",
+      "frame_stride_ps": "200",
+      "window_length_ns": "2",
+      "window_step_ns": "1",
+      "element_control": "egor_handoff/templates/namd_egor_wt_1ss_r2/elements.portable.json",
+      "canonical_mapping": "egor_handoff/controls/namd/egor_wt_1ss/canonical_mapping.json",
+      "biological_annotations": "egor_handoff/controls/namd/egor_wt_1ss/annotations.json",
+      "partner_metadata": "egor_handoff/controls/namd/egor_wt_1ss/partner_metadata.json",
+      "readiness_status": "MISSING_FILES",
+      "readiness_notes": "Nine-row handoff supplies exact system PSF-bound elements and 690-residue mapping; complete annotations and own-topology partner metadata supplied; All three system PSFs byte-identical; shared system authority with replica-specific element path bindings; CONF/OUT-derived full time axis and approved external PBC protocol supplied; DCD locally absent; expected CONF/OUT path egor/dcd/MD_303_350_W_I_PMm_100_ns_2.dcd; delivery bytes and header unverified; Execution-site DCD verification required; absence is distinct from available scientific authority; External full-axis preparation and reviewed PBC lineage pending; Templates are not executable bindings; no new MD or contact science in this handoff task; Real QC and specialized partner correspondence remain downstream gates; Check stable UTC/NTP before unattended runs",
+      "source_group": "egor_namd",
+      "nominal_duration_ns": "100",
+      "time_control": "egor_handoff/templates/namd_egor_wt_1ss_r2/raw_time.template.json",
+      "overlap_percent": "50"
+    },
+    "temporal_policy": {
+      "schema_version": "mania.preprocessing_temporal_policy.v0.1",
+      "boundary_profile": "mania.window_boundaries.inclusive.v1"
+    },
+    "files": {
+      "topology_path": {
+        "path": "egor/MD_303_350_NPT_W_I_PMm_100_ns_2.psf",
+        "size_bytes": 100579096,
+        "sha256": "c81688aaff64bd7342a19896581f14b90a22e4b8b1dbe4f2157392685a4846f9"
+      },
+      "config_path": {
+        "path": "egor/MD_303_350_NPT_W_I_PMm_100_ns_2.conf",
+        "size_bytes": 4212,
+        "sha256": "ec02948c73e0c8635c2134f14bb44cb7eaea56a3d03caf9ffa20f97b54c976d6"
+      },
+      "log_path": {
+        "path": "egor/MD_303_350_NPT_W_I_PMm_100_ns_2.out",
+        "size_bytes": 5481894,
+        "sha256": "76b487e306a3f5697cdff5fc76cf4194fdd4d1e81549bbbffa3fb096196a53a1"
+      },
+      "box_path": {
+        "path": "egor/MD_303_350_NPT_W_I_PMm_100_ns_2.xsc",
+        "size_bytes": 264,
+        "sha256": "ef048509fc9164947875ab12aa720ab8abef1a88f60311a33655218ebf0361e4"
+      },
+      "element_control": {
+        "path": "egor_handoff/site/namd_egor_wt_1ss_r2/elements.json",
+        "size_bytes": null,
+        "sha256": null
+      },
+      "canonical_mapping": {
+        "path": "egor_handoff/controls/namd/egor_wt_1ss/canonical_mapping.json",
+        "size_bytes": 167777,
+        "sha256": "95d5cdb6eed7d847ededf58f968eeb52139815f95fe751f7eca44ccbda681fed"
+      },
+      "biological_annotations": {
+        "path": "egor_handoff/controls/namd/egor_wt_1ss/annotations.json",
+        "size_bytes": 1291,
+        "sha256": "c1e15ab2ec6c41f9ea27dfc10b241c72ac6894369f6543a8012b8dc9183b462e"
+      },
+      "partner_metadata": {
+        "path": "egor_handoff/controls/namd/egor_wt_1ss/partner_metadata.json",
+        "size_bytes": 329702,
+        "sha256": "73cd9b12b328b5ead03b2d697b14471ebaaee8b9a635fb805eb1a3ed6edfb7aa"
+      },
+      "time_control": {
+        "path": "egor_handoff/site/namd_egor_wt_1ss_r2/raw_time.json",
+        "size_bytes": null,
+        "sha256": null
+      },
+      "trajectory_path": {
+        "path": "egor/dcd/MD_303_350_W_I_PMm_100_ns_2.dcd",
+        "size_bytes": null,
+        "sha256": null
+      },
+      "prepared_trajectory": {
+        "path": "prepared/namd_egor_wt_1ss_r2/full_axis.dcd",
+        "size_bytes": null,
+        "sha256": null
+      },
+      "prepared_time_control": {
+        "path": "egor_handoff/site/namd_egor_wt_1ss_r2/prepared_time.json",
+        "size_bytes": null,
+        "sha256": null
+      },
+      "pbc_evidence": {
+        "path": "egor_handoff/site/namd_egor_wt_1ss_r2/pbc_evidence.json",
+        "size_bytes": null,
+        "sha256": null
+      }
+    },
+    "prepared_lineage": {
+      "protocol": "unwrap_bonded_fragments_center_protein_wrap_complete_fragments",
+      "internal_mic": false,
+      "atom_order_preserved": null,
+      "frame_order_preserved": null,
+      "topology_sha256": "c81688aaff64bd7342a19896581f14b90a22e4b8b1dbe4f2157392685a4846f9",
+      "raw_trajectory_sha256": null,
+      "prepared_trajectory_sha256": null,
+      "frame_count": 1000,
+      "atom_count": 438622,
+      "reviewer": null,
+      "note": null
+    }
+  },
+  "required_actions": [
+    "verify all own PSF/CONF/OUT/XSC hashes and shared toppar hashes",
+    "supply raw DCD and verify filename linkage, SHA256, full frames/cells, atom and frame order",
+    "complete raw TimeControl from actual DCD observations and supplied CONF/OUT axis",
+    "supply a distinct externally prepared full-axis DCD and complete prepared TimeControl",
+    "supply reviewed PBC evidence and truthful named PreparedLineage attestation",
+    "materialize absolute embedded paths; hash final controls and inputs; strict-read final binding",
+    "check stable UTC/NTP and disjoint input/output roots and free space; run production validate"
+  ]
+}

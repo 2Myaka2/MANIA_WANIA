@@ -1,0 +1,295 @@
+{
+  "status": "exact_57_reviewed_source_hashes_match",
+  "sources": [
+    {
+      "path": "egor/toppar/cam.str",
+      "size_bytes": 1842,
+      "sha256": "7e0c792239ce39709b697ccc46102cdc369ab2e61ad8b193655303fdef7befac"
+    },
+    {
+      "path": "egor/toppar/par_all36_carb.prm",
+      "size_bytes": 160439,
+      "sha256": "87ab6ada08b2e898f7dba1e4b4a562e73ae564cb652b36b0a8c56b8372adde88"
+    },
+    {
+      "path": "egor/toppar/par_all36_cgenff.prm",
+      "size_bytes": 926349,
+      "sha256": "1a75220f4edcb73fda7dba325321d2f629bb8d39b88715413a12bcbd320f9fa5"
+    },
+    {
+      "path": "egor/toppar/par_all36_lipid.prm",
+      "size_bytes": 28988,
+      "sha256": "6b5ab3e2d433303188dfd8f2f89a192142e7caa5aa97e79ca8ba0084076ff302"
+    },
+    {
+      "path": "egor/toppar/par_all36_na.prm",
+      "size_bytes": 64728,
+      "sha256": "5532b443190e6a3081f2571c2ab3de07f4384b9fc4bb18e552450275aff04af0"
+    },
+    {
+      "path": "egor/toppar/par_all36m_prot.prm",
+      "size_bytes": 181061,
+      "sha256": "b1d1c70b5f350a2d5758bf3ce7ec86e50cdc3f69d8cc3097f98f279cdaeb5aaa"
+    },
+    {
+      "path": "egor/toppar/par_interface.prm",
+      "size_bytes": 128049,
+      "sha256": "9bccd9a44bf98e026193970c94d6471ff4dcb7bff8ece5b0d5b5e5472d2e04a4"
+    },
+    {
+      "path": "egor/toppar/tip216.crd",
+      "size_bytes": 33459,
+      "sha256": "ae572b9e1ceb2c6460b7db41fedd1fba3c083ff96533d5f4525aaf3a7020d3fc"
+    },
+    {
+      "path": "egor/toppar/top_all36_carb.rtf",
+      "size_bytes": 292976,
+      "sha256": "fab33a8119d064c4d0a46195e483728ae68a1b1e0b223323378c6c6e04f19b8d"
+    },
+    {
+      "path": "egor/toppar/top_all36_cgenff.rtf",
+      "size_bytes": 2474552,
+      "sha256": "5279b2f289d4e693e9c7ae41d1355a824fe0aa3dc8c14295d53ab48418426b00"
+    },
+    {
+      "path": "egor/toppar/top_all36_lipid.rtf",
+      "size_bytes": 635639,
+      "sha256": "0c590ca40ebdd274bb87ac41f5fefe81134e737bbebcd4010bd2d55d0ddb429c"
+    },
+    {
+      "path": "egor/toppar/top_all36_na.rtf",
+      "size_bytes": 38114,
+      "sha256": "6e315be570d8c3c57f990b06eeafbb82a09bf27c1db8110358366705e5fd2ec6"
+    },
+    {
+      "path": "egor/toppar/top_all36_prot.rtf",
+      "size_bytes": 73053,
+      "sha256": "ef779d08f2929acfce7d0d2867b3d8d74794da684d3484527d43e0bfe52de574"
+    },
+    {
+      "path": "egor/toppar/top_interface.rtf",
+      "size_bytes": 587196,
+      "sha256": "6a59c407f079a1847f93cd1fd941a43084c1ca6c3a895a58c6659cca395970b9"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_carb_glycolipid.str",
+      "size_bytes": 1448558,
+      "sha256": "67fba09c91c5834deff263035c869f4f2c2d6f4065ed52461020e5a6ae0b6a2c"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_carb_glycopeptide.str",
+      "size_bytes": 24629,
+      "sha256": "b31d4a99f343f6da2cda43330cd080cac6255133b666c87342dca108c7341118"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_carb_imlab.str",
+      "size_bytes": 1425273,
+      "sha256": "e677b877377d4a24b2001282c04f3ca952a3a20fe9dacad8b139444d17f6b049"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_label_fluorophore.str",
+      "size_bytes": 323687,
+      "sha256": "50a76b17a835f66494200c8894352e2fc50428324546c80a5cc77b9af0c22710"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_label_spin.str",
+      "size_bytes": 180580,
+      "sha256": "1ddd7b1fae4120704b63bb23b2f410970e47bbf4563e45bb129817398435e0bd"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_archaeal.str",
+      "size_bytes": 542539,
+      "sha256": "73e1754b7e6bc2c1540d42e99440e12b2e7b281ff599c2c18e63effa835d3f36"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_bacterial.str",
+      "size_bytes": 620231,
+      "sha256": "ef66778005de63ac7a988fef31774681f17b6e2688793dd125718244b66154fb"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_cardiolipin.str",
+      "size_bytes": 893524,
+      "sha256": "868395a4f8eeef94fa6a1f761f8f187075176aeb9454ce4f4a074eb7f5550f2b"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_cholesterol.str",
+      "size_bytes": 258541,
+      "sha256": "a5b9eb7159a4bdeaf5060bcff9b4050882dda767eb882aa56d9bab0f4918766a"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_dag.str",
+      "size_bytes": 361872,
+      "sha256": "fbd10de6ca250b0815e135dcff449ba07398c449cb41301d54a49a66deb380de"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_detergent.str",
+      "size_bytes": 1051867,
+      "sha256": "b20c58f6718a8ad5460a72d4da3219b3e2eeba8749ad9da0ce6e6a12141d0a0b"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_ether.str",
+      "size_bytes": 412429,
+      "sha256": "befa1e7e59cc79c67795ddc8b9b6c7a1080d16b12903dbf44c79ad471a27cb28"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_hmmm.str",
+      "size_bytes": 2384,
+      "sha256": "326e509d26cfb3d6e7c3f2044c808670f77efe1c810eaf8db5ac76f2dda14cec"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_inositol.str",
+      "size_bytes": 1702848,
+      "sha256": "76714d49509fa7495b43c2d3a018fc0fa3b1070f70f1ab46835c4ff7ad841ee0"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_lnp.str",
+      "size_bytes": 878185,
+      "sha256": "5575aa4c01304ea16581b02589826459dff6c0ca758f51519a9dffb6be3837c9"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_lps.str",
+      "size_bytes": 2250990,
+      "sha256": "6e29b42a7c8b7839f6a72268b3b0edae99ea8ad6b01b34b82fb8d669bbaa08fc"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_miscellaneous.str",
+      "size_bytes": 2201419,
+      "sha256": "4c21f21c8209c16e9f70eee342d8f22bf20d608dc0e61ed687670ed00582df66"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_model.str",
+      "size_bytes": 104324,
+      "sha256": "b948148d342d7163ee0f8dcf02dca76639920a30acdcbac61441df8518d65595"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_mycobacterial.str",
+      "size_bytes": 973196,
+      "sha256": "9b11b1ec973506d24f7e50126afbde8dec038d1221b5c9ff70ec7c8749967769"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_oxidized.str",
+      "size_bytes": 1136544,
+      "sha256": "3d7c4c74f4b67a6115db5fbc202d3459b4a83c2c1e6695f4de2f1cc02a20494b"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_prot.str",
+      "size_bytes": 74022,
+      "sha256": "29a31713d06a34a82755f26b293d23d29e3ceb3e8166d57761c3d3acad1fde7b"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_sphingo.str",
+      "size_bytes": 512881,
+      "sha256": "b1b5255b73612910c91bdaa69bf17d233be97860af2f18e9c94d47f369001fb1"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_tag.str",
+      "size_bytes": 1221021,
+      "sha256": "e0f703fbdb8621b4f88be5fa2852efa228bfd2026855a6572197c6650709866a"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_lipid_yeast.str",
+      "size_bytes": 163428,
+      "sha256": "2acf8beb57fc9f8cd8400f3ef2f50c93a87b605b6d336365049f8b20f4aa965a"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_moreions.str",
+      "size_bytes": 6057,
+      "sha256": "ceb8beb14a4f87e05ca42a3ead9f36df2489be87920cecfee2fa0a841bdcfa8e"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_na_nad_ppi.str",
+      "size_bytes": 195710,
+      "sha256": "d952da4660ca8774f91774f4b3c9465adb776c55ee4416e00776934cefd06951"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_na_rna_modified.str",
+      "size_bytes": 1174792,
+      "sha256": "73c47d78b89964d484677ffa9640d5d15cbe0688705b13945ce7f74eb7d5efbb"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_nano_lig.str",
+      "size_bytes": 11135,
+      "sha256": "673bf2788ef3829285fd11174fef9d730401f7a9f643cd414d1151a44c9a55c5"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_nano_lig_patch.str",
+      "size_bytes": 277644,
+      "sha256": "8f8f51289aab251fcd4f875e5e858e8582b14cd54eeb5a668e451763c8cdd6a9"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_polymer_solvent.str",
+      "size_bytes": 20094,
+      "sha256": "a1a61cc2bdc92a10cd404d13c4e7f13f064e622d16f4435a28695350491c23fa"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_prot_arg0.str",
+      "size_bytes": 16385,
+      "sha256": "e9350291337018eceeefb3ad4f1aeba292a6f6ecad007dc7a230e0a442913efc"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_prot_c36m_d_aminoacids.str",
+      "size_bytes": 116861,
+      "sha256": "dcccfe268b88b3569a270707bc751d98dfe3e6895b019c56b6c79e66a9367d5a"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_prot_fluoro_alkanes.str",
+      "size_bytes": 9779,
+      "sha256": "d52674df113b10edf60819115b0b39db9a1aa21d20cdf15fb316391ea0b489fe"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_prot_heme.str",
+      "size_bytes": 26130,
+      "sha256": "4b3c916e8bcd12c65250bee7e264b942900acd20d29673de651c78772b49d302"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_prot_model.str",
+      "size_bytes": 89232,
+      "sha256": "512e94f03e5ec66cac4058af9a66761912d3e714c2a569b457c1e3284399524f"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_prot_modify_res.str",
+      "size_bytes": 1861043,
+      "sha256": "39b529d9ec9a39d491f0dd1574ce2c6986112ce14c9d58e9d0db7be7cd6479b5"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_prot_na_combined.str",
+      "size_bytes": 80028,
+      "sha256": "dddc2efdf9a6288de5c042da4af19e37366b1368c8f5d6a010df15964b1f932d"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_prot_retinol.str",
+      "size_bytes": 79456,
+      "sha256": "40d5adbbbe8e3823c020c826dd154da64940f7c592bd32ef15470ed8ed84a18e"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_synthetic_polymer.str",
+      "size_bytes": 260174,
+      "sha256": "064bf868bf62571a4787b37d52557b63975d065009df40d7a0cb5a2b7e50e10c"
+    },
+    {
+      "path": "egor/toppar/toppar_all36_synthetic_polymer_patch.str",
+      "size_bytes": 1351654,
+      "sha256": "9d77adc0b343c194b0436564c89973b6ce528d85ed391c40629d39a1901a666b"
+    },
+    {
+      "path": "egor/toppar/toppar_dum_noble_gases.str",
+      "size_bytes": 1399,
+      "sha256": "c35f50b30aa05870fe02cef682d3879264369845c8fedd4bc246a532df1d0b09"
+    },
+    {
+      "path": "egor/toppar/toppar_ions_won.str",
+      "size_bytes": 15423,
+      "sha256": "cd96ff09fc1d68ea9567d5af2bf68a45232fe30b7031dcec5ef2f9ed7b1b8ecc"
+    },
+    {
+      "path": "egor/toppar/toppar_water_ions.str",
+      "size_bytes": 12005,
+      "sha256": "327637f455a57822daf44b61fa54a694d8160ba9287f7a8df1e6e616f2d6ca74"
+    }
+  ],
+  "accepted_element_authority": {
+    "path": "local_md/stage34b_authority_20260922T144226Z_e0bab9b6a6f64a998eb2e179785d60b8/namd_atom_type_elements.json",
+    "size_bytes": 226325,
+    "sha256": "f226151e1ba155714a5bf66ef3dac65517e1ca058fbf336a33ff0255dd1de11c"
+  }
+}

@@ -68,7 +68,7 @@ def portable(value, root):
     return value
 
 
-def build_bundle(base):
+def build_bundle(base, source_prefix="raw"):
     """Nine identities with distinct system authority and four full frames."""
     mda = pytest.importorskip("MDAnalysis")
     root = base / "data"
@@ -89,7 +89,7 @@ def build_bundle(base):
         tid, sid = row["trajectory_id"], row["system_id"]
         ss = int(row["disulfide_state"][0])
         n = 4 + ss
-        rawdir = root / "raw" / sid / row["replica_id"]
+        rawdir = root / source_prefix / sid / row["replica_id"]
         rawdir.mkdir(parents=True)
         psf = rawdir / "own.psf"
         text = "PSF EXT\n\n         1 !NTITLE\n REMARKS synthetic\n\n"

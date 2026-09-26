@@ -154,13 +154,19 @@ also has its own CONF/OUT-derived time template and raw/prepared input-binding
 template. Portable element templates require absolute-path materialization;
 time/binding templates are explicitly incomplete and are not executable controls.
 
-The complete ignored package and sibling ZIP are
-`local_md/egor_9_trajectory_handoff_20260926/handoff/` and
-`local_md/egor_9_trajectory_handoff_20260926.zip`.
-`handoff_manifest.json` records all nine rows, source identity, shared controls,
-expected DCD paths and every execution-site prerequisite. See the
-[handoff instructions](../../docs/egor_production_interface.md#nine-trajectory-handoff)
-for installation, strict readers and final binding requirements.
+The required runtime subset is now tracked in
+[`production/egor_runtime/`](../egor_runtime/README.md). The normal FAIR checkout
+needs no handoff ZIP. `./run_egor_all.sh EGOR_DATA_DIR OUTPUT_DIR` binds the exact
+nine raw source sets, prepares each, requests one named review of all summaries,
+and invokes the existing confirmation/production commands. The runtime catalog
+copy and templates preserve these CSV rows unchanged; historical provenance paths
+inside immutable authority are not runtime inputs. See the
+[handoff instructions](../../docs/egor_handoff_quickstart_ru.md).
+
+The launcher creates private hard links under the input directory without
+copying raw trajectory payloads, preserves numbered attempts and validates/reuses
+completed results. It records the actual Git SHA. No group aggregation or
+publication is performed, and intake readiness statuses below are unchanged.
 
 The approved external PBC protocol remains **unwrap bonded fragments → center
 on protein → wrap complete bonded fragments**. D.4e.3 executes and technically

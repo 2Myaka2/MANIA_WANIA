@@ -1,0 +1,52 @@
+{
+  "schema_version": "mania.dataset_system_biological_annotations.v0.1",
+  "kind": "mania_dataset_system_biological_annotations",
+  "dataset_id": "napi2b-dataset-v1",
+  "system_id": "namd_egor_wt_2ss",
+  "annotation_scope": "complete_for_system",
+  "glycosylation_sites": [
+    {
+      "canonical_residue_number": 295,
+      "canonical_resname": "ASN",
+      "present_in_topology": true,
+      "glycan_name": "FA2G2S2",
+      "source": "Egor: FA2G2S2 N-glycosylation at Asn295 and Asn308; externally accepted complete system list.",
+      "verifier": "Accepted real PSF evidence confirms carrier-glycan bonds at Asn295 and Asn308; prior/frozen/b4_source_observations.json."
+    },
+    {
+      "canonical_residue_number": 308,
+      "canonical_resname": "ASN",
+      "present_in_topology": true,
+      "glycan_name": "FA2G2S2",
+      "source": "Egor: FA2G2S2 N-glycosylation at Asn295 and Asn308; externally accepted complete system list.",
+      "verifier": "Accepted real PSF evidence confirms carrier-glycan bonds at Asn295 and Asn308; prior/frozen/b4_source_observations.json."
+    }
+  ],
+  "disulfide_variant_sites": [
+    {
+      "canonical_residue_number": 303,
+      "canonical_resname": "CYS",
+      "source": "Egor: 2SS state = C303-C350 + C322-C328; externally accepted complete disulfide variant-site list.",
+      "verifier": "Accepted real PSF evidence confirms both S-S bonds; prior/frozen/b4_source_observations.json."
+    },
+    {
+      "canonical_residue_number": 322,
+      "canonical_resname": "CYS",
+      "source": "Egor: 2SS state = C303-C350 + C322-C328; externally accepted complete disulfide variant-site list.",
+      "verifier": "Accepted real PSF evidence confirms both S-S bonds; prior/frozen/b4_source_observations.json."
+    },
+    {
+      "canonical_residue_number": 328,
+      "canonical_resname": "CYS",
+      "source": "Egor: 2SS state = C303-C350 + C322-C328; externally accepted complete disulfide variant-site list.",
+      "verifier": "Accepted real PSF evidence confirms both S-S bonds; prior/frozen/b4_source_observations.json."
+    },
+    {
+      "canonical_residue_number": 350,
+      "canonical_resname": "CYS",
+      "source": "Egor: 2SS state = C303-C350 + C322-C328; externally accepted complete disulfide variant-site list.",
+      "verifier": "Accepted real PSF evidence confirms both S-S bonds; prior/frozen/b4_source_observations.json."
+    }
+  ],
+  "cysteine_variant_sites": []
+}

@@ -1,0 +1,52 @@
+{
+  "schema_version": "mania.dataset_system_biological_annotations.v0.1",
+  "kind": "mania_dataset_system_biological_annotations",
+  "dataset_id": "napi2b-dataset-v1",
+  "system_id": "namd_egor_wt_1ss",
+  "annotation_scope": "complete_for_system",
+  "glycosylation_sites": [
+    {
+      "canonical_residue_number": 295,
+      "canonical_resname": "ASN",
+      "present_in_topology": true,
+      "glycan_name": "FA2G2S2",
+      "source": "Egor",
+      "verifier": "Egor"
+    },
+    {
+      "canonical_residue_number": 308,
+      "canonical_resname": "ASN",
+      "present_in_topology": true,
+      "glycan_name": "FA2G2S2",
+      "source": "Egor",
+      "verifier": "Egor"
+    }
+  ],
+  "disulfide_variant_sites": [
+    {
+      "canonical_residue_number": 303,
+      "canonical_resname": "CYS",
+      "source": "Egor",
+      "verifier": "Egor"
+    },
+    {
+      "canonical_residue_number": 322,
+      "canonical_resname": "CYS",
+      "source": "Egor",
+      "verifier": "Egor"
+    },
+    {
+      "canonical_residue_number": 328,
+      "canonical_resname": "CYS",
+      "source": "Egor",
+      "verifier": "Egor"
+    },
+    {
+      "canonical_residue_number": 350,
+      "canonical_resname": "CYS",
+      "source": "Egor",
+      "verifier": "Egor"
+    }
+  ],
+  "cysteine_variant_sites": []
+}

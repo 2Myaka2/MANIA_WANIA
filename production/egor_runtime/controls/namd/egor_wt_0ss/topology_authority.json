@@ -1,0 +1,44 @@
+{
+  "system_id": "namd_egor_wt_0ss",
+  "psfs": [
+    {
+      "path": "egor/MD_no_bonds_NPT_W_I_PMm_100_ns.psf",
+      "size_bytes": 94856503,
+      "sha256": "89d521cf033bf1a0e01ec80d5ee5f74037ad46a68167297e1e4950a56e794417"
+    },
+    {
+      "path": "egor/MD_no_bonds_NPT_W_I_PMm_100_ns_2.psf",
+      "size_bytes": 94856503,
+      "sha256": "89d521cf033bf1a0e01ec80d5ee5f74037ad46a68167297e1e4950a56e794417"
+    },
+    {
+      "path": "egor/MD_no_bonds_NPT_W_I_PMm_100_ns_3.psf",
+      "size_bytes": 94856503,
+      "sha256": "89d521cf033bf1a0e01ec80d5ee5f74037ad46a68167297e1e4950a56e794417"
+    }
+  ],
+  "byte_identical": true,
+  "authority_scope": "one system; exact byte identity permits r1/r2/r3 reuse",
+  "runtime_element_path_rebinding": "replica-specific PSF path required by existing reader",
+  "atom_count": 409865,
+  "used_types": 96,
+  "protein_residues": 690,
+  "actual_ss_bonds": [],
+  "partner_count": 830,
+  "lipid_partners": 828,
+  "glycan_partners": 2,
+  "excluded": {
+    "TIP3": 101225,
+    "SOD": 339,
+    "CLA": 277
+  },
+  "every_atom_accounted_once": true,
+  "partner_indices_basis": "independently enumerated from this system PSF; no foreign indices copied",
+  "classification_authority": "exact shared CHARMM source atom/type membership and connectivity; Egor glycan decision",
+  "annotation_source": {
+    "path": "local_md/production_intake/prepared_inputs/stage34d4e3_egor_0ss_r1_20260926T061309Z_49d690e736a84bb7a5b58f4825e787c1/controls/annotations_0ss.json",
+    "size_bytes": 1291,
+    "sha256": "6ee48bdf605202398d2400939d070dadf41478be1933c09ecd3e19ad86c54547"
+  },
+  "controls": "controls/namd/egor_wt_0ss"
+}
