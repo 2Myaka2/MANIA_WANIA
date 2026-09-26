@@ -6,6 +6,16 @@ planning, D.4d persistence/replay, Stage 32 QC and Stage 31 aggregation. They do
 not prepare coordinates or publish a Dataset. Dataset v1 remains unreleased;
 this implementation does not authorize Stage 35 or supply real scientific authority.
 
+The external [production input preparation tool](production_input_preparation.md)
+now provides the raw-to-binding handoff step. Its `prepare` operation takes one
+explicit trajectory, the reviewed authority package and site roots; it generates
+the full-axis derivative, actual observations, strict time controls and an
+automatic report pending review. Its separate `confirm` operation requires a
+named reviewer and the exact report SHA256, rechecks integrity, and materializes
+the existing binding models. It prints the concrete production validate/run
+commands without running them. Verification for this tool is synthetic only;
+real 0SS/r1 clean-environment preparation and 1SS applicability remain pending.
+
 ## Commands and roots
 
 Set `MANIA_DATA_ROOT` to an existing input directory. Scientific files, controls,
@@ -336,6 +346,11 @@ delivery name differs, record the explicit path and verify its linkage to the
 selected CONF/OUT. Never substitute a historical pilot trajectory.
 
 Before `mania production validate`, Egor must complete each row's checklist:
+
+The new preparation tool carries out the automatic preparation/control steps
+below and records explicit human confirmation separately. These historical
+handoff requirements still define the required authority; manual JSON editing
+is no longer needed for supported package paths.
 
 1. Verify the supplied small-source identities and shared toppar hashes. Supply
    the exact raw DCD; check its bytes/hash, header, full frame/cell integrity,
