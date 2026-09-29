@@ -89,7 +89,10 @@ def test_every_source_change_stops_without_prompt_or_preparation(
     assert run_site(site) == 1
     error = capsys.readouterr().err
     assert tid in error
-    assert "source approval required" in error
+    assert any(
+        text in error
+        for text in ("source approval required", "Source discovery failed")
+    )
     assert path.read_bytes() == saved
     assert not list(site.source.rglob("prepared.dcd"))
 
@@ -172,8 +175,8 @@ def test_completed_preparation_continues_unattended_after_interruption(
     original = launcher.Commands.run
 
     def interrupt(self, label, command):
-        if label == f"{launcher.SELECTIONS[1]}.prepare":
-            raise ValueError("Synthetic interruption before second preparation")
+        if label == f"{launcher.SELECTIONS[0]}.confirm":
+            raise ValueError("Synthetic interruption before automatic confirmation")
         return original(self, label, command)
 
     answer(monkeypatch, ["Synthetic reviewer", "Sources only", "y"])
@@ -199,7 +202,7 @@ def test_source_changed_after_preparation_stops_before_binding(
 
     def change(self, label, command):
         result = original(self, label, command)
-        if label == f"{launcher.SELECTIONS[-1]}.prepare":
+        if label == f"{launcher.SELECTIONS[0]}.prepare":
             path = site.source / "raw/namd_egor_wt_0ss/1/explicit_delivery.dcd"
             path.write_bytes(path.read_bytes() + b"changed after preparation")
         return result
@@ -207,7 +210,7 @@ def test_source_changed_after_preparation_stops_before_binding(
     answer(monkeypatch, ["Synthetic reviewer", "Sources only", "y"])
     monkeypatch.setattr(launcher.Commands, "run", change)
     assert run_site(site) == 1
-    assert len(inline) == 9
+    assert len(inline) == 1
     assert not list(site.source.rglob("production_input_binding.json"))
     assert (site.output / "production/source_attestation.json").is_file()
 
@@ -271,3 +274,60 @@ def test_automatic_confirmation_rejects_bad_evidence(site, monkeypatch, inline, 
     assert not list(site.source.rglob("production_input_binding.json"))
     assert not any(label.endswith(".run") for label, _ in inline)
     assert (site.output / "production/source_attestation.json").is_file()
+
+
+def test_selected_verification_preserves_public_full_verification(site, monkeypatch):
+    path, discovery = approve_sources(site)
+    chosen, other = launcher.SELECTIONS[0], launcher.SELECTIONS[-1]
+    raw = site.source / discovery["mapping"][other]["trajectory_path"]["path"]
+    raw.write_bytes(b"unselected changed bytes")
+    kwargs = dict(
+        authority_inventory=prep.package_inventory(site.runtime),
+        source=site.source,
+        mapping=discovery["mapping"],
+    )
+    result = attestation.verify(path, trajectory_ids=(chosen,), **kwargs)
+    assert len(result["trajectories"]) == 9
+    with pytest.raises(ValueError, match=other):
+        attestation.verify(path, **kwargs)
+    with pytest.raises(ValueError, match="Unknown/duplicate"):
+        attestation.verify(path, trajectory_ids=("unknown",), **kwargs)
+
+
+def test_selected_verification_still_checks_unselected_schema(site):
+    path, _ = approve_sources(site)
+    value = launcher.read(path)
+    del value["trajectories"][-1]["sources"]["box_path"]
+    value.pop("payload_sha256")
+    value["payload_sha256"] = attestation.digest(value)
+    write(path, value)
+    with pytest.raises(ValueError, match="incomplete source mapping"):
+        attestation.verify(
+            path,
+            authority_inventory=prep.package_inventory(site.runtime),
+            trajectory_ids=(launcher.SELECTIONS[0],),
+        )
+
+
+def test_confirmation_selection_is_reset_on_failure(site, monkeypatch):
+    path, discovery = approve_sources(site)
+    chosen = launcher.SELECTIONS[0]
+    raw = (
+        site.source
+        / discovery["mapping"][launcher.SELECTIONS[-1]]["trajectory_path"]["path"]
+    )
+    raw.write_bytes(b"unselected changed bytes")
+
+    def fail(**kwargs):
+        attestation.verify(
+            path, authority_inventory=prep.package_inventory(site.runtime)
+        )
+        raise ValueError("Synthetic confirmation failure")
+
+    monkeypatch.setattr(prep, "confirm", fail)
+    with pytest.raises(ValueError, match="Synthetic confirmation failure"):
+        attestation.confirm_selected(trajectory_id=chosen, source_attestation=path)
+    with pytest.raises(ValueError, match="source identity/path changed"):
+        attestation.verify(
+            path, authority_inventory=prep.package_inventory(site.runtime)
+        )

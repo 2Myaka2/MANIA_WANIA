@@ -93,7 +93,8 @@ def test_wrong_psf_or_system_stops_before_preparation(
         launcher.Commands, "run", lambda *args: pytest.fail("heavy work")
     )
     assert (
-        launcher.batch(site.source, site.output, runtime=site.runtime, minimum=1) == 1
+        launcher.initialize(site.source, site.output, runtime=site.runtime, minimum=1)
+        == 1
     )
     assert "authority" in capsys.readouterr().err.lower() or damage == "system"
     assert not list(site.source.rglob("prepared.dcd"))
@@ -112,13 +113,17 @@ def test_containment_separation_and_disk_before_heavy_work(site, monkeypatch, ki
         path.rename(outside)
         path.symlink_to(outside)
         assert (
-            launcher.batch(site.source, site.output, runtime=site.runtime, minimum=1)
+            launcher.initialize(
+                site.source, site.output, runtime=site.runtime, minimum=1
+            )
             == 1
         )
     else:
         monkeypatch.setattr(shutil, "disk_usage", lambda _: SimpleNamespace(free=0))
         assert (
-            launcher.batch(site.source, site.output, runtime=site.runtime, minimum=1)
+            launcher.initialize(
+                site.source, site.output, runtime=site.runtime, minimum=1
+            )
             == 1
         )
     assert not list(site.source.rglob("prepared.dcd"))
@@ -138,7 +143,7 @@ def inline(monkeypatch):
             for i in range(len(command) - 1)
             if command[i].startswith("--") and not command[i + 1].startswith("--")
         }
-        if command[1].endswith("prepare_production_inputs.py"):
+        if command[1].endswith(("prepare_production_inputs.py", "run_egor_all.py")):
             common = dict(
                 data_root=Path(options["data_root"]),
                 result_root=Path(options["result_root"]),
@@ -148,7 +153,7 @@ def inline(monkeypatch):
             )
             if command[2] == "prepare":
                 return prep.prepare(**common)
-            return prep.confirm(
+            return launcher.attestation.confirm_selected(
                 **common,
                 report_sha256=options["report_sha256"],
                 source_attestation=Path(options["source_attestation"]),
@@ -182,8 +187,19 @@ def answer(monkeypatch, values):
     monkeypatch.setattr("builtins.input", lambda _: next(replies))
 
 
-def run_site(site):
-    return launcher.batch(site.source, site.output, runtime=site.runtime, minimum=1)
+def init_site(site, **kwargs):
+    return launcher.initialize(
+        site.source, site.output, runtime=site.runtime, minimum=1, **kwargs
+    )
+
+
+def run_site(site, *, init=True, **kwargs):
+    # Existing end-to-end tests exercise the explicit init followed by workers.
+    if init and init_site(site) != 0:
+        return 1
+    return launcher.batch(
+        site.source, site.output, runtime=site.runtime, minimum=1, **kwargs
+    )
 
 
 @pytest.mark.parametrize("reply", ["N", "", "y"])
@@ -204,11 +220,10 @@ def test_one_source_review_before_nine_preparations(
     assert run_site(site) == (0 if reply == "y" else 1)
     labels = [label.split(".")[-1] for label, _ in inline]
     if reply == "y":
-        assert (
-            labels == ["prepare"] * 9 + ["confirm"] * 9 + ["validate"] * 9 + ["run"] * 9
-        )
+        assert labels == ["prepare", "confirm", "validate", "run"] * 9
     else:
         assert labels == []
+        assert not (site.output / "production/source_attestation.json").exists()
         assert not list(site.source.rglob("prepared.dcd"))
     assert prompts == [
         "Reviewer name (required): ",
@@ -232,13 +247,16 @@ def test_preparation_failure_preserves_evidence_and_stops_batch(
     shutil.copyfile(site.source / "raw/namd_egor_wt_0ss/1/explicit_delivery.dcd", path)
     assert run_site(site) == 1
     assert [label for label, _ in inline] == [
-        f"{launcher.SELECTIONS[0]}.prepare",
+        *[
+            f"{launcher.SELECTIONS[0]}.{step}"
+            for step in ("prepare", "confirm", "validate", "run")
+        ],
         f"{tid}.prepare",
     ]
     assert "header/config/log linkage" in capsys.readouterr().err
     operations = [launcher.read(p) for p in site.source.rglob("operation.json")]
     assert {o["status"] for o in operations} == {"completed", "failed"}
-    assert not list(site.source.rglob("production_input_binding.json"))
+    assert len(list(site.source.rglob("production_input_binding.json"))) == 1
     assert (site.output / "production/source_attestation.json").is_file()
 
 
@@ -342,7 +360,8 @@ def test_completed_reuse_dispatches_actual_strict_validator(tmp_path, monkeypatc
     )
     command = launcher.production_command(plan, case.data_root, "run", 1, False)
 
-    def call(command, *, env, stdout, stderr):
+    def call(command, *, env, stdout, stderr, pass_fds):
+        assert pass_fds == ()
         monkeypatch.setattr(sys, "argv", command[2:])
         monkeypatch.setenv("MANIA_DATA_ROOT", env["MANIA_DATA_ROOT"])
         with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
@@ -396,14 +415,18 @@ def test_normal_cli_has_only_two_required_arguments(monkeypatch, tmp_path):
         launcher, "batch", lambda *a, **kw: captured.append((a, kw)) or 0
     )
     assert launcher.main([str(tmp_path / "Egor"), str(tmp_path / "results")]) == 0
-    assert captured[0][1] == {"technical": False}
+    assert captured[0][1] == {
+        "technical": False,
+        "trajectory_id": None,
+        "replica": None,
+    }
     assert (
         launcher.main(
             [str(tmp_path / "Egor"), str(tmp_path / "test"), "--TEST-0ss-r1-5-8ns"]
         )
         == 0
     )
-    assert captured[1][1] == {"technical": True}
+    assert captured[1][1] == {"technical": True, "trajectory_id": None, "replica": None}
 
 
 def test_wrong_installed_checkout_is_rejected(monkeypatch, tmp_path):

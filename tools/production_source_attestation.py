@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from contextvars import ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
@@ -20,6 +21,10 @@ from mania.production_catalog import portable_path
 from mania.production_run import BoundFile
 
 ROLES = ("trajectory_path", "topology_path", "config_path", "log_path", "box_path")
+_confirmation_selection: ContextVar[tuple[Path, str] | None] = ContextVar(
+    "confirmation_selection", default=None
+)
+
 STATEMENT = (
     "I confirm that these raw DCD files belong to the listed PSF/run source sets."
 )
@@ -136,8 +141,14 @@ def verify(
     authority_inventory: dict,
     source: Path | None = None,
     mapping: dict | None = None,
+    trajectory_ids: tuple[str, ...] | None = None,
 ) -> dict:
-    """Recheck all bytes, including other replicas, before allowing continuation."""
+    """Validate the entire document; hash all sources unless explicitly selected.
+
+    Older/public callers retain full verification. Only ``confirm_selected``
+    scopes the two legacy confirmation checks to that confirmation's trajectory.
+    An empty explicit selection checks document integrity without hashing sources.
+    """
     try:
         document = Attestation.model_validate(read_strict_json(path)).model_dump()
         checksum = document.pop("payload_sha256")
@@ -175,8 +186,29 @@ def verify(
             mapping is None or mapping == actual_mapping,
             "Wrong attested trajectory/source mapping",
         )
-        current = capture(root, actual_mapping)
-        for expected, observed in zip(rows, current, strict=True):
+        require(
+            [row["trajectory_id"] for row in rows] == sorted(actual_mapping),
+            "Wrong trajectory ordering",
+        )
+        for tid, roles in actual_mapping.items():
+            require(set(roles) == set(ROLES), f"{tid}: incomplete source mapping")
+        scope = _confirmation_selection.get()
+        if scope is not None:
+            require(path.resolve() == scope[0], "Wrong scoped attestation path")
+            require(
+                trajectory_ids is None or trajectory_ids == (scope[1],),
+                "Wrong confirmation verification selection",
+            )
+            trajectory_ids = (scope[1],)
+        selected = tuple(actual_mapping) if trajectory_ids is None else trajectory_ids
+        require(
+            len(set(selected)) == len(selected)
+            and set(selected) <= set(actual_mapping),
+            "Unknown/duplicate attested trajectory selection",
+        )
+        current = capture(root, {tid: actual_mapping[tid] for tid in selected})
+        selected_rows = [row for row in rows if row["trajectory_id"] in selected]
+        for expected, observed in zip(selected_rows, current, strict=True):
             require(
                 expected["trajectory_id"] == observed["trajectory_id"],
                 "Wrong trajectory ordering",
@@ -197,6 +229,8 @@ def verify(
 
 def match_report(document: dict, report: dict, root: Path) -> None:
     tid = report["trajectory_id"]
+    scope = _confirmation_selection.get()
+    require(scope is None or tid == scope[1], "Wrong scoped confirmation report")
     selected = [r for r in document["trajectories"] if r["trajectory_id"] == tid]
     require(len(selected) == 1, f"{tid}: missing attested trajectory")
     for role, item in selected[0]["sources"].items():
@@ -212,3 +246,27 @@ def match_report(document: dict, report: dict, root: Path) -> None:
             ),
             f"{tid}: attested source/report mapping differs: {role}",
         )
+
+
+def confirm_selected(*, trajectory_id: str, source_attestation: Path, **kwargs) -> dict:
+    """Run unchanged automatic confirmation with explicit, process-local selection.
+
+    Keep the complete attestation embedded in confirmation/lineage. No derived
+    human approval is created, and no global monkeypatch or environment override
+    can weaken verification for another thread or an older caller.
+    """
+    if __package__:
+        from . import production_input_preparation as preparation
+    else:
+        import production_input_preparation as preparation
+
+    require(trajectory_id in preparation.SELECTIONS, "Unknown Egor trajectory")
+    token = _confirmation_selection.set((source_attestation.resolve(), trajectory_id))
+    try:
+        return preparation.confirm(
+            trajectory_id=trajectory_id,
+            source_attestation=source_attestation,
+            **kwargs,
+        )
+    finally:
+        _confirmation_selection.reset(token)
