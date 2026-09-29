@@ -1,0 +1,924 @@
+{
+  "schema_version": "mania.gromacs_wt_runtime.v0.1",
+  "intake_status": "PARTIAL",
+  "analysis_request": {
+    "start_ps": 5000,
+    "end_ps": 100000,
+    "stride_ps": 200,
+    "window_ps": 2000,
+    "window_step_ps": 1000,
+    "boundaries": "inclusive",
+    "requested_samples_if_complete": 476,
+    "full_windows_if_complete": 94,
+    "samples_per_window_if_complete": 11,
+    "nominal_production_ns": 100
+  },
+  "evidence_basis": {
+    "repository_head": "2a72a11db9b5dd063539c8dfc6df522d6d74f5ea",
+    "small_files_reread_utc": "2026-09-29",
+    "method": "SHA256 of each actual small file; gmx dump -s <literal TPR> -sys -param; MDP text and LOG command lines re-read. No XTC opened.",
+    "prior_intake_status": "PARTIAL",
+    "prior_report_status": "NOT_LOCATED; five affected MDP/TPR source sets independently re-observed; no invented resolutions.",
+    "human_approval_status": "NOT_REQUESTED",
+    "unresolved_discrepancy_source_set_count": 5
+  },
+  "trajectories": [
+    {
+      "trajectory_id": "gromacs_wt_norm_r1",
+      "condition": "NORM",
+      "replica": 1,
+      "tpr": {
+        "path": "NORM/replica 1/md_rep1.tpr",
+        "size_bytes": 12972532,
+        "sha256": "61ad0aef4eb44ee1a406c9f3fe99b8c01b8af129f55d5217d388f6203d87ff91"
+      },
+      "mdp": {
+        "path": "NORM/replica 1/production_segment.mdp",
+        "size_bytes": 565,
+        "sha256": "70a808ef1c2b4a5f9e9e48849662950f7fd8e8591c2d0f7ee9aed2fb67da2c0c"
+      },
+      "logs": [
+        {
+          "path": "NORM/replica 1/md_rep1.part0001.log",
+          "size_bytes": 2637018,
+          "sha256": "1a2f7993718eb6f70892b8a7d379a8aae40ee186bcba7da7fc08eaa542249a9c"
+        },
+        {
+          "path": "NORM/replica 1/md_rep1.part0002.log",
+          "size_bytes": 2654658,
+          "sha256": "7c0592b0ed15de68bd7af9e9e52a4697fbbf8704a6b012e6249453af4d2ded40"
+        },
+        {
+          "path": "NORM/replica 1/md_rep1.part0003.log",
+          "size_bytes": 2664645,
+          "sha256": "1c460d7682f8d03ccab34a15ac7a550f5b4f7fae5dafbcfda590657d6f365ca2"
+        },
+        {
+          "path": "NORM/replica 1/md_rep1.part0004.log",
+          "size_bytes": 36179,
+          "sha256": "e42120ac857071ee4bdaa98188d71d6474ce64c5f258ddeae97482c67a711596"
+        },
+        {
+          "path": "NORM/replica 1/md_rep1.part0005.log",
+          "size_bytes": 2158709,
+          "sha256": "4ce9cc060668cd08875e599d287f4899b1c05518c6dc1b19821e4400b36be8ab"
+        }
+      ],
+      "expected_xtc_path": null,
+      "provenance_basis": {
+        "basis": "Local TPR/MDP/LOG byte inventory and gmx dump input parameters; source/run correspondence is not yet human-attested.",
+        "mdp_parameters": {
+          "integrator": "md",
+          "dt": "0.002",
+          "nsteps": "50000000",
+          "tcoupl": "v-rescale",
+          "tc-grps": "System",
+          "tau-t": "1.0",
+          "ref-t": "310",
+          "pcoupl": "Berendsen",
+          "pcoupltype": "semiisotropic",
+          "tau-p": "2.0",
+          "ref-p": "1.0 1.0",
+          "compressibility": "4.5e-5 4.5e-5",
+          "gen-vel": "yes",
+          "gen-temp": "310",
+          "gen-seed": "41001",
+          "continuation": "no",
+          "cutoff-scheme": "Verlet",
+          "nstlist": "20",
+          "coulombtype": "PME",
+          "rcoulomb": "1.2",
+          "vdwtype": "Cut-off",
+          "vdw-modifier": "force-switch",
+          "rvdw-switch": "1.0",
+          "rvdw": "1.2",
+          "DispCorr": "no",
+          "pbc": "xyz",
+          "constraints": "h-bonds",
+          "constraint-algorithm": "LINCS",
+          "nstenergy": "5000",
+          "nstlog": "5000",
+          "nstxout-compressed": "5000",
+          "nstvout": "0"
+        },
+        "tpr_input_parameters": {
+          "integrator": "md",
+          "dt": "0.002",
+          "nsteps": "50000000",
+          "tinit": "0",
+          "init-step": "0",
+          "nstxout-compressed": "5000",
+          "pcoupl": "Berendsen",
+          "tau-p": "2",
+          "continuation": "false",
+          "ref-t": "310"
+        },
+        "log_commands": [
+          {
+            "log_path": "NORM/replica 1/md_rep1.part0001.log",
+            "line": 46,
+            "command": "gmx mdrun -gpu_id 0 -nb gpu -pme gpu -bonded gpu -update gpu -pin on -dlb yes -v -deffnm md_rep1_replacement -noappend -cpt 5"
+          },
+          {
+            "log_path": "NORM/replica 1/md_rep1.part0002.log",
+            "line": 46,
+            "command": "gmx mdrun -gpu_id 0 -nb gpu -pme gpu -bonded gpu -update gpu -pin on -dlb yes -v -deffnm md_rep1_replacement -cpi md_rep1_replacement.cpt -noappend -cpt 5"
+          },
+          {
+            "log_path": "NORM/replica 1/md_rep1.part0003.log",
+            "line": 46,
+            "command": "gmx mdrun -gpu_id 0 -nb gpu -pme gpu -bonded gpu -update gpu -pin on -dlb yes -v -deffnm md_rep1_replacement -cpi md_rep1_replacement.cpt -noappend -cpt 5"
+          },
+          {
+            "log_path": "NORM/replica 1/md_rep1.part0004.log",
+            "line": 46,
+            "command": "gmx mdrun -gpu_id 0 -nb gpu -pme gpu -bonded gpu -update gpu -pin on -dlb yes -v -deffnm md_rep1_replacement -cpi md_rep1_replacement.cpt -noappend -cpt 5"
+          },
+          {
+            "log_path": "NORM/replica 1/md_rep1.part0005.log",
+            "line": 46,
+            "command": "gmx mdrun -gpu_id 0 -nb gpu -pme gpu -bonded gpu -update gpu -pin on -dlb yes -v -deffnm md_rep1_replacement -cpi md_rep1_replacement.cpt -noappend -cpt 5"
+          }
+        ],
+        "expected_xtc_evidence": "UNRESOLVED: local LOG commands establish run basenames, not the final concatenated/delivered XTC filename. Prior intake report unavailable at this checkpoint.",
+        "remote_xtc_path": null,
+        "run_naming_note": "LOG -deffnm md_rep1_replacement differs from delivered small-file basename md_rep1; human source/run review required."
+      },
+      "unresolved_discrepancies": [],
+      "coordinate_checks_pending": [
+        "XTC transfer completion and raw source/run correspondence",
+        "Frame/header audit: atom count/order, time and cell preservation",
+        "Actual 5\u2013100 ns inclusive coverage: 476 requested samples; 94 windows of 11",
+        "Approved PBC representation and re-opened coordinate error",
+        "Prepared storage format and Colab peak storage measurement",
+        "5\u20138 ns representative technical contacts and replay/validation (future task only)"
+      ]
+    },
+    {
+      "trajectory_id": "gromacs_wt_norm_r2",
+      "condition": "NORM",
+      "replica": 2,
+      "tpr": {
+        "path": "NORM/replica 2/md_rep2.tpr",
+        "size_bytes": 12972532,
+        "sha256": "4166a4f183fa6841ab8c573e33dc0d85e4387b5dce11547967b71339ece1795b"
+      },
+      "mdp": {
+        "path": "NORM/replica 2/production_segment.mdp",
+        "size_bytes": 867,
+        "sha256": "fb13efe693d9939f8b8cb61aa367560708bfe4c8607ee34d3d2c89d77afbf163"
+      },
+      "logs": [
+        {
+          "path": "NORM/replica 2/md_rep2.log",
+          "size_bytes": 19393,
+          "sha256": "2e66ad3dc73e88dbfb668510a60bf37f8af24ae22eeaf57208cc711071742a4d"
+        },
+        {
+          "path": "NORM/replica 2/md_rep2.part0013.log",
+          "size_bytes": 487306,
+          "sha256": "70f9dc135d7bfb4358f7ba3e065bc32abe2b0dee303c05f7d95cd3bacf3974f8"
+        },
+        {
+          "path": "NORM/replica 2/md_rep2.part0014.log",
+          "size_bytes": 24259,
+          "sha256": "0d157d4839653340141c01cadbe2d641b0ffcb2d227fb8872bbfc773636ff00a"
+        }
+      ],
+      "expected_xtc_path": null,
+      "provenance_basis": {
+        "basis": "Local TPR/MDP/LOG byte inventory and gmx dump input parameters; source/run correspondence is not yet human-attested.",
+        "mdp_parameters": {
+          "integrator": "md",
+          "dt": "0.002",
+          "nsteps": "50000000",
+          "tcoupl": "v-rescale",
+          "tc-grps": "System",
+          "tau-t": "1.0",
+          "ref-t": "310",
+          "pcoupl": "Parrinello-Rahman",
+          "pcoupltype": "semiisotropic",
+          "tau-p": "4.0",
+          "ref-p": "1.0 1.0",
+          "compressibility": "4.5e-5 4.5e-5",
+          "gen-vel": "no",
+          "gen-seed": "-1",
+          "continuation": "yes",
+          "cutoff-scheme": "Verlet",
+          "nstlist": "20",
+          "coulombtype": "PME",
+          "rcoulomb": "1.2",
+          "vdwtype": "Cut-off",
+          "vdw-modifier": "force-switch",
+          "rvdw-switch": "1.0",
+          "rvdw": "1.2",
+          "DispCorr": "no",
+          "pbc": "xyz",
+          "constraints": "h-bonds",
+          "constraint-algorithm": "LINCS",
+          "nstenergy": "5000",
+          "nstlog": "5000",
+          "nstxout-compressed": "5000",
+          "nstvout": "0"
+        },
+        "tpr_input_parameters": {
+          "integrator": "md",
+          "dt": "0.002",
+          "nsteps": "50000000",
+          "tinit": "0",
+          "init-step": "0",
+          "nstxout-compressed": "5000",
+          "pcoupl": "Berendsen",
+          "tau-p": "2",
+          "continuation": "false",
+          "ref-t": "310"
+        },
+        "log_commands": [
+          {
+            "log_path": "NORM/replica 2/md_rep2.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/NORM/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "NORM/replica 2/md_rep2.part0013.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/NORM/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -cpi /content/mdworkdir/NORM/03PRODUCTION/replica2/md_rep2.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "NORM/replica 2/md_rep2.part0014.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/NORM/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -cpi /content/mdworkdir/NORM/03PRODUCTION/replica2/md_rep2.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          }
+        ],
+        "expected_xtc_evidence": "UNRESOLVED: local LOG commands establish run basenames, not the final concatenated/delivered XTC filename. Prior intake report unavailable at this checkpoint.",
+        "remote_xtc_path": null,
+        "run_naming_note": "Repeated basenames are scoped by condition and replica."
+      },
+      "unresolved_discrepancies": [
+        {
+          "status": "UNRESOLVED",
+          "affected_source_set": "NORM/replica 2",
+          "fields": {
+            "pcoupl": {
+              "mdp": "Parrinello-Rahman",
+              "tpr": "Berendsen"
+            },
+            "tau-p": {
+              "mdp": "4.0",
+              "tpr": "2"
+            },
+            "continuation": {
+              "mdp": "yes",
+              "tpr": "false"
+            }
+          },
+          "blocking_scope": "Final run-parameter reconciliation/publication; does not prevent source-only discovery or a narrowly scoped correspondence approval. Coordinate preparation remains unapproved independently.",
+          "resolution": null
+        }
+      ],
+      "coordinate_checks_pending": [
+        "XTC transfer completion and raw source/run correspondence",
+        "Frame/header audit: atom count/order, time and cell preservation",
+        "Actual 5\u2013100 ns inclusive coverage: 476 requested samples; 94 windows of 11",
+        "Approved PBC representation and re-opened coordinate error",
+        "Prepared storage format and Colab peak storage measurement",
+        "5\u20138 ns representative technical contacts and replay/validation (future task only)"
+      ]
+    },
+    {
+      "trajectory_id": "gromacs_wt_norm_r3",
+      "condition": "NORM",
+      "replica": 3,
+      "tpr": {
+        "path": "NORM/replica 3/md_rep3.tpr",
+        "size_bytes": 12972532,
+        "sha256": "d628827288f7fe9d26ca8f0437edff0a1e8baa75652b34d4ea86b591c6de0759"
+      },
+      "mdp": {
+        "path": "NORM/replica 3/production_segment.mdp",
+        "size_bytes": 541,
+        "sha256": "29eb311e05d7957abfec9af2dfd4ef980724672d06099c097e9c443f9c392dd2"
+      },
+      "logs": [
+        {
+          "path": "NORM/replica 3/md_rep3.part0010.log",
+          "size_bytes": 350104,
+          "sha256": "5fc8443992a79792bb45bead09fb0bfbef908c6aab4275945d7c45d5a8609454"
+        },
+        {
+          "path": "NORM/replica 3/md_rep3.part0011.log",
+          "size_bytes": 24110,
+          "sha256": "5da5ba3626e67ebfe1b8a90c48f79d301ec28d97148dcb31e4643c19aac2135b"
+        }
+      ],
+      "expected_xtc_path": null,
+      "provenance_basis": {
+        "basis": "Local TPR/MDP/LOG byte inventory and gmx dump input parameters; source/run correspondence is not yet human-attested.",
+        "mdp_parameters": {
+          "integrator": "md",
+          "dt": "0.002",
+          "nsteps": "50000000",
+          "tcoupl": "v-rescale",
+          "tc-grps": "System",
+          "tau-t": "1.0",
+          "ref-t": "310",
+          "pcoupl": "Parrinello-Rahman",
+          "pcoupltype": "semiisotropic",
+          "tau-p": "4.0",
+          "ref-p": "1.0 1.0",
+          "compressibility": "4.5e-5 4.5e-5",
+          "gen-vel": "no",
+          "continuation": "yes",
+          "cutoff-scheme": "Verlet",
+          "nstlist": "20",
+          "coulombtype": "PME",
+          "rcoulomb": "1.2",
+          "vdwtype": "Cut-off",
+          "vdw-modifier": "force-switch",
+          "rvdw-switch": "1.0",
+          "rvdw": "1.2",
+          "DispCorr": "no",
+          "pbc": "xyz",
+          "constraints": "h-bonds",
+          "constraint-algorithm": "LINCS",
+          "nstenergy": "5000",
+          "nstlog": "5000",
+          "nstxout-compressed": "5000",
+          "nstvout": "0"
+        },
+        "tpr_input_parameters": {
+          "integrator": "md",
+          "dt": "0.002",
+          "nsteps": "50000000",
+          "tinit": "0",
+          "init-step": "0",
+          "nstxout-compressed": "5000",
+          "pcoupl": "Berendsen",
+          "tau-p": "2",
+          "continuation": "false",
+          "ref-t": "310"
+        },
+        "log_commands": [
+          {
+            "log_path": "NORM/replica 3/md_rep3.part0010.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/NORM/03PRODUCTION/replica3/md_rep3.tpr -deffnm md_rep3 -cpi /content/mdworkdir/NORM/03PRODUCTION/replica3/md_rep3.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "NORM/replica 3/md_rep3.part0011.log",
+            "line": 46,
+            "command": "gmx mdrun -gpu_id 0 -nb gpu -pme gpu -bonded gpu -update gpu -pin on -dlb yes -v -deffnm md_rep3 -cpi md_rep3.cpt -noappend -cpt 5"
+          }
+        ],
+        "expected_xtc_evidence": "UNRESOLVED: local LOG commands establish run basenames, not the final concatenated/delivered XTC filename. Prior intake report unavailable at this checkpoint.",
+        "remote_xtc_path": null,
+        "run_naming_note": "Repeated basenames are scoped by condition and replica."
+      },
+      "unresolved_discrepancies": [
+        {
+          "status": "UNRESOLVED",
+          "affected_source_set": "NORM/replica 3",
+          "fields": {
+            "pcoupl": {
+              "mdp": "Parrinello-Rahman",
+              "tpr": "Berendsen"
+            },
+            "tau-p": {
+              "mdp": "4.0",
+              "tpr": "2"
+            },
+            "continuation": {
+              "mdp": "yes",
+              "tpr": "false"
+            }
+          },
+          "blocking_scope": "Final run-parameter reconciliation/publication; does not prevent source-only discovery or a narrowly scoped correspondence approval. Coordinate preparation remains unapproved independently.",
+          "resolution": null
+        }
+      ],
+      "coordinate_checks_pending": [
+        "XTC transfer completion and raw source/run correspondence",
+        "Frame/header audit: atom count/order, time and cell preservation",
+        "Actual 5\u2013100 ns inclusive coverage: 476 requested samples; 94 windows of 11",
+        "Approved PBC representation and re-opened coordinate error",
+        "Prepared storage format and Colab peak storage measurement",
+        "5\u20138 ns representative technical contacts and replay/validation (future task only)"
+      ]
+    },
+    {
+      "trajectory_id": "gromacs_wt_tumor_r1",
+      "condition": "TUMOR",
+      "replica": 1,
+      "tpr": {
+        "path": "TUMOR/replica 1/md_rep1.tpr",
+        "size_bytes": 14502792,
+        "sha256": "5c10d20b2893cb9ee9bdec5b86ac83bd3d699e938b14dd073eb9b8576f75b818"
+      },
+      "mdp": {
+        "path": "TUMOR/replica 1/production_segment.mdp",
+        "size_bytes": 867,
+        "sha256": "23eab4a87cfa5c5293fceceff5c28782203bd9d5e1f6cc912207ff80ea9d3f87"
+      },
+      "logs": [
+        {
+          "path": "TUMOR/replica 1/md_rep1.part0008.log",
+          "size_bytes": 783115,
+          "sha256": "8062b8faaacf5edb46a866fea081d9b5a1ed199f2e3a09316d64e77cc23029a6"
+        },
+        {
+          "path": "TUMOR/replica 1/md_rep1.part0009.log",
+          "size_bytes": 133397,
+          "sha256": "302c202946376ed2c0e4ff05ca226cd4471a23e0e05daf3310af22983a7168c5"
+        },
+        {
+          "path": "TUMOR/replica 1/md_rep1.part0010.log",
+          "size_bytes": 24391,
+          "sha256": "2b0bd2c8cc1fa0f04d2e6be1d76d50f27ebc3fa555e02a41616d63f53799fa00"
+        }
+      ],
+      "expected_xtc_path": null,
+      "provenance_basis": {
+        "basis": "Local TPR/MDP/LOG byte inventory and gmx dump input parameters; source/run correspondence is not yet human-attested.",
+        "mdp_parameters": {
+          "integrator": "md",
+          "dt": "0.002",
+          "nsteps": "50000000",
+          "tcoupl": "v-rescale",
+          "tc-grps": "System",
+          "tau-t": "1.0",
+          "ref-t": "312",
+          "pcoupl": "Parrinello-Rahman",
+          "pcoupltype": "semiisotropic",
+          "tau-p": "4.0",
+          "ref-p": "1.0 1.0",
+          "compressibility": "4.5e-5 4.5e-5",
+          "gen-vel": "no",
+          "gen-seed": "-1",
+          "continuation": "yes",
+          "cutoff-scheme": "Verlet",
+          "nstlist": "20",
+          "coulombtype": "PME",
+          "rcoulomb": "1.2",
+          "vdwtype": "Cut-off",
+          "vdw-modifier": "force-switch",
+          "rvdw-switch": "1.0",
+          "rvdw": "1.2",
+          "DispCorr": "no",
+          "pbc": "xyz",
+          "constraints": "h-bonds",
+          "constraint-algorithm": "LINCS",
+          "nstenergy": "5000",
+          "nstlog": "5000",
+          "nstxout-compressed": "5000",
+          "nstvout": "0"
+        },
+        "tpr_input_parameters": {
+          "integrator": "md",
+          "dt": "0.002",
+          "nsteps": "50000000",
+          "tinit": "0",
+          "init-step": "0",
+          "nstxout-compressed": "5000",
+          "pcoupl": "Berendsen",
+          "tau-p": "2",
+          "continuation": "false",
+          "ref-t": "312"
+        },
+        "log_commands": [
+          {
+            "log_path": "TUMOR/replica 1/md_rep1.part0008.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica1/md_rep1.tpr -deffnm md_rep1 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica1/md_rep1.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 1/md_rep1.part0009.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica1/md_rep1.tpr -deffnm md_rep1 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica1/md_rep1.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 1/md_rep1.part0010.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica1/md_rep1.tpr -deffnm md_rep1 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica1/md_rep1.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          }
+        ],
+        "expected_xtc_evidence": "UNRESOLVED: local LOG commands establish run basenames, not the final concatenated/delivered XTC filename. Prior intake report unavailable at this checkpoint.",
+        "remote_xtc_path": null,
+        "run_naming_note": "Repeated basenames are scoped by condition and replica."
+      },
+      "unresolved_discrepancies": [
+        {
+          "status": "UNRESOLVED",
+          "affected_source_set": "TUMOR/replica 1",
+          "fields": {
+            "pcoupl": {
+              "mdp": "Parrinello-Rahman",
+              "tpr": "Berendsen"
+            },
+            "tau-p": {
+              "mdp": "4.0",
+              "tpr": "2"
+            },
+            "continuation": {
+              "mdp": "yes",
+              "tpr": "false"
+            }
+          },
+          "blocking_scope": "Final run-parameter reconciliation/publication; does not prevent source-only discovery or a narrowly scoped correspondence approval. Coordinate preparation remains unapproved independently.",
+          "resolution": null
+        }
+      ],
+      "coordinate_checks_pending": [
+        "XTC transfer completion and raw source/run correspondence",
+        "Frame/header audit: atom count/order, time and cell preservation",
+        "Actual 5\u2013100 ns inclusive coverage: 476 requested samples; 94 windows of 11",
+        "Approved PBC representation and re-opened coordinate error",
+        "Prepared storage format and Colab peak storage measurement",
+        "5\u20138 ns representative technical contacts and replay/validation (future task only)"
+      ]
+    },
+    {
+      "trajectory_id": "gromacs_wt_tumor_r2",
+      "condition": "TUMOR",
+      "replica": 2,
+      "tpr": {
+        "path": "TUMOR/replica 2/md_rep2.tpr",
+        "size_bytes": 14502792,
+        "sha256": "478f672c167451b9aecc0cf862bb88b4d94e504a3bee4fb335613233eba0d677"
+      },
+      "mdp": {
+        "path": "TUMOR/replica 2/production_segment.mdp",
+        "size_bytes": 867,
+        "sha256": "23eab4a87cfa5c5293fceceff5c28782203bd9d5e1f6cc912207ff80ea9d3f87"
+      },
+      "logs": [
+        {
+          "path": "TUMOR/replica 2/md_rep2.log",
+          "size_bytes": 782853,
+          "sha256": "714935b0b2bd7785d69d76bf3ea2b82e41fbe2a8ae8c57791b2b6abbdc29aa3d"
+        },
+        {
+          "path": "TUMOR/replica 2/md_rep2.part0002.log",
+          "size_bytes": 590741,
+          "sha256": "f790db2dd0c77355fcd038d7d500dbb9deea83f26c0fbbb398e6e25bc2dd39db"
+        },
+        {
+          "path": "TUMOR/replica 2/md_rep2.part0003.log",
+          "size_bytes": 786782,
+          "sha256": "1613d402185291ad47e172d765741f0e42f1e82645bc18c8e7b599598d52e03e"
+        },
+        {
+          "path": "TUMOR/replica 2/md_rep2.part0004.log",
+          "size_bytes": 794316,
+          "sha256": "968d5f68c5153abe715c6582a286e849f7036ab8525778089f4b1a426ee57324"
+        },
+        {
+          "path": "TUMOR/replica 2/md_rep2.part0005.log",
+          "size_bytes": 796381,
+          "sha256": "2b30e396c4aa06eeae8b9b4d592f12e6d0b363e5018961e073892399033a5945"
+        },
+        {
+          "path": "TUMOR/replica 2/md_rep2.part0006.log",
+          "size_bytes": 551468,
+          "sha256": "6b8476890eaab61eac5cf6f463fa2c32c6cd2a169154e0d84d2be2ebfabf90e3"
+        },
+        {
+          "path": "TUMOR/replica 2/md_rep2.part0007.log",
+          "size_bytes": 793969,
+          "sha256": "2afe627c968a341240ecc55481e90c613537ad74e0163d6980bd1941c2b5dee8"
+        },
+        {
+          "path": "TUMOR/replica 2/md_rep2.part0008.log",
+          "size_bytes": 782084,
+          "sha256": "eacf6cfea74cd041e62430bbe061147b4a78a5ead9e8512396ba49678a7e6452"
+        },
+        {
+          "path": "TUMOR/replica 2/md_rep2.part0009.log",
+          "size_bytes": 783115,
+          "sha256": "0526744c2b6c41fceba78d1dfe5de5e9a98529367cf83599c17ac08599baa33c"
+        },
+        {
+          "path": "TUMOR/replica 2/md_rep2.part0010.log",
+          "size_bytes": 799999,
+          "sha256": "3753c3177a56e079daf7c7c47a374b2606010b4ef4a0c9b299af61753fa851c9"
+        },
+        {
+          "path": "TUMOR/replica 2/md_rep2.part0011.log",
+          "size_bytes": 1187966,
+          "sha256": "e4272f4d46c2626bc91fa1a9f968a1557db73e9a977ec43532b985989de4253d"
+        }
+      ],
+      "expected_xtc_path": "TUMOR/replica 2/md_rep2_full.xtc",
+      "provenance_basis": {
+        "basis": "Local TPR/MDP/LOG byte inventory and gmx dump input parameters; source/run correspondence is not yet human-attested.",
+        "mdp_parameters": {
+          "integrator": "md",
+          "dt": "0.002",
+          "nsteps": "50000000",
+          "tcoupl": "v-rescale",
+          "tc-grps": "System",
+          "tau-t": "1.0",
+          "ref-t": "312",
+          "pcoupl": "Parrinello-Rahman",
+          "pcoupltype": "semiisotropic",
+          "tau-p": "4.0",
+          "ref-p": "1.0 1.0",
+          "compressibility": "4.5e-5 4.5e-5",
+          "gen-vel": "no",
+          "gen-seed": "-1",
+          "continuation": "yes",
+          "cutoff-scheme": "Verlet",
+          "nstlist": "20",
+          "coulombtype": "PME",
+          "rcoulomb": "1.2",
+          "vdwtype": "Cut-off",
+          "vdw-modifier": "force-switch",
+          "rvdw-switch": "1.0",
+          "rvdw": "1.2",
+          "DispCorr": "no",
+          "pbc": "xyz",
+          "constraints": "h-bonds",
+          "constraint-algorithm": "LINCS",
+          "nstenergy": "5000",
+          "nstlog": "5000",
+          "nstxout-compressed": "5000",
+          "nstvout": "0"
+        },
+        "tpr_input_parameters": {
+          "integrator": "md",
+          "dt": "0.002",
+          "nsteps": "50000000",
+          "tinit": "0",
+          "init-step": "0",
+          "nstxout-compressed": "5000",
+          "pcoupl": "Berendsen",
+          "tau-p": "2",
+          "continuation": "false",
+          "ref-t": "312"
+        },
+        "log_commands": [
+          {
+            "log_path": "TUMOR/replica 2/md_rep2.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 2/md_rep2.part0002.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 2/md_rep2.part0003.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 2/md_rep2.part0004.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 2/md_rep2.part0005.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 2/md_rep2.part0006.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 2/md_rep2.part0007.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 2/md_rep2.part0008.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 2/md_rep2.part0009.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 2/md_rep2.part0010.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 2/md_rep2.part0011.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.tpr -deffnm md_rep2 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica2/md_rep2.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          }
+        ],
+        "expected_xtc_evidence": "User-supplied remote delivery and future local destination",
+        "remote_xtc_path": "MANIA_WANIA_project/MD_trajectories/NaPi2b/Ramilia/phase1eqmd3rep100ns/TUMOR/03PRODUCTION/replica2/md_rep2_full.xtc",
+        "run_naming_note": "Repeated basenames are scoped by condition and replica."
+      },
+      "unresolved_discrepancies": [
+        {
+          "status": "UNRESOLVED",
+          "affected_source_set": "TUMOR/replica 2",
+          "fields": {
+            "pcoupl": {
+              "mdp": "Parrinello-Rahman",
+              "tpr": "Berendsen"
+            },
+            "tau-p": {
+              "mdp": "4.0",
+              "tpr": "2"
+            },
+            "continuation": {
+              "mdp": "yes",
+              "tpr": "false"
+            }
+          },
+          "blocking_scope": "Final run-parameter reconciliation/publication; does not prevent source-only discovery or a narrowly scoped correspondence approval. Coordinate preparation remains unapproved independently.",
+          "resolution": null
+        }
+      ],
+      "coordinate_checks_pending": [
+        "XTC transfer completion and raw source/run correspondence",
+        "Frame/header audit: atom count/order, time and cell preservation",
+        "Actual 5\u2013100 ns inclusive coverage: 476 requested samples; 94 windows of 11",
+        "Approved PBC representation and re-opened coordinate error",
+        "Prepared storage format and Colab peak storage measurement",
+        "5\u20138 ns representative technical contacts and replay/validation (future task only)"
+      ]
+    },
+    {
+      "trajectory_id": "gromacs_wt_tumor_r3",
+      "condition": "TUMOR",
+      "replica": 3,
+      "tpr": {
+        "path": "TUMOR/replica 3/md_rep3.tpr",
+        "size_bytes": 14502792,
+        "sha256": "8df84612da6ec77dc06bdf663f4a041747da3510e7e8def8309a6b5f7856c490"
+      },
+      "mdp": {
+        "path": "TUMOR/replica 3/production_segment.mdp",
+        "size_bytes": 867,
+        "sha256": "23eab4a87cfa5c5293fceceff5c28782203bd9d5e1f6cc912207ff80ea9d3f87"
+      },
+      "logs": [
+        {
+          "path": "TUMOR/replica 3/md_rep3.log",
+          "size_bytes": 1312624,
+          "sha256": "b62e4faa9fd3093f4b15091f8c7e92e610fb618a03313db14cdedbeba41e1028"
+        },
+        {
+          "path": "TUMOR/replica 3/md_rep3.part0002.log",
+          "size_bytes": 1316136,
+          "sha256": "d4e9fd0b9c03415a2c8ac4b092631cb9185c07d46e6be9aa36c35830c816a69e"
+        },
+        {
+          "path": "TUMOR/replica 3/md_rep3.part0003.log",
+          "size_bytes": 1316739,
+          "sha256": "fcf9735dca4291b4a64a2fb5b299670d077f7af08f2855048a87e2157120d03b"
+        },
+        {
+          "path": "TUMOR/replica 3/md_rep3.part0005.log",
+          "size_bytes": 2354603,
+          "sha256": "91dc4d6bf6a2a9fd9bd9147616757ee93862e806ab2b014e76549ac78559c1db"
+        },
+        {
+          "path": "TUMOR/replica 3/md_rep3.part0006.log",
+          "size_bytes": 2268578,
+          "sha256": "43e35c7701c3a4e38a935d4c8cea5dd3c2da66312eef28c1f3faa34651d0a451"
+        },
+        {
+          "path": "TUMOR/replica 3/md_rep3.part0008.log",
+          "size_bytes": 614376,
+          "sha256": "9f5a2b2d7043b58ba754c339c6a58932164da410f42a16e700a5d99cfddc8d24"
+        },
+        {
+          "path": "TUMOR/replica 3/md_rep3.part0009.log",
+          "size_bytes": 347315,
+          "sha256": "ca7b4290d987e51bf3393f147f523743cee819fe0364ff0170db9872914e9491"
+        }
+      ],
+      "expected_xtc_path": null,
+      "provenance_basis": {
+        "basis": "Local TPR/MDP/LOG byte inventory and gmx dump input parameters; source/run correspondence is not yet human-attested.",
+        "mdp_parameters": {
+          "integrator": "md",
+          "dt": "0.002",
+          "nsteps": "50000000",
+          "tcoupl": "v-rescale",
+          "tc-grps": "System",
+          "tau-t": "1.0",
+          "ref-t": "312",
+          "pcoupl": "Parrinello-Rahman",
+          "pcoupltype": "semiisotropic",
+          "tau-p": "4.0",
+          "ref-p": "1.0 1.0",
+          "compressibility": "4.5e-5 4.5e-5",
+          "gen-vel": "no",
+          "gen-seed": "-1",
+          "continuation": "yes",
+          "cutoff-scheme": "Verlet",
+          "nstlist": "20",
+          "coulombtype": "PME",
+          "rcoulomb": "1.2",
+          "vdwtype": "Cut-off",
+          "vdw-modifier": "force-switch",
+          "rvdw-switch": "1.0",
+          "rvdw": "1.2",
+          "DispCorr": "no",
+          "pbc": "xyz",
+          "constraints": "h-bonds",
+          "constraint-algorithm": "LINCS",
+          "nstenergy": "5000",
+          "nstlog": "5000",
+          "nstxout-compressed": "5000",
+          "nstvout": "0"
+        },
+        "tpr_input_parameters": {
+          "integrator": "md",
+          "dt": "0.002",
+          "nsteps": "50000000",
+          "tinit": "0",
+          "init-step": "0",
+          "nstxout-compressed": "5000",
+          "pcoupl": "Berendsen",
+          "tau-p": "2",
+          "continuation": "false",
+          "ref-t": "312"
+        },
+        "log_commands": [
+          {
+            "log_path": "TUMOR/replica 3/md_rep3.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica3/md_rep3.tpr -deffnm md_rep3 -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 3/md_rep3.part0002.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica3/md_rep3.tpr -deffnm md_rep3 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica3/md_rep3.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 3/md_rep3.part0003.log",
+            "line": 46,
+            "command": "gmx mdrun -s /content/mdworkdir/TUMOR/03PRODUCTION/replica3/md_rep3.tpr -deffnm md_rep3 -cpi /content/mdworkdir/TUMOR/03PRODUCTION/replica3/md_rep3.cpt -noappend -ntmpi 1 -ntomp 6 -gpu_id 0 -nb gpu -pme gpu -bonded gpu -pin on -dlb yes -v"
+          },
+          {
+            "log_path": "TUMOR/replica 3/md_rep3.part0005.log",
+            "line": 46,
+            "command": "gmx mdrun -gpu_id 0 -nb gpu -pme gpu -bonded gpu -update gpu -pin on -dlb yes -v -deffnm md_rep3 -cpi md_rep3.cpt -noappend -cpt 5"
+          },
+          {
+            "log_path": "TUMOR/replica 3/md_rep3.part0006.log",
+            "line": 46,
+            "command": "gmx mdrun -gpu_id 0 -nb gpu -pme gpu -bonded gpu -update gpu -pin on -dlb yes -v -deffnm md_rep3 -cpi md_rep3.cpt -noappend -cpt 5"
+          },
+          {
+            "log_path": "TUMOR/replica 3/md_rep3.part0008.log",
+            "line": 46,
+            "command": "gmx mdrun -gpu_id 0 -nb gpu -pme gpu -bonded gpu -update gpu -pin on -dlb yes -v -deffnm md_rep3 -cpi md_rep3.cpt -noappend -cpt 5"
+          },
+          {
+            "log_path": "TUMOR/replica 3/md_rep3.part0009.log",
+            "line": 46,
+            "command": "gmx mdrun -gpu_id 0 -nb gpu -pme gpu -bonded gpu -update gpu -pin on -dlb yes -v -deffnm md_rep3 -cpi md_rep3.cpt -noappend -cpt 5"
+          }
+        ],
+        "expected_xtc_evidence": "UNRESOLVED: local LOG commands establish run basenames, not the final concatenated/delivered XTC filename. Prior intake report unavailable at this checkpoint.",
+        "remote_xtc_path": null,
+        "run_naming_note": "Repeated basenames are scoped by condition and replica."
+      },
+      "unresolved_discrepancies": [
+        {
+          "status": "UNRESOLVED",
+          "affected_source_set": "TUMOR/replica 3",
+          "fields": {
+            "pcoupl": {
+              "mdp": "Parrinello-Rahman",
+              "tpr": "Berendsen"
+            },
+            "tau-p": {
+              "mdp": "4.0",
+              "tpr": "2"
+            },
+            "continuation": {
+              "mdp": "yes",
+              "tpr": "false"
+            }
+          },
+          "blocking_scope": "Final run-parameter reconciliation/publication; does not prevent source-only discovery or a narrowly scoped correspondence approval. Coordinate preparation remains unapproved independently.",
+          "resolution": null
+        }
+      ],
+      "coordinate_checks_pending": [
+        "XTC transfer completion and raw source/run correspondence",
+        "Frame/header audit: atom count/order, time and cell preservation",
+        "Actual 5\u2013100 ns inclusive coverage: 476 requested samples; 94 windows of 11",
+        "Approved PBC representation and re-opened coordinate error",
+        "Prepared storage format and Colab peak storage measurement",
+        "5\u20138 ns representative technical contacts and replay/validation (future task only)"
+      ]
+    }
+  ],
+  "coordinate_backend_status": "pending_real_xtc_validation",
+  "prepared_storage_format": "OPEN"
+}
