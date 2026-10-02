@@ -2,8 +2,9 @@ import ast
 import inspect
 import json
 from dataclasses import FrozenInstanceError, fields, replace
-from math import nextafter
+from math import hypot, nextafter
 from pathlib import Path
+from random import Random
 
 import pytest
 
@@ -337,6 +338,117 @@ def test_distance_uses_all_three_cartesian_axes_in_angstrom():
         (coordinate(0, -1.0, -2.0, -3.0), coordinate(1, 0.0, 0.0, -1.0)),
     )
     assert compute_protein_lipid_contacts(frame).contacts[0].minimum_distance_A == 3.0
+
+
+@pytest.mark.parametrize("axis", range(3))
+@pytest.mark.parametrize("sign", [-1.0, 1.0])
+@pytest.mark.parametrize("distance", [nextafter(6.0, 0.0), 6.0, nextafter(6.0, 7.0)])
+def test_all_axis_directions_preserve_inclusive_float_boundary(axis, sign, distance):
+    xyz = [0.0, 0.0, 0.0]
+    xyz[axis] = sign * distance
+    frame = make_frame(
+        (residue(1, (0,)), residue(10, (1,))),
+        (coordinate(0, 0.0), coordinate(1, *xyz)),
+    )
+    result = compute_protein_lipid_contacts(frame)
+    assert result.evaluated_pair_count == 1
+    assert result.contact_count == int(distance <= 6.0)
+    if result.contacts:
+        assert result.contacts[0].minimum_distance_A.hex() == distance.hex()
+
+
+@pytest.mark.parametrize("seed", range(20))
+def test_seeded_geometry_matches_exhaustive_heavy_atom_oracle(seed):
+    rng = Random(seed)
+    indexes = (1, 2, 10, 11, 12)
+    residues = tuple(
+        residue(i, tuple(range(j * 4, j * 4 + 4))) for j, i in enumerate(indexes)
+    )
+    atoms = []
+    for j, center in enumerate((0.0, 20.0, 3.0, 24.0, 100.0)):
+        for k in range(4):
+            atoms.append(
+                coordinate(
+                    j * 4 + k,
+                    center + rng.uniform(-4, 4),
+                    rng.uniform(-4, 4),
+                    rng.uniform(-4, 4),
+                    hydrogen=k == 3,
+                )
+            )
+    frame = make_frame(
+        residues, tuple(atoms), proteins=(1, 2), lipid_indexes=(10, 11, 12)
+    )
+    expected = []
+    for protein in residues[:2]:
+        for lipid in frame.partner_catalog.partners:
+            minimum = min(
+                hypot(
+                    atoms[b].x_A - atoms[a].x_A,
+                    atoms[b].y_A - atoms[a].y_A,
+                    atoms[b].z_A - atoms[a].z_A,
+                )
+                for a in protein.atom_indexes
+                if not atoms[a].is_hydrogen
+                for b in lipid.component_atom_indexes
+                if not atoms[b].is_hydrogen
+            )
+            if minimum <= 6.0:
+                expected.append(
+                    ProteinLipidContactObservation(
+                        frame.frame_index,
+                        frame.time_ps,
+                        protein.residue_index,
+                        protein.residue_id,
+                        protein.resname,
+                        protein.segid,
+                        lipid.partner_id,
+                        lipid.partner_name,
+                        lipid.component_residue_indexes,
+                        minimum,
+                    )
+                )
+    result = compute_protein_lipid_contacts(frame)
+    assert result == ProteinLipidContactFrameResult(
+        frame.frame_index, frame.time_ps, 2, 3, 6, len(expected), tuple(expected)
+    )
+    assert [c.minimum_distance_A.hex() for c in result.contacts] == [
+        c.minimum_distance_A.hex() for c in expected
+    ]
+
+
+def test_mixed_large_integer_float_rounding_retains_original_minimum():
+    base = 2**56
+    frame = make_frame(
+        (residue(1, (0, 1)), residue(10, (2,))),
+        (coordinate(0, float(base)), coordinate(1, base + 1), coordinate(2, base + 8)),
+    )
+    # Integer extrema suggest a gap of 7, but the original mixed subtraction
+    # rounds the first atom-pair displacement to zero.
+    assert (base + 8) - float(base) == 0.0
+    assert compute_protein_lipid_contacts(frame).contacts[0].minimum_distance_A == 0.0
+
+
+@pytest.mark.parametrize("xyz", [(1.7e308, 0.0, 0.0), (8e307, 8e307, 8e307)])
+def test_separated_extreme_coordinates_preserve_nonfinite_minimum_error(xyz):
+    frame = make_frame(
+        (residue(1, (0,)), residue(10, (1,))),
+        (coordinate(0, *xyz), coordinate(1, *(-v for v in xyz))),
+    )
+    with pytest.raises(
+        ProteinLipidContactComputationError,
+        match="computed minimum_distance_A must be a finite number",
+    ):
+        compute_protein_lipid_contacts(frame)
+
+
+def test_extreme_coordinates_with_finite_minimum_are_still_valid():
+    frame = make_frame(
+        (residue(1, (0, 1)), residue(10, (2,))),
+        (coordinate(0, -1.7e308), coordinate(1, 1.7e308), coordinate(2, 1.7e308)),
+    )
+    # One infinite atom-pair distance does not invalidate the finite minimum.
+    assert compute_protein_lipid_contacts(frame).contacts[0].minimum_distance_A == 0.0
 
 
 def test_no_pbc_smoke_uses_supplied_coordinates_without_wrapping():

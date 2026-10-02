@@ -357,6 +357,29 @@ def _heavy_coordinates(
     return heavy
 
 
+def _finite_float_bounds(
+    heavy: tuple[SourceAtomFrameCoordinate, ...],
+) -> tuple[float, float, float, float, float, float] | None:
+    """Bound only native floats whose pairwise differences/norms stay finite."""
+    # Mixed int/float subtraction can round differently from integer bounds.
+    # Extreme finite coordinates must retain the original nonfinite-minimum
+    # errors. With |coordinate| <= max_float/4, even the 3D norm stays finite.
+    if any(
+        type(value) is not float or not isfinite(4.0 * value)
+        for atom in heavy
+        for value in (atom.x_A, atom.y_A, atom.z_A)
+    ):
+        return None
+    return (
+        min(a.x_A for a in heavy),
+        max(a.x_A for a in heavy),
+        min(a.y_A for a in heavy),
+        max(a.y_A for a in heavy),
+        min(a.z_A for a in heavy),
+        max(a.z_A for a in heavy),
+    )
+
+
 def compute_protein_lipid_contacts(
     frame: ProteinLipidContactFrameInput,
 ) -> ProteinLipidContactFrameResult:
@@ -385,10 +408,29 @@ def compute_protein_lipid_contacts(
         )
         for p in lipids
     }
+    protein_bounds = {i: _finite_float_bounds(a) for i, a in protein_heavy.items()}
+    lipid_bounds = {i: _finite_float_bounds(a) for i, a in lipid_heavy.items()}
     contacts = []
     for index in frame.protein_residue_indexes:
         residue = residues[index]
+        protein_box = protein_bounds[index]
         for lipid in lipids:
+            lipid_box = lipid_bounds[lipid.partner_id]
+            # Reject only when an axis proves every heavy-heavy distance > 6 Å.
+            # Surviving pairs retain the exact original minimum and atom order.
+            if (
+                protein_box is not None
+                and lipid_box is not None
+                and (
+                    lipid_box[0] - protein_box[1] > PROTEIN_LIPID_CONTACT_CUTOFF_A
+                    or protein_box[0] - lipid_box[1] > PROTEIN_LIPID_CONTACT_CUTOFF_A
+                    or lipid_box[2] - protein_box[3] > PROTEIN_LIPID_CONTACT_CUTOFF_A
+                    or protein_box[2] - lipid_box[3] > PROTEIN_LIPID_CONTACT_CUTOFF_A
+                    or lipid_box[4] - protein_box[5] > PROTEIN_LIPID_CONTACT_CUTOFF_A
+                    or protein_box[4] - lipid_box[5] > PROTEIN_LIPID_CONTACT_CUTOFF_A
+                )
+            ):
+                continue
             # hypot computes sqrt(dx² + dy² + dz²) without intermediate squaring
             # overflow/underflow. Every heavy-heavy pair participates in the minimum.
             minimum = min(
