@@ -30,9 +30,9 @@ MD calculation, or Stage 27–33 implementation change belongs to D.4b.
 mix engines, variants, conditions or disulfide-design states. Every expected
 replica remains a row. A system is READY only if all its expected rows are READY.
 
-## Current source authority and portable paths
+## Frozen catalog snapshot and portable paths
 
-The authoritative local intake is `local_md/production_intake/`, with flat
+The historical D.4b local intake is `local_md/production_intake/`, with flat
 `egor/`, `alina/`, and `ramila/` source directories. System/replica subdirectories
 are not required. Files retain their original preserved names and locations.
 No source file is copied, moved, renamed or linked by this reconciliation.
@@ -184,16 +184,36 @@ identifies the persistent checkpoint and replay command.
 
 ## GROMACS production collections
 
-WT/NORM and WT/TUMOR each have three 100 ns replicas from
-`phase1eqmd3rep100ns`. The inspected Ramila directory is empty; current source
-storage may still change, so none of these six rows has an observed assignment.
+WT/NORM and WT/TUMOR each retain three 100 ns replicas from the new
+owner-authoritative `eqmd_rep100ns_09_2026` series. T330M/NORM and T330M/TUMOR
+each retain three 30 ns replicas from `T330M_30ns_09_2026`. The historical
+`phase1eqmd3rep100ns` ambiguity is superseded; `30ns_03-2026` and historical pilots
+cannot supply current bindings. All twelve scientific identities are unchanged.
 
-T330M/NORM and T330M/TUMOR each retain three 30 ns replicas awaiting
-`T330M_30ns_09-2026`. **`30ns_03-2026` is excluded from current FAIR² Dataset v1**
-and cannot supply T330M bindings. Historical pilot results remain untouched.
-All twelve rows remain blocked for missing/unbound production sources.
-GROMACS has no frozen disulfide-design dimension; its blank field does not
-assert absence of physical disulfide bonds.
+The new intake independently supplies every TPR, MDP and complete LOG set.
+Two final XTCs (WT-NORM-r1 and T330M-NORM-r1) are locally available and fully
+audited; ten are deliberately absent. The frozen CSV/YAML remain byte-identical to the Egor runtime catalog, as
+required by its existing acceptance contract. Their historical GROMACS source
+notes and readiness are superseded for Ramila execution by the tracked
+`production/ramila_gromacs_runtime/authority.json` and current audit evidence.
+Only the unchanged Dataset identities and temporal specification are projected
+from that shared snapshot. The supported
+[Ramila backend](../../docs/ramila_gromacs_production_interface.md) instead takes
+SOURCE_ROOT directly at the directory containing WT/ and T330M/, and binds its
+tracked topology-specific controls independently of catalog data-root templates.
+Its authority JSON records all actual source paths, complete LOG sets and
+WT-TUMOR-r2 exception names, including the additional extension TPR.
+No source file is moved or rewritten.
+
+Exact O95436-1 mappings, element applicability and observed molecular membership
+are established per system from its own TPRs. Complete biological annotation
+authority remains **PENDING** for all four Ramila systems, with no Egor annotation
+transfer. The two observed XTCs remain pending publication annotation readiness; this
+does not block underlying contact science. Ten XTCs are locally absent. These
+current observations do not rewrite the frozen CSV readiness snapshot. Actual topology sugar attachments and SG–SG bonds are separate
+observations. A blank disulfide-design field asserts no physical-bond absence.
+Production execution, QC-derived aggregation and publication acceptance remain
+separate downstream gates. No complete three-replica group is accepted locally.
 
 ## Alina identity and condition
 
@@ -293,6 +313,10 @@ the approved requested timing/window contract, and exact accepted controls with
 valid production bindings. Timing approval, inclusive windows, the launcher and
 per-frame persistence/replay are implemented. D.4e.3 closes external preparation
 for 0SS/r1; real contact execution and QC remain separate gates.
+
+The following counts describe the frozen shared catalog snapshot. Current
+Ramila source availability and annotation authority are recorded above and in
+its own runtime authority; the historical GROMACS notes are not execution inputs.
 
 | Scope | READY | MISSING_FILES | MISSING_METADATA | NEEDS_AUTHORITY |
 | --- | ---: | ---: | ---: | ---: |

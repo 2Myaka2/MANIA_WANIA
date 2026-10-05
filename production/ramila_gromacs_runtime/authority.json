@@ -1,0 +1,741 @@
+{
+  "schema_version": "mania.ramila_gromacs_runtime.v1",
+  "protocol": "unwrap_bonded_fragments_center_protein_wrap_complete_fragments",
+  "format": "XTC:4",
+  "internal_MIC": false,
+  "biological_annotation_authority": "PENDING",
+  "representation_bytes_per_frame": 2076448.0,
+  "trajectories": [
+    {
+      "trajectory_id": "gromacs_wt_norm_r1",
+      "dataset_spec": {
+        "schema_version": "mania.dataset_trajectory_spec.v0.1",
+        "kind": "mania_dataset_trajectory_spec",
+        "identity": {
+          "dataset_id": "napi2b-dataset-v1",
+          "system_id": "gromacs_wt_norm",
+          "trajectory_id": "gromacs_wt_norm_r1",
+          "variant_id": "WT",
+          "engine": "gromacs",
+          "condition": "NORM",
+          "replica_id": "1",
+          "disulfide_state": null
+        },
+        "temporal": {
+          "production_start_ns": 5.0,
+          "production_end_ns": 100.0,
+          "frame_stride_ps": 200.0,
+          "window_length_ns": 2.0,
+          "window_step_ns": 1.0,
+          "overlap_percent": 50.0
+        }
+      },
+      "xtc_path": "WT/NORM/replica 1/md_rep1_full.xtc",
+      "tpr": {
+        "path": "WT/NORM/replica 1/md_rep1.tpr",
+        "size_bytes": 12972532,
+        "sha256": "61ad0aef4eb44ee1a406c9f3fe99b8c01b8af129f55d5217d388f6203d87ff91"
+      },
+      "mdp": {
+        "path": "WT/NORM/replica 1/production_segment.mdp",
+        "size_bytes": 565,
+        "sha256": "70a808ef1c2b4a5f9e9e48849662950f7fd8e8591c2d0f7ee9aed2fb67da2c0c"
+      },
+      "logs": [
+        {
+          "path": "WT/NORM/replica 1/md_rep1.part0001.log",
+          "size_bytes": 2637018,
+          "sha256": "1a2f7993718eb6f70892b8a7d379a8aae40ee186bcba7da7fc08eaa542249a9c"
+        },
+        {
+          "path": "WT/NORM/replica 1/md_rep1.part0002.log",
+          "size_bytes": 2654658,
+          "sha256": "7c0592b0ed15de68bd7af9e9e52a4697fbbf8704a6b012e6249453af4d2ded40"
+        },
+        {
+          "path": "WT/NORM/replica 1/md_rep1.part0003.log",
+          "size_bytes": 2664645,
+          "sha256": "1c460d7682f8d03ccab34a15ac7a550f5b4f7fae5dafbcfda590657d6f365ca2"
+        },
+        {
+          "path": "WT/NORM/replica 1/md_rep1.part0004.log",
+          "size_bytes": 36179,
+          "sha256": "e42120ac857071ee4bdaa98188d71d6474ce64c5f258ddeae97482c67a711596"
+        },
+        {
+          "path": "WT/NORM/replica 1/md_rep1.part0005.log",
+          "size_bytes": 2158709,
+          "sha256": "4ce9cc060668cd08875e599d287f4899b1c05518c6dc1b19821e4400b36be8ab"
+        }
+      ],
+      "additional_tprs": [],
+      "owner_known_gap": false,
+      "topology_fingerprint": "22c4e22171442a50336ff0161c27c3f1d36a0d4391da86b0d81a55a9a7240793",
+      "canonical_mapping_path": "controls/gromacs_wt_norm/canonical_mapping.json",
+      "partner_metadata_path": "controls/gromacs_wt_norm/partner_metadata.json",
+      "lipid_partners": 600,
+      "glycan_partners": 2
+    },
+    {
+      "trajectory_id": "gromacs_wt_norm_r2",
+      "dataset_spec": {
+        "schema_version": "mania.dataset_trajectory_spec.v0.1",
+        "kind": "mania_dataset_trajectory_spec",
+        "identity": {
+          "dataset_id": "napi2b-dataset-v1",
+          "system_id": "gromacs_wt_norm",
+          "trajectory_id": "gromacs_wt_norm_r2",
+          "variant_id": "WT",
+          "engine": "gromacs",
+          "condition": "NORM",
+          "replica_id": "2",
+          "disulfide_state": null
+        },
+        "temporal": {
+          "production_start_ns": 5.0,
+          "production_end_ns": 100.0,
+          "frame_stride_ps": 200.0,
+          "window_length_ns": 2.0,
+          "window_step_ns": 1.0,
+          "overlap_percent": 50.0
+        }
+      },
+      "xtc_path": "WT/NORM/replica 2/md_rep2_full.xtc",
+      "tpr": {
+        "path": "WT/NORM/replica 2/md_rep2.tpr",
+        "size_bytes": 12972532,
+        "sha256": "4166a4f183fa6841ab8c573e33dc0d85e4387b5dce11547967b71339ece1795b"
+      },
+      "mdp": {
+        "path": "WT/NORM/replica 2/production_segment.mdp",
+        "size_bytes": 867,
+        "sha256": "fb13efe693d9939f8b8cb61aa367560708bfe4c8607ee34d3d2c89d77afbf163"
+      },
+      "logs": [
+        {
+          "path": "WT/NORM/replica 2/md_rep2.log",
+          "size_bytes": 19393,
+          "sha256": "2e66ad3dc73e88dbfb668510a60bf37f8af24ae22eeaf57208cc711071742a4d"
+        },
+        {
+          "path": "WT/NORM/replica 2/md_rep2.part0013.log",
+          "size_bytes": 487306,
+          "sha256": "70f9dc135d7bfb4358f7ba3e065bc32abe2b0dee303c05f7d95cd3bacf3974f8"
+        },
+        {
+          "path": "WT/NORM/replica 2/md_rep2.part0014.log",
+          "size_bytes": 24259,
+          "sha256": "0d157d4839653340141c01cadbe2d641b0ffcb2d227fb8872bbfc773636ff00a"
+        }
+      ],
+      "additional_tprs": [],
+      "owner_known_gap": false,
+      "topology_fingerprint": "22c4e22171442a50336ff0161c27c3f1d36a0d4391da86b0d81a55a9a7240793",
+      "canonical_mapping_path": "controls/gromacs_wt_norm/canonical_mapping.json",
+      "partner_metadata_path": "controls/gromacs_wt_norm/partner_metadata.json",
+      "lipid_partners": 600,
+      "glycan_partners": 2
+    },
+    {
+      "trajectory_id": "gromacs_wt_norm_r3",
+      "dataset_spec": {
+        "schema_version": "mania.dataset_trajectory_spec.v0.1",
+        "kind": "mania_dataset_trajectory_spec",
+        "identity": {
+          "dataset_id": "napi2b-dataset-v1",
+          "system_id": "gromacs_wt_norm",
+          "trajectory_id": "gromacs_wt_norm_r3",
+          "variant_id": "WT",
+          "engine": "gromacs",
+          "condition": "NORM",
+          "replica_id": "3",
+          "disulfide_state": null
+        },
+        "temporal": {
+          "production_start_ns": 5.0,
+          "production_end_ns": 100.0,
+          "frame_stride_ps": 200.0,
+          "window_length_ns": 2.0,
+          "window_step_ns": 1.0,
+          "overlap_percent": 50.0
+        }
+      },
+      "xtc_path": "WT/NORM/replica 3/md_rep3_full.xtc",
+      "tpr": {
+        "path": "WT/NORM/replica 3/md_rep3.tpr",
+        "size_bytes": 12972532,
+        "sha256": "d628827288f7fe9d26ca8f0437edff0a1e8baa75652b34d4ea86b591c6de0759"
+      },
+      "mdp": {
+        "path": "WT/NORM/replica 3/production_segment.mdp",
+        "size_bytes": 541,
+        "sha256": "29eb311e05d7957abfec9af2dfd4ef980724672d06099c097e9c443f9c392dd2"
+      },
+      "logs": [
+        {
+          "path": "WT/NORM/replica 3/md_rep3.part0010.log",
+          "size_bytes": 350104,
+          "sha256": "5fc8443992a79792bb45bead09fb0bfbef908c6aab4275945d7c45d5a8609454"
+        },
+        {
+          "path": "WT/NORM/replica 3/md_rep3.part0011.log",
+          "size_bytes": 24110,
+          "sha256": "5da5ba3626e67ebfe1b8a90c48f79d301ec28d97148dcb31e4643c19aac2135b"
+        }
+      ],
+      "additional_tprs": [],
+      "owner_known_gap": false,
+      "topology_fingerprint": "22c4e22171442a50336ff0161c27c3f1d36a0d4391da86b0d81a55a9a7240793",
+      "canonical_mapping_path": "controls/gromacs_wt_norm/canonical_mapping.json",
+      "partner_metadata_path": "controls/gromacs_wt_norm/partner_metadata.json",
+      "lipid_partners": 600,
+      "glycan_partners": 2
+    },
+    {
+      "trajectory_id": "gromacs_wt_tumor_r1",
+      "dataset_spec": {
+        "schema_version": "mania.dataset_trajectory_spec.v0.1",
+        "kind": "mania_dataset_trajectory_spec",
+        "identity": {
+          "dataset_id": "napi2b-dataset-v1",
+          "system_id": "gromacs_wt_tumor",
+          "trajectory_id": "gromacs_wt_tumor_r1",
+          "variant_id": "WT",
+          "engine": "gromacs",
+          "condition": "TUMOR",
+          "replica_id": "1",
+          "disulfide_state": null
+        },
+        "temporal": {
+          "production_start_ns": 5.0,
+          "production_end_ns": 100.0,
+          "frame_stride_ps": 200.0,
+          "window_length_ns": 2.0,
+          "window_step_ns": 1.0,
+          "overlap_percent": 50.0
+        }
+      },
+      "xtc_path": "WT/TUMOR/replica 1/md_rep1_full.xtc",
+      "tpr": {
+        "path": "WT/TUMOR/replica 1/md_rep1.tpr",
+        "size_bytes": 14502792,
+        "sha256": "5c10d20b2893cb9ee9bdec5b86ac83bd3d699e938b14dd073eb9b8576f75b818"
+      },
+      "mdp": {
+        "path": "WT/TUMOR/replica 1/production_segment.mdp",
+        "size_bytes": 867,
+        "sha256": "23eab4a87cfa5c5293fceceff5c28782203bd9d5e1f6cc912207ff80ea9d3f87"
+      },
+      "logs": [
+        {
+          "path": "WT/TUMOR/replica 1/md_rep1.part0008.log",
+          "size_bytes": 783115,
+          "sha256": "8062b8faaacf5edb46a866fea081d9b5a1ed199f2e3a09316d64e77cc23029a6"
+        },
+        {
+          "path": "WT/TUMOR/replica 1/md_rep1.part0009.log",
+          "size_bytes": 133397,
+          "sha256": "302c202946376ed2c0e4ff05ca226cd4471a23e0e05daf3310af22983a7168c5"
+        },
+        {
+          "path": "WT/TUMOR/replica 1/md_rep1.part0010.log",
+          "size_bytes": 24391,
+          "sha256": "2b0bd2c8cc1fa0f04d2e6be1d76d50f27ebc3fa555e02a41616d63f53799fa00"
+        }
+      ],
+      "additional_tprs": [],
+      "owner_known_gap": false,
+      "topology_fingerprint": "f67950c05151ead0e92e422166427b184cd3309f56c70c6757e2a9710248140d",
+      "canonical_mapping_path": "controls/gromacs_wt_tumor/canonical_mapping.json",
+      "partner_metadata_path": "controls/gromacs_wt_tumor/partner_metadata.json",
+      "lipid_partners": 714,
+      "glycan_partners": 2
+    },
+    {
+      "trajectory_id": "gromacs_wt_tumor_r2",
+      "dataset_spec": {
+        "schema_version": "mania.dataset_trajectory_spec.v0.1",
+        "kind": "mania_dataset_trajectory_spec",
+        "identity": {
+          "dataset_id": "napi2b-dataset-v1",
+          "system_id": "gromacs_wt_tumor",
+          "trajectory_id": "gromacs_wt_tumor_r2",
+          "variant_id": "WT",
+          "engine": "gromacs",
+          "condition": "TUMOR",
+          "replica_id": "2",
+          "disulfide_state": null
+        },
+        "temporal": {
+          "production_start_ns": 5.0,
+          "production_end_ns": 100.0,
+          "frame_stride_ps": 200.0,
+          "window_length_ns": 2.0,
+          "window_step_ns": 1.0,
+          "overlap_percent": 50.0
+        }
+      },
+      "xtc_path": "WT/TUMOR/replica 2/md_rep2_full.xtc",
+      "tpr": {
+        "path": "WT/TUMOR/replica 2/mdrep2replacement.tpr",
+        "size_bytes": 14502792,
+        "sha256": "460a209417aad0c05dddedb53a497aed931add256d866a034beddcf83a3cf034"
+      },
+      "mdp": {
+        "path": "WT/TUMOR/replica 2/production_fresh_100ns.mdp",
+        "size_bytes": 1061,
+        "sha256": "78cccfce1a92a375b9d69363aaf094f57e9d9fb0e78f2418c6ccad82cc72c19f"
+      },
+      "logs": [
+        {
+          "path": "WT/TUMOR/replica 2/mdrep2replacement.part0001.log",
+          "size_bytes": 2325455,
+          "sha256": "a583ea6979d0c1ff5ca1ea3011dc4a8bfb3dbe8c3e72c1655f5caccd8caa936a"
+        },
+        {
+          "path": "WT/TUMOR/replica 2/mdrep2replacement.part0002.log",
+          "size_bytes": 1995202,
+          "sha256": "abe422f0a19f6927e7dd1568ffe1915c963ca44222eea74046bfa9842d639270"
+        },
+        {
+          "path": "WT/TUMOR/replica 2/mdrep2replacement.part0003.log",
+          "size_bytes": 1837008,
+          "sha256": "c3b1e0336c609e96de2d50a5eabd576092d50600f9b9d7c813283ffde9fb0f5d"
+        },
+        {
+          "path": "WT/TUMOR/replica 2/mdrep2replacement.part0004.log",
+          "size_bytes": 86953,
+          "sha256": "04c46546037b898ec3893c6c6b20926b74278aba3a4500d94f40cdd463205992"
+        }
+      ],
+      "additional_tprs": [
+        {
+          "path": "WT/TUMOR/replica 2/mdrep2replacement_repair_to_101ns.tpr",
+          "size_bytes": 14502792,
+          "sha256": "6f9907e34596ffb466d672eebb3b8248f21c1af373cb65eae9438f2c9bc86d38"
+        }
+      ],
+      "owner_known_gap": true,
+      "topology_fingerprint": "f67950c05151ead0e92e422166427b184cd3309f56c70c6757e2a9710248140d",
+      "canonical_mapping_path": "controls/gromacs_wt_tumor/canonical_mapping.json",
+      "partner_metadata_path": "controls/gromacs_wt_tumor/partner_metadata.json",
+      "lipid_partners": 714,
+      "glycan_partners": 2
+    },
+    {
+      "trajectory_id": "gromacs_wt_tumor_r3",
+      "dataset_spec": {
+        "schema_version": "mania.dataset_trajectory_spec.v0.1",
+        "kind": "mania_dataset_trajectory_spec",
+        "identity": {
+          "dataset_id": "napi2b-dataset-v1",
+          "system_id": "gromacs_wt_tumor",
+          "trajectory_id": "gromacs_wt_tumor_r3",
+          "variant_id": "WT",
+          "engine": "gromacs",
+          "condition": "TUMOR",
+          "replica_id": "3",
+          "disulfide_state": null
+        },
+        "temporal": {
+          "production_start_ns": 5.0,
+          "production_end_ns": 100.0,
+          "frame_stride_ps": 200.0,
+          "window_length_ns": 2.0,
+          "window_step_ns": 1.0,
+          "overlap_percent": 50.0
+        }
+      },
+      "xtc_path": "WT/TUMOR/replica 3/md_rep3_full.xtc",
+      "tpr": {
+        "path": "WT/TUMOR/replica 3/md_rep3.tpr",
+        "size_bytes": 14502792,
+        "sha256": "8df84612da6ec77dc06bdf663f4a041747da3510e7e8def8309a6b5f7856c490"
+      },
+      "mdp": {
+        "path": "WT/TUMOR/replica 3/production_segment.mdp",
+        "size_bytes": 867,
+        "sha256": "23eab4a87cfa5c5293fceceff5c28782203bd9d5e1f6cc912207ff80ea9d3f87"
+      },
+      "logs": [
+        {
+          "path": "WT/TUMOR/replica 3/md_rep3.log",
+          "size_bytes": 1312624,
+          "sha256": "b62e4faa9fd3093f4b15091f8c7e92e610fb618a03313db14cdedbeba41e1028"
+        },
+        {
+          "path": "WT/TUMOR/replica 3/md_rep3.part0002.log",
+          "size_bytes": 1316136,
+          "sha256": "d4e9fd0b9c03415a2c8ac4b092631cb9185c07d46e6be9aa36c35830c816a69e"
+        },
+        {
+          "path": "WT/TUMOR/replica 3/md_rep3.part0003.log",
+          "size_bytes": 1316739,
+          "sha256": "fcf9735dca4291b4a64a2fb5b299670d077f7af08f2855048a87e2157120d03b"
+        },
+        {
+          "path": "WT/TUMOR/replica 3/md_rep3.part0004.log",
+          "size_bytes": 2261533,
+          "sha256": "f84c6fcc2bc4895805e713cd635f26226ac4369a09b9007eca23eb726d27a507"
+        },
+        {
+          "path": "WT/TUMOR/replica 3/md_rep3.part0005.log",
+          "size_bytes": 2354603,
+          "sha256": "91dc4d6bf6a2a9fd9bd9147616757ee93862e806ab2b014e76549ac78559c1db"
+        },
+        {
+          "path": "WT/TUMOR/replica 3/md_rep3.part0006.log",
+          "size_bytes": 2268578,
+          "sha256": "43e35c7701c3a4e38a935d4c8cea5dd3c2da66312eef28c1f3faa34651d0a451"
+        },
+        {
+          "path": "WT/TUMOR/replica 3/md_rep3.part0007.log",
+          "size_bytes": 1972787,
+          "sha256": "7322abd576aecd0b73b47c79d22479ec095565dcaa07ac745d73559e6663b804"
+        },
+        {
+          "path": "WT/TUMOR/replica 3/md_rep3.part0008.log",
+          "size_bytes": 614376,
+          "sha256": "9f5a2b2d7043b58ba754c339c6a58932164da410f42a16e700a5d99cfddc8d24"
+        },
+        {
+          "path": "WT/TUMOR/replica 3/md_rep3.part0009.log",
+          "size_bytes": 347315,
+          "sha256": "ca7b4290d987e51bf3393f147f523743cee819fe0364ff0170db9872914e9491"
+        },
+        {
+          "path": "WT/TUMOR/replica 3/md_rep3.part0010.log",
+          "size_bytes": 298319,
+          "sha256": "3b2e96e756af7c4e56e40ac06f8f1fb3dfbe82e5ae76c97f7142fc03ad5d36b5"
+        }
+      ],
+      "additional_tprs": [],
+      "owner_known_gap": false,
+      "topology_fingerprint": "f67950c05151ead0e92e422166427b184cd3309f56c70c6757e2a9710248140d",
+      "canonical_mapping_path": "controls/gromacs_wt_tumor/canonical_mapping.json",
+      "partner_metadata_path": "controls/gromacs_wt_tumor/partner_metadata.json",
+      "lipid_partners": 714,
+      "glycan_partners": 2
+    },
+    {
+      "trajectory_id": "gromacs_t330m_norm_r1",
+      "dataset_spec": {
+        "schema_version": "mania.dataset_trajectory_spec.v0.1",
+        "kind": "mania_dataset_trajectory_spec",
+        "identity": {
+          "dataset_id": "napi2b-dataset-v1",
+          "system_id": "gromacs_t330m_norm",
+          "trajectory_id": "gromacs_t330m_norm_r1",
+          "variant_id": "T330M",
+          "engine": "gromacs",
+          "condition": "NORM",
+          "replica_id": "1",
+          "disulfide_state": null
+        },
+        "temporal": {
+          "production_start_ns": 5.0,
+          "production_end_ns": 30.0,
+          "frame_stride_ps": 200.0,
+          "window_length_ns": 2.0,
+          "window_step_ns": 1.0,
+          "overlap_percent": 50.0
+        }
+      },
+      "xtc_path": "T330M/NORM/replica 1/t330m_rep1.xtc",
+      "tpr": {
+        "path": "T330M/NORM/replica 1/t330m_rep1.tpr",
+        "size_bytes": 12922624,
+        "sha256": "170f7b919fae85b5948b92a84b783674cc546b7e2c7bda1fec445f5fba84997f"
+      },
+      "mdp": {
+        "path": "T330M/NORM/replica 1/production.mdp",
+        "size_bytes": 564,
+        "sha256": "adeb1c4b416ef447b5ce2402323eca7502b30ff3e4977e16882e87ed4a777668"
+      },
+      "logs": [
+        {
+          "path": "T330M/NORM/replica 1/t330m_rep1.log",
+          "size_bytes": 1847142,
+          "sha256": "18f431904f31f82ff0a981d30f1daabd20445cbffe0e89515dc6eae6082b67b7"
+        }
+      ],
+      "additional_tprs": [],
+      "owner_known_gap": false,
+      "topology_fingerprint": "0fb69059116b83b5c1b4bc265aade702648dff60985b6f108cf53af7332295eb",
+      "canonical_mapping_path": "controls/gromacs_t330m_norm/canonical_mapping.json",
+      "partner_metadata_path": "controls/gromacs_t330m_norm/partner_metadata.json",
+      "lipid_partners": 600,
+      "glycan_partners": 2
+    },
+    {
+      "trajectory_id": "gromacs_t330m_norm_r2",
+      "dataset_spec": {
+        "schema_version": "mania.dataset_trajectory_spec.v0.1",
+        "kind": "mania_dataset_trajectory_spec",
+        "identity": {
+          "dataset_id": "napi2b-dataset-v1",
+          "system_id": "gromacs_t330m_norm",
+          "trajectory_id": "gromacs_t330m_norm_r2",
+          "variant_id": "T330M",
+          "engine": "gromacs",
+          "condition": "NORM",
+          "replica_id": "2",
+          "disulfide_state": null
+        },
+        "temporal": {
+          "production_start_ns": 5.0,
+          "production_end_ns": 30.0,
+          "frame_stride_ps": 200.0,
+          "window_length_ns": 2.0,
+          "window_step_ns": 1.0,
+          "overlap_percent": 50.0
+        }
+      },
+      "xtc_path": "T330M/NORM/replica 2/t330m_rep2.xtc",
+      "tpr": {
+        "path": "T330M/NORM/replica 2/t330m_rep2.tpr",
+        "size_bytes": 12922624,
+        "sha256": "67de5f63184f6bae52a8881976febe6d4e8bdfd9d2c1336654b503f9c0747824"
+      },
+      "mdp": {
+        "path": "T330M/NORM/replica 2/production.mdp",
+        "size_bytes": 564,
+        "sha256": "21bc95212172433c4c063a593b18df3168e6755074a9a8aeb630f94dd75ef170"
+      },
+      "logs": [
+        {
+          "path": "T330M/NORM/replica 2/t330m_rep2.log",
+          "size_bytes": 382829,
+          "sha256": "ed84e537a7f90d34d4dde363b1b7281014fae700567dc2fada188f52b5d30bb5"
+        },
+        {
+          "path": "T330M/NORM/replica 2/t330m_rep2.part0002.log",
+          "size_bytes": 1478443,
+          "sha256": "03f10ded23afe704675929ebb144cbb88f67a9d00f7ab01aaab63277caa4255a"
+        }
+      ],
+      "additional_tprs": [],
+      "owner_known_gap": true,
+      "topology_fingerprint": "0fb69059116b83b5c1b4bc265aade702648dff60985b6f108cf53af7332295eb",
+      "canonical_mapping_path": "controls/gromacs_t330m_norm/canonical_mapping.json",
+      "partner_metadata_path": "controls/gromacs_t330m_norm/partner_metadata.json",
+      "lipid_partners": 600,
+      "glycan_partners": 2
+    },
+    {
+      "trajectory_id": "gromacs_t330m_norm_r3",
+      "dataset_spec": {
+        "schema_version": "mania.dataset_trajectory_spec.v0.1",
+        "kind": "mania_dataset_trajectory_spec",
+        "identity": {
+          "dataset_id": "napi2b-dataset-v1",
+          "system_id": "gromacs_t330m_norm",
+          "trajectory_id": "gromacs_t330m_norm_r3",
+          "variant_id": "T330M",
+          "engine": "gromacs",
+          "condition": "NORM",
+          "replica_id": "3",
+          "disulfide_state": null
+        },
+        "temporal": {
+          "production_start_ns": 5.0,
+          "production_end_ns": 30.0,
+          "frame_stride_ps": 200.0,
+          "window_length_ns": 2.0,
+          "window_step_ns": 1.0,
+          "overlap_percent": 50.0
+        }
+      },
+      "xtc_path": "T330M/NORM/replica 3/t330m_rep3.xtc",
+      "tpr": {
+        "path": "T330M/NORM/replica 3/t330m_rep3.tpr",
+        "size_bytes": 12922624,
+        "sha256": "84f9a7c9f86a4acd540de6a252e119e113cb2e6f6a15d5f1b3c062ef284744d7"
+      },
+      "mdp": {
+        "path": "T330M/NORM/replica 3/production.mdp",
+        "size_bytes": 564,
+        "sha256": "47efea8fd7813bb26ec89e1c926809cf3f6c555a36006519abd950541451b882"
+      },
+      "logs": [
+        {
+          "path": "T330M/NORM/replica 3/t330m_rep3.log",
+          "size_bytes": 1194036,
+          "sha256": "09153efa16f33e98679ce31029880dd4790a33e517df72ba6f0b79713f384aac"
+        },
+        {
+          "path": "T330M/NORM/replica 3/t330m_rep3.part0002.log",
+          "size_bytes": 671951,
+          "sha256": "f5d6cdabb853baa228a07f25ae5bc4701b3c4a2bf139adc4820263200fdd3eeb"
+        }
+      ],
+      "additional_tprs": [],
+      "owner_known_gap": true,
+      "topology_fingerprint": "0fb69059116b83b5c1b4bc265aade702648dff60985b6f108cf53af7332295eb",
+      "canonical_mapping_path": "controls/gromacs_t330m_norm/canonical_mapping.json",
+      "partner_metadata_path": "controls/gromacs_t330m_norm/partner_metadata.json",
+      "lipid_partners": 600,
+      "glycan_partners": 2
+    },
+    {
+      "trajectory_id": "gromacs_t330m_tumor_r1",
+      "dataset_spec": {
+        "schema_version": "mania.dataset_trajectory_spec.v0.1",
+        "kind": "mania_dataset_trajectory_spec",
+        "identity": {
+          "dataset_id": "napi2b-dataset-v1",
+          "system_id": "gromacs_t330m_tumor",
+          "trajectory_id": "gromacs_t330m_tumor_r1",
+          "variant_id": "T330M",
+          "engine": "gromacs",
+          "condition": "TUMOR",
+          "replica_id": "1",
+          "disulfide_state": null
+        },
+        "temporal": {
+          "production_start_ns": 5.0,
+          "production_end_ns": 30.0,
+          "frame_stride_ps": 200.0,
+          "window_length_ns": 2.0,
+          "window_step_ns": 1.0,
+          "overlap_percent": 50.0
+        }
+      },
+      "xtc_path": "T330M/TUMOR/replica 1/t330m_rep1.xtc",
+      "tpr": {
+        "path": "T330M/TUMOR/replica 1/t330m_rep1.tpr",
+        "size_bytes": 13887036,
+        "sha256": "376fe7ff616522314d38dd975ca0f8571e83ffbd99fe61c417928e71810b75ee"
+      },
+      "mdp": {
+        "path": "T330M/TUMOR/replica 1/production.mdp",
+        "size_bytes": 564,
+        "sha256": "a92d970b2d09c369cd988340c201b1943740583a5e65a5cffac7649f684a11c9"
+      },
+      "logs": [
+        {
+          "path": "T330M/TUMOR/replica 1/t330m_rep1.log",
+          "size_bytes": 768903,
+          "sha256": "d18486d4825190c4805a1d09f666247b4e996eae5d4ae57a375b4c9d2ae78bc9"
+        },
+        {
+          "path": "T330M/TUMOR/replica 1/t330m_rep1.part0002.log",
+          "size_bytes": 1111725,
+          "sha256": "40eceff021dd0e9b6c9d3e4f40d1553ff69fdcb20b1d06f2218837e8db19e3c4"
+        }
+      ],
+      "additional_tprs": [],
+      "owner_known_gap": false,
+      "topology_fingerprint": "e24ce1405d8fbf8ddc11e7bb2d8afaf6fbf5ba920d610f195a72fd3c07a16ef1",
+      "canonical_mapping_path": "controls/gromacs_t330m_tumor/canonical_mapping.json",
+      "partner_metadata_path": "controls/gromacs_t330m_tumor/partner_metadata.json",
+      "lipid_partners": 684,
+      "glycan_partners": 2
+    },
+    {
+      "trajectory_id": "gromacs_t330m_tumor_r2",
+      "dataset_spec": {
+        "schema_version": "mania.dataset_trajectory_spec.v0.1",
+        "kind": "mania_dataset_trajectory_spec",
+        "identity": {
+          "dataset_id": "napi2b-dataset-v1",
+          "system_id": "gromacs_t330m_tumor",
+          "trajectory_id": "gromacs_t330m_tumor_r2",
+          "variant_id": "T330M",
+          "engine": "gromacs",
+          "condition": "TUMOR",
+          "replica_id": "2",
+          "disulfide_state": null
+        },
+        "temporal": {
+          "production_start_ns": 5.0,
+          "production_end_ns": 30.0,
+          "frame_stride_ps": 200.0,
+          "window_length_ns": 2.0,
+          "window_step_ns": 1.0,
+          "overlap_percent": 50.0
+        }
+      },
+      "xtc_path": "T330M/TUMOR/replica 2/t330m_rep2.xtc",
+      "tpr": {
+        "path": "T330M/TUMOR/replica 2/t330m_rep2.tpr",
+        "size_bytes": 13887036,
+        "sha256": "3b8650a4f78d544a35698542ea58ed4ff8fc97df919fc0c21d798095d7af9c3d"
+      },
+      "mdp": {
+        "path": "T330M/TUMOR/replica 2/production.mdp",
+        "size_bytes": 564,
+        "sha256": "2c0993d05dae8fd8e29b31ffa3b702f9365b76486273eb0a2640085ed10321eb"
+      },
+      "logs": [
+        {
+          "path": "T330M/TUMOR/replica 2/t330m_rep2.log",
+          "size_bytes": 1215080,
+          "sha256": "8f7465ca1f1f14a1ffdd495918f7e121c6ced168715f391feed9dfeee30114d8"
+        },
+        {
+          "path": "T330M/TUMOR/replica 2/t330m_rep2.part0002.log",
+          "size_bytes": 665511,
+          "sha256": "5782a00195e3ce65ac7e55da60fa90466b667713c8a3f26d90cab3c20a9d4b0e"
+        }
+      ],
+      "additional_tprs": [],
+      "owner_known_gap": false,
+      "topology_fingerprint": "e24ce1405d8fbf8ddc11e7bb2d8afaf6fbf5ba920d610f195a72fd3c07a16ef1",
+      "canonical_mapping_path": "controls/gromacs_t330m_tumor/canonical_mapping.json",
+      "partner_metadata_path": "controls/gromacs_t330m_tumor/partner_metadata.json",
+      "lipid_partners": 684,
+      "glycan_partners": 2
+    },
+    {
+      "trajectory_id": "gromacs_t330m_tumor_r3",
+      "dataset_spec": {
+        "schema_version": "mania.dataset_trajectory_spec.v0.1",
+        "kind": "mania_dataset_trajectory_spec",
+        "identity": {
+          "dataset_id": "napi2b-dataset-v1",
+          "system_id": "gromacs_t330m_tumor",
+          "trajectory_id": "gromacs_t330m_tumor_r3",
+          "variant_id": "T330M",
+          "engine": "gromacs",
+          "condition": "TUMOR",
+          "replica_id": "3",
+          "disulfide_state": null
+        },
+        "temporal": {
+          "production_start_ns": 5.0,
+          "production_end_ns": 30.0,
+          "frame_stride_ps": 200.0,
+          "window_length_ns": 2.0,
+          "window_step_ns": 1.0,
+          "overlap_percent": 50.0
+        }
+      },
+      "xtc_path": "T330M/TUMOR/replica 3/t330m_rep3.xtc",
+      "tpr": {
+        "path": "T330M/TUMOR/replica 3/t330m_rep3.tpr",
+        "size_bytes": 13887036,
+        "sha256": "dd6c022bab1e24f76cda10288efc956dda88856505230bd8c7132be5804e20b6"
+      },
+      "mdp": {
+        "path": "T330M/TUMOR/replica 3/production.mdp",
+        "size_bytes": 564,
+        "sha256": "170103e67785c9b002c83ba18764570ce67c8cbc5eeceb37d931623a926fe88f"
+      },
+      "logs": [
+        {
+          "path": "T330M/TUMOR/replica 3/t330m_rep3.log",
+          "size_bytes": 1848672,
+          "sha256": "f70f494ce26bf671bd1ea05f8778bd1f2ed8ae827f62bded1e6b0be6b741cffb"
+        }
+      ],
+      "additional_tprs": [],
+      "owner_known_gap": false,
+      "topology_fingerprint": "e24ce1405d8fbf8ddc11e7bb2d8afaf6fbf5ba920d610f195a72fd3c07a16ef1",
+      "canonical_mapping_path": "controls/gromacs_t330m_tumor/canonical_mapping.json",
+      "partner_metadata_path": "controls/gromacs_t330m_tumor/partner_metadata.json",
+      "lipid_partners": 684,
+      "glycan_partners": 2
+    }
+  ]
+}

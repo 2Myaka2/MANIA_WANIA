@@ -1,0 +1,3502 @@
+{
+  "schema_version": "mania.molecular_partner_metadata.v0.1",
+  "kind": "mania_molecular_partner_metadata",
+  "classifications": [
+    {
+      "residue_index": 690,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 691,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 692,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 693,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 694,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 695,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 696,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 697,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 698,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 699,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 700,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 701,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 702,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 703,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 704,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 705,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 706,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 707,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 708,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 709,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 710,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 711,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 712,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 713,
+      "partner_kind": "glycan",
+      "partner_name": "topology_attached_sugar_fragment"
+    },
+    {
+      "residue_index": 714,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 715,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 716,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 717,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 718,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 719,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 720,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 721,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 722,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 723,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 724,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 725,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 726,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 727,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 728,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 729,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 730,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 731,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 732,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 733,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 734,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 735,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 736,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 737,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 738,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 739,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 740,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 741,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 742,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 743,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 744,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 745,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 746,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 747,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 748,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 749,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 750,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 751,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 752,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 753,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 754,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 755,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 756,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 757,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 758,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 759,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 760,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 761,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 762,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 763,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 764,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 765,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 766,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 767,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 768,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 769,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 770,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 771,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 772,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 773,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 774,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 775,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 776,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 777,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 778,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 779,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 780,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 781,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 782,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 783,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 784,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 785,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 786,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 787,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 788,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 789,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 790,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 791,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 792,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 793,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 794,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 795,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 796,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 797,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 798,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 799,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 800,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 801,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 802,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 803,
+      "partner_kind": "lipid",
+      "partner_name": "seg_1_GLPA"
+    },
+    {
+      "residue_index": 804,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 805,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 806,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 807,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 808,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 809,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 810,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 811,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 812,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 813,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 814,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 815,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 816,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 817,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 818,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 819,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 820,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 821,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 822,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 823,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 824,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 825,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 826,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 827,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 828,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 829,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 830,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 831,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 832,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 833,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 834,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 835,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 836,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 837,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 838,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 839,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 840,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 841,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 842,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 843,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 844,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 845,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 846,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 847,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 848,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 849,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 850,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 851,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 852,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 853,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 854,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 855,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 856,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 857,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 858,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 859,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 860,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 861,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 862,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 863,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 864,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 865,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 866,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 867,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 868,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 869,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 870,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 871,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 872,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 873,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 874,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 875,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 876,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 877,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 878,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 879,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 880,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 881,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 882,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 883,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 884,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 885,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 886,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 887,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 888,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 889,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 890,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 891,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 892,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 893,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 894,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 895,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 896,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 897,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 898,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 899,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 900,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 901,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 902,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 903,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 904,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 905,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 906,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 907,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 908,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 909,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 910,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 911,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 912,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 913,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 914,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 915,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 916,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 917,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 918,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 919,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 920,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 921,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 922,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 923,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 924,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 925,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 926,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 927,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 928,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 929,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 930,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 931,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 932,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 933,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 934,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 935,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 936,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 937,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 938,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 939,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 940,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 941,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 942,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 943,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 944,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 945,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 946,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 947,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 948,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 949,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 950,
+      "partner_kind": "lipid",
+      "partner_name": "seg_2_CHL1"
+    },
+    {
+      "residue_index": 951,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 952,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 953,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 954,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 955,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 956,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 957,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 958,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 959,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 960,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 961,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 962,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 963,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 964,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 965,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 966,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 967,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 968,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 969,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 970,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 971,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 972,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 973,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 974,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 975,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 976,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 977,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 978,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 979,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 980,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 981,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 982,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 983,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 984,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 985,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 986,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 987,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 988,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 989,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 990,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 991,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 992,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 993,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 994,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 995,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 996,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 997,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 998,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 999,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1000,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1001,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1002,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1003,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1004,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1005,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1006,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1007,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1008,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1009,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1010,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1011,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1012,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1013,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1014,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1015,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1016,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1017,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1018,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1019,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1020,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1021,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1022,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1023,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1024,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1025,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1026,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1027,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1028,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1029,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1030,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1031,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1032,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1033,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1034,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1035,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1036,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1037,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1038,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1039,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1040,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1041,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1042,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1043,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1044,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1045,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1046,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1047,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1048,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1049,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1050,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1051,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1052,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1053,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1054,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1055,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1056,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1057,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1058,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1059,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1060,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1061,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1062,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1063,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1064,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1065,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1066,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1067,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1068,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1069,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1070,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1071,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1072,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1073,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1074,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1075,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1076,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1077,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1078,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1079,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1080,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1081,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1082,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1083,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1084,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1085,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1086,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1087,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1088,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1089,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1090,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1091,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1092,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1093,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1094,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1095,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1096,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1097,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1098,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1099,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1100,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1101,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1102,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1103,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1104,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1105,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1106,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1107,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1108,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1109,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1110,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1111,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1112,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1113,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1114,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1115,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1116,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1117,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1118,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1119,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1120,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1121,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1122,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1123,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1124,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1125,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1126,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1127,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1128,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1129,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1130,
+      "partner_kind": "lipid",
+      "partner_name": "seg_3_POPC"
+    },
+    {
+      "residue_index": 1131,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1132,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1133,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1134,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1135,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1136,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1137,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1138,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1139,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1140,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1141,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1142,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1143,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1144,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1145,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1146,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1147,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1148,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1149,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1150,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1151,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1152,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1153,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1154,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1155,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1156,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1157,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1158,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1159,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1160,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1161,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1162,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1163,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1164,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1165,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1166,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1167,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1168,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1169,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1170,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1171,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1172,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1173,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1174,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1175,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1176,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1177,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1178,
+      "partner_kind": "lipid",
+      "partner_name": "seg_4_POPI"
+    },
+    {
+      "residue_index": 1179,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1180,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1181,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1182,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1183,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1184,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1185,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1186,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1187,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1188,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1189,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1190,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1191,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1192,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1193,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1194,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1195,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1196,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1197,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1198,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1199,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1200,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1201,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1202,
+      "partner_kind": "lipid",
+      "partner_name": "seg_5_PSM"
+    },
+    {
+      "residue_index": 1203,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1204,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1205,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1206,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1207,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1208,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1209,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1210,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1211,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1212,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1213,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1214,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1215,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1216,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1217,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1218,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1219,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1220,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1221,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1222,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1223,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1224,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1225,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1226,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1227,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1228,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1229,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1230,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1231,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1232,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1233,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1234,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1235,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1236,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1237,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1238,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1239,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1240,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1241,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1242,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1243,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1244,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1245,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1246,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1247,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1248,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1249,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1250,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1251,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1252,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1253,
+      "partner_kind": "lipid",
+      "partner_name": "seg_6_POPS"
+    },
+    {
+      "residue_index": 1254,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1255,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1256,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1257,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1258,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1259,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1260,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1261,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1262,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1263,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1264,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1265,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1266,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1267,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1268,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1269,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1270,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1271,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1272,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1273,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1274,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1275,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1276,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1277,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1278,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1279,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1280,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1281,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1282,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1283,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1284,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1285,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1286,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1287,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1288,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1289,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1290,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1291,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1292,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1293,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1294,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1295,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1296,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1297,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1298,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1299,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1300,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1301,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1302,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1303,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1304,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1305,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1306,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1307,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1308,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1309,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1310,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1311,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1312,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1313,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1314,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1315,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1316,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1317,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1318,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1319,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1320,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1321,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1322,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1323,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1324,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1325,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1326,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1327,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1328,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1329,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1330,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1331,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1332,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1333,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1334,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1335,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1336,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1337,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1338,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1339,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1340,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1341,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1342,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1343,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1344,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1345,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1346,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1347,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1348,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1349,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1350,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1351,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1352,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1353,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1354,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1355,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1356,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1357,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1358,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1359,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1360,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1361,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1362,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1363,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1364,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1365,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1366,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1367,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1368,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1369,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1370,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1371,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1372,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1373,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1374,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1375,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1376,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1377,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1378,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1379,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1380,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1381,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1382,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1383,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1384,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1385,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1386,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1387,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    },
+    {
+      "residue_index": 1388,
+      "partner_kind": "lipid",
+      "partner_name": "seg_7_POPE"
+    }
+  ],
+  "explicit_partners": []
+}
