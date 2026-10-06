@@ -82,9 +82,35 @@ def lifecycle(tmp_path, monkeypatch):
         run, "verify_preparation", lambda *a, **kw: calls.append("verify")
     )
     monkeypatch.setattr(run, "validate_and_replay", lambda *a: dict(replay="PASS"))
+    monkeypatch.setattr(
+        run, "retain_ramila_handoff_inputs", lambda *a, **kw: "retained_inputs_spy"
+    )
+    import mania.production_handoff
+
+    def prerequisites(root, retained, **kwargs):
+        assert retained == "retained_inputs_spy"
+        assert not (root / "science_complete.json").exists()
+
+    monkeypatch.setattr(
+        mania.production_handoff, "validate_handoff_prerequisites", prerequisites
+    )
+
+    def publish(root, retained, **kwargs):
+        assert retained == "retained_inputs_spy"
+        assert (root / "science_complete.json").is_file()
+        calls.append("handoff")
+        (root / "handoff_complete.json").write_text('{"synthetic_seal_spy":true}')
+
+    monkeypatch.setattr(mania.production_handoff, "publish_handoff", publish)
+    monkeypatch.setattr(
+        mania.production_handoff,
+        "load_completed_handoff",
+        lambda *a: calls.append("load_handoff"),
+    )
     import mania.cli
 
     def engine(manifest, output, condition, **kw):
+        assert kw["handoff_inputs"] == "retained_inputs_spy"
         calls.append("science")
         output.mkdir()
         (output / "ledger.json").write_text('{"completed":true}')
@@ -288,3 +314,145 @@ def test_invalid_developer_group_rejected_before_any_trajectory(tmp_path, monkey
         )
         == 1
     )
+
+
+def test_legacy_v1_attempt_is_preserved_and_fresh_namespace_used(tmp_path, monkeypatch):
+    site, calls = lifecycle(tmp_path, monkeypatch)
+    kwargs = dict(runtime=site.runtime, technical=True, developer=True)
+    first = run.run_one(site.source, site.output, rt.REPRESENTATIVES[0], **kwargs)
+    legacy = Path(first["output"])
+    (legacy / "handoff_complete.json").unlink()
+    request = rt.read_json(legacy / "request.json")
+    request.pop("handoff_contract_id")
+    (legacy / "request.json").write_text(__import__("json").dumps(request))
+    before = run.tree_digests(legacy)
+    second = run.run_one(site.source, site.output, rt.REPRESENTATIVES[0], **kwargs)
+    assert Path(second["output"]).name == "attempt_0002"
+    assert second["legacy_attempts"] == [str(legacy)]
+    assert run.tree_digests(legacy) == before
+    assert calls.count("science") == calls.count("handoff") == 2
+
+
+def test_new_contract_science_without_handoff_seal_cannot_be_reused(
+    tmp_path, monkeypatch
+):
+    site, calls = lifecycle(tmp_path, monkeypatch)
+    kwargs = dict(runtime=site.runtime, technical=True, developer=True)
+    first = run.run_one(site.source, site.output, rt.REPRESENTATIVES[0], **kwargs)
+    (Path(first["output"]) / "handoff_complete.json").unlink()
+    with pytest.raises(ValueError, match="lacks completed handoff"):
+        run.run_one(site.source, site.output, rt.REPRESENTATIVES[0], **kwargs)
+    assert calls.count("science") == 1
+
+
+def test_ramila_prerequisite_failure_prevents_both_completion_markers(
+    tmp_path, monkeypatch
+):
+    import mania.production_handoff
+
+    site, calls = lifecycle(tmp_path, monkeypatch)
+
+    def reject(root, retained, **kwargs):
+        assert not (root / "science_complete.json").exists()
+        raise ValueError("Missing compact prerequisite")
+
+    monkeypatch.setattr(
+        mania.production_handoff, "validate_handoff_prerequisites", reject
+    )
+    with pytest.raises(ValueError, match="compact prerequisite"):
+        run.run_one(
+            site.source,
+            site.output,
+            rt.REPRESENTATIVES[0],
+            runtime=site.runtime,
+            technical=True,
+            developer=True,
+        )
+    assert "science" in calls and "handoff" not in calls
+    assert not list(site.output.rglob("science_complete.json"))
+    assert not list(site.output.rglob("handoff_complete.json"))
+
+
+def test_external_prepared_directory_real_common_rmsd_and_handoff(
+    tmp_path, monkeypatch
+):
+    import copy
+
+    from test_production_handoff import handoff_case
+
+    from mania.dataset_identity import DatasetTrajectorySpec
+    from mania.preprocessing.trajectory_rmsd_io import read_rmsd_evidence
+    from mania.production_handoff import HandoffCompletion, load_completed_handoff
+
+    (tmp_path / "ramila").mkdir()
+    site = make_site(tmp_path / "ramila")
+    row = site.rows[0]
+    spec = copy.deepcopy(row["dataset_spec"])
+    spec["temporal"]["production_end_ns"] = 8.0
+    (tmp_path / "setup").mkdir()
+    setup = handoff_case(
+        tmp_path / "setup",
+        monkeypatch,
+        produce=False,
+        spec=DatasetTrajectorySpec.model_validate(
+            {k: spec[k] for k in ("identity", "temporal")}
+        ),
+        source_paths={
+            "raw_trajectory": site.source / row["xtc_path"],
+            "topology": site.source / row["tpr"]["path"],
+        },
+    )
+    (site.runtime / row["canonical_mapping_path"]).parent.mkdir(
+        parents=True, exist_ok=True
+    )
+    (site.runtime / row["partner_metadata_path"]).parent.mkdir(
+        parents=True, exist_ok=True
+    )
+    shutil.copyfile(
+        setup.retained.source.compact_files["canonical_residue_mapping"],
+        site.runtime / row["canonical_mapping_path"],
+    )
+    shutil.copyfile(
+        setup.retained.source.compact_files["molecular_partner_metadata"],
+        site.runtime / row["partner_metadata_path"],
+    )
+    shutil.copyfile(
+        setup.retained.source.compact_files["source_time_authority"],
+        setup.preparation / "source_axis.json",
+    )
+    monkeypatch.setattr(run, "verify_preparation", lambda *a, **kw: None)
+    monkeypatch.setattr(
+        run.prep,
+        "prepare",
+        lambda *a, **kw: pytest.fail("External preparation authority must be used"),
+    )
+    monkeypatch.setattr(run.attestation, "repository_head", lambda: "a" * 40)
+    result = run.run_one(
+        site.source,
+        site.output,
+        row["trajectory_id"],
+        technical=True,
+        developer=True,
+        runtime=site.runtime,
+        prepared_directory=setup.preparation,
+    )
+    root = Path(result["output"])
+    manifest = load_completed_handoff(root)
+    metadata, rows = read_rmsd_evidence(root / "preprocessing")
+    assert manifest.replica_identity.trajectory_id == row["trajectory_id"]
+    assert len(rows) == 16 and metadata.atom_selection.atom_count == 4
+    assert rt.read_json(root / "science_complete.json")["preparation_root"] == str(
+        setup.preparation
+    )
+    assert (
+        HandoffCompletion.model_validate(
+            rt.read_json(root / "handoff_complete.json")
+        ).production_eligible
+        is False
+    )
+    report = setup.report.read_bytes()
+    shutil.rmtree(setup.preparation)
+    assert load_completed_handoff(root) == manifest
+    assert (
+        root / "evidence/producer/preparation_report/preparation_complete.json"
+    ).read_bytes() == report

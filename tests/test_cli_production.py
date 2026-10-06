@@ -289,3 +289,36 @@ def test_duplicate_public_selection_rejected(command, option, value):
             ]
         )
     assert caught.value.code == 2
+
+
+def test_output_only_handoff_cli_and_explicit_assessment(tmp_path, monkeypatch, capsys):
+    from test_dataset_measurement_review import assessment
+    from test_production_handoff import handoff_case
+
+    case = handoff_case(tmp_path, monkeypatch)
+    shutil.rmtree(case.preparation)
+    code, result, err = invoke(
+        monkeypatch, capsys, "validate-handoff", "--output-root", case.root
+    )
+    assert (code, err) == (0, "") and result["coordinate_access"] is False
+    code, result, err = invoke(
+        monkeypatch, capsys, "review-rmsd", "--output-root", case.root
+    )
+    assert code == 0 and result["assessment_state"] == "explicit_assessment_required"
+    assert "drift_detected" not in result
+    control = tmp_path / "assessment.json"
+    control.write_text(json.dumps(assessment().model_dump(mode="json")))
+    destination = case.root / "postproduction/attempt_0001/review.json"
+    code, result, err = invoke(
+        monkeypatch,
+        capsys,
+        "build-rmsd-qc",
+        "--output-root",
+        case.root,
+        "--assessment",
+        control,
+        "--output",
+        destination,
+    )
+    assert (code, err) == (0, "") and result["rmsd_drift"]["drift_detected"] is False
+    assert destination.exists()

@@ -123,3 +123,24 @@ def test_native_invalid_cell_atom_count_and_truncation_block(tmp_path, damage):
         rt.scan_xtc(
             path, atom_count=13 if damage == "atom_count" else 12, spec=spec(end=8)
         )
+
+
+def test_preparation_publishes_all_frame_integrity_and_original_report_stays_immutable(
+    tmp_path, monkeypatch
+):
+    from mania.preprocessing.protein_integrity_observations import (
+        read_protein_integrity,
+    )
+
+    site, row = native_site(tmp_path, monkeypatch)
+    prep.prepare(site.source, site.output, row, runtime=site.runtime)
+    before = (site.output / "preparation_complete.json").read_bytes()
+    evidence = read_protein_integrity(
+        site.output / "protein_integrity_observations.json"
+    )
+    assert len(evidence.observations) == 16
+    assert evidence.scientific_pbc_status == "unresolved"
+    assert evidence.protein_remains_broken is None
+    assert evidence.protein_fragment_ids == [0]
+    assert all(f.bond_representation_max_error_A < 1e-5 for f in evidence.observations)
+    assert (site.output / "preparation_complete.json").read_bytes() == before

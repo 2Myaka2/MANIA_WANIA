@@ -280,7 +280,7 @@ def build_parser() -> argparse.ArgumentParser:
     production_commands = production_parser.add_subparsers(
         dest="production_command", required=True,
     )
-    for name in ("validate", "run", "assemble-group"):
+    for name in ("validate", "run", "run-handoff", "assemble-group"):
         command_parser = production_commands.add_parser(name)
         command_parser.add_argument("--catalog", type=Path, required=True)
         command_parser.add_argument("--output-root", type=Path, required=True)
@@ -299,8 +299,24 @@ def build_parser() -> argparse.ArgumentParser:
                 "--technical-manifest", type=Path, action=_ProductionSelectionAction,
                 help="Technical-validation subset manifest; never production science.",
             )
-            if name == "run":
+            if name in ("run", "run-handoff"):
                 command_parser.add_argument("--resume", action="store_true")
+                command_parser.add_argument(
+                    "--handoff-inputs",
+                    type=Path,
+                    required=name == "run-handoff",
+                )
+
+    handoff_group = production_commands.add_parser("assemble-handoff-group")
+    handoff_group.add_argument("--output-root", type=Path, required=True)
+    handoff_group.add_argument("--handoff-root", type=Path, nargs=3, required=True)
+    handoff_group.add_argument("--qc-manifest", type=Path, required=True)
+    for name in ("validate-handoff", "review-rmsd", "build-rmsd-qc"):
+        command_parser = production_commands.add_parser(name)
+        command_parser.add_argument("--output-root", type=Path, required=True)
+        if name == "build-rmsd-qc":
+            command_parser.add_argument("--assessment", type=Path, required=True)
+            command_parser.add_argument("--output", type=Path, required=True)
 
     dataset_parser = subparsers.add_parser("dataset", help="Dataset postprocessing.")
     dataset_commands = dataset_parser.add_subparsers(
@@ -1728,6 +1744,33 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
     progress_callback = _contacts_progress_callback(args)
     if progress_callback is not None:
         computation_kwargs["progress_callback"] = progress_callback
+    rmsd_accumulators: dict[str, Any] = {}
+    rmsd_inputs = getattr(args, "_rmsd_inputs", None)
+    if rmsd_inputs is not None:
+        from mania.preprocessing.protein_integrity_observations import (
+            read_protein_integrity,
+        )
+        from mania.preprocessing.trajectory_rmsd_io import (
+            build_production_rmsd_accumulators,
+        )
+
+        try:
+            integrity = read_protein_integrity(
+                rmsd_inputs.source.compact_files["protein_integrity_observations"]
+            )
+            rmsd_accumulators, observers = build_production_rmsd_accumulators(
+                runtime_loading,
+                temporal_execution,
+                mapping_path=rmsd_inputs.source.compact_files[
+                    "canonical_residue_mapping"
+                ],
+                frame_map=tuple(f.source_frame_index for f in integrity.observations),
+            )
+        except (ValueError, OSError) as exc:
+            print(f"Production RMSD setup failed: {exc}", file=sys.stderr)
+            emit_failure("computation", runtime_loading=runtime_loading)
+            return 1
+        computation_kwargs["selected_frame_observers"] = observers
     computation = compute_preprocessing_graph_workflow_rg_contacts(
         runtime_loading,
         collect_pbc_observations=True,
@@ -2113,6 +2156,39 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
                 "Incomplete evidence or write failure.", file=sys.stderr,
             )
             protein_edge_export_failed = True
+    if rmsd_inputs is not None:
+        from mania.preprocessing.trajectory_rmsd_io import (
+            MEASUREMENT_FILENAME,
+            RMSD_ROLES,
+            TIMESERIES_FILENAME,
+            write_rmsd_evidence,
+        )
+
+        try:
+            for accumulator in rmsd_accumulators.values():
+                write_rmsd_evidence(
+                    accumulator,
+                    plan.output_layout.output_dir,
+                    source_bindings=rmsd_inputs.rmsd_source_bindings(),
+                )
+            inventory_outputs["rmsd_output_paths"] = tuple(
+                zip(
+                    RMSD_ROLES,
+                    (
+                        plan.output_layout.output_dir / TIMESERIES_FILENAME,
+                        plan.output_layout.output_dir / MEASUREMENT_FILENAME,
+                    ),
+                    strict=True,
+                )
+            )
+            technical_references.extend(
+                PortableArtifactReference(role, path.name)
+                for role, path in inventory_outputs["rmsd_output_paths"]
+            )
+        except (ValueError, OSError) as exc:
+            print(f"Production RMSD persistence failed: {exc}", file=sys.stderr)
+            emit_failure("computation", runtime_loading=runtime_loading)
+            return 1
     stage30_failure: PreprocessingRunFailureStage | None = None
     if (
         mapping_bindings is not None
@@ -2293,8 +2369,12 @@ def _run_preprocessing_graph_export_command(args: argparse.Namespace) -> int:
 
 
 def run_production_preprocessing(
-    manifest: Path, output: Path, condition: str,
-    *, technical_context: dict[str, Any] | None = None,
+    manifest: Path,
+    output: Path,
+    condition: str,
+    *,
+    technical_context: dict[str, Any] | None = None,
+    handoff_inputs: Any = None,
 ) -> None:
     """Use the established workflow with production's explicit, preflighted inputs."""
     from mania.production_catalog import ProductionError
@@ -2309,6 +2389,7 @@ def run_production_preprocessing(
     args._command = ("mania", *argv)
     args._prepared_frame_order_preserved = True
     args._technical_run_context = technical_context
+    args._rmsd_inputs = handoff_inputs
     with contextlib.redirect_stdout(io.StringIO()):
         result = _run_preprocessing_graph_export_command(args)
     if result:
@@ -2641,6 +2722,34 @@ def _run_analyze_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _dispatch_handoff_command(args: argparse.Namespace) -> dict[str, Any]:
+    from mania.dataset_measurement_review import (
+        ExplicitRMSDAssessment,
+        present_rmsd_review,
+        save_review_assessment,
+    )
+    from mania.preprocessing.molecular_partner_metadata_io import read_strict_json
+    from mania.production_handoff import load_completed_handoff
+
+    if args.production_command == "validate-handoff":
+        manifest = load_completed_handoff(args.output_root)
+        return {
+            "status": "handoff_complete",
+            "coordinate_access": False,
+            "replica_identity": manifest.replica_identity.to_dict(),
+        }
+    if args.production_command == "review-rmsd":
+        return {
+            "status": "assessment_required",
+            **present_rmsd_review(args.output_root),
+        }
+    assessment = ExplicitRMSDAssessment.model_validate(
+        read_strict_json(args.assessment)
+    )
+    evidence = save_review_assessment(args.output_root, assessment, args.output)
+    return {"status": "explicit_assessment_built", "rmsd_drift": evidence.to_dict()}
+
+
 def main() -> None:
     """Run the MANIA command-line interface."""
     parser = build_parser()
@@ -2655,7 +2764,21 @@ def main() -> None:
         )
 
         try:
-            if args.production_command == "assemble-group":
+            if args.production_command == "assemble-handoff-group":
+                from mania.production_run import assemble_completed_handoff_group
+
+                production_result = assemble_completed_handoff_group(
+                    args.output_root,
+                    tuple(args.handoff_root),
+                    qc_manifest=args.qc_manifest,
+                )
+            elif args.production_command in (
+                "validate-handoff",
+                "review-rmsd",
+                "build-rmsd-qc",
+            ):
+                production_result = _dispatch_handoff_command(args)
+            elif args.production_command == "assemble-group":
                 production_result = assemble_production_group(
                     args.catalog, args.replica_group_id, args.output_root,
                     qc_manifest=args.qc_manifest,
@@ -2674,11 +2797,14 @@ def main() -> None:
                         "production run requires positive --min-free-bytes"
                     )
                 production_result = run_production_trajectory(
-                    args.catalog, args.trajectory_id, args.output_root,
+                    args.catalog,
+                    args.trajectory_id,
+                    args.output_root,
                     input_binding=args.input_binding,
                     technical_manifest=args.technical_manifest,
                     min_free_bytes=args.min_free_bytes,
                     resume=args.resume,
+                    handoff_inputs=args.handoff_inputs,
                 )
         except (OSError, ValueError) as exc:
             print(json.dumps({"status": "blocked", "reason": str(exc)}))

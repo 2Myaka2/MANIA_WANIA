@@ -690,3 +690,42 @@ def test_docs_mention_ci_local_reference_and_future_boundaries() -> None:
         "WANIA frontend adapter/API payload remains future scope",
     ):
         assert phrase in text
+
+
+def test_production_observer_single_pass_and_byte_identical_accepted_science(
+    tmp_path, monkeypatch
+):
+    from test_production_handoff import handoff_case
+
+    from mania.artifact_inventory_io import read_artifact_inventory
+    from mania.cli import run_production_preprocessing
+
+    case = handoff_case(tmp_path, monkeypatch, produce=False)
+    legacy = case.root / "legacy_preprocessing"
+    observed = case.root / "preprocessing"
+    run_production_preprocessing(case.manifest, legacy, "normal")
+    passes = case.axis.passes
+    run_production_preprocessing(
+        case.manifest, observed, "normal", handoff_inputs=case.retained
+    )
+    assert passes == 2 and case.axis.passes == 4
+    inventory = read_artifact_inventory(legacy / "artifact_inventory.json")
+    compared = []
+    for entry in inventory.artifacts:
+        if entry.direction == "output" and entry.role != "runtime_metadata":
+            if entry.role == "graph_diagnostics_report":
+                # Normalize the diagnostics' embedded output paths.
+                left = (legacy / entry.path).read_text().replace(str(legacy), ".")
+                right = (observed / entry.path).read_text().replace(str(observed), ".")
+                assert json.loads(left) == json.loads(right)
+            else:
+                assert (legacy / entry.path).read_bytes() == (
+                    observed / entry.path
+                ).read_bytes(), entry.path
+            compared.append(entry.path)
+    assert "contacts/contacts_perframe.csv" in compared
+    assert "temporal_execution.json" in compared
+    assert "pbc_audit.json" in compared
+    assert "protein_edges_by_window_canonical.csv" in compared
+    assert (observed / "protein_rmsd_timeseries.csv").exists()
+    assert not (legacy / "protein_rmsd_timeseries.csv").exists()

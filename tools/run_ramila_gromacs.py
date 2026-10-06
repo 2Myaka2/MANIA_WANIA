@@ -381,9 +381,20 @@ def run_one(
             else "individual_trajectory_science",
             production_eligible=not technical,
             biological_annotation_authority="PENDING",
+            handoff_contract_id="mania.production_handoff.v1",
         )
+        legacy_attempts = []
         for candidate in sorted(parent.glob("attempt_*")):
             if (candidate / "science_complete.json").is_file():
+                if not (candidate / "handoff_complete.json").is_file():
+                    previous = rt.read_json(candidate / "request.json")
+                    if previous.get("handoff_contract_id") is not None:
+                        raise ValueError(
+                            "New-contract science lacks completed handoff; "
+                            "preserve attempt"
+                        )
+                    legacy_attempts.append(str(candidate))
+                    continue  # Preserve v1; use a fresh namespace.
                 rt.require(
                     rt.read_json(candidate / "request.json") == request,
                     "Changed source/runtime request forbids completed reuse",
@@ -401,23 +412,15 @@ def run_one(
                     == tree_digests(candidate / "preprocessing"),
                     "Completed artifacts changed",
                 )
-                preparation = Path(completion["preparation_root"])
-                verify_preparation(preparation, source, row, technical=technical)
-                manifest = manifest_for(
-                    source,
-                    preparation,
-                    candidate,
-                    row,
-                    technical=technical,
-                    runtime=runtime,
-                )
-                checks = validate_and_replay(candidate, manifest, row, runtime)
+                from mania.production_handoff import load_completed_handoff
+
+                load_completed_handoff(candidate)
                 return dict(
-                    status="technical_complete" if technical else "science_complete",
+                    status="technical_complete" if technical else "handoff_complete",
                     reused=True,
                     output=str(candidate),
                     production_eligible=not technical,
-                    **checks,
+                    legacy_attempts=legacy_attempts,
                 )
         root = next_attempt(parent)
         root.mkdir()
@@ -450,11 +453,21 @@ def run_one(
             if technical
             else None
         )
+        retained = retain_ramila_handoff_inputs(
+            source,
+            preparation,
+            root,
+            row,
+            request,
+            runtime=runtime,
+            attestation_path=None if developer else output / "source_attestation.json",
+        )
         run_production_preprocessing(
             root / "inputs/preprocessing.json",
             root / "preprocessing",
             row["dataset_spec"]["identity"]["condition"],
             technical_context=context,
+            handoff_inputs=retained,
         )
         checks = validate_and_replay(root, manifest, row, runtime)
         rt.require(
@@ -472,24 +485,99 @@ def run_one(
         )
         verify_preparation(preparation, source, row, technical=technical)
         rt.dump(root / "acceptance.json", checks)
-        rt.dump(
-            root / "science_complete.json",
-            dict(
-                artifacts=tree_digests(root / "preprocessing"),
-                preparation_root=str(preparation),
-                purpose=request["purpose"],
-                production_eligible=not technical,
-            ),
+        completion = dict(
+            artifacts=tree_digests(root / "preprocessing"),
+            preparation_root=str(preparation),
+            purpose=request["purpose"],
+            production_eligible=not technical,
         )
+        from mania.production_handoff import (
+            publish_handoff,
+            validate_handoff_prerequisites,
+        )
+
+        validate_handoff_prerequisites(
+            root,
+            retained,
+            technical_validation=root / "acceptance.json",
+            completion_document=completion,
+        )
+        rt.dump(root / "science_complete.json", completion)
+        publish_handoff(root, retained, technical_validation=root / "acceptance.json")
         return dict(
-            status="technical_complete" if technical else "science_complete",
+            status="technical_complete" if technical else "handoff_complete",
             reused=False,
+            legacy_attempts=legacy_attempts,
             output=str(root),
             production_eligible=not technical,
             **checks,
         )
     finally:
         lock.rmdir()
+
+
+def retain_ramila_handoff_inputs(
+    source: Path,
+    preparation: Path,
+    root: Path,
+    row: dict[str, Any],
+    request: dict[str, Any],
+    *,
+    runtime: Path,
+    attestation_path: Path | None,
+):
+    from mania.dataset_identity import DatasetTrajectoryIdentity
+    from mania.preprocessing.protein_integrity_observations import (
+        read_protein_integrity,
+    )
+    from mania.production_handoff import HandoffInputs, retain_handoff_inputs
+
+    integrity_path = preparation / "protein_integrity_observations.json"
+    rt.require(
+        integrity_path.is_file(),
+        "New-contract preparation requires normalized integrity evidence",
+    )
+    integrity = read_protein_integrity(integrity_path)
+    # A developer attestation records absence of human approval and remains ineligible.
+    if attestation_path is None:
+        rt.dump(
+            root / "inputs/source_attestation_technical.json", request["source_record"]
+        )
+        attestation_path = root / "inputs/source_attestation_technical.json"
+    files = {
+        "preparation_report": preparation / "preparation_complete.json",
+        "protein_integrity_observations": integrity_path,
+        "frame_evidence": preparation / "frame_evidence.json",
+        "source_binding": preparation / "source_binding.json",
+        "source_time_authority": preparation / "source_axis.json",
+        "source_attestation": attestation_path,
+        "canonical_residue_mapping": runtime / row["canonical_mapping_path"],
+        "molecular_partner_metadata": runtime / row["partner_metadata_path"],
+        "dataset_request": root / "request.json",
+        "source_control_mdp": source / row["mdp"]["path"],
+        "source_control_preparation_script": Path(prep.__file__),
+        "source_control_fragment_script": Path(prep.__file__).parent
+        / "production_input_preparation.py",
+    }
+    for n, record in enumerate(row["logs"]):
+        files[f"source_control_log_{n:04d}"] = source / record["path"]
+    return retain_handoff_inputs(
+        root,
+        HandoffInputs(
+            identity=DatasetTrajectoryIdentity.model_validate(
+                row["dataset_spec"]["identity"]
+            ),
+            compact_files=files,
+            large_artifact_identities=integrity.source_bindings,
+            production_eligible=request["production_eligible"],
+            authority_absences={
+                "biological_annotations": "Authoritative annotations remain PENDING",
+                "partner_correspondence": "Partner correspondence is not supplied",
+                "review_assessment": "Scientific review has not been performed",
+                "group_qc_aggregation": "Group QC and aggregation remain separate",
+            },
+        ),
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

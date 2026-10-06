@@ -288,6 +288,12 @@ _PREPROCESSING_POLICY: dict[str, str | None] = {
         "protein_glycan_contacts_by_window_source"
     ),
 }
+_PREPROCESSING_POLICY.update(
+    {
+        "protein_rmsd_timeseries": "protein_rmsd_timeseries",
+        "protein_rmsd_measurement": "protein_rmsd_measurement",
+    }
+)
 _ANALYSIS_POLICY: dict[str, str | None] = {
     "preprocessing_manifest": None,
     "edge_semantics": None,
@@ -314,6 +320,8 @@ _PAIR_ROLES = {
     "reference_edges": ("reference_nodes", "reference_edges"),
 }
 _VALIDATORS = {
+    "protein_rmsd_timeseries": "read_rmsd_evidence",
+    "protein_rmsd_measurement": "read_rmsd_evidence",
     "namd_element_control": "read_namd_element_control",
     "namd_time_control": "read_namd_time_control",
     "production_input_binding": "read_production_input_binding",
@@ -655,6 +663,13 @@ def _invoke(
     condition: str | None,
     peer: Path | None = None,
 ) -> object:
+    if contract in ("protein_rmsd_timeseries", "protein_rmsd_measurement"):
+        from mania.preprocessing.trajectory_rmsd_io import read_rmsd_evidence
+
+        try:
+            return read_rmsd_evidence(path.parent)
+        except ValueError as exc:
+            raise artifacts.ArtifactValidationError(str(exc)) from exc
     if contract in (
         "namd_element_control", "namd_time_control", "production_input_binding",
     ):
@@ -761,6 +776,52 @@ def _invoke(
     return artifacts.validate_csv_artifact_schema(
         path, contract, expected_columns=_csv_contracts()[contract]
     )
+
+
+def _validate_rmsd_lineage(
+    run_root: Path,
+    entries: tuple[ArtifactInventoryEntry, ...],
+    mappings: Mapping[str, Path] | None = None,
+) -> None:
+    from mania.canonical_residue_mapping_io import read_canonical_residue_mapping
+    from mania.preprocessing.trajectory_rmsd import validate_selection_mapping
+    from mania.preprocessing.trajectory_rmsd_io import RMSD_ROLES, read_rmsd_evidence
+
+    rmsd_entries = [e for e in entries if e.role in RMSD_ROLES]
+    if not rmsd_entries:
+        return  # Legacy runs do not acquire new-contract obligations.
+    if len(rmsd_entries) != 2 or {e.role for e in rmsd_entries} != set(RMSD_ROLES):
+        raise ValueError("Both authoritative RMSD artifacts are required")
+    for entry in rmsd_entries:
+        suffix = ".csv" if entry.role.endswith("timeseries") else ".json"
+        if (
+            entry.direction != "output"
+            or entry.path != entry.role + suffix
+            or (entry.artifact_id != f"output:{entry.role}" or entry.sha256 is None)
+        ):
+            raise ValueError("Invalid RMSD inventory role/path/schema binding")
+    metadata, _ = read_rmsd_evidence(run_root)
+    for role, input_role in (
+        ("topology", "condition_topology"),
+        ("prepared_trajectory", "condition_trajectory"),
+        ("mapping", "canonical_residue_mapping"),
+    ):
+        matches = [
+            e for e in entries if e.direction == "input" and e.role == input_role
+        ]
+        bound = metadata.source_bindings[role]
+        if len(matches) != 1 or (matches[0].sha256, matches[0].byte_size) != (
+            bound.sha256,
+            bound.byte_size,
+        ):
+            raise ValueError("RMSD topology/mapping/prepared lineage mismatch")
+        if role == "mapping" and mappings is not None:
+            mapping_path = mappings.get(matches[0].artifact_id)
+            if mapping_path is not None:
+                validate_selection_mapping(
+                    metadata.atom_selection,
+                    read_canonical_residue_mapping(mapping_path),
+                )
 
 
 def _validate_namd_control_lineage(
@@ -1653,6 +1714,17 @@ def validate_run_artifacts(
                         ),
                     )
     if scope == "preprocessing":
+        try:
+            _validate_rmsd_lineage(run_root, entries, mappings)
+        except (ValueError, OSError):
+            issues.append(
+                UnifiedArtifactValidationIssue(
+                    "error",
+                    "rmsd_lineage_mismatch",
+                    "RMSD replica, atom roster, method and input lineage must agree.",
+                    path=integrity.inventory_path,
+                )
+            )
         try:
             _validate_namd_control_lineage(
                 entries, mappings,

@@ -1136,6 +1136,7 @@ def compute_condition_contacts(
     source_frame_indexes: tuple[int, ...] | None = None,
     progress_callback: ContactProgressCallback | None = None,
     pbc_observation_callback: PbcObservationCallback | None = None,
+    selected_frame_observer: Callable[[str, int, float | None], None] | None = None,
 ) -> PreprocessingConditionContactsResult:
     """Compute per-frame contacts from one already loaded condition."""
     selected_options = options or PreprocessingContactDetectionOptions()
@@ -1324,6 +1325,12 @@ def compute_condition_contacts(
                         ),
                     ),
                 )
+            if selected_frame_observer is not None:
+                selected_frame_observer(
+                    condition_load_result.condition_name,
+                    frame_index,
+                    frame_result.time_ps,
+                )
             frame_results.append(frame_result)
             if pbc_observation_callback is not None:
                 pbc_observation_callback(observe_pbc_timestep_dimensions(
@@ -1389,6 +1396,8 @@ def _aggregate_manifest_contacts(
     source_frame_indexes_by_condition: Mapping[str, tuple[int, ...]] | None = None,
     progress_callback: ContactProgressCallback | None = None,
     pbc_observation_callback: PbcObservationCallback | None = None,
+    selected_frame_observers: Mapping[str, Callable[[str, int, float | None], None]]
+    | None = None,
 ) -> PreprocessingManifestContactsResult:
     """Compose condition contact results across one manifest load result."""
     selected_options = options or PreprocessingContactDetectionOptions()
@@ -1420,6 +1429,10 @@ def _aggregate_manifest_contacts(
                 contact_kwargs["progress_callback"] = progress_callback
             if pbc_observation_callback is not None:
                 contact_kwargs["pbc_observation_callback"] = pbc_observation_callback
+            if selected_frame_observers is not None:
+                contact_kwargs["selected_frame_observer"] = (
+                    selected_frame_observers.get(condition_load_result.condition_name)
+                )
             contact_result = compute_condition_contacts(
                 condition_load_result,
                 **contact_kwargs,

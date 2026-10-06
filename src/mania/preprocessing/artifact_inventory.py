@@ -278,6 +278,7 @@ def collect_preprocessing_output_file_specs(
     pbc_audit_path: Path | None = None,
     stage30_output_paths: tuple[tuple[str, Path], ...] = (),
     perframe_output_paths: tuple[tuple[str, Path], ...] = (),
+    rmsd_output_paths: tuple[tuple[str, Path], ...] = (),
 ) -> tuple[ArtifactInventoryFileSpec, ...]:
     """Describe supplied successful stages in execution order, without discovery.
 
@@ -435,6 +436,22 @@ def collect_preprocessing_output_file_specs(
         if role not in STAGE30_OUTPUT_ROLES or path != output_root / f"{role}.csv":
             raise PreprocessingArtifactInventoryError("Invalid Stage 30 output path.")
         add(role, path)
+    if rmsd_output_paths:
+        from mania.preprocessing.trajectory_rmsd_io import (
+            RMSD_ROLES,
+            read_rmsd_evidence,
+        )
+
+        if tuple(role for role, _ in rmsd_output_paths) != RMSD_ROLES or any(
+            path
+            != output_root
+            / (role + (".csv" if role.endswith("timeseries") else ".json"))
+            for role, path in rmsd_output_paths
+        ):
+            raise PreprocessingArtifactInventoryError("Invalid RMSD output roles/paths")
+        read_rmsd_evidence(output_root)
+        for role, path in rmsd_output_paths:
+            add(role, path)
     for role, technical_path in (
         ("temporal_execution", temporal_execution_path),
         ("runtime_metadata", runtime_metadata_path),
@@ -480,6 +497,7 @@ def build_preprocessing_artifact_inventory(
     stage30_input_specs: tuple[ArtifactInventoryFileSpec, ...] = (),
     stage30_output_paths: tuple[tuple[str, Path], ...] = (),
     perframe_output_paths: tuple[tuple[str, Path], ...] = (),
+    rmsd_output_paths: tuple[tuple[str, Path], ...] = (),
 ) -> ArtifactInventory:
     """Inspect authoritative files through the generic builder; never write."""
     inputs = collect_preprocessing_input_file_specs(
@@ -508,6 +526,7 @@ def build_preprocessing_artifact_inventory(
         pbc_audit_path=pbc_audit_path,
         stage30_output_paths=stage30_output_paths,
         perframe_output_paths=perframe_output_paths,
+        rmsd_output_paths=rmsd_output_paths,
     )
     return build_artifact_inventory(
         run_id=run_id,

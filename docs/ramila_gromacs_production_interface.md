@@ -1,5 +1,10 @@
 # Ramila GROMACS production interface
 
+`ramila-production-v1` remains the frozen historical handoff. This implementation
+branch adopts the common RMSD/handoff contract for future fresh attempts.
+`ramila-production-v2` has not been created; real representative acceptance,
+benchmarking and the v2 freeze are a separate checkpoint.
+
 The supported unit is one existing Dataset trajectory. The five shell entry
 points share `tools/run_ramila_gromacs.py`; no core scientific engine or optional
 dependency boundary changes. `SOURCE_ROOT` contains the preserved WT/T330M
@@ -68,8 +73,16 @@ exceptions release ownership; a killed process leaves the marker for inspection.
 After confirming no process owns it, an operator may remove that empty marker;
 the next run preserves earlier attempts and creates the next number. Never
 remove or overwrite source approvals, completed results or incomplete attempts.
-Completed reuse checks source/prepared hashes and science artifact hashes,
-strict unified validation and exact offline reconstruction of six source and
+Fresh attempts attach the common C-alpha RMSD observer to the existing contact
+pass and retain the two authoritative RMSD artifacts. Completed new-contract
+reuse loads and validates the compact handoff seal; its retained preparation
+evidence supports review even when the external prepared directory is unavailable.
+Initial production still verifies exact source authority. Historical v1 science
+markers are identified as legacy and preserved; the next new-contract run uses
+a fresh numbered attempt. A new-contract science marker without a valid handoff
+seal cannot be reused as completed.
+
+Strict unified validation and exact offline reconstruction cover six source and
 canonical protein/lipid/glycan CSVs. Per-frame observations and the completion
 ledger are retained. Both specialized layers run with accepted cutoffs and
 carrier/own-glycan exclusion. The main dynRIN graph remains protein-only.
@@ -137,3 +150,42 @@ The quickstart includes those commands. Google's
 currently lists Python 3.12.13 and NumPy 2.0.2 for runtime 2026.07. The installation
 proof uses a clean Linux Python 3.12 environment with NumPy 2.0.2 and the existing
 `.[science]` extra; it does not claim an interactive Colab session was executed.
+
+
+## Future common handoff contract
+
+See [production RMSD and handoff](production_rmsd_handoff_contract.md) for the
+frozen method, two artifacts, portable evidence registry, completion gate and
+coordinate-free review/group interfaces. RMSD uses the exact already-loaded
+prepared production frames, explicit canonical C-alpha mapping and the first
+resolved requested production sample as its fixed reference. Missing requests
+remain missing. Stabilization is excluded. There is no automatic drift classifier
+or universal threshold; explicit scientific review supplies Stage 32 assessment.
+
+Fresh preparation additionally records all-frame bonded representation error,
+protein atom/fragment identity, centering and complete-fragment observations and
+writes normalized `protein_integrity_observations.json`. Original
+`preparation_complete.json` remains immutable. Scientific PBC protocol status
+remains unresolved; technical observations do not imply trajectory-level QC PASS.
+The source/time/contact/PBC algorithms and cutoffs are unchanged.
+
+Fresh production retains exact original reports, normalized observations, source
+binding/axis, source attestation, consumed MDP/logs, mapping, partner controls,
+software/runtime identity, per-frame/source/canonical outputs, validation/replay
+and inventories beneath the attempt root. Missing annotation/correspondence
+scientific authority remains explicit. `handoff_complete.json` is separate from
+`science_complete.json` and is written only after all mandatory compact bytes are
+hash-bound and strictly valid. Technical runs retain `production_eligible=false`.
+
+`--prepared-directory` remains the literal external preparation authority. It
+must supply the new normalized evidence and complete frame observations; the
+producer copies compact evidence into OUTPUT_ROOT without duplicating XTC/TPR
+files or changing that directory. An old preparation lacking required observations
+cannot masquerade as a completed new-contract handoff. Source/prepared coordinates
+are not deleted. The default sole prepared XTC may remain in the attempt's
+preparation directory, outside the compact handoff registry.
+
+Normal subsequent validation, review, QC and canonical aggregation can use
+OUTPUT_ROOT alone. Review writes a new `postproduction/attempt_*` record and does
+not change the producer seal. Real representative acceptance and benchmarking
+remain necessary before a Ramila v2 release; no v2 tag exists at this checkpoint.

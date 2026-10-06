@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType
@@ -2170,6 +2170,8 @@ def compute_preprocessing_graph_workflow_rg_contacts(
     source_frame_indexes_by_condition: Mapping[str, tuple[int, ...]] | None = None,
     progress_callback: ContactProgressCallback | None = None,
     collect_pbc_observations: bool = False,
+    selected_frame_observers: Mapping[str, Callable[[str, int, float | None], None]]
+    | None = None,
 ) -> PreprocessingGraphWorkflowComputationResult:
     """Orchestrate accepted manifest-level Rg and contacts computations."""
     if not isinstance(
@@ -2310,6 +2312,11 @@ def compute_preprocessing_graph_workflow_rg_contacts(
                 issues=issues,
             )
 
+    if selected_frame_observers is not None and (
+        not include_contacts
+        or not set(selected_frame_observers).issubset(condition_names)
+    ):
+        raise ValueError("Selected-frame observers require enabled matching contacts")
     if include_contacts:
         try:
             contact_kwargs: dict[str, Any] = {}
@@ -2331,6 +2338,8 @@ def compute_preprocessing_graph_workflow_rg_contacts(
                 contact_kwargs["progress_callback"] = progress_callback
             if collect_pbc_observations and not include_rg:
                 contact_kwargs["pbc_observation_callback"] = pbc_observations.append
+            if selected_frame_observers is not None:
+                contact_kwargs["selected_frame_observers"] = selected_frame_observers
             contacts_result = _manifest_contacts_computer()(
                 runtime_result,
                 **contact_kwargs,

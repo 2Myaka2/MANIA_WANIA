@@ -725,3 +725,26 @@ def test_stage30_explicit_inventory_controls_and_outputs(tmp_path):
             adapter.collect_preprocessing_output_file_specs(
                 output_root=tmp_path, stage30_output_paths=((role, path),)
             )
+
+
+def test_rmsd_roles_require_pair_exact_paths_and_valid_evidence(tmp_path):
+    from test_preprocessing_trajectory_rmsd_io import persisted
+
+    from mania.preprocessing.trajectory_rmsd_io import RMSD_ROLES
+
+    persisted(tmp_path)
+    paths = tuple(
+        (role, tmp_path / (role + (".csv" if role.endswith("timeseries") else ".json")))
+        for role in RMSD_ROLES
+    )
+    entries = adapter.collect_preprocessing_output_file_specs(
+        output_root=tmp_path, rmsd_output_paths=paths
+    )
+    assert tuple(e.role for e in entries) == RMSD_ROLES
+    assert tuple(e.artifact_id for e in entries) == tuple(
+        "output:" + role for role in RMSD_ROLES
+    )
+    with pytest.raises(ValueError):
+        adapter.collect_preprocessing_output_file_specs(
+            output_root=tmp_path, rmsd_output_paths=paths[:1]
+        )

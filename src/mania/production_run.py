@@ -578,6 +578,7 @@ def run_production_trajectory(
     technical_manifest: Path | None = None,
     min_free_bytes: int,
     resume: bool = False,
+    handoff_inputs: Path | None = None,
 ) -> dict[str, Any]:
     if type(min_free_bytes) is not int or min_free_bytes <= 0:
         raise ProductionError("production run requires positive min-free-bytes")
@@ -592,6 +593,11 @@ def run_production_trajectory(
     )
     root = preflight.trajectory_root
     reused = root.exists()
+    retained = None
+    if handoff_inputs is not None and reused:
+        from mania.production_handoff import load_completed_handoff
+
+        load_completed_handoff(root)  # Legacy science cannot be silently upgraded.
     if not reused:
         root.parent.mkdir(parents=True, exist_ok=True)
         root.mkdir()  # Exclusive claim; a concurrent launcher cannot share this run.
@@ -600,11 +606,27 @@ def run_production_trajectory(
         _write_json(manifest_path, _manifest(preflight).model_dump(mode="json"))
         from mania.cli import run_production_preprocessing
 
-        kwargs = (
+        if handoff_inputs is not None:
+            from mania.production_handoff import (
+                read_handoff_inputs,
+                retain_handoff_inputs,
+            )
+
+            inputs = read_handoff_inputs(handoff_inputs)
+            if inputs.identity != preflight.execution_spec.identity:
+                raise ProductionError(
+                    "Handoff input replica differs from production execution"
+                )
+            if technical_manifest is not None and inputs.production_eligible:
+                raise ProductionError("Technical handoff inputs must remain ineligible")
+            retained = retain_handoff_inputs(root, inputs)
+        kwargs: dict[str, Any] = (
             {"technical_context": preflight.technical_context()}
             if technical_manifest
             else {}
         )
+        if retained is not None:
+            kwargs["handoff_inputs"] = retained
         run_production_preprocessing(
             manifest_path,
             root / "preprocessing",
@@ -632,19 +654,61 @@ def run_production_trajectory(
         ),
     }
     marker = preflight.completion_path
+    if retained is not None:
+        from mania.production_handoff import validate_handoff_prerequisites
+
+        validation = _validate_stage(
+            root / "preprocessing",
+            "preprocessing",
+            _preprocessing_mappings(preflight),
+        )
+        acceptance = root / "handoff_acceptance.json"
+        _write_json(acceptance, {"validation": validation, "replay": "PASS"})
+        validate_handoff_prerequisites(
+            root,
+            retained,
+            technical_validation=acceptance,
+            completion_document=completion,
+            completion_path=marker.name,
+        )
     if marker.exists():
         if read_strict_json(marker) != completion:
             raise ProductionError("Changed completed artifacts forbid resume")
     else:
         _write_json(marker, completion)
+    if retained is not None:
+        complete_production_handoff(root, retained, acceptance)
+    elif (root / "handoff_complete.json").exists():
+        from mania.production_handoff import load_completed_handoff
+
+        load_completed_handoff(root)
     return {
-        "status": "technical_complete" if technical_manifest else "science_complete",
+        "status": "technical_complete"
+        if technical_manifest
+        else "handoff_complete"
+        if (root / "handoff_complete.json").exists()
+        else "science_complete",
+        "completion_contract": "self_contained_handoff"
+        if (root / "handoff_complete.json").exists()
+        else "legacy_science",
         "trajectory_id": trajectory_id,
         "reused": reused,
         "output": str(root),
         "qc_status": "not_evaluated",
         **preflight.technical_context(),
     }
+
+
+def complete_production_handoff(root: Path, retained: Any, acceptance: Path) -> None:
+    """Separate additive gate; science completion by itself grants no handoff seal."""
+    from mania.production_handoff import publish_handoff
+
+    if not any(
+        (root / name).is_file()
+        for name in ("science_complete.json", "technical_complete.json")
+    ):
+        raise ProductionError("Handoff completion requires prior science completion")
+    publish_handoff(root, retained, technical_validation=acceptance)
 
 
 def require_production_science(path: Path) -> None:
@@ -933,6 +997,208 @@ def assemble_production_group(
     return {
         "status": "aggregation_complete",
         "replica_group_id": replica_group_id,
+        "output": str(attempt),
+        "science_preserved": True,
+    }
+
+
+def assemble_completed_handoff_group(
+    output_root: Path,
+    handoff_roots: tuple[Path, ...],
+    *,
+    qc_manifest: Path,
+) -> dict[str, Any]:
+    """Use only transferred handoffs and explicit existing Stage 32/31 controls."""
+    from mania.dataset_qc_decision_io import read_dataset_qc_decision_set
+    from mania.production_handoff import (
+        HandoffCompletion,
+        load_completed_handoff,
+    )
+
+    output_root = output_root.resolve()
+    _no_symlinks(output_root)
+    if len(handoff_roots) != 3 or len(set(p.resolve() for p in handoff_roots)) != 3:
+        raise ProductionError(
+            "Output-only group requires three distinct completed replicas"
+        )
+    by_key = {}
+    identities = []
+    for supplied in handoff_roots:
+        root = _within(output_root, supplied)
+        manifest = load_completed_handoff(root)
+        seal = HandoffCompletion.model_validate(
+            read_strict_json(root / "handoff_complete.json")
+        )
+        if not seal.production_eligible:
+            raise ProductionError(
+                "Technical handoffs cannot enter production aggregation"
+            )
+        identity = manifest.replica_identity
+        if identity.replica_key in by_key:
+            raise ProductionError("Duplicate Dataset replica identity")
+        identities.append(identity)
+        by_key[identity.replica_key] = root
+    fields = (
+        "dataset_id",
+        "system_id",
+        "engine",
+        "variant_id",
+        "condition",
+        "disulfide_state",
+    )
+    if any(
+        any(
+            getattr(identity, field) != getattr(identities[0], field)
+            for field in fields
+        )
+        for identity in identities
+    ):
+        raise ProductionError("Handoff group mixes Dataset system identities")
+    qc_path = _within(output_root, qc_manifest)
+    control = read_dataset_qc_manifest(qc_path)
+    if {r.replica_key for r in control.replicas} != set(by_key):
+        raise ProductionError("QC must cover exact completed handoff membership")
+    specs = collect_dataset_qc_input_specs(control, qc_path)
+    for spec in specs:
+        _readable(_within(output_root, spec.local_path))
+    template = read_replica_aggregation_manifest(
+        qc_path.parent / control.aggregation_manifest_template_path
+    )
+    plans = {
+        key: read_preprocessing_temporal_execution(
+            root / "preprocessing/temporal_execution.json"
+        )
+        for key, root in by_key.items()
+    }
+    windows = _windows(next(iter(plans.values())))
+    if any(_windows(plan) != windows for plan in plans.values()) or (
+        {g.spec.window for g in template.groups} != set(windows)
+        or len(template.groups) != len(windows)
+    ):
+        raise ProductionError(
+            "Output-only group requires exact compatible saved windows"
+        )
+    for group in template.groups:
+        if {m.replica_key for m in group.members} != set(by_key) or (
+            set(group.spec.expected_replica_ids) != {i.replica_id for i in identities}
+            or any(getattr(group.spec, f) != getattr(identities[0], f) for f in fields)
+        ):
+            raise ProductionError("Aggregation template differs from sealed membership")
+    for family, filename in _FAMILY_FILES.items():
+        paths = getattr(template, f"{family}_canonical_table_paths")
+        if family == "protein" or paths:
+            if set(paths) != {
+                root / "preprocessing" / filename for root in by_key.values()
+            }:
+                raise ProductionError(
+                    "Aggregation must use exact sealed canonical tables"
+                )
+        if (
+            family != "protein"
+            and paths
+            and any(
+                not getattr(g, f"{family}_correspondences").correspondences
+                for g in template.groups
+            )
+        ):
+            raise ProductionError(
+                "Specialized output-only aggregation needs explicit correspondence"
+            )
+    for replica in control.replicas:
+        hard = read_replica_hard_qc_evidence(
+            qc_path.parent / replica.hard_qc_evidence_path
+        )
+        root = by_key[replica.replica_key]
+        actual = plans[replica.replica_key].bindings[0]
+        if (
+            hard.identity != actual.dataset_spec.identity
+            or hard.sampling_plan != actual.sampling_plan
+        ):
+            raise ProductionError(
+                "QC identity/sampling differs from sealed measurements"
+            )
+        handoff = load_completed_handoff(root)
+        mapping_member = next(
+            e.binding
+            for e in handoff.required_evidence
+            if e.role == "canonical_residue_mapping"
+        )
+        assert mapping_member is not None and mapping_member.path is not None
+        mapping = DatasetCanonicalResidueMappingBinding(
+            *replica.replica_key,
+            read_canonical_residue_mapping(root / mapping_member.path),
+        )
+        if hard.mapping_binding is not None and hard.mapping_binding != mapping:
+            raise ProductionError("QC canonical mapping differs from sealed production")
+        for evidence in hard.required_artifacts:
+            evidence_family = {
+                "protein_edge": "protein",
+                "protein_lipid": "lipid",
+                "protein_glycan": "glycan",
+            }.get(evidence.canonical_family or "")
+            if evidence_family and evidence.canonical_table is not None:
+                kind = "edge" if evidence_family == "protein" else evidence_family
+                table = getattr(
+                    canonical_io, f"read_canonical_protein_{kind}_window_csv"
+                )(root / "preprocessing" / _FAMILY_FILES[evidence_family])
+                if evidence.canonical_table != table:
+                    raise ProductionError(
+                        "QC table differs from sealed canonical science"
+                    )
+    request = {
+        "inputs": {s.artifact_id: file_digest(s.local_path) for s in specs},
+        "handoffs": {
+            "|".join(key): file_digest(root / "handoff_complete.json")
+            for key, root in sorted(by_key.items())
+        },
+    }
+    attempt = (
+        output_root
+        / "groups"
+        / identities[0].system_id
+        / "attempts"
+        / _hash_json(request)
+    )
+    if not attempt.exists():
+        attempt.mkdir(parents=True)
+        _write_json(attempt / "request.json", request)
+    elif read_strict_json(attempt / "request.json") != request:
+        raise ProductionError("Output-only group attempt identity mismatch")
+    qc_root = attempt / "qc"
+    if not qc_root.exists():
+        run_dataset_qc(qc_path, qc_root, checksum_mode="sha256")
+    _validate_stage(qc_root, "dataset_qc", {s.artifact_id: s.local_path for s in specs})
+    decisions = read_dataset_qc_decision_set(qc_root / "dataset_qc_decision_set.json")
+    if any(r.release_decision == "pending_review" for r in decisions.records):
+        return {
+            "status": "pending_review",
+            "output": str(attempt),
+            "science_preserved": True,
+        }
+    derived = build_qc_derived_replica_aggregation_manifest(template, decisions)
+    derived_path = qc_root / "replica_aggregation_manifest_qc_derived.json"
+    if read_replica_aggregation_manifest(derived_path) != derived:
+        raise ProductionError("Aggregation requires exact QC-derived availability")
+    aggregate_root = attempt / "aggregation"
+    aggregation_specs = collect_replica_aggregation_input_specs(derived, derived_path)
+    for spec in aggregation_specs:
+        _readable(_within(output_root, spec.local_path))
+    if not aggregate_root.exists():
+        run_replica_aggregation(derived_path, aggregate_root, checksum_mode="sha256")
+    _validate_stage(
+        aggregate_root,
+        "replica_aggregation",
+        {s.artifact_id: s.local_path for s in aggregation_specs},
+    )
+    completion = {"request": request, "artifacts": _tree_digests(aggregate_root)}
+    marker = attempt / "aggregation_complete.json"
+    if marker.exists():
+        if read_strict_json(marker) != completion:
+            raise ProductionError("Changed completed output-only aggregation")
+    else:
+        _write_json(marker, completion)
+    return {
+        "status": "aggregation_complete",
         "output": str(attempt),
         "science_preserved": True,
     }

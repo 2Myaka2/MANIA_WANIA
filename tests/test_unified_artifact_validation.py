@@ -295,6 +295,11 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
     runtime = make_runtime(tmp_path)
     root = tmp_path / "out"
     stages = make_stages(root, runtime)
+    from test_preprocessing_trajectory_rmsd_io import persisted
+
+    from mania.preprocessing.trajectory_rmsd_io import RMSD_ROLES
+
+    persisted(root)
     options = stages["reference_comparison"].options
     prep = preprocessing_adapter.collect_preprocessing_input_file_specs(
         runtime,
@@ -306,6 +311,10 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
         reference_graph_path=options.reference_graph_json_path,
     ) + preprocessing_adapter.collect_preprocessing_output_file_specs(
         output_root=root,
+        rmsd_output_paths=tuple(
+            (role, root / (role + (".csv" if role.endswith("timeseries") else ".json")))
+            for role in RMSD_ROLES
+        ),
         runtime_metadata_path=root / "runtime_metadata.json",
         temporal_execution_path=root / "temporal_execution.json",
         molecular_partner_catalog_path=root / "molecular_partner_catalog.json",
@@ -343,7 +352,7 @@ def test_every_current_emitted_role_is_explicitly_classified(tmp_path):
     )
     assert {e.role for e in prep} == unified._PREPROCESSING_POLICY.keys()
     assert {e.role for e in analysis} == unified._ANALYSIS_POLICY.keys()
-    assert len({e.role for e in prep}) == 41
+    assert len({e.role for e in prep}) == 43
     assert len({e.role for e in analysis}) == 17
 
 
@@ -1391,3 +1400,61 @@ def test_malformed_source_header_is_strict_failure(tmp_path):
         ).status
         == "failed"
     )
+
+
+def test_rmsd_roles_strict_and_mapping_lineage_checked(tmp_path, monkeypatch):
+    import json
+
+    from test_production_handoff import handoff_case
+
+    from mania.artifact_inventory_io import read_artifact_inventory
+    from mania.validation.unified import _validate_rmsd_lineage
+
+    case = handoff_case(tmp_path, monkeypatch)
+    science = case.root / "preprocessing"
+    inventory = read_artifact_inventory(science / "artifact_inventory.json")
+    _validate_rmsd_lineage(science, inventory.artifacts)
+    path = science / "protein_rmsd_measurement.json"
+    data = json.loads(path.read_text())
+    data["source_bindings"]["mapping"]["sha256"] = "f" * 64
+    path.write_text(json.dumps(data))
+    with pytest.raises(ValueError, match="lineage"):
+        _validate_rmsd_lineage(science, inventory.artifacts)
+
+
+def test_rmsd_rehashed_atom_namespace_must_match_retained_mapping(
+    tmp_path, monkeypatch
+):
+    import json
+
+    from test_production_handoff import handoff_case
+
+    from mania.artifact_inventory_io import read_artifact_inventory
+    from mania.preprocessing.trajectory_rmsd import identity_digest
+    from mania.preprocessing.trajectory_rmsd_io import file_sha256
+    from mania.validation.unified import _validate_rmsd_lineage
+
+    case = handoff_case(tmp_path, monkeypatch)
+    science = case.root / "preprocessing"
+    inventory = read_artifact_inventory(science / "artifact_inventory.json")
+    path = science / "protein_rmsd_measurement.json"
+    table = science / "protein_rmsd_timeseries.csv"
+    data = json.loads(path.read_text())
+    old = data["atom_selection"]["selection_id"]
+    data["atom_selection"]["atoms"][0]["source_resid"] = "unrepresented"
+    new = identity_digest(data["atom_selection"]["atoms"])
+    data["atom_selection"]["selection_id"] = new
+    data["atom_selection"]["selected_identity_sha256"] = new
+    data["method"]["alignment_selection_id"] = new
+    data["method"]["measurement_selection_id"] = new
+    table.write_text(table.read_text().replace(old, new))
+    data["table"]["sha256"] = file_sha256(table)
+    path.write_text(json.dumps(data))
+    _validate_rmsd_lineage(science, inventory.artifacts)
+    mapping_path = case.root / case.retained.bindings["canonical_residue_mapping"].path
+    with pytest.raises(ValueError, match="explicit canonical mapping"):
+        _validate_rmsd_lineage(
+            science,
+            inventory.artifacts,
+            {"input:canonical_residue_mapping:0001": mapping_path},
+        )

@@ -842,3 +842,242 @@ def test_group_authority_failures_preserve_science(tmp_path, monkeypatch, damage
             CATALOG, first.selected.group_id, first.output, qc_manifest=qc
         )
     assert production._tree_digests(first.output / "trajectories") == before
+
+
+def test_separate_handoff_gate_requires_real_compact_evidence(tmp_path, monkeypatch):
+    from test_production_handoff import handoff_case
+
+    from mania.production_handoff import load_completed_handoff
+
+    case = handoff_case(tmp_path, monkeypatch, seal=False)
+    production.complete_production_handoff(
+        case.root, case.retained, case.root / "acceptance.json"
+    )
+    assert (
+        load_completed_handoff(case.root).replica_identity
+        == case.retained.source.identity
+    )
+
+
+def test_common_orchestration_prerequisite_failure_prevents_science_marker(
+    tmp_path, monkeypatch
+):
+    from test_preprocessing_trajectory_rmsd import temporal_binding
+
+    import mania.production_handoff as handoff
+
+    root = tmp_path / "fresh_attempt"
+    spec = temporal_binding().dataset_spec
+    preflight = SimpleNamespace(
+        trajectory_root=root,
+        execution_spec=spec,
+        selected=SimpleNamespace(spec=spec),
+        completion_path=root / "science_complete.json",
+        request=lambda: {},
+        technical_context=lambda: {},
+    )
+    monkeypatch.setattr(production, "preflight_trajectory", lambda *a, **kw: preflight)
+    monkeypatch.setattr(
+        production,
+        "_manifest",
+        lambda *a: SimpleNamespace(model_dump=lambda **kw: {}),
+    )
+    monkeypatch.setattr(production, "_science", lambda *a: None)
+    monkeypatch.setattr(production, "_validate_stage", lambda *a: {})
+    monkeypatch.setattr(production, "_preprocessing_mappings", lambda *a: {})
+    monkeypatch.setattr(cli, "run_production_preprocessing", lambda *a, **kw: None)
+    monkeypatch.setattr(
+        handoff,
+        "read_handoff_inputs",
+        lambda *a: SimpleNamespace(identity=spec.identity, production_eligible=True),
+    )
+    monkeypatch.setattr(handoff, "retain_handoff_inputs", lambda *a: "retained_spy")
+
+    def reject(root, retained, **kwargs):
+        assert retained == "retained_spy"
+        assert not (root / "science_complete.json").exists()
+        raise ValueError("Missing mandatory compact evidence")
+
+    monkeypatch.setattr(handoff, "validate_handoff_prerequisites", reject)
+    with pytest.raises(ValueError, match="mandatory compact"):
+        production.run_production_trajectory(
+            tmp_path / "catalog.json",
+            spec.identity.trajectory_id,
+            tmp_path,
+            handoff_inputs=tmp_path / "control.json",
+            min_free_bytes=1,
+        )
+    assert not preflight.completion_path.exists()
+    assert not (root / "handoff_complete.json").exists()
+
+
+def test_output_only_group_rejects_legacy_and_technical_members(tmp_path, monkeypatch):
+    from test_production_handoff import handoff_case
+
+    case = handoff_case(tmp_path, monkeypatch)
+    with pytest.raises(ProductionError, match="three distinct"):
+        production.assemble_completed_handoff_group(
+            tmp_path, (case.root,) * 3, qc_manifest=tmp_path / "qc.json"
+        )
+    legacy = tmp_path / "legacy"
+    legacy.mkdir()
+    production._write_json(legacy / "science_complete.json", {"artifacts": {}})
+    with pytest.raises(ValueError, match="Legacy"):
+        production.assemble_completed_handoff_group(
+            tmp_path,
+            (legacy, case.root, tmp_path / "absent"),
+            qc_manifest=tmp_path / "qc.json",
+        )
+
+
+def test_output_only_real_qc_and_aggregation_from_three_compact_handoffs(
+    tmp_path, monkeypatch
+):
+    from test_dataset_measurement_review import assessment
+    from test_dataset_review_qc import evidence as review_evidence
+    from test_preprocessing_trajectory_rmsd import temporal_binding
+    from test_production_handoff import handoff_case
+
+    from mania.dataset_measurement_review import build_replica_review_evidence
+    from mania.dataset_review_qc import ProteinEdgeEmptyWindowEvidence
+    from mania.preprocessing.protein_integrity_observations import (
+        read_protein_integrity,
+    )
+
+    completed = []
+    for n in range(1, 4):
+        directory = tmp_path / f"replica_{n}"
+        directory.mkdir()
+        original = temporal_binding().dataset_spec
+        identity = original.identity.model_copy(
+            update={"trajectory_id": f"trajectory_{n}", "replica_id": str(n)}
+        )
+        spec = original.model_copy(update={"identity": identity})
+        completed.append(handoff_case(directory, monkeypatch, spec=spec))
+    first_plan = read_preprocessing_temporal_execution(
+        completed[0].root / "preprocessing/temporal_execution.json"
+    )
+    window_definitions = production._windows(first_plan)
+    identities = [c.retained.source.identity for c in completed]
+    groups = []
+    for window in window_definitions:
+        first = identities[0]
+        group_spec = ReplicaAggregationGroupSpec(
+            first.dataset_id,
+            first.system_id,
+            first.engine,
+            first.variant_id,
+            first.condition,
+            first.disulfide_state,
+            ("1", "2", "3"),
+            window,
+        )
+        members = tuple(
+            ReplicaAggregationMember(
+                **i.model_dump(),
+                canonical_reference_id=REPLICA_AGGREGATION_CANONICAL_REFERENCE_ID,
+                canonical_reference_sequence_sha256=REPLICA_AGGREGATION_CANONICAL_REFERENCE_SHA256,
+                window=window,
+                availability_status="available",
+                availability_reason=None,
+            )
+            for i in identities
+        )
+        groups.append(
+            ReplicaAggregationWorkflowGroup(
+                group_spec,
+                members,
+                SpecializedPartnerCorrespondences(()),
+                SpecializedPartnerCorrespondences(()),
+            )
+        )
+    control_root = tmp_path / "controls"
+    control_root.mkdir()
+    template = ReplicaAggregationManifest(
+        tuple(
+            c.root / "preprocessing" / production._FAMILY_FILES["protein"]
+            for c in completed
+        ),
+        (),
+        (),
+        tuple(groups),
+    )
+    assert write_replica_aggregation_manifest(
+        template, control_root / "template.json"
+    ).passed
+    replicas = []
+    for case, identity in zip(completed, identities, strict=True):
+        plan = read_preprocessing_temporal_execution(
+            case.root / "preprocessing/temporal_execution.json"
+        )
+        mapping_path = case.retained.source.compact_files["canonical_residue_mapping"]
+        from mania.canonical_residue_mapping_io import read_canonical_residue_mapping
+
+        mapping = read_canonical_residue_mapping(mapping_path)
+        hard = ReplicaHardQCEvidence(
+            **inputs(
+                identity=identity,
+                mapping_binding=DatasetCanonicalResidueMappingBinding(
+                    *identity.replica_key, mapping
+                ),
+                required_source_keys=tuple(r.source_key for r in mapping.mappings),
+                sampling_plan=plan.bindings[0].sampling_plan,
+                raw_integrity=raw(topology_atom_count=4, trajectory_atom_count=4),
+                required_artifacts=(
+                    replace(
+                        artifact(),
+                        canonical_table=read_canonical_protein_edge_window_csv(
+                            case.root
+                            / "preprocessing"
+                            / production._FAMILY_FILES["protein"]
+                        ),
+                    ),
+                ),
+            )
+        )
+        review = build_replica_review_evidence(
+            case.root,
+            assessment(),
+            empty_windows=ProteinEdgeEmptyWindowEvidence(2, 0, (review_evidence(),)),
+        )
+        hard_path, review_path = (
+            Path(f"hard-{identity.replica_id}.json"),
+            Path(f"review-{identity.replica_id}.json"),
+        )
+        assert write_replica_hard_qc_evidence(hard, control_root / hard_path).passed
+        assert write_replica_review_qc_evidence(
+            review, control_root / review_path
+        ).passed
+        replicas.append(
+            DatasetQCWorkflowReplica(
+                *identity.replica_key, hard_path, review_path, None
+            )
+        )
+        assert (
+            read_protein_integrity(
+                case.retained.source.compact_files["protein_integrity_observations"]
+            ).scientific_pbc_status
+            == "unresolved"
+        )
+    assert write_dataset_qc_manifest(
+        DatasetQCManifest(Path("template.json"), tuple(replicas)),
+        control_root / "qc.json",
+    ).passed
+    for case in completed:
+        shutil.rmtree(case.preparation)
+    monkeypatch.delenv("MANIA_DATA_ROOT", raising=False)
+    transferred = tmp_path.parent / (tmp_path.name + "_transferred")
+    shutil.copytree(tmp_path, transferred)
+    roots = tuple(transferred / c.root.relative_to(tmp_path) for c in completed)
+    shutil.rmtree(tmp_path)
+    control_root = transferred / "controls"
+    result = production.assemble_completed_handoff_group(
+        transferred, roots, qc_manifest=control_root / "qc.json"
+    )
+    assert result["status"] == "aggregation_complete"
+    assert (
+        production.assemble_completed_handoff_group(
+            transferred, roots, qc_manifest=control_root / "qc.json"
+        )
+        == result
+    )

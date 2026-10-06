@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import inspect
 import os
+import platform
 import shutil
 import sys
 import time
@@ -59,6 +62,7 @@ def prepare(
 ) -> dict[str, Any]:
     import MDAnalysis as mda
     import numpy as np
+    from MDAnalysis.lib.distances import calc_bonds
     from MDAnalysis.lib.formats.libmdaxdr import XTCFile
     from MDAnalysis.lib.mdamath import triclinic_box, triclinic_vectors
 
@@ -166,6 +170,11 @@ def prepare(
                 f"Nonfinite source coordinates at frame {i}",
             )
             rt.require(ts.time == axis["times_ps"][i], "Changed source time/order")
+            original_bond_lengths = calc_bonds(
+                ts.positions[fragments.bonds[:, 0]],
+                ts.positions[fragments.bonds[:, 1]],
+                box=ts.dimensions,
+            )
             fragments.unwrap()
             vectors = triclinic_vectors(ts.dimensions)
             ts.positions += vectors.sum(axis=0) / 2 - protein.center_of_geometry()
@@ -185,6 +194,13 @@ def prepare(
                 and frac.max() <= 1 + 1e-5,
                 f"PBC representation failed at source frame {i}",
             )
+            direct_bond_lengths = calc_bonds(
+                ts.positions[fragments.bonds[:, 0]],
+                ts.positions[fragments.bonds[:, 1]],
+            )
+            bond_error = float(
+                np.max(np.abs(original_bond_lengths - direct_bond_lengths))
+            )
             writer.write(universe.atoms)
             frame_evidence.append(
                 dict(
@@ -193,6 +209,9 @@ def prepare(
                     time_ps=ts.time,
                     cell=ts.dimensions.tolist(),
                     protein_center_error_A=center_error,
+                    bond_representation_max_error_A=bond_error,
+                    complete_fragment_fractional_min=float(frac.min()),
+                    complete_fragment_fractional_max=float(frac.max()),
                 )
             )
             if n % 100 == 0:
@@ -262,10 +281,62 @@ def prepare(
         wall_seconds=time.perf_counter() - started,
         storage=budget,
         biological_annotation_authority="PENDING",
+        implementation=dict(
+            python=platform.python_version(),
+            numpy=np.__version__,
+            mdanalysis=mda.__version__,
+            preparation_script=rt.file_identity(Path(__file__)),
+            fragment_script=rt.file_identity(
+                Path(inspect.getfile(FragmentPreparation))
+            ),
+        ),
+        protein_integrity_observations=dict(
+            protein_atom_identity_sha256=hashlib.sha256(
+                np.asarray(protein.indices, dtype="<i8").tobytes()
+            ).hexdigest(),
+            protein_fragment_ids=[
+                int(i) for i in np.unique(fragments.fragment_ids[protein.indices])
+            ],
+            protein_remains_broken=None,
+            assessment_source=None,
+        ),
     )
     rt.dump(output / "preparation_complete.json", result)
+    publish_preparation_integrity(source, output, row)
     scratch_path.unlink()  # Only this attempt's successful verification scratch.
     return result
+
+
+def publish_preparation_integrity(
+    source: Path,
+    preparation: Path,
+    row: dict[str, Any],
+) -> Path:
+    from mania.dataset_identity import DatasetTrajectoryIdentity
+    from mania.preprocessing.protein_integrity_observations import (
+        normalize_preparation_observations,
+        write_protein_integrity,
+    )
+    from mania.preprocessing.trajectory_rmsd_io import bind_file
+
+    identity = DatasetTrajectoryIdentity.model_validate(row["dataset_spec"]["identity"])
+    bindings = {
+        "topology": bind_file(source / row["tpr"]["path"], "source:topology"),
+        "raw_trajectory": bind_file(source / row["xtc_path"], "source:raw_trajectory"),
+        "prepared_trajectory": bind_file(
+            preparation / "prepared.xtc", "source:prepared_trajectory"
+        ),
+    }
+    evidence = normalize_preparation_observations(
+        identity,
+        preparation / "preparation_complete.json",
+        preparation / "frame_evidence.json",
+        source_bindings=bindings,
+        report_portable_path="evidence/producer/preparation_report/preparation_complete.json",
+    )
+    path = preparation / "protein_integrity_observations.json"
+    write_protein_integrity(path, evidence)
+    return path
 
 
 def main(argv: list[str] | None = None) -> int:
